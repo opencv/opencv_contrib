@@ -134,6 +134,10 @@ class PedestrianDemoPlan : public Plan {
     //Descriptor used for pedestrian detection
     cv::HOGDescriptor hog_;
 
+	constexpr static auto always_ = [](){ return true; };
+	constexpr static auto doRedect_ = [](const bool& trackerInit, const bool& redetect){ return !trackerInit || redetect; };
+	constexpr static auto dontRedect_ = [](const bool& trackerInit, const bool& redetect){ return trackerInit && !redetect; };
+
     //post process and add layers together
     static void composite_layers(const cv::UMat background, const cv::UMat foreground, cv::UMat dst, int blurKernelSize, Cache& cache) {
         cv::boxFilter(foreground, cache.blur_, -1, cv::Size(blurKernelSize, blurKernelSize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
@@ -151,11 +155,7 @@ public:
 	}
 
 	void infer(cv::Ptr<V4D> window) override {
-		static auto always = [](){ return true; };
-		static auto doRedect = [](const bool& trackerInit, const bool& redetect){ return !trackerInit || redetect; };
-		static auto dontRedect = [](const bool& trackerInit, const bool& redetect){ return trackerInit && !redetect; };
-
-		window->branch(always);
+		window->branch(always_);
 		{
 			window->capture();
 
@@ -171,10 +171,10 @@ public:
 				cv::cvtColor(videoFrame, background, cv::COLOR_RGB2BGRA);
 			}, videoFrame_, videoFrameDown_, videoFrameDownGrey_, background_);
 		}
-		window->endbranch(always);
+		window->endbranch(always_);
 
 		//Try to track the pedestrian (if we currently are tracking one), else re-detect using HOG descriptor
-		window->branch(doRedect, trackerInitialized_, redetect_);
+		window->branch(doRedect_, trackerInitialized_, redetect_);
 		{
 			window->parallel([](cv::HOGDescriptor& hog, bool& redetect, cv::UMat& videoFrameDownGrey, std::vector<cv::Rect>& locations, vector<vector<double>>& boxes, vector<double>& probs, cv::Ptr<cv::Tracker>& tracker, cv::Rect& tracked, bool& trackerInitialized){
 				redetect = false;
@@ -208,8 +208,8 @@ public:
 				}
 			}, hog_, redetect_, videoFrameDownGrey_, locations_, boxes_, probs_, tracker_, tracked_, trackerInitialized_);
 		}
-		window->endbranch(doRedect, trackerInitialized_, redetect_);
-		window->branch(dontRedect, trackerInitialized_, redetect_);
+		window->endbranch(doRedect_, trackerInitialized_, redetect_);
+		window->branch(dontRedect_, trackerInitialized_, redetect_);
 		{
 			window->parallel([](bool& redetect, cv::UMat& videoFrameDownGrey, cv::Ptr<cv::Tracker>& tracker, cv::Rect& tracked){
 				if(!tracker->update(videoFrameDownGrey, tracked)) {
@@ -218,9 +218,9 @@ public:
 				}
 			}, redetect_, videoFrameDownGrey_, tracker_, tracked_);
 		}
-		window->endbranch(dontRedect, trackerInitialized_, redetect_);
+		window->endbranch(dontRedect_, trackerInitialized_, redetect_);
 
-		window->branch(always);
+		window->branch(always_);
 		{
 		//Draw an ellipse around the tracked pedestrian
 			window->nvg([](const cv::Size& sz, cv::Rect& tracked) {
@@ -244,7 +244,7 @@ public:
 
 			window->write();
 		}
-		window->endbranch(always);
+		window->endbranch(always_);
 	}
 };
 int main(int argc, char **argv) {

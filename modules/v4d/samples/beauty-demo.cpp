@@ -168,7 +168,11 @@ class BeautyDemoPlan : public Plan {
 	std::vector<cv::Rect> faceRects_;
 	bool faceFound_ = false;
 	FaceFeatures features_;
-public:
+
+	constexpr static auto always_ = [](){ return true; };
+	constexpr static auto isTrue_ = [](bool& ff){ return ff; };
+	constexpr static auto isFalse_ = [](bool& ff){ return !ff; };
+
 	//based on the detected FaceFeatures it guesses a decent face oval and draws a mask for it.
 	static void draw_face_oval_mask(const FaceFeatures &ff) {
 	    using namespace cv::v4d::nvg;
@@ -218,7 +222,7 @@ public:
 	    merge(cache.channels_, cache.hls_);
 	    cvtColor(cache.hls_, dstBGR, cv::COLOR_HLS2BGR);
 	}
-
+public:
 	void gui(cv::Ptr<V4D> window) override {
 		window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params){
 			using namespace ImGui;
@@ -262,12 +266,8 @@ public:
 		}, facemark_);
 	}
 	void infer(cv::Ptr<V4D> window) override {
-		auto always = [](){ return true; };
-		auto isTrue = [](bool& ff){ return ff; };
-		auto isFalse = [](bool& ff){ return !ff; };
-
 		try {
-			window->branch(always);
+			window->branch(always_);
 			{
 				window->capture();
 
@@ -294,9 +294,9 @@ public:
 						ft = FaceFeatures(fr[0], sh[0], float(d.size().width) / WIDTH);
 				}, detector_, facemark_, shapes_, down_, faceRects_, faceFound_, features_);
 			}
-			window->endbranch(always);
+			window->endbranch(always_);
 
-			window->branch(isTrue, faceFound_);
+			window->branch(isTrue_, faceFound_);
 			{
 				window->nvg([](const FaceFeatures& f) {
 					//Draw the face oval of the first face
@@ -372,9 +372,9 @@ public:
 					}
 				}, frameOut_, input_, lhalf_, rhalf_, params_);
 			}
-			window->endbranch(isTrue, faceFound_);
+			window->endbranch(isTrue_, faceFound_);
 
-			window->branch(isFalse, faceFound_);
+			window->branch(isFalse_, faceFound_);
 			{
 				window->parallel([](cv::UMat& fout, const cv::UMat& in, cv::UMat& lh, const Params& params) {
 					if (params.sideBySide_) {
@@ -388,16 +388,16 @@ public:
 					}
 				}, frameOut_, input_, lhalf_, params_);
 			}
-			window->endbranch(isFalse, faceFound_);
+			window->endbranch(isFalse_, faceFound_);
 
-			window->branch(always);
+			window->branch(always_);
 			{
 				//write the result to the framebuffer
 				window->fb([](cv::UMat &frameBuffer, const cv::UMat& f) {
 					cvtColor(f, frameBuffer, cv::COLOR_BGR2BGRA);
 				}, frameOut_);
 			}
-			window->endbranch(always);
+			window->endbranch(always_);
 
 		} catch (std::exception &ex) {
 			cerr << ex.what() << endl;
