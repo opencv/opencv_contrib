@@ -8,7 +8,7 @@
 
 /* Demo Parameters */
 #ifndef __EMSCRIPTEN__
-constexpr size_t NUMBER_OF_CUBES = 10;
+constexpr size_t NUMBER_OF_CUBES = 1;
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 #else
@@ -269,8 +269,7 @@ public:
 	}
 };
 
-int main(int argc, char** argv) {
-	CV_UNUSED(argc);
+int main() {
     cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Many Cubes Demo", IMGUI, OFFSCREEN);
 
 #ifndef __EMSCRIPTEN__
@@ -278,7 +277,7 @@ int main(int argc, char** argv) {
     auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #endif
-    window->run<ManyCubesDemoPlan>(atoi(argv[1]));
+    window->run<ManyCubesDemoPlan>(0);
 
     return 0;
 }
