@@ -71,6 +71,9 @@ class FontDemoPlan : public Plan {
     int32_t y_ = 0;
 
     int32_t translateY_;
+
+	constexpr static auto always_ = []() { return true; };
+	constexpr static auto isTrue_ = [](const bool& b) { return b; };
 public:
     void gui(cv::Ptr<V4D> window) override {
         window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params){
@@ -114,10 +117,7 @@ public:
     }
 
     void infer(cv::Ptr<V4D> window) override {
-    	auto always = []() { return true; };
-    	auto isTrue = [](const bool& b) { return b; };
-
-		window->branch(isTrue, params_.updateStars_);
+		window->branch(isTrue_, params_.updateStars_);
 		{
 			window->nvg([](const cv::Size& sz, cv::RNG& rng, const Params& params) {
 				using namespace cv::v4d::nvg;
@@ -139,9 +139,9 @@ public:
 				frameBuffer.copyTo(f);
 			}, stars_);
 		}
-		window->endbranch(isTrue, params_.updateStars_);
+		window->endbranch(isTrue_, params_.updateStars_);
 
-		window->branch(isTrue, params_.updatePerspective_);
+		window->branch(isTrue_, params_.updatePerspective_);
 		{
 			window->parallel([](cv::Mat& tm, const Params& params){
 				//Derive the transformation matrix tm for the pseudo 3D effect from quad1 and quad2.
@@ -153,9 +153,9 @@ public:
 				tm = cv::getPerspectiveTransform(quad1, quad2);
 			}, tm_, params_);
 		}
-		window->endbranch(isTrue, params_.updatePerspective_);
+		window->endbranch(isTrue_, params_.updatePerspective_);
 
-		window->branch(always);
+		window->branch(always_);
 		{
 			window->nvg([](const cv::Size& sz, int32_t& ty, const int32_t& cnt, int32_t& y, const int32_t& textHeight, const std::vector<std::string> lines, const Params& params) {
 				//How many pixels to translate the text up.
@@ -201,7 +201,7 @@ public:
 					cnt = 0;
 			}, translateY_, textHeight_, cnt_, params_);
 		}
-		window->endbranch(always);
+		window->endbranch(always_);
     }
 };
 int main() {

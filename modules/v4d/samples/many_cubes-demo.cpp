@@ -8,7 +8,7 @@
 
 /* Demo Parameters */
 #ifndef __EMSCRIPTEN__
-constexpr size_t NUMBER_OF_CUBES = 1;
+constexpr size_t NUMBER_OF_CUBES = 10;
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 #else
@@ -73,10 +73,9 @@ class ManyCubesDemoPlan : public Plan {
 	    cv::UMat blur_;
 	    cv::UMat dst16_;
 	} cache_;
-	cv::UMat frame_;
-	GLuint vao[NUMBER_OF_CUBES];
-	GLuint shaderProgram[NUMBER_OF_CUBES];
-	GLuint uniformTransform[NUMBER_OF_CUBES];
+	GLuint vao_[NUMBER_OF_CUBES];
+	GLuint shaderProgram_[NUMBER_OF_CUBES];
+	GLuint uniformTransform_[NUMBER_OF_CUBES];
 	cv::Size sz_;
 	//Simple transform & pass-through shaders
 	static GLuint load_shader() {
@@ -232,10 +231,10 @@ public:
 	void setup(cv::Ptr<V4D> window) override {
 		sz_ = window->fbSize();
 		for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
-			window->gl(i, [](const size_t& ctxIdx, cv::Size& sz, GLuint& v, GLuint& sp, GLuint& ut){
+			window->gl(i, [](const size_t& ctxIdx, cv::Size& sz, GLuint& vao, GLuint& shader, GLuint& uniformTrans){
 				CV_UNUSED(ctxIdx);
-				init_scene(sz, v, sp, ut);
-			}, sz_, vao[i], shaderProgram[i], uniformTransform[i]);
+				init_scene(sz, vao, shader, uniformTrans);
+			}, sz_, vao_[i], shaderProgram_[i], uniformTransform_[i]);
 		}
 	}
 	void infer(cv::Ptr<V4D> window) override {
@@ -247,25 +246,22 @@ public:
 
 		//Render using multiple OpenGL contexts
 		for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
-			window->gl(i, [](const int32_t& ctxIdx, GLuint& v, GLuint& sp, GLuint& ut){
+			window->gl(i, [](const int32_t& ctxIdx, GLuint& vao, GLuint& shader, GLuint& uniformTrans){
 				double x = sin((double(ctxIdx) / NUMBER_OF_CUBES) * 2 * M_PI) / 1.5;
 				double y = cos((double(ctxIdx) / NUMBER_OF_CUBES) * 2 * M_PI) / 1.5;
 				double angle = sin((double(ctxIdx) / NUMBER_OF_CUBES) * 2 * M_PI);
-				render_scene(x, y, angle, v, sp, ut);
-			}, vao[i], shaderProgram[i], uniformTransform[i]);
+				render_scene(x, y, angle, vao, shader, uniformTrans);
+			}, vao_[i], shaderProgram_[i], uniformTransform_[i]);
 		}
 
 		//Aquire the frame buffer for use by OpenCV
-		window->fb([](cv::UMat& framebuffer, cv::UMat& f, Cache& cache) {
 #ifndef __EMSCRIPTEN__
+		window->fb([](cv::UMat& framebuffer, Cache& cache) {
 			glow_effect(framebuffer, framebuffer, GLOW_KERNEL_SIZE, cache);
+		}, cache_);
 #endif
-			framebuffer.copyTo(f);
-		}, frame_, cache_);
 
-		window->write([](cv::UMat& outputFrame, const cv::UMat& f){
-			f.copyTo(outputFrame);
-		}, frame_);
+		window->write();
 	}
 };
 

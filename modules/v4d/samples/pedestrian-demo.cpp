@@ -104,17 +104,12 @@ static std::vector<bool> non_maximal_suppression(std::vector<std::vector<double>
     return keep;
 }
 
-//post process and add layers together
-static void composite_layers(const cv::UMat background, const cv::UMat foreground, cv::UMat dst, int blurKernelSize) {
-    static thread_local cv::UMat blur;
-
-    cv::boxFilter(foreground, blur, -1, cv::Size(blurKernelSize, blurKernelSize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
-    cv::add(background, blur, dst);
-}
-
 using namespace cv::v4d;
 
 class PedestrianDemoPlan : public Plan {
+	struct Cache {
+		cv::UMat blur_;
+	} cache_;
     //BGRA
     cv::UMat background_;
     //RGB
@@ -138,6 +133,12 @@ class PedestrianDemoPlan : public Plan {
     bool redetect_ = true;
     //Descriptor used for pedestrian detection
     cv::HOGDescriptor hog_;
+
+    //post process and add layers together
+    static void composite_layers(const cv::UMat background, const cv::UMat foreground, cv::UMat dst, int blurKernelSize, Cache& cache) {
+        cv::boxFilter(foreground, cache.blur_, -1, cv::Size(blurKernelSize, blurKernelSize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
+        cv::add(background, cache.blur_, dst);
+    }
 public:
 	void setup(cv::Ptr<V4D> window) override {
 		window->parallel([](cv::TrackerKCF::Params& params, cv::Ptr<cv::Tracker>& tracker, cv::HOGDescriptor& hog){
@@ -237,9 +238,9 @@ public:
 			}, window->fbSize(), tracked_);
 
 			//Put it all together
-			window->fb([](cv::UMat& frameBuffer, cv::UMat& bg){
-				composite_layers(bg, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
-			}, background_);
+			window->fb([](cv::UMat& frameBuffer, cv::UMat& bg, Cache& cache){
+				composite_layers(bg, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, cache);
+			}, background_, cache_);
 
 			window->write();
 		}
