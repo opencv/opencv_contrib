@@ -234,11 +234,11 @@ float V4D::pixelRatioY() {
     return fbCtx()->pixelRatioY();
 }
 
-cv::Size V4D::fbSize() {
+const cv::Size& V4D::fbSize() {
     return fbCtx()->size();
 }
 
-cv::Size V4D::initialSize() {
+const cv::Size& V4D::initialSize() const {
     return initialSize_;
 }
 

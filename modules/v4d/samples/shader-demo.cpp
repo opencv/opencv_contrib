@@ -86,7 +86,6 @@ class ShaderDemoPlan : public Plan {
 	} cache_;
 
 	cv::Size sz_;
-public:
 #ifndef __EMSCRIPTEN__
 	static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize, Cache& cache) {
 		cv::bitwise_not(src, dst);
@@ -257,7 +256,7 @@ public:
 	    GL_CHECK(glBindVertexArray(handles.vao_));
 	    GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 	}
-
+public:
 	void gui(cv::Ptr<V4D> window) override {
 		window->imgui([this](cv::Ptr<V4D> window, ImGuiContext* ctx) {
 			using namespace ImGui;

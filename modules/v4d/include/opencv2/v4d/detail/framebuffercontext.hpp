@@ -84,7 +84,7 @@ class CV_EXPORTS FrameBufferContext : public V4DContext {
     cl_mem clImage_ = nullptr;
     CLExecContext_t context_;
 #endif
-    cv::Size framebufferSize_;
+    const cv::Size framebufferSize_;
     bool isShared_ = false;
     GLFWwindow* sharedWindow_;
     const FrameBufferContext* parent_;
@@ -215,7 +215,7 @@ public:
      * Get the framebuffer size.
      * @return The framebuffer size.
      */
-    cv::Size size();
+    const cv::Size& size() const;
     void copyTo(cv::UMat& dst);
     void copyFrom(const cv::UMat& src);
 
@@ -283,7 +283,7 @@ public:
 protected:
     cv::Ptr<V4D> getV4D();
     int getIndex();
-    void setup(const cv::Size& sz);
+    void setup();
     void teardown();
     void initWebGLCopy(const size_t& index);
     void doWebGLCopy(cv::Ptr<FrameBufferContext> other);

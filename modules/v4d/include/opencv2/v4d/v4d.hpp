@@ -113,7 +113,7 @@ class CV_EXPORTS V4D {
 	friend class detail::FrameBufferContext;
     friend class HTML5Capture;
     cv::Ptr<V4D> self_;
-    cv::Size initialSize_;
+    const cv::Size initialSize_;
     bool debug_;
     cv::Rect viewport_;
     bool stretching_;
@@ -332,7 +332,7 @@ public:
     }
 
     template <typename Tfn, typename ... Args>
-    typename std::enable_if<std::is_invocable_v<Tfn>, void>::type
+    typename std::enable_if<std::is_invocable_v<Tfn, Args...>, void>::type
     gl(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("gl", fn, -1);
@@ -724,16 +724,8 @@ public:
      * @return The pixel ratio of the display y-axis.
      */
     CV_EXPORTS float pixelRatioY();
-    /*!
-     * Set the window size.
-     * @param sz The new window size.
-     */
-    CV_EXPORTS cv::Size initialSize();
-    /*!
-     * Get the current size of the window.
-     * @return The window size.
-     */
-    CV_EXPORTS cv::Size fbSize();
+    CV_EXPORTS const cv::Size& initialSize() const;
+    CV_EXPORTS const cv::Size& fbSize();
     /*!
      * Set the window size
      * @param sz The future size of the window.

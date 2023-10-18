@@ -296,7 +296,7 @@ void FrameBufferContext::init() {
     context_ = CLExecContext_t::getCurrent();
 #endif
 
-    setup(framebufferSize_);
+    setup();
     glfwSetWindowUserPointer(getGLFWWindow(), getV4D().get());
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
@@ -409,8 +409,8 @@ int FrameBufferContext::getIndex() {
    return index_;
 }
 
-void FrameBufferContext::setup(const cv::Size& sz) {
-    framebufferSize_ = sz;
+void FrameBufferContext::setup() {
+	cv::Size sz = framebufferSize_;
 #ifndef __EMSCRIPTEN__
     CLExecScope_t clExecScope(getCLExecContext());
 #endif
@@ -590,7 +590,7 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
 #endif
 }
 
-cv::Size FrameBufferContext::size() {
+const cv::Size& FrameBufferContext::size() const {
     return framebufferSize_;
 }
 
