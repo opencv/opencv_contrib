@@ -9,8 +9,8 @@
 namespace cv {
 namespace v4d {
 namespace detail {
-GLContext::GLContext(cv::Ptr<FrameBufferContext> fbContext) :
-        mainFbContext_(fbContext), glFbContext_(new FrameBufferContext(*fbContext->getV4D(), "OpenGL", *fbContext)) {
+GLContext::GLContext(const int32_t& idx, cv::Ptr<FrameBufferContext> fbContext) :
+        idx_(idx), mainFbContext_(fbContext), glFbContext_(new FrameBufferContext(*fbContext->getV4D(), "OpenGL", *fbContext)) {
 #ifdef __EMSCRIPTEN__
     run_sync_on_main<19>([&,this](){
         mainFbContext_->initWebGLCopy(fbCtx()->getIndex());
@@ -52,6 +52,9 @@ void GLContext::execute(std::function<void()> fn) {
     });
 }
 
+const int32_t& GLContext::getIndex() const {
+	return idx_;
+}
 cv::Ptr<FrameBufferContext> GLContext::fbCtx() {
     return glFbContext_;
 }

@@ -82,22 +82,15 @@ namespace detail {
 
 template <typename T> using static_not = std::integral_constant<bool, !T::value>;
 
-//https://stackoverflow.com/questions/19961873/test-if-a-lambda-is-stateless#:~:text=As%20per%20the%20Standard%2C%20if,lambda%20is%20stateless%20or%20not.
-template <typename T, typename U>
-struct helper : helper<T, decltype(&U::operator())>
-{};
-
-template <typename T, typename C, typename R, typename... A>
-struct helper<T, R(C::*)(A...) const>
+template<typename T, typename ... Args>
+struct is_function
 {
-	static const bool value = std::is_convertible<T, std::function<R(A...)>>::value || std::is_convertible<T, R(*)(A...)>::value;
+    static const bool value = std::is_constructible<T,std::function<void(Args...)>>::value;
 };
 
-template<typename T>
-struct is_stateless
-{
-    static const bool value = helper<T,T>::value;
-};
+//https://stackoverflow.com/a/34873353/1884837
+template<class T>
+struct is_stateless_lambda : std::integral_constant<bool, sizeof(T) == sizeof(std::true_type)>{};
 
 template<typename T> std::string int_to_hex( T i )
 {
@@ -108,13 +101,10 @@ template<typename T> std::string int_to_hex( T i )
   return stream.str();
 }
 
-//template<typename Tfn> std::string func_hex(Tfn& fn) {
-//    return int_to_hex((size_t) &fn);
-//}
-
 template<typename Tlamba> std::string lambda_ptr_hex(Tlamba&& l) {
     return int_to_hex((size_t)Lambda::ptr(l));
 }
+
 }
 
 using namespace cv::v4d::detail;
@@ -342,8 +332,9 @@ public:
     }
 
     template <typename Tfn, typename ... Args>
-    void gl(Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+    typename std::enable_if<std::is_invocable_v<Tfn>, void>::type
+    gl(Tfn fn, Args&& ... args) {
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("gl", fn, -1);
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
             emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
@@ -355,21 +346,22 @@ public:
     }
 
     template <typename Tfn, typename ... Args>
-    void gl(const size_t& idx, Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+    void gl(int32_t idx, Tfn fn, Args&& ... args) {
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+
         const string id = make_id("gl", fn, idx);
         TimeTracker::getInstance()->execute(id, [this, fn, idx, id, &args...](){
             emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
             (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
             emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
-        	std::function functor(fn);
-            add_transaction(glCtx(idx), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
+        	std::function<void((const int32_t&,Args...))> functor(fn);
+            add_transaction<decltype(functor),const int32_t&>(fbCtx(),id, std::forward<decltype(functor)>(functor), glCtx(idx)->getIndex(), std::forward<Args>(args)...);
         });
     }
 
     template <typename Tfn>
     void branch(Tfn fn) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("branch", fn);
 
         TimeTracker::getInstance()->execute(id, [this, fn, id](){
@@ -381,7 +373,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void branch(Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("branch", fn);
 
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
@@ -393,7 +385,7 @@ public:
 
     template <typename Tfn>
     void endbranch(Tfn fn) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("endbranch", fn);
 
         TimeTracker::getInstance()->execute(id, [this, fn, id] {
@@ -405,7 +397,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void endbranch(Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("endbranch", fn);
 
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
@@ -417,7 +409,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void fb(Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("fb", fn);
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...]{
             using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
@@ -455,7 +447,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void capture(Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("capture", fn);
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...]{
             using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
@@ -488,7 +480,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void write(Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("write", fn);
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...]{
             using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
@@ -504,7 +496,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void nvg(Tfn fn, Args&&... args) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("nvg", fn);
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
             emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
@@ -517,7 +509,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void single(Tfn fn, Args&&... args) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("single", fn);
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
             (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -528,7 +520,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void parallel(Tfn fn, Args&&... args) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("parallel", fn);
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
         	(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -539,7 +531,7 @@ public:
 
     template<typename Tfn, typename ... Args>
     void imgui(Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
 		auto s = self();
 		imguiCtx()->build([s, fn, &args...](ImGuiContext* ctx) {
 			fn(s, ctx, args...);

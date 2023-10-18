@@ -24,7 +24,7 @@ constexpr long unsigned int HEIGHT = 960;
 #endif
 constexpr bool OFFSCREEN = false;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-const int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
+const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 #ifndef __EMSCRIPTEN__
 constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
@@ -205,7 +205,7 @@ public:
 
 #ifndef __EMSCRIPTEN__
 		window->fb([](cv::UMat &framebuffer) {
-			glow_effect(framebuffer, framebuffer, glow_kernel_size);
+			glow_effect(framebuffer, framebuffer, GLOW_KERNEL_SIZE);
 
 		});
 #endif

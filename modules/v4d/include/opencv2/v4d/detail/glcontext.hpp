@@ -20,6 +20,7 @@ namespace detail {
  * Used to setup an OpengLG context
  */
 class CV_EXPORTS GLContext : public V4DContext {
+	const int32_t idx_;
     cv::Ptr<FrameBufferContext> mainFbContext_;
     cv::Ptr<FrameBufferContext> glFbContext_;
 public:
@@ -27,7 +28,7 @@ public:
      * Creates a OpenGL Context
      * @param fbContext The framebuffer context
      */
-    GLContext(cv::Ptr<FrameBufferContext> fbContext);
+    GLContext(const int32_t& idx, cv::Ptr<FrameBufferContext> fbContext);
     virtual ~GLContext() {};
     /*!
      * Execute function object fn inside a gl context.
@@ -36,7 +37,7 @@ public:
      * and performs drawing using opengl
      */
     virtual void execute(std::function<void()> fn) override;
-
+    const int32_t& getIndex() const;
     cv::Ptr<FrameBufferContext> fbCtx();
 };
 }

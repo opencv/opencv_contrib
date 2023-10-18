@@ -217,10 +217,8 @@ struct Lambda {
 
     template<typename T>
     static const void* fn(const void* new_fn = nullptr) {
-        thread_local const void* fn;
-        if (new_fn != nullptr)
-            fn = new_fn;
-        return fn;
+        CV_Assert(new_fn);
+    	return new_fn;
     }
 };
 

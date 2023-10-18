@@ -46,6 +46,9 @@ V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, Allo
     parallelContext_ = new detail::ParallelContext();
     if(flags & IMGUI)
         imguiContext_ = new detail::ImGuiContextImpl(mainFbContext_);
+
+    //preallocate the primary gl context
+    glCtx(-1);
 }
 
 V4D::~V4D() {
@@ -113,7 +116,7 @@ cv::Ptr<GLContext> V4D::glCtx(int32_t idx) {
     if(it != glContexts_.end())
         return (*it).second;
     else {
-        cv::Ptr<GLContext> ctx = new GLContext(mainFbContext_);
+        cv::Ptr<GLContext> ctx = new GLContext(idx, mainFbContext_);
         glContexts_.insert({idx, ctx});
         return ctx;
     }
