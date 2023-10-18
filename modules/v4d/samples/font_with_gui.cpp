@@ -15,6 +15,7 @@ class FontWithGuiPlan: public Plan {
 public:
 	void gui(Ptr<V4D> window) override {
 		window->imgui([](Ptr<V4D> win, ImGuiContext* ctx, Params& params) {
+			CV_UNUSED(win);
 			using namespace ImGui;
 			SetCurrentContext(ctx);
 			Begin("Settings");

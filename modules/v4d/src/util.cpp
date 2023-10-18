@@ -39,6 +39,24 @@ namespace cv {
 namespace v4d {
 namespace detail {
 
+#ifdef __GNUG__
+std::string demangle(const char* name) {
+    int status = -4; // some arbitrary value to eliminate the compiler warning
+    std::unique_ptr<char, void(*)(void*)> res {
+        abi::__cxa_demangle(name, NULL, NULL, &status),
+        std::free
+    };
+
+    return (status==0) ? res.get() : name ;
+}
+
+#else
+// does nothing if not g++
+std::string demangle(const char* name) {
+    return name;
+}
+#endif
+
 size_t cnz(const cv::UMat& m) {
     cv::UMat grey;
     if(m.channels() == 1) {
@@ -311,6 +329,7 @@ cv::Ptr<Sink> makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, cons
     cerr << "Using a VA sink" << endl;
     if(writer->isOpened()) {
 		return new Sink([=](const uint64_t& seq, const cv::UMat& frame) {
+			CV_UNUSED(seq);
 	        CLExecScope_t scope(window->sourceCtx()->getCLExecContext());
 	        //FIXME cache it
             cv::UMat converted;
@@ -347,6 +366,7 @@ static cv::Ptr<Sink> makeAnyHWSink(const string& outputFilename, const int fourc
 
     if(writer->isOpened()) {
         return new Sink([=](const uint64_t& seq, const cv::UMat& frame) {
+        	CV_UNUSED(seq);
             cv::UMat converted;
             cv::resize(frame, converted, frameSize);
             cvtColor(converted, converted, cv::COLOR_BGRA2RGB);
@@ -399,6 +419,7 @@ cv::Ptr<Sink> makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, 
 
     if(writer->isOpened()) {
 		return new Sink([=](const uint64_t& seq, const cv::UMat& frame) {
+			CV_UNUSED(seq);
             cv::UMat converted;
             cv::resize(frame, converted, frameSize);
             cvtColor(converted, converted, cv::COLOR_BGRA2RGB);

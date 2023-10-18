@@ -258,29 +258,30 @@ class ShaderDemoPlan : public Plan {
 	}
 public:
 	void gui(cv::Ptr<V4D> window) override {
-		window->imgui([this](cv::Ptr<V4D> window, ImGuiContext* ctx) {
+		window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params) {
+			CV_UNUSED(win);
 			using namespace ImGui;
 			SetCurrentContext(ctx);
 			Begin("Fractal");
 			Text("Navigation");
-			SliderInt("Iterations", &params_.maxIterations_, 3, 50000);
-			if(SliderFloat("X", &params_.centerX_, -1.0f, 1.0f))
-				params_.manualNavigation_ = true;
+			SliderInt("Iterations", &params.maxIterations_, 3, 50000);
+			if(SliderFloat("X", &params.centerX_, -1.0f, 1.0f))
+				params.manualNavigation_ = true;
 
-			if(SliderFloat("Y", &params_.centerY_, -1.0f, 1.0f))
-				params_.manualNavigation_ = true;
+			if(SliderFloat("Y", &params.centerY_, -1.0f, 1.0f))
+				params.manualNavigation_ = true;
 
-			if(SliderFloat("Zoom", &params_.zoomFactor_, 1.0f, 100.0f))
-				params_.manualNavigation_ = true;
+			if(SliderFloat("Zoom", &params.zoomFactor_, 1.0f, 100.0f))
+				params.manualNavigation_ = true;
 	#ifndef __EMSCRIPTEN__
 			Text("Glow");
-			SliderInt("Kernel Size", &params_.glowKernelSize_, 1, 127);
+			SliderInt("Kernel Size", &params.glowKernelSize_, 1, 127);
 	#endif
 			Text("Color");
-			ColorPicker4("Color", params_.baseColorVal_);
-			SliderInt("Contrast boost", &params_.contrastBoost_, 1, 255);
+			ColorPicker4("Color", params.baseColorVal_);
+			SliderInt("Contrast boost", &params.contrastBoost_, 1, 255);
 			End();
-		});
+		}, params_);
 	}
 
 	void setup(cv::Ptr<V4D> window) override {

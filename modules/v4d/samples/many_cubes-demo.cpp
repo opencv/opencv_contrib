@@ -229,7 +229,7 @@ class ManyCubesDemoPlan : public Plan {
 	}
 #endif
 public:
-	void setup(cv::Ptr<V4D> window) {
+	void setup(cv::Ptr<V4D> window) override {
 		sz_ = window->fbSize();
 		for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
 			window->gl(i, [](const size_t& ctxIdx, cv::Size& sz, GLuint& v, GLuint& sp, GLuint& ut){
@@ -238,7 +238,7 @@ public:
 			}, sz_, vao[i], shaderProgram[i], uniformTransform[i]);
 		}
 	}
-	void infer(cv::Ptr<V4D> window) {
+	void infer(cv::Ptr<V4D> window) override {
 		window->gl([](){
 			//Clear the background
 			glClearColor(0.2, 0.24, 0.4, 1);
@@ -248,9 +248,10 @@ public:
 		//Render using multiple OpenGL contexts
 		for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
 			window->gl(i, [](const int32_t& ctxIdx, GLuint& v, GLuint& sp, GLuint& ut){
-				double pos = (((double(ctxIdx) / NUMBER_OF_CUBES) * 2.0) - 1) + (1.0 / NUMBER_OF_CUBES);
+				double x = sin((double(ctxIdx) / NUMBER_OF_CUBES) * 2 * M_PI) / 1.5;
+				double y = cos((double(ctxIdx) / NUMBER_OF_CUBES) * 2 * M_PI) / 1.5;
 				double angle = sin((double(ctxIdx) / NUMBER_OF_CUBES) * 2 * M_PI);
-				render_scene(pos, pos, angle, v, sp, ut);
+				render_scene(x, y, angle, v, sp, ut);
 			}, vao[i], shaderProgram[i], uniformTransform[i]);
 		}
 
@@ -268,7 +269,8 @@ public:
 	}
 };
 
-int main() {
+int main(int argc, char** argv) {
+	CV_UNUSED(argc);
     cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Many Cubes Demo", IMGUI, OFFSCREEN);
 
 #ifndef __EMSCRIPTEN__
@@ -276,7 +278,7 @@ int main() {
     auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #endif
-    window->run<ManyCubesDemoPlan>(0);
+    window->run<ManyCubesDemoPlan>(atoi(argv[1]));
 
     return 0;
 }

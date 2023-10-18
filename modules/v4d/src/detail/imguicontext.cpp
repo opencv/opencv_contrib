@@ -73,7 +73,6 @@ void ImGuiContextImpl::render(bool showFPS) {
             ImGui::SetNextWindowPos(pos, ImGuiCond_Once);
             ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.5f));
             ImGui::Begin("Display", open_ptr, window_flags);
-            ImGuiIO& io = ImGui::GetIO();
             ImGui::Text("%.3f ms/frame (%.1f FPS)", (1000.0f / Global::fps()) , Global::fps());
             ImGui::End();
             ImGui::PopStyleColor(1);

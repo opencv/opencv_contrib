@@ -8,7 +8,7 @@ class DisplayImageFB : public Plan {
 	UMat image_;
 	UMat converted_;
 public:
-	void setup(cv::Ptr<V4D> win) {
+	void setup(cv::Ptr<V4D> win) override {
 		win->parallel([](cv::UMat& image, cv::UMat& converted, const cv::Size& sz){
 			//Loads an image as a UMat (just in case we have hardware acceleration available)
 #ifdef __EMSCRIPTEN__

@@ -35,8 +35,6 @@
 #include <memory>
 #include <vector>
 #include <type_traits>
-#define UNW_LOCAL_ONLY
-#include <libunwind.h>
 #include <stdio.h>
 
 #include <opencv2/core.hpp>
@@ -70,10 +68,10 @@ enum AllocateFlags {
 class Plan {
 public:
 	virtual ~Plan() {};
-	virtual void gui(cv::Ptr<V4D> window) {};
-	virtual void setup(cv::Ptr<V4D> window) {};
+	virtual void gui(cv::Ptr<V4D> window) { CV_UNUSED(window); };
+	virtual void setup(cv::Ptr<V4D> window) { CV_UNUSED(window); };
 	virtual void infer(cv::Ptr<V4D> window) = 0;
-	virtual void teardown(cv::Ptr<V4D> window) {};
+	virtual void teardown(cv::Ptr<V4D> window) { CV_UNUSED(window); };
 };
 /*!
  * Private namespace
@@ -103,6 +101,49 @@ template<typename T> std::string int_to_hex( T i )
 
 template<typename Tlamba> std::string lambda_ptr_hex(Tlamba&& l) {
     return int_to_hex((size_t)Lambda::ptr(l));
+}
+
+static std::size_t index(const std::thread::id id)
+{
+    static std::size_t nextindex = 0;
+    static std::mutex my_mutex;
+    static std::unordered_map<std::thread::id, std::size_t> ids;
+    std::lock_guard<std::mutex> lock(my_mutex);
+    auto iter = ids.find(id);
+    if(iter == ids.end())
+        return ids[id] = nextindex++;
+    return iter->second;
+}
+
+template<typename Tfn, typename Textra>
+const string make_id(const string& name, Tfn&& fn, const Textra& extra) {
+	stringstream ss;
+	stringstream ssExtra;
+	ssExtra << extra;
+	if(ssExtra.str().empty()) {
+		ss << name << "(" << index(std::this_thread::get_id()) << "-" << detail::lambda_ptr_hex(std::forward<Tfn>(fn)) << ")";
+	}
+	else {
+		ss << name << "(" << index(std::this_thread::get_id()) << "-" << detail::lambda_ptr_hex(std::forward<Tfn>(fn)) << ")/" << ssExtra.str();
+	}
+
+	return ss.str();
+}
+
+template<typename Tfn>
+const string make_id(const string& name, Tfn&& fn, const string& extra = "") {
+	return make_id<Tfn, std::string>(name, fn, extra);
+}
+
+
+template<typename Tfn, typename Textra>
+void print_id(const string& name, Tfn&& fn, const Textra& extra) {
+		cerr << make_id<Tfn, Textra>(name, fn, extra) << endl;
+}
+
+template<typename Tfn>
+void print_id(const string& name, Tfn&& fn, const string& extra = "") {
+		cerr << make_id<Tfn, std::string>(name, fn, extra) << endl;
 }
 
 }
@@ -271,78 +312,16 @@ public:
     	}
     }
 
-//    template<typename Tfn, typename Tfb = cv::UMat&, typename ...Args>
-//    void add_transaction(const string& context, Tfn&& fn, cv::UMat&& fb, Args&& ...args) {
-//    	auto it = transactions_.find(context);
-//    	if(it == transactions_.end()) {
-//    		transactions_.insert({context, make_transaction<Tfn&&, Tfb&&>(std::forward<Tfn>(fn), std::forward<Tfb>(fb), std::forward<Args>(args)...)});
-//    	}
-//    }
-//
-//    template<typename Tfn, typename Tfb = const cv::UMat&&, typename ...Args>
-//    void add_transaction(const string& context, Tfn&& fn, const cv::UMat&& fb, Args&& ...args) {
-//    	auto it = transactions_.find(context);
-//    	if(it == transactions_.end()) {
-//    		transactions_.insert({context, make_transaction<Tfn&&, Tfb&&>(std::forward<Tfn>(fn), std::forward<Tfb>(fb), std::forward<Args>(args)...)});
-//    	}
-//    }
-
-    std::size_t index(const std::thread::id id)
-    {
-        static std::size_t nextindex = 0;
-        static std::mutex my_mutex;
-        static std::unordered_map<std::thread::id, std::size_t> ids;
-        std::lock_guard<std::mutex> lock(my_mutex);
-        auto iter = ids.find(id);
-        if(iter == ids.end())
-            return ids[id] = nextindex++;
-        return iter->second;
-    }
-
-
-    template<typename Tfn, typename Textra>
-    const string make_id(const string& name, Tfn&& fn, const Textra& extra) {
-    	stringstream ss;
-    	stringstream ssExtra;
-    	ssExtra << extra;
-    	if(ssExtra.str().empty()) {
-    		ss << name << "(" << index(std::this_thread::get_id()) << "-" << detail::lambda_ptr_hex(std::forward<Tfn>(fn)) << ")";
-    	}
-    	else {
-    		ss << name << "(" << index(std::this_thread::get_id()) << "-" << detail::lambda_ptr_hex(std::forward<Tfn>(fn)) << ")/" << ssExtra.str();
-    	}
-
-    	return ss.str();
-    }
-
-    template<typename Tfn>
-    const string make_id(const string& name, Tfn&& fn, const string& extra = "") {
-    	return make_id<Tfn, std::string>(name, fn, extra);
-    }
-
-
-    template<typename Tfn, typename Textra>
-    void print_id(const string& name, Tfn&& fn, const Textra& extra) {
-   		cerr << make_id<Tfn, Textra>(name, fn, extra) << endl;
-    }
-
-    template<typename Tfn>
-    void print_id(const string& name, Tfn&& fn, const string& extra = "") {
-   		cerr << make_id<Tfn, std::string>(name, fn, extra) << endl;
-    }
-
     template <typename Tfn, typename ... Args>
     typename std::enable_if<std::is_invocable_v<Tfn, Args...>, void>::type
     gl(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("gl", fn, -1);
-        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
-            emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
-            (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-            emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
-        	std::function functor(fn);
-            add_transaction(glCtx(-1), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
-        });
+		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
+		std::function functor(fn);
+		add_transaction(glCtx(-1), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
     }
 
     template <typename Tfn, typename ... Args>
@@ -350,13 +329,11 @@ public:
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
 
         const string id = make_id("gl", fn, idx);
-        TimeTracker::getInstance()->execute(id, [this, fn, idx, id, &args...](){
-            emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
-            (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-            emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
-        	std::function<void((const int32_t&,Args...))> functor(fn);
-            add_transaction<decltype(functor),const int32_t&>(fbCtx(),id, std::forward<decltype(functor)>(functor), glCtx(idx)->getIndex(), std::forward<Args>(args)...);
-        });
+		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
+		std::function<void((const int32_t&,Args...))> functor(fn);
+		add_transaction<decltype(functor),const int32_t&>(fbCtx(),id, std::forward<decltype(functor)>(functor), glCtx(idx)->getIndex(), std::forward<Args>(args)...);
     }
 
     template <typename Tfn>
@@ -364,11 +341,9 @@ public:
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("branch", fn);
 
-        TimeTracker::getInstance()->execute(id, [this, fn, id](){
-            std::function functor = fn;
-            emit_access<std::true_type, decltype(fn)>(id, true, &fn);
-            add_transaction(singleCtx(), id, functor);
-        });
+		std::function functor = fn;
+		emit_access<std::true_type, decltype(fn)>(id, true, &fn);
+		add_transaction(singleCtx(), id, functor);
     }
 
     template <typename Tfn, typename ... Args>
@@ -376,11 +351,9 @@ public:
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("branch", fn);
 
-        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
-            (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-            std::function functor = fn;
-            add_transaction(singleCtx(), id, functor, std::forward<Args>(args)...);
-        });
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		std::function functor = fn;
+		add_transaction(singleCtx(), id, functor, std::forward<Args>(args)...);
     }
 
     template <typename Tfn>
@@ -388,11 +361,9 @@ public:
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("endbranch", fn);
 
-        TimeTracker::getInstance()->execute(id, [this, fn, id] {
-            std::function functor = fn;
-            emit_access<std::true_type, decltype(fn)>(id, true, &fn);
-            add_transaction(singleCtx(), id, functor);
-        });
+		std::function functor = fn;
+		emit_access<std::true_type, decltype(fn)>(id, true, &fn);
+		add_transaction(singleCtx(), id, functor);
     }
 
     template <typename Tfn, typename ... Args>
@@ -400,29 +371,24 @@ public:
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("endbranch", fn);
 
-        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
-            (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-            std::function functor = fn;
-            add_transaction(singleCtx(), id, functor, std::forward<Args>(args)...);
-        });
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		std::function functor = fn;
+		add_transaction(singleCtx(), id, functor, std::forward<Args>(args)...);
     }
 
     template <typename Tfn, typename ... Args>
     void fb(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("fb", fn);
-        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...]{
-            using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
-            using Tfbbase = typename std::remove_cv<Tfb>::type;
-            using Tfbconst = std::add_const_t<Tfbbase>;
+		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
+		using Tfbbase = typename std::remove_cv<Tfb>::type;
 
-            static_assert((std::is_same<Tfb, cv::UMat&>::value || std::is_same<Tfb, const cv::UMat&>::value) || !"The first argument must be eiter of type 'cv::UMat&' or 'const cv::UMat&'");
-            emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, true, &fbCtx()->fb());
-            (emit_access<std::true_type, std::remove_reference_t<Args>, Tfb, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-            emit_access<static_not<typename std::is_const<Tfbbase>::type>, cv::UMat, Tfb, Args...>(id, false, &fbCtx()->fb());
-        	std::function<void((Tfb,Args...))> functor(fn);
-            add_transaction<decltype(functor),Tfb>(fbCtx(),id, std::forward<decltype(functor)>(functor), fbCtx()->fb(), std::forward<Args>(args)...);
-        });
+		static_assert((std::is_same<Tfb, cv::UMat&>::value || std::is_same<Tfb, const cv::UMat&>::value) || !"The first argument must be eiter of type 'cv::UMat&' or 'const cv::UMat&'");
+		emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, true, &fbCtx()->fb());
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Tfb, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		emit_access<static_not<typename std::is_const<Tfbbase>::type>, cv::UMat, Tfb, Args...>(id, false, &fbCtx()->fb());
+		std::function<void((Tfb,Args...))> functor(fn);
+		add_transaction<decltype(functor),Tfb>(fbCtx(),id, std::forward<decltype(functor)>(functor), fbCtx()->fb(), std::forward<Args>(args)...);
     }
 
     void capture(cv::UMat& frame) {
@@ -449,15 +415,13 @@ public:
     void capture(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("capture", fn);
-        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...]{
-            using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
+		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 
-            static_assert((std::is_same<Tfb,const cv::UMat&>::value) || !"The first argument must be of type 'const cv::UMat&'");
-            emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, true, &sourceCtx()->sourceBuffer());
-            (emit_access<std::true_type, std::remove_reference_t<Args>, Tfb, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-        	std::function<void((Tfb,Args...))> functor(fn);
-            add_transaction<decltype(functor),Tfb>(std::dynamic_pointer_cast<V4DContext>(sourceCtx()),id, std::forward<decltype(functor)>(functor), sourceCtx()->sourceBuffer(), std::forward<Args>(args)...);
-        });
+		static_assert((std::is_same<Tfb,const cv::UMat&>::value) || !"The first argument must be of type 'const cv::UMat&'");
+		emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, true, &sourceCtx()->sourceBuffer());
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Tfb, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		std::function<void((Tfb,Args...))> functor(fn);
+		add_transaction<decltype(functor),Tfb>(std::dynamic_pointer_cast<V4DContext>(sourceCtx()),id, std::forward<decltype(functor)>(functor), sourceCtx()->sourceBuffer(), std::forward<Args>(args)...);
     }
 
     void write() {
@@ -482,51 +446,43 @@ public:
     void write(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("write", fn);
-        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...]{
-            using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
+		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 
-            static_assert((std::is_same<Tfb,cv::UMat&>::value) || !"The first argument must be of type 'cv::UMat&'");
-            emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, true, &sinkCtx()->sinkBuffer());
-            (emit_access<std::true_type, std::remove_reference_t<Args>, Tfb, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-            emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, false, &sinkCtx()->sinkBuffer());
-        	std::function<void((Tfb,Args...))> functor(fn);
-            add_transaction<decltype(functor),Tfb>(std::dynamic_pointer_cast<V4DContext>(sinkCtx()),id, std::forward<decltype(functor)>(functor), sinkCtx()->sinkBuffer(), std::forward<Args>(args)...);
-        });
+		static_assert((std::is_same<Tfb,cv::UMat&>::value) || !"The first argument must be of type 'cv::UMat&'");
+		emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, true, &sinkCtx()->sinkBuffer());
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Tfb, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, false, &sinkCtx()->sinkBuffer());
+		std::function<void((Tfb,Args...))> functor(fn);
+		add_transaction<decltype(functor),Tfb>(std::dynamic_pointer_cast<V4DContext>(sinkCtx()),id, std::forward<decltype(functor)>(functor), sinkCtx()->sinkBuffer(), std::forward<Args>(args)...);
     }
 
     template <typename Tfn, typename ... Args>
     void nvg(Tfn fn, Args&&... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("nvg", fn);
-        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
-            emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
-            (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-            emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
-        	std::function functor(fn);
-            add_transaction<decltype(functor)>(nvgCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
-        });
+		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
+		std::function functor(fn);
+		add_transaction<decltype(functor)>(nvgCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
     }
 
     template <typename Tfn, typename ... Args>
     void single(Tfn fn, Args&&... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("single", fn);
-        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
-            (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-        	std::function functor(fn);
-            add_transaction<decltype(functor)>(singleCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
-        });
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		std::function functor(fn);
+		add_transaction<decltype(functor)>(singleCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
     }
 
     template <typename Tfn, typename ... Args>
     void parallel(Tfn fn, Args&&... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("parallel", fn);
-        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
-        	(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-        	std::function functor(fn);
-            add_transaction<decltype(functor)>(parallelCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
-        });
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		std::function functor(fn);
+		add_transaction<decltype(functor)>(parallelCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
     }
 
     template<typename Tfn, typename ... Args>

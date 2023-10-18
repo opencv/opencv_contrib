@@ -220,25 +220,25 @@ public:
 	}
 
 	void gui(cv::Ptr<V4D> window) override {
-		window->imgui([](cv::Ptr<V4D> window, ImGuiContext* ctx, Params& params){
+		window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params){
 			using namespace ImGui;
 			SetCurrentContext(ctx);
 			Begin("Effect");
 			Text("Display");
 			Checkbox("Side by side", &params.sideBySide_);
 			if(Checkbox("Stetch", &params.stretch_)) {
-				window->setStretching(true);
+				win->setStretching(true);
 			} else
-				window->setStretching(false);
+				win->setStretching(false);
 
 #ifndef __EMSCRIPTEN__
 			if(Button("Fullscreen")) {
-				window->setFullscreen(!window->isFullscreen());
+				win->setFullscreen(!win->isFullscreen());
 			};
 #endif
 
 			if(Button("Offscreen")) {
-				window->setVisible(!window->isVisible());
+				win->setVisible(!win->isVisible());
 			};
 
 			Text("Face Skin");

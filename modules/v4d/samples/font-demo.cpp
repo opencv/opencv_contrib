@@ -49,11 +49,12 @@ class FontDemoPlan : public Plan {
 		float fontSize_ = 40.0f;
 		cv::Scalar_<float> textColor_ = INITIAL_COLOR / 255.0;
 		float warpRatio_ = 1.0f/3.0f;
+		bool updateStars_ = true;
+		bool updatePerspective_ = true;
 	} params_;
 
+	//the text to display
 	vector<string> lines_;
-	bool updateStars_ = true;
-	bool updatePerspective_ = true;
 
     //BGRA
     cv::UMat stars_, warped_, frame_;
@@ -72,32 +73,34 @@ class FontDemoPlan : public Plan {
     int32_t translateY_;
 public:
     void gui(cv::Ptr<V4D> window) override {
-        window->imgui([this](cv::Ptr<V4D> window, ImGuiContext* ctx){
-            using namespace ImGui;
+        window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params){
+        	CV_UNUSED(win);
+        	using namespace ImGui;
             SetCurrentContext(ctx);
             Begin("Effect");
             Text("Text Crawl");
-            SliderFloat("Font Size", &params_.fontSize_, 1.0f, 100.0f);
-            if(SliderFloat("Warp Ratio", &params_.warpRatio_, 0.1f, 1.0f))
-                updatePerspective_ = true;
-            ColorPicker4("Text Color", params_.textColor_.val);
+            SliderFloat("Font Size", &params.fontSize_, 1.0f, 100.0f);
+            if(SliderFloat("Warp Ratio", &params.warpRatio_, 0.1f, 1.0f))
+                params.updatePerspective_ = true;
+            ColorPicker4("Text Color", params.textColor_.val);
             Text("Stars");
 
-            if(SliderFloat("Min Star Size", &params_.minStarSize_, 0.5f, 1.0f))
-                updateStars_ = true;
-            if(SliderFloat("Max Star Size", &params_.maxStarSize_, 1.0f, 10.0f))
-                updateStars_ = true;
-            if(SliderInt("Min Star Count", &params_.minStarCount_, 1, 1000))
-                updateStars_ = true;
-            if(SliderInt("Max Star Count", &params_.maxStarCount_, 1000, 5000))
-                updateStars_ = true;
-            if(SliderFloat("Min Star Alpha", &params_.starAlpha_, 0.2f, 1.0f))
-                updateStars_ = true;
+            if(SliderFloat("Min Star Size", &params.minStarSize_, 0.5f, 1.0f))
+                params.updateStars_ = true;
+            if(SliderFloat("Max Star Size", &params.maxStarSize_, 1.0f, 10.0f))
+            	params.updateStars_ = true;
+            if(SliderInt("Min Star Count", &params.minStarCount_, 1, 1000))
+            	params.updateStars_ = true;
+            if(SliderInt("Max Star Count", &params.maxStarCount_, 1000, 5000))
+            	params.updateStars_ = true;
+            if(SliderFloat("Min Star Alpha", &params.starAlpha_, 0.2f, 1.0f))
+            	params.updateStars_ = true;
             End();
-        });
+        }, params_);
     }
 
     void setup(cv::Ptr<V4D> window) override {
+    	CV_UNUSED(window);
         //The text to display
         string txt = cv::getBuildInformation();
         //Save the text to a vector
@@ -114,7 +117,7 @@ public:
     	auto always = []() { return true; };
     	auto isTrue = [](const bool& b) { return b; };
 
-		window->branch(isTrue, updateStars_);
+		window->branch(isTrue, params_.updateStars_);
 		{
 			window->nvg([](const cv::Size& sz, cv::RNG& rng, const Params& params) {
 				using namespace cv::v4d::nvg;
@@ -136,9 +139,9 @@ public:
 				frameBuffer.copyTo(f);
 			}, stars_);
 		}
-		window->endbranch(isTrue, updateStars_);
+		window->endbranch(isTrue, params_.updateStars_);
 
-		window->branch(isTrue, updatePerspective_);
+		window->branch(isTrue, params_.updatePerspective_);
 		{
 			window->parallel([](cv::Mat& tm, const Params& params){
 				//Derive the transformation matrix tm for the pseudo 3D effect from quad1 and quad2.
@@ -150,7 +153,7 @@ public:
 				tm = cv::getPerspectiveTransform(quad1, quad2);
 			}, tm_, params_);
 		}
-		window->endbranch(isTrue, updatePerspective_);
+		window->endbranch(isTrue, params_.updatePerspective_);
 
 		window->branch(always);
 		{
@@ -175,15 +178,19 @@ public:
 				}
 			}, window->fbSize(), translateY_, cnt_, y_, textHeight_, lines_, params_);
 
-			window->fb([](cv::UMat& framebuffer, cv::UMat& w, cv::UMat& s, cv::Mat& t, cv::UMat& f) {
+			window->fb([](cv::UMat& framebuffer, cv::UMat& w, cv::UMat& s, cv::Mat& t) {
 				//Pseudo 3D text effect.
 				cv::warpPerspective(framebuffer, w, t, framebuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
 				//Combine layers
 				cv::add(s, w, framebuffer);
-				framebuffer.copyTo(f);
-			}, warped_, stars_, tm_, frame_);
+			}, warped_, stars_, tm_);
 
-			window->parallel([](const int32_t& translateY, const int32_t& textHeight, uint32_t& cnt) {
+			window->write();
+
+			window->parallel([](const int32_t& translateY, const int32_t& textHeight, uint32_t& cnt, Params& params) {
+				params.updatePerspective_ = false;
+				params.updateStars_ = false;
+
 				if(-translateY > textHeight) {
 					//reset the scroll once the text is out of the picture
 					cnt = 0;
@@ -192,13 +199,7 @@ public:
 				//Wrap the cnt around if it becomes to big.
 				if(cnt > std::numeric_limits<uint32_t>().max() / 2.0)
 					cnt = 0;
-			}, translateY_, textHeight_, cnt_);
-
-			window->write([](cv::UMat& outputFrame, const cv::UMat& f, bool& updatePerspective, bool& updateStars){
-				f.copyTo(outputFrame);
-				updatePerspective = false;
-				updateStars = false;
-			}, frame_, updatePerspective_, updateStars_);
+			}, translateY_, textHeight_, cnt_, params_);
 		}
 		window->endbranch(always);
     }
