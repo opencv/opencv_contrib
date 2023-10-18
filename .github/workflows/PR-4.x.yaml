@@ -28,4 +28,4 @@ jobs:
     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-macOS-x86_64.yaml@main
 
   Linux-RISC-V-Clang:
-    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-RISCV.yaml
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-RISCV.yaml@main
