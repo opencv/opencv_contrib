@@ -32,6 +32,7 @@
 #include <Eigen/LU>
 #include <Eigen/QR>
 #include <Eigen/SVD>
+#include <cassert>
 
 #if !defined(__MINGW32__)
 #  if defined(_WIN32) || defined(__APPLE__) || \
