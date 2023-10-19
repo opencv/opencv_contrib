@@ -237,6 +237,7 @@ public:
 			}, sz_, vao_[i], shaderProgram_[i], uniformTransform_[i]);
 		}
 	}
+
 	void infer(cv::Ptr<V4D> window) override {
 		window->gl([](){
 			//Clear the background
@@ -268,7 +269,7 @@ public:
 int main() {
     cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Many Cubes Demo", IMGUI, OFFSCREEN);
 
-#ifndef __EMSCRIPTEN__
+#ifndef __EMSCRIPTEN_
     //Creates a writer sink (which might be hardware accelerated)
     auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);

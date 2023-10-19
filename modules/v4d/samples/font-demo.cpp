@@ -71,9 +71,6 @@ class FontDemoPlan : public Plan {
     int32_t y_ = 0;
 
     int32_t translateY_;
-
-	constexpr static auto always_ = []() { return true; };
-	constexpr static auto isTrue_ = [](const bool& b) { return b; };
 public:
     void gui(cv::Ptr<V4D> window) override {
         window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params){

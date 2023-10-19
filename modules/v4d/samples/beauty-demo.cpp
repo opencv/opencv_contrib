@@ -169,10 +169,6 @@ class BeautyDemoPlan : public Plan {
 	bool faceFound_ = false;
 	FaceFeatures features_;
 
-	constexpr static auto always_ = [](){ return true; };
-	constexpr static auto isTrue_ = [](bool& ff){ return ff; };
-	constexpr static auto isFalse_ = [](bool& ff){ return !ff; };
-
 	//based on the detected FaceFeatures it guesses a decent face oval and draws a mask for it.
 	static void draw_face_oval_mask(const FaceFeatures &ff) {
 	    using namespace cv::v4d::nvg;

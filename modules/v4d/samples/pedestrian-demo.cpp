@@ -134,7 +134,6 @@ class PedestrianDemoPlan : public Plan {
     //Descriptor used for pedestrian detection
     cv::HOGDescriptor hog_;
 
-	constexpr static auto always_ = [](){ return true; };
 	constexpr static auto doRedect_ = [](const bool& trackerInit, const bool& redetect){ return !trackerInit || redetect; };
 	constexpr static auto dontRedect_ = [](const bool& trackerInit, const bool& redetect){ return trackerInit && !redetect; };
 

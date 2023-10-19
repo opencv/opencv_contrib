@@ -67,6 +67,12 @@ enum AllocateFlags {
 
 class Plan {
 public:
+	constexpr static auto always_ = []() { return true; };
+	constexpr static auto isTrue_ = [](const bool& b) { return b; };
+	constexpr static auto isFalse_ = [](const bool& b) { return !b; };
+	constexpr static auto and_ = [](const bool& a, const bool& b) { return a && b; };
+	constexpr static auto or_ = [](const bool& a, const bool& b) { return a || b; };
+
 	virtual ~Plan() {};
 	virtual void gui(cv::Ptr<V4D> window) { CV_UNUSED(window); };
 	virtual void setup(cv::Ptr<V4D> window) { CV_UNUSED(window); };
