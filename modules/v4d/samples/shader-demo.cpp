@@ -84,8 +84,6 @@ class ShaderDemoPlan : public Plan {
 		cv::UMat blur;
 		cv::UMat dst16;
 	} cache_;
-
-	cv::Size sz_;
 #ifndef __EMSCRIPTEN__
 	static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize, Cache& cache) {
 		cv::bitwise_not(src, dst);
@@ -182,7 +180,7 @@ class ShaderDemoPlan : public Plan {
 	        return iterations;
 	    }
 	     
-	    void determine_color()
+	    void mandelbrot()
 	    {
 	        int iter = get_iterations();
 	        if (iter < max_iterations) {   
@@ -197,7 +195,7 @@ class ShaderDemoPlan : public Plan {
 
 	    void main()
 	    {
-	        determine_color();
+	        mandelbrot();
 	    })";
 
 	    return cv::v4d::initShader(vert.c_str(), frag.c_str(), "fragColor");
@@ -285,10 +283,9 @@ public:
 	}
 
 	void setup(cv::Ptr<V4D> window) override {
-		sz_ = window->fbSize();
 		window->gl([](const cv::Size &sz, Handles& handles) {
 			init_scene(sz, handles);
-		}, sz_, handles_);
+		}, window->fbSize(), handles_);
 	}
 
 	void infer(cv::Ptr<V4D> window) override {
@@ -296,13 +293,13 @@ public:
 
 		window->gl([](const cv::Size &sz, Params& params, Handles& handles) {
 			render_scene(sz, params, handles);
-		}, sz_, params_, handles_);
+		}, window->fbSize(), params_, handles_);
 
-	#ifndef __EMSCRIPTEN__
+#ifndef __EMSCRIPTEN__
 		window->fb([](cv::UMat& framebuffer, const Params& params, Cache& cache) {
 			glow_effect(framebuffer, framebuffer, params.glowKernelSize_, cache);
 		}, params_, cache_);
-	#endif
+#endif
 
 		window->write();
 	}

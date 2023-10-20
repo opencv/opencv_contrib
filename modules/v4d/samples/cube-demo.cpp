@@ -71,7 +71,6 @@ class CubeDemoPlan : public Plan {
 	    cv::UMat blur_;
 	    cv::UMat dst16_;
 	} cache_;
-	cv::UMat frame_;
 	GLuint vao_;
 	GLuint shaderProgram_;
 	GLuint uniformTransform_;
@@ -217,10 +216,9 @@ public:
 	}
 
 	virtual void setup(cv::Ptr<V4D> window) override {
-		sz_ = window->fbSize();
 		window->gl([](const cv::Size& sz, GLuint& v, GLuint& sp, GLuint& ut){
 			init_scene(sz, v, sp, ut);
-		}, sz_, vao_, shaderProgram_, uniformTransform_);
+		}, window->fbSize(), vao_, shaderProgram_, uniformTransform_);
 	}
 	virtual void infer(cv::Ptr<V4D> window) override {
 		window->gl([](){
@@ -234,17 +232,14 @@ public:
 			render_scene(v, sp, ut);
 		}, vao_, shaderProgram_, uniformTransform_);
 
-		//Aquire the frame buffer for use by OpenCV
-		window->fb([](cv::UMat& framebuffer, cv::UMat& f, Cache& cache) {
 #ifndef __EMSCRIPTEN__
+		//Aquire the frame buffer for use by OpenCV
+		window->fb([](cv::UMat& framebuffer, Cache& cache) {
 			glow_effect(framebuffer, framebuffer, GLOW_KERNEL_SIZE, cache);
+		}, cache_);
 #endif
-			framebuffer.copyTo(f);
-		}, frame_, cache_);
 
-		window->write([](cv::UMat& outputFrame, const cv::UMat& f){
-			f.copyTo(outputFrame);
-		}, frame_);
+		window->write();
 	}
 };
 

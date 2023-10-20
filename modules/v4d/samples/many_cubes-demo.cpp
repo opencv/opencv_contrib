@@ -76,7 +76,6 @@ class ManyCubesDemoPlan : public Plan {
 	GLuint vao_[NUMBER_OF_CUBES];
 	GLuint shaderProgram_[NUMBER_OF_CUBES];
 	GLuint uniformTransform_[NUMBER_OF_CUBES];
-	cv::Size sz_;
 	//Simple transform & pass-through shaders
 	static GLuint load_shader() {
 		//Shader versions "330" and "300 es" are very similar.
@@ -229,12 +228,11 @@ class ManyCubesDemoPlan : public Plan {
 #endif
 public:
 	void setup(cv::Ptr<V4D> window) override {
-		sz_ = window->fbSize();
 		for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
-			window->gl(i, [](const size_t& ctxIdx, cv::Size& sz, GLuint& vao, GLuint& shader, GLuint& uniformTrans){
+			window->gl(i, [](const size_t& ctxIdx, const cv::Size& sz, GLuint& vao, GLuint& shader, GLuint& uniformTrans){
 				CV_UNUSED(ctxIdx);
 				init_scene(sz, vao, shader, uniformTrans);
-			}, sz_, vao_[i], shaderProgram_[i], uniformTransform_[i]);
+			}, window->fbSize(), vao_[i], shaderProgram_[i], uniformTransform_[i]);
 		}
 	}
 
@@ -274,7 +272,7 @@ int main() {
     auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #endif
-    window->run<ManyCubesDemoPlan>(0);
+    window->run<ManyCubesDemoPlan>(1);
 
     return 0;
 }
