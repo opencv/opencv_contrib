@@ -76,7 +76,16 @@ void ImGuiContextImpl::render(bool showFPS) {
             ImGui::Text("%.3f ms/frame (%.1f FPS)", (1000.0f / Global::fps()) , Global::fps());
             ImGui::End();
             ImGui::PopStyleColor(1);
-
+            std::stringstream ss;
+            TimeTracker::getInstance()->print(ss);
+            std::string line;
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.5f));
+            ImGui::Begin("Time Tracking");
+            while(getline(ss, line)) {
+                ImGui::Text("%s", line.c_str());
+            }
+            ImGui::End();
+            ImGui::PopStyleColor(1);
         }
         if (renderCallback_)
             renderCallback_(context_);

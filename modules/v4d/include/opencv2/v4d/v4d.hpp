@@ -15,7 +15,7 @@
 #include "sink.hpp"
 #include "util.hpp"
 #include "nvg.hpp"
-#include "detail/backend.hpp"
+#include "detail/transaction.hpp"
 #include "detail/threadpool.hpp"
 #include "detail/gl.hpp"
 #include "detail/framebuffercontext.hpp"
@@ -282,9 +282,11 @@ public:
 			}
 
 			if (!(n->tx_->hasCondition()) && isEnabled) {
-				n->tx_->getContext()->execute([=]() {
+				n->tx_->getContext()->execute([n]() {
 //					cout << "run: " << std::this_thread::get_id() << " " << n->name_ << ": " << isEnabled << endl;
-					n->tx_->perform();
+				    TimeTracker::getInstance()->execute(n->name_, [n](){
+				    	n->tx_->perform();
+				    });
 				});
 			}
 		}

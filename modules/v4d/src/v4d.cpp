@@ -160,15 +160,11 @@ size_t V4D::numGlCtx() {
 }
 
 void V4D::copyTo(cv::UMat& m) {
-    TimeTracker::getInstance()->execute("copyTo", [this, &m](){
-        fbCtx()->copyTo(m);
-    });
+	fbCtx()->copyTo(m);
 }
 
 void V4D::copyFrom(const cv::UMat& m) {
-    TimeTracker::getInstance()->execute("copyTo", [this, &m](){
-        fbCtx()->copyFrom(m);
-    });
+	fbCtx()->copyFrom(m);
 }
 
 void V4D::setSource(cv::Ptr<Source> src) {
