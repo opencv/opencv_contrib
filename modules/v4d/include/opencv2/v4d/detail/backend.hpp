@@ -9,15 +9,12 @@
 #include <type_traits>
 #include <opencv2/core.hpp>
 
-
-//based on https://stackoverflow.com/a/61576038/1884837
 namespace cv {
 namespace v4d {
 
 class Transaction {
 private:
 	cv::Ptr<cv::v4d::detail::V4DContext> ctx_;
-	std::function<bool()> condition_;
 public:
 	virtual ~Transaction() {}
     virtual void perform() = 0;
@@ -27,6 +24,7 @@ public:
     void setContext(cv::Ptr<cv::v4d::detail::V4DContext> ctx) {
     	ctx_ = ctx;
     }
+
     cv::Ptr<cv::v4d::detail::V4DContext> getContext() {
     	return ctx_;
     }
