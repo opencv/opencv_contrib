@@ -6,9 +6,9 @@ using namespace cv::v4d;
 
 class VectorGraphicsAndFBPlan : public Plan {
 public:
-	void infer(Ptr<V4D> win) override {
+	void infer(Ptr<V4D> window) override {
 		//Again creates a NanoVG context and draws googly eyes
-		win->nvg([](const Size& sz) {
+		window->nvg([](const Size& sz) {
 			//Calls from this namespace may only be used inside a nvg context
 			using namespace cv::v4d::nvg;
 			clear();
@@ -89,10 +89,10 @@ public:
 			ellipse(rx, ry, ex, ey);
 			fillPaint(gloss);
 			fill();
-		}, win->fbSize());
+		}, window->fbSize());
 
 		//Provides the framebuffer as left-off by the nvg context.
-		win->fb([](UMat& framebuffer) {
+		window->fb([](UMat& framebuffer) {
 			//Heavily blurs the eyes using a cheap boxFilter
 			boxFilter(framebuffer, framebuffer, -1, Size(15, 15), Point(-1,-1), true, BORDER_REPLICATE);
 		});

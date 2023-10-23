@@ -5,14 +5,14 @@ using namespace cv::v4d;
 
 class RenderOpenGLPlan : public Plan {
 public:
-	void setup(Ptr<V4D> win) override {
-		win->gl([]() {
+	void setup(Ptr<V4D> window) override {
+		window->gl([]() {
 			//Sets the clear color to blue
 			glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 		});
 	}
-	void infer(Ptr<V4D> win) override {
-		win->gl([]() {
+	void infer(Ptr<V4D> window) override {
+		window->gl([]() {
 			//Clears the screen. The clear color and other GL-states are preserved between context-calls.
 			glClear(GL_COLOR_BUFFER_BIT);
 		});

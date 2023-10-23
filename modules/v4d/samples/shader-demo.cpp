@@ -5,45 +5,24 @@
 
 #include <opencv2/v4d/v4d.hpp>
 
-using std::cerr;
-using std::endl;
-
-/* Demo parameters */
-#ifndef __EMSCRIPTEN__
-constexpr long unsigned int WIDTH = 1280;
-constexpr long unsigned int HEIGHT = 720;
-#else
-constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 960;
-#endif
-constexpr bool OFFSCREEN = false;
-const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-#ifndef __EMSCRIPTEN__
-constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
-#endif
-
-// vertex position, color
-static const float vertices[] = {
-//    x      y      z
-        -1.0f, -1.0f, -0.0f, 1.0f, 1.0f, -0.0f, -1.0f, 1.0f, -0.0f, 1.0f, -1.0f, -0.0f };
-
-static const unsigned int indices[] = {
-//  2---,1
-//  | .' |
-//  0'---3
-        0, 1, 2, 0, 3, 1 };
-
-//easing function for the bungee zoom
-static float easeInOutQuint(float x) {
-    return x < 0.5f ? 16.0f * x * x * x * x * x : 1.0f - std::pow(-2.0f * x + 2.0f, 5.0f) / 2.0f;
-}
 
 using namespace cv::v4d;
 
 class ShaderDemoPlan : public Plan {
+	// vertex position, color
+	constexpr static float vertices[12] = {
+	//    x      y      z
+	        -1.0f, -1.0f, -0.0f, 1.0f, 1.0f, -0.0f, -1.0f, 1.0f, -0.0f, 1.0f, -1.0f, -0.0f };
+
+	constexpr static unsigned int indices[6] = {
+	//  2---,1
+	//  | .' |
+	//  0'---3
+	        0, 1, 2, 0, 3, 1 };
+
 	struct Params {
 		/* Mandelbrot control parameters */
-		int glowKernelSize_ = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
+		int glowKernelSize_ = 0;
 		// Red, green, blue and alpha. All from 0.0f to 1.0f
 		float baseColorVal_[4] = {0.2, 0.6, 1.0, 1.0};
 		//contrast boost
@@ -84,6 +63,12 @@ class ShaderDemoPlan : public Plan {
 		cv::UMat blur;
 		cv::UMat dst16;
 	} cache_;
+
+	//easing function for the bungee zoom
+	static float easeInOutQuint(float x) {
+	    return x < 0.5f ? 16.0f * x * x * x * x * x : 1.0f - std::pow(-2.0f * x + 2.0f, 5.0f) / 2.0f;
+	}
+
 #ifndef __EMSCRIPTEN__
 	static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize, Cache& cache) {
 		cv::bitwise_not(src, dst);
@@ -228,6 +213,7 @@ class ShaderDemoPlan : public Plan {
 
 	//Render the mandelbrot fractal on top of a video
 	static void render_scene(const cv::Size& sz, Params& params, Handles& handles) {
+	    GL_CHECK(glViewport(0, 0, sz.width, sz.height));
 		//bungee zoom
 	    if (params.currentZoom_ >= 1) {
 	    	params.zoomIncr_ = -0.01;
@@ -255,6 +241,11 @@ class ShaderDemoPlan : public Plan {
 	    GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 	}
 public:
+	ShaderDemoPlan(cv::Size sz) : Plan(sz) {
+		const unsigned long diag = hypot(double(size().width), double(size().height));
+		params_.glowKernelSize_ = std::max(int(diag / 200 % 2 == 0 ? diag / 200 + 1 : diag / 200), 1);
+	}
+
 	void gui(cv::Ptr<V4D> window) override {
 		window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params) {
 			CV_UNUSED(win);
@@ -285,7 +276,7 @@ public:
 	void setup(cv::Ptr<V4D> window) override {
 		window->gl([](const cv::Size &sz, Handles& handles) {
 			init_scene(sz, handles);
-		}, window->fbSize(), handles_);
+		}, size(), handles_);
 	}
 
 	void infer(cv::Ptr<V4D> window) override {
@@ -293,7 +284,7 @@ public:
 
 		window->gl([](const cv::Size &sz, Params& params, Handles& handles) {
 			render_scene(sz, params, handles);
-		}, window->fbSize(), params_, handles_);
+		}, size(), params_, handles_);
 
 #ifndef __EMSCRIPTEN__
 		window->fb([](cv::UMat& framebuffer, const Params& params, Cache& cache) {
@@ -317,24 +308,28 @@ int main(int argc, char** argv) {
         cerr << "Usage: shader-demo <video-file>" << endl;
         exit(1);
     }
+
+	constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
+	cv::Ptr<ShaderDemoPlan> plan = new ShaderDemoPlan(cv::Size(1280, 720));
 #else
 	CV_UNUSED(args);
 	CV_UNUSED(argv);
+	cv::Ptr<ShaderDemoPlan> plan = new ShaderDemoPlan(cv::Size(960, 960));
 #endif
     try {
-        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Mandelbrot Shader Demo", IMGUI, OFFSCREEN);
+        cv::Ptr<V4D> window = V4D::make(plan->size(), "Mandelbrot Shader Demo", IMGUI);
 
 #ifndef __EMSCRIPTEN__
         auto src = makeCaptureSource(window, argv[1]);
         window->setSource(src);
-        auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), cv::Size(WIDTH, HEIGHT));
+        auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
         window->setSink(sink);
 #else
         auto src = makeCaptureSource(window);
         window->setSource(src);
 #endif
 
-        window->run<ShaderDemoPlan>(0);
+        window->run(plan, 0);
     } catch (std::exception& ex) {
         cerr << "Exception: " << ex.what() << endl;
     }

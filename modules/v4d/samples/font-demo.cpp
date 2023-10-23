@@ -15,22 +15,6 @@
 #include <emscripten.h>
 #endif
 
-/* Demo parameters */
-#ifndef __EMSCRIPTEN__
-constexpr long unsigned int WIDTH = 1280;
-constexpr long unsigned int HEIGHT = 720;
-#else
-constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 960;
-#endif
-constexpr bool OFFSCREEN = false;
-#ifndef __EMSCRIPTEN__
-constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
-constexpr double FPS = 60;
-#endif
-
-using std::cerr;
-using std::endl;
 using std::string;
 using std::vector;
 using std::istringstream;
@@ -64,14 +48,16 @@ class FontDemoPlan : public Plan {
     //line count
     uint32_t cnt_ = 0;
     //Total number of lines in the text
-    int32_t numLines_;
+    int32_t numLines_ = 0;
     //Height of the text in pixels
-    int32_t textHeight_;
+    int32_t textHeight_ = 0;
     //y-value of the current line
     int32_t y_ = 0;
 
-    int32_t translateY_;
+    int32_t translateY_ = 0;
 public:
+    FontDemoPlan(const cv::Size& sz) : Plan(sz) {
+    }
     void gui(cv::Ptr<V4D> window) override {
         window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params){
         	CV_UNUSED(win);
@@ -130,7 +116,7 @@ public:
 					circle(rng.uniform(0, sz.width) , rng.uniform(0, sz.height), size / 2.0);
 					stroke();
 				}
-			}, window->fbSize(), rng_, params_);
+			}, size(), rng_, params_);
 
 			window->fb([](const cv::UMat& frameBuffer, cv::UMat& f){
 				frameBuffer.copyTo(f);
@@ -140,15 +126,17 @@ public:
 
 		window->branch(isTrue_, params_.updatePerspective_);
 		{
-			window->parallel([](cv::Mat& tm, const Params& params){
+			window->parallel([](const cv::Size& sz, cv::Mat& tm, const Params& params){
 				//Derive the transformation matrix tm for the pseudo 3D effect from quad1 and quad2.
-				vector<cv::Point2f> quad1 = {{0,0},{WIDTH,0},{WIDTH,HEIGHT},{0,HEIGHT}};
-				float l = (WIDTH - (WIDTH * params.warpRatio_)) / 2.0;
-				float r = WIDTH - l;
+				vector<cv::Point2f> quad1 = {cv::Point2f(0,0),cv::Point2f(sz.width,0),
+						cv::Point2f(sz.width,sz.height),cv::Point2f(0,sz.height)};
+				float l = (sz.width - (sz.width * params.warpRatio_)) / 2.0;
+				float r = sz.width - l;
 
-				vector<cv::Point2f> quad2 = {{l, 0.0f},{r, 0.0f},{WIDTH,HEIGHT},{0,HEIGHT}};
+				vector<cv::Point2f> quad2 = {cv::Point2f(l, 0.0f),cv::Point2f(r, 0.0f),
+						cv::Point2f(sz.width,sz.height), cv::Point2f(0,sz.height)};
 				tm = cv::getPerspectiveTransform(quad1, quad2);
-			}, tm_, params_);
+			}, size(), tm_, params_);
 		}
 		window->endbranch(isTrue_, params_.updatePerspective_);
 
@@ -156,7 +144,7 @@ public:
 		{
 			window->nvg([](const cv::Size& sz, int32_t& ty, const int32_t& cnt, int32_t& y, const int32_t& textHeight, const std::vector<std::string> lines, const Params& params) {
 				//How many pixels to translate the text up.
-		    	ty = HEIGHT - cnt;
+		    	ty = sz.height - cnt;
 				using namespace cv::v4d::nvg;
 				clear();
 				fontSize(params.fontSize_);
@@ -173,7 +161,7 @@ public:
 						text(sz.width / 2.0, y, lines[i].c_str(), lines[i].c_str() + lines[i].size());
 					}
 				}
-			}, window->fbSize(), translateY_, cnt_, y_, textHeight_, lines_, params_);
+			}, size(), translateY_, cnt_, y_, textHeight_, lines_, params_);
 
 			window->fb([](cv::UMat& framebuffer, cv::UMat& w, cv::UMat& s, cv::Mat& t) {
 				//Pseudo 3D text effect.
@@ -203,14 +191,21 @@ public:
 };
 int main() {
     try {
-        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Font Demo", ALL, OFFSCREEN);
+#ifndef __EMSCRIPTEN__
+    	cv::Ptr<FontDemoPlan> plan = new FontDemoPlan(cv::Size(1280, 720));
+#else
+    	cv::Ptr<FontDemoPlan> plan = new FontDemoPlan(cv::Size(960, 960));
+#endif
+        cv::Ptr<V4D> window = V4D::make(plan->size(), "Font Demo", ALL);
 
 #ifndef __EMSCRIPTEN__
-        auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
+        constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
+        constexpr double FPS = 60;
+        auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, plan->size());
         window->setSink(sink);
 #endif
 
-        window->run<FontDemoPlan>(0);
+        window->run(plan,0);
     } catch(std::exception& ex) {
         cerr << "Exception: " << ex.what() << endl;
     }

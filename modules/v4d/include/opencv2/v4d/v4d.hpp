@@ -66,18 +66,22 @@ enum AllocateFlags {
 };
 
 class Plan {
+	const cv::Size sz_;
 public:
 	constexpr static auto always_ = []() { return true; };
 	constexpr static auto isTrue_ = [](const bool& b) { return b; };
 	constexpr static auto isFalse_ = [](const bool& b) { return !b; };
 	constexpr static auto and_ = [](const bool& a, const bool& b) { return a && b; };
 	constexpr static auto or_ = [](const bool& a, const bool& b) { return a || b; };
-
+	Plan(const cv::Size& sz) : sz_(sz) {};
 	virtual ~Plan() {};
 	virtual void gui(cv::Ptr<V4D> window) { CV_UNUSED(window); };
 	virtual void setup(cv::Ptr<V4D> window) { CV_UNUSED(window); };
 	virtual void infer(cv::Ptr<V4D> window) = 0;
 	virtual void teardown(cv::Ptr<V4D> window) { CV_UNUSED(window); };
+	const cv::Size& size() {
+		return sz_;
+	}
 };
 /*!
  * Private namespace
@@ -206,7 +210,7 @@ public:
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
-    CV_EXPORTS static cv::Ptr<V4D> make(int w, int h, const string& title, AllocateFlags flags = ALL, bool offscreen = false, bool debug = false, int samples = 0);
+    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const string& title, AllocateFlags flags = ALL, bool offscreen = false, bool debug = false, int samples = 0);
     CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const cv::Size& fbsize, const string& title, AllocateFlags flags = ALL, bool offscreen = false, bool debug = false, int samples = 0);
     /*!
      * Default destructor
@@ -272,18 +276,13 @@ public:
     }
 
 	void runPlan() {
-//		cout << std::this_thread::get_id() << " ### RUN PLAN ### " << endl;
 		bool isEnabled = true;
 
 		for (auto& n : nodes_) {
-			if (n->tx_->hasCondition()) {
+			if (n->tx_->isCondition()) {
 				isEnabled = n->tx_->enabled();
-//				cout << "cond: " << std::this_thread::get_id() << " " << n->name_ << ": " << isEnabled << endl;
-			}
-
-			if (!(n->tx_->hasCondition()) && isEnabled) {
+			} else if (isEnabled) {
 				n->tx_->getContext()->execute([n]() {
-//					cout << "run: " << std::this_thread::get_id() << " " << n->name_ << ": " << isEnabled << endl;
 				    TimeTracker::getInstance()->execute(n->name_, [n](){
 				    	n->tx_->perform();
 				    });
@@ -531,8 +530,7 @@ public:
 	#endif
 
 	template<typename Tplan>
-	void run(size_t workers) {
-		cv::Ptr<Tplan> plan = new Tplan();
+	void run(cv::Ptr<Tplan> plan, size_t workers) {
 		std::vector<std::thread*> threads;
 		{
 			static std::mutex runMtx;
@@ -559,8 +557,7 @@ public:
 			}
 
 			if(Global::is_main()) {
-				int w = this->initialSize().width;
-				int h = this->initialSize().height;
+				cv::Size sz = this->initialSize();
 				const string title = this->title();
 				bool debug = this->debug_;
 				auto src = this->getSource();
@@ -569,10 +566,9 @@ public:
 				for (size_t i = 0; i < workers; ++i) {
 					threads.push_back(
 							new std::thread(
-									[w,h,i,title,debug,src, sink] {
+									[sz, i, title, debug, src, sink, plan] {
 										cv::Ptr<cv::v4d::V4D> worker = V4D::make(
-												w,
-												h,
+												sz,
 												title + "-worker-" + std::to_string(i),
 												NANOVG,
 												!debug,
@@ -586,8 +582,8 @@ public:
 											sink->setThreadSafe(true);
 											worker->setSink(sink);
 										}
-
-										worker->run<Tplan>(0);
+										cv::Ptr<Tplan> newPlan = new Tplan(plan->size());
+										worker->run(plan, 0);
 								}
 							)
 					);

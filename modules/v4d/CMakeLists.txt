@@ -254,6 +254,7 @@ if(NOT (TARGET ${the_module}))
       add_binary_sample(example_v4d_pedestrian-demo samples/pedestrian-demo.cpp)
       add_binary_sample(example_v4d_optflow-demo samples/optflow-demo.cpp)
       add_binary_sample(example_v4d_beauty-demo samples/beauty-demo.cpp)
+      add_binary_sample(example_v4d_montage-demo samples/montage-demo.cpp)
     endif()
   endif()
 

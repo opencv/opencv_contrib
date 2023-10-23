@@ -6,76 +6,61 @@
 #include <opencv2/v4d/v4d.hpp>
 //adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
 
-/* Demo Parameters */
-#ifndef __EMSCRIPTEN__
-constexpr long unsigned int WIDTH = 1280;
-constexpr long unsigned int HEIGHT = 720;
-#else
-constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 960;
-#endif
-constexpr bool OFFSCREEN = false;
-#ifndef __EMSCRIPTEN__
-constexpr double FPS = 60;
-constexpr const char* OUTPUT_FILENAME = "many_cubes-demo.mkv";
-#endif
-const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
-
-using std::cerr;
-using std::endl;
-
-/* OpenGL constants */
-const GLuint triangles = 12;
-const GLuint vertices_index = 0;
-const GLuint colors_index = 1;
-
-//Cube vertices, colors and indices
-const float vertices[] = {
-		// Front face
-        0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
-        // Back face
-        0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5
-};
-
-const float vertex_colors[] = {
-		1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
-		0.2, 0.6, 1.0, 0.6, 1.0, 0.4, 0.6, 0.8, 0.8, 0.4, 0.8, 0.8
-};
-
-const unsigned short triangle_indices[] = {
-		// Front
-        0, 1, 2, 2, 3, 0,
-
-        // Right
-        0, 3, 7, 7, 4, 0,
-
-        // Bottom
-        2, 6, 7, 7, 3, 2,
-
-        // Left
-        1, 5, 6, 6, 2, 1,
-
-        // Back
-        4, 7, 6, 6, 5, 4,
-
-        // Top
-        5, 1, 0, 0, 4, 5
-};
-
 using namespace cv::v4d;
+
 class CubeDemoPlan : public Plan {
+public:
+	/* Demo Parameters */
+	int glowKernelSize_ = 0;
+
+	/* OpenGL constants */
+	constexpr static GLuint TRIANGLES_ = 12;
+	constexpr static GLuint VERTICES_INDEX_ = 0;
+	constexpr static GLuint COLOR_INDEX_ = 1;
+
+	//Cube vertices, colors and indices
+	constexpr static float VERTICES[24] = {
+			// Front face
+	        0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
+	        // Back face
+	        0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5
+	};
+
+	constexpr static float VERTEX_COLORS_[24] = {
+			1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
+			0.2, 0.6, 1.0, 0.6, 1.0, 0.4, 0.6, 0.8, 0.8, 0.4, 0.8, 0.8
+	};
+
+	constexpr static unsigned short TRIANGLE_INDICES_[36] = {
+			// Front
+	        0, 1, 2, 2, 3, 0,
+
+	        // Right
+	        0, 3, 7, 7, 4, 0,
+
+	        // Bottom
+	        2, 6, 7, 7, 3, 2,
+
+	        // Left
+	        1, 5, 6, 6, 2, 1,
+
+	        // Back
+	        4, 7, 6, 6, 5, 4,
+
+	        // Top
+	        5, 1, 0, 0, 4, 5
+	};
+private:
 	struct Cache {
 	    cv::UMat down_;
 	    cv::UMat up_;
 	    cv::UMat blur_;
 	    cv::UMat dst16_;
 	} cache_;
-	GLuint vao_;
-	GLuint shaderProgram_;
-	GLuint uniformTransform_;
-	cv::Size sz_;
-public:
+	GLuint vao_ = 0;
+	GLuint shaderProgram_ = 0;
+	GLuint uniformTransform_= 0;
+
 	//Simple transform & pass-through shaders
 	static GLuint load_shader() {
 		//Shader versions "330" and "300 es" are very similar.
@@ -129,24 +114,24 @@ public:
 	    unsigned int triangles_ebo;
 	    glGenBuffers(1, &triangles_ebo);
 	    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangles_ebo);
-	    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof triangle_indices, triangle_indices,
+	    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof TRIANGLE_INDICES_, TRIANGLE_INDICES_,
 	            GL_STATIC_DRAW);
 
 	    unsigned int verticies_vbo;
 	    glGenBuffers(1, &verticies_vbo);
 	    glBindBuffer(GL_ARRAY_BUFFER, verticies_vbo);
-	    glBufferData(GL_ARRAY_BUFFER, sizeof vertices, vertices, GL_STATIC_DRAW);
+	    glBufferData(GL_ARRAY_BUFFER, sizeof VERTICES, VERTICES, GL_STATIC_DRAW);
 
-	    glVertexAttribPointer(vertices_index, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	    glEnableVertexAttribArray(vertices_index);
+	    glVertexAttribPointer(VERTICES_INDEX_, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	    glEnableVertexAttribArray(VERTICES_INDEX_);
 
 	    unsigned int colors_vbo;
 	    glGenBuffers(1, &colors_vbo);
 	    glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
-	    glBufferData(GL_ARRAY_BUFFER, sizeof vertex_colors, vertex_colors, GL_STATIC_DRAW);
+	    glBufferData(GL_ARRAY_BUFFER, sizeof VERTEX_COLORS_, VERTEX_COLORS_, GL_STATIC_DRAW);
 
-	    glVertexAttribPointer(colors_index, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	    glEnableVertexAttribArray(colors_index);
+	    glVertexAttribPointer(COLOR_INDEX_, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	    glEnableVertexAttribArray(COLOR_INDEX_);
 
 	    glBindVertexArray(0);
 	    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -192,7 +177,7 @@ public:
 		//Bind the prepared vertex array object
 		glBindVertexArray(vao);
 		//Draw
-		glDrawElements(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_SHORT, NULL);
+		glDrawElements(GL_TRIANGLES, TRIANGLES_ * 3, GL_UNSIGNED_SHORT, NULL);
 	}
 
 	//applies a glow effect to an image
@@ -215,12 +200,19 @@ public:
 	    cv::bitwise_not(dst, dst);
 	}
 
-	virtual void setup(cv::Ptr<V4D> window) override {
+public:
+	CubeDemoPlan(const cv::Size& sz) : Plan(sz) {
+		int diag = hypot(double(size().width), double(size().height));
+		glowKernelSize_ = std::max(int(diag / 138 % 2 == 0 ? diag / 138 + 1 : diag / 138), 1);
+	}
+
+	void setup(cv::Ptr<V4D> window) override {
 		window->gl([](const cv::Size& sz, GLuint& v, GLuint& sp, GLuint& ut){
 			init_scene(sz, v, sp, ut);
-		}, window->fbSize(), vao_, shaderProgram_, uniformTransform_);
+		}, size(), vao_, shaderProgram_, uniformTransform_);
 	}
-	virtual void infer(cv::Ptr<V4D> window) override {
+
+	void infer(cv::Ptr<V4D> window) override {
 		window->gl([](){
 			//Clear the background
 			glClearColor(0.2f, 0.24f, 0.4f, 1.0f);
@@ -234,9 +226,9 @@ public:
 
 #ifndef __EMSCRIPTEN__
 		//Aquire the frame buffer for use by OpenCV
-		window->fb([](cv::UMat& framebuffer, Cache& cache) {
-			glow_effect(framebuffer, framebuffer, GLOW_KERNEL_SIZE, cache);
-		}, cache_);
+		window->fb([](cv::UMat& framebuffer, int glowKernelSize, Cache& cache) {
+			glow_effect(framebuffer, framebuffer, glowKernelSize, cache);
+		}, glowKernelSize_, cache_);
 #endif
 
 		window->write();
@@ -244,13 +236,21 @@ public:
 };
 
 int main() {
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Cube Demo", ALL, OFFSCREEN);
+#ifndef __EMSCRIPTEN__
+	constexpr double FPS = 60;
+	constexpr const char* OUTPUT_FILENAME = "cube-demo.mkv";
+	cv::Ptr<CubeDemoPlan> plan = new CubeDemoPlan(cv::Size(1280, 720));
+#else
+	cv::Ptr<CubeDemoPlan> plan = new CubeDemoPlan(cv::Size(960, 960));
+#endif
+
+    cv::Ptr<V4D> window = V4D::make(plan->size(), "Cube Demo", ALL);
 #ifndef __EMSCRIPTEN__
     //Creates a writer sink (which might be hardware accelerated)
-    auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
+    auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, plan->size());
     window->setSink(sink);
 #endif
-    window->run<CubeDemoPlan>(0);
+    window->run(plan, 1);
 
     return 0;
 }

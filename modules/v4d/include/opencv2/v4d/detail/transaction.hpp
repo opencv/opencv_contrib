@@ -19,7 +19,7 @@ public:
 	virtual ~Transaction() {}
     virtual void perform() = 0;
     virtual bool enabled() = 0;
-    virtual bool hasCondition() = 0;
+    virtual bool isCondition() = 0;
 
     void setContext(cv::Ptr<cv::v4d::detail::V4DContext> ctx) {
     	ctx_ = ctx;
@@ -70,17 +70,17 @@ public:
     }
 
     template<bool b>
-    typename std::enable_if<b, bool>::type hasCondition() {
+    typename std::enable_if<b, bool>::type isCondition() {
     	return true;
     }
 
     template<bool b>
-    typename std::enable_if<!b, bool>::type hasCondition() {
+    typename std::enable_if<!b, bool>::type isCondition() {
     	return false;
     }
 
-    virtual bool hasCondition() override {
-    	return hasCondition<std::is_same_v<std::remove_cv_t<typename decltype(f)::result_type>, bool>>();
+    virtual bool isCondition() override {
+    	return isCondition<std::is_same_v<std::remove_cv_t<typename decltype(f)::result_type>, bool>>();
     }
 };
 }

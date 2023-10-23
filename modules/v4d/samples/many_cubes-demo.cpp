@@ -6,46 +6,36 @@
 #include <opencv2/v4d/v4d.hpp>
 //adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
 
-/* Demo Parameters */
+using namespace cv::v4d;
+class ManyCubesDemoPlan : public Plan {
+public:
+	/* Demo Parameters */
 #ifndef __EMSCRIPTEN__
-constexpr size_t NUMBER_OF_CUBES = 10;
-constexpr long unsigned int WIDTH = 1280;
-constexpr long unsigned int HEIGHT = 720;
+	constexpr static size_t NUMBER_OF_CUBES_ = 3;
 #else
-constexpr size_t NUMBER_OF_CUBES = 5;
-constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 960;
+	constexpr static size_t NUMBER_OF_CUBES_ = 5;
 #endif
-constexpr bool OFFSCREEN = false;
-#ifndef __EMSCRIPTEN__
-constexpr double FPS = 60;
-constexpr const char* OUTPUT_FILENAME = "many_cubes-demo.mkv";
-#endif
-const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
+	int glowKernelSize_;
 
-using std::cerr;
-using std::endl;
+	/* OpenGL constants and variables */
+	constexpr static GLuint TRIANGLES_ = 12;
+	constexpr static GLuint VERTICES_INDEX_ = 0;
+	constexpr static GLuint COLORS_INDEX_ = 1;
 
-/* OpenGL constants and variables */
-const GLuint triangles = 12;
-const GLuint vertices_index = 0;
-const GLuint colors_index = 1;
-
-//Cube vertices, colors and indices
-const float vertices[] = {
+	//Cube vertices, colors and indices
+	constexpr static float VERTICES_[24] = {
 		// Front face
         0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
         // Back face
         0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5
-};
+	};
 
-const float vertex_colors[] = {
+	constexpr static float VERTEX_COLORS_[24] = {
 		1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
 		0.2, 0.6, 1.0, 0.6, 1.0, 0.4, 0.6, 0.8, 0.8, 0.4, 0.8, 0.8
-};
+	};
 
-const unsigned short triangle_indices[] = {
+	constexpr static unsigned short TRIANGLE_INDICES_[36] = {
 		// Front
         0, 1, 2, 2, 3, 0,
 
@@ -63,19 +53,18 @@ const unsigned short triangle_indices[] = {
 
         // Top
         5, 1, 0, 0, 4, 5
-};
-
-using namespace cv::v4d;
-class ManyCubesDemoPlan : public Plan {
+	};
+private:
 	struct Cache {
 	    cv::UMat down_;
 	    cv::UMat up_;
 	    cv::UMat blur_;
 	    cv::UMat dst16_;
 	} cache_;
-	GLuint vao_[NUMBER_OF_CUBES];
-	GLuint shaderProgram_[NUMBER_OF_CUBES];
-	GLuint uniformTransform_[NUMBER_OF_CUBES];
+	GLuint vao_[NUMBER_OF_CUBES_];
+	GLuint shaderProgram_[NUMBER_OF_CUBES_];
+	GLuint uniformTransform_[NUMBER_OF_CUBES_];
+
 	//Simple transform & pass-through shaders
 	static GLuint load_shader() {
 		//Shader versions "330" and "300 es" are very similar.
@@ -129,24 +118,24 @@ class ManyCubesDemoPlan : public Plan {
 	    unsigned int triangles_ebo;
 	    glGenBuffers(1, &triangles_ebo);
 	    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangles_ebo);
-	    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof triangle_indices, triangle_indices,
+	    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof TRIANGLE_INDICES_, TRIANGLE_INDICES_,
 	            GL_STATIC_DRAW);
 
 	    unsigned int verticies_vbo;
 	    glGenBuffers(1, &verticies_vbo);
 	    glBindBuffer(GL_ARRAY_BUFFER, verticies_vbo);
-	    glBufferData(GL_ARRAY_BUFFER, sizeof vertices, vertices, GL_STATIC_DRAW);
+	    glBufferData(GL_ARRAY_BUFFER, sizeof VERTICES_, VERTICES_, GL_STATIC_DRAW);
 
-	    glVertexAttribPointer(vertices_index, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	    glEnableVertexAttribArray(vertices_index);
+	    glVertexAttribPointer(VERTICES_INDEX_, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	    glEnableVertexAttribArray(VERTICES_INDEX_);
 
 	    unsigned int colors_vbo;
 	    glGenBuffers(1, &colors_vbo);
 	    glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
-	    glBufferData(GL_ARRAY_BUFFER, sizeof vertex_colors, vertex_colors, GL_STATIC_DRAW);
+	    glBufferData(GL_ARRAY_BUFFER, sizeof VERTEX_COLORS_, VERTEX_COLORS_, GL_STATIC_DRAW);
 
-	    glVertexAttribPointer(colors_index, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	    glEnableVertexAttribArray(colors_index);
+	    glVertexAttribPointer(COLORS_INDEX_, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	    glEnableVertexAttribArray(COLORS_INDEX_);
 
 	    glBindVertexArray(0);
 	    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -158,8 +147,9 @@ class ManyCubesDemoPlan : public Plan {
 	}
 
 	//Renders a rotating rainbow-colored cube on a blueish background
-	static void render_scene(const double& x, const double& y, const double& angleMod, GLuint& vao, GLuint& shaderProgram, GLuint& uniformTransform) {
-	    //Use the prepared shader program
+	static void render_scene(const cv::Size& sz, const double& x, const double& y, const double& angleMod, GLuint& vao, GLuint& shaderProgram, GLuint& uniformTransform) {
+	    glViewport(0,0, sz.width, sz.height);
+		//Use the prepared shader program
 	    glUseProgram(shaderProgram);
 
 	    //Scale and rotate the cube depending on the current time.
@@ -202,7 +192,7 @@ class ManyCubesDemoPlan : public Plan {
 	    //Bind our vertex array
 	    glBindVertexArray(vao);
 	    //Draw
-	    glDrawElements(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_SHORT, NULL);
+	    glDrawElements(GL_TRIANGLES, TRIANGLES_ * 3, GL_UNSIGNED_SHORT, NULL);
 	}
 
 #ifndef __EMSCRIPTEN__
@@ -227,12 +217,17 @@ class ManyCubesDemoPlan : public Plan {
 	}
 #endif
 public:
+	ManyCubesDemoPlan(cv::Size sz) : Plan(sz) {
+		int diag = hypot(double(size().width), double(size().height));
+		glowKernelSize_ = std::max(int(diag / 138 % 2 == 0 ? diag / 138 + 1 : diag / 138), 1);
+	}
+
 	void setup(cv::Ptr<V4D> window) override {
-		for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
+		for(size_t i = 0; i < NUMBER_OF_CUBES_; ++i) {
 			window->gl(i, [](const size_t& ctxIdx, const cv::Size& sz, GLuint& vao, GLuint& shader, GLuint& uniformTrans){
 				CV_UNUSED(ctxIdx);
 				init_scene(sz, vao, shader, uniformTrans);
-			}, window->fbSize(), vao_[i], shaderProgram_[i], uniformTransform_[i]);
+			}, size(), vao_[i], shaderProgram_[i], uniformTransform_[i]);
 		}
 	}
 
@@ -244,20 +239,20 @@ public:
 		});
 
 		//Render using multiple OpenGL contexts
-		for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
-			window->gl(i, [](const int32_t& ctxIdx, GLuint& vao, GLuint& shader, GLuint& uniformTrans){
-				double x = sin((double(ctxIdx) / NUMBER_OF_CUBES) * 2 * M_PI) / 1.5;
-				double y = cos((double(ctxIdx) / NUMBER_OF_CUBES) * 2 * M_PI) / 1.5;
-				double angle = sin((double(ctxIdx) / NUMBER_OF_CUBES) * 2 * M_PI);
-				render_scene(x, y, angle, vao, shader, uniformTrans);
-			}, vao_[i], shaderProgram_[i], uniformTransform_[i]);
+		for(size_t i = 0; i < NUMBER_OF_CUBES_; ++i) {
+			window->gl(i, [](const int32_t& ctxIdx, const cv::Size& sz, GLuint& vao, GLuint& shader, GLuint& uniformTrans){
+				double x = sin((double(ctxIdx) / NUMBER_OF_CUBES_) * 2 * M_PI) / 1.5;
+				double y = cos((double(ctxIdx) / NUMBER_OF_CUBES_) * 2 * M_PI) / 1.5;
+				double angle = sin((double(ctxIdx) / NUMBER_OF_CUBES_) * 2 * M_PI);
+				render_scene(sz, x, y, angle, vao, shader, uniformTrans);
+			}, size(), vao_[i], shaderProgram_[i], uniformTransform_[i]);
 		}
 
 		//Aquire the frame buffer for use by OpenCV
 #ifndef __EMSCRIPTEN__
-		window->fb([](cv::UMat& framebuffer, Cache& cache) {
-			glow_effect(framebuffer, framebuffer, GLOW_KERNEL_SIZE, cache);
-		}, cache_);
+		window->fb([](cv::UMat& framebuffer, int glowKernelSize, Cache& cache) {
+			glow_effect(framebuffer, framebuffer, glowKernelSize, cache);
+		}, glowKernelSize_, cache_);
 #endif
 
 		window->write();
@@ -265,14 +260,21 @@ public:
 };
 
 int main() {
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Many Cubes Demo", IMGUI, OFFSCREEN);
+#ifndef __EMSCRIPTEN__
+	cv::Ptr<ManyCubesDemoPlan> plan = new ManyCubesDemoPlan(cv::Size(1280, 720));
+#else
+	cv::Ptr<ManyCubesDemoPlan> plan = new ManyCubesDemoPlan(cv::Size(960, 960));
+#endif
+    cv::Ptr<V4D> window = V4D::make(plan->size(), "Many Cubes Demo", IMGUI);
 
 #ifndef __EMSCRIPTEN_
+	constexpr double FPS = 60;
+	constexpr const char* OUTPUT_FILENAME = "many_cubes-demo.mkv";
     //Creates a writer sink (which might be hardware accelerated)
-    auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
+    auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, plan->size());
     window->setSink(sink);
 #endif
-    window->run<ManyCubesDemoPlan>(1);
+    window->run(plan, 1);
 
     return 0;
 }

@@ -14,25 +14,13 @@
 using std::cerr;
 using std::endl;
 
-/* Demo Parameters */
-#ifndef __EMSCRIPTEN__
-constexpr long unsigned int WIDTH = 1280;
-constexpr long unsigned int HEIGHT = 720;
-#else
-constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 960;
-#endif
-constexpr bool OFFSCREEN = false;
-const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
-#ifndef __EMSCRIPTEN__
-constexpr double FPS = 60;
-constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
-#endif
-
 using namespace cv::v4d;
 
 class VideoDemoPlan: public Plan {
+public:
+	/* Demo Parameters */
+	int glowKernelSize_ = 0;
+private:
 	struct Cache {
 		cv::UMat up_;
 		cv::UMat down_;
@@ -41,14 +29,43 @@ class VideoDemoPlan: public Plan {
 	} cache_;
 
 	/* OpenGL constants */
-	constexpr static GLuint triangles = 12;
-	constexpr static const GLuint vertices_index = 0;
-	constexpr static const GLuint colors_index = 1;
+	constexpr static GLuint TRIANGLES_ = 12;
+	constexpr static GLuint VERTICES_INDEX_ = 0;
+	constexpr static GLuint COLOR_INDEX_ = 1;
 
+    constexpr static float VERTICES_[24] = {
+            // Front face
+            0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
+
+            // Back face
+            0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, };
+
+    constexpr static float VERTEX_COLORS[24] = { 1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
+
+    0.2, 0.6, 1.0, 0.6, 1.0, 0.4, 0.6, 0.8, 0.8, 0.4, 0.8, 0.8, };
+
+    constexpr static unsigned short TRIANGLE_INDICES_[36] = {
+            // Front
+            0, 1, 2, 2, 3, 0,
+
+            // Right
+            0, 3, 7, 7, 4, 0,
+
+            // Bottom
+            2, 6, 7, 7, 3, 2,
+
+            // Left
+            1, 5, 6, 6, 2, 1,
+
+            // Back
+            4, 7, 6, 6, 5, 4,
+
+            // Top
+            5, 1, 0, 0, 4, 5, };
 	/* OpenGL variables */
-	GLuint vao_;
-	GLuint shader_;
-	GLuint uniform_transform_;
+	GLuint vao_ = 0;
+	GLuint shader_ = 0;
+	GLuint uniform_transform_ = 0;
 
 	static GLuint load_shader() {
 	#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
@@ -92,60 +109,30 @@ class VideoDemoPlan: public Plan {
 	static void init_scene(GLuint& vao, GLuint& shader, GLuint& uniformTrans) {
 	    glEnable (GL_DEPTH_TEST);
 
-	    float vertices[] = {
-	            // Front face
-	            0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
-
-	            // Back face
-	            0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, };
-
-	    float vertex_colors[] = { 1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
-
-	    0.2, 0.6, 1.0, 0.6, 1.0, 0.4, 0.6, 0.8, 0.8, 0.4, 0.8, 0.8, };
-
-	    unsigned short triangle_indices[] = {
-	            // Front
-	            0, 1, 2, 2, 3, 0,
-
-	            // Right
-	            0, 3, 7, 7, 4, 0,
-
-	            // Bottom
-	            2, 6, 7, 7, 3, 2,
-
-	            // Left
-	            1, 5, 6, 6, 2, 1,
-
-	            // Back
-	            4, 7, 6, 6, 5, 4,
-
-	            // Top
-	            5, 1, 0, 0, 4, 5, };
-
 	    glGenVertexArrays(1, &vao);
 	    glBindVertexArray(vao);
 
 	    unsigned int triangles_ebo;
 	    glGenBuffers(1, &triangles_ebo);
 	    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangles_ebo);
-	    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof triangle_indices, triangle_indices,
+	    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof TRIANGLE_INDICES_, TRIANGLE_INDICES_,
 	            GL_STATIC_DRAW);
 
 	    unsigned int verticies_vbo;
 	    glGenBuffers(1, &verticies_vbo);
 	    glBindBuffer(GL_ARRAY_BUFFER, verticies_vbo);
-	    glBufferData(GL_ARRAY_BUFFER, sizeof vertices, vertices, GL_STATIC_DRAW);
+	    glBufferData(GL_ARRAY_BUFFER, sizeof VERTICES_, VERTICES_, GL_STATIC_DRAW);
 
-	    glVertexAttribPointer(vertices_index, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	    glEnableVertexAttribArray(vertices_index);
+	    glVertexAttribPointer(VERTICES_INDEX_, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	    glEnableVertexAttribArray(VERTICES_INDEX_);
 
 	    unsigned int colors_vbo;
 	    glGenBuffers(1, &colors_vbo);
 	    glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
-	    glBufferData(GL_ARRAY_BUFFER, sizeof vertex_colors, vertex_colors, GL_STATIC_DRAW);
+	    glBufferData(GL_ARRAY_BUFFER, sizeof VERTEX_COLORS, VERTEX_COLORS, GL_STATIC_DRAW);
 
-	    glVertexAttribPointer(colors_index, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	    glEnableVertexAttribArray(colors_index);
+	    glVertexAttribPointer(COLOR_INDEX_, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	    glEnableVertexAttribArray(COLOR_INDEX_);
 
 	    glBindVertexArray(0);
 	    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -176,7 +163,7 @@ class VideoDemoPlan: public Plan {
 	    cv::Matx44f transform = scaleMat * rotXMat * rotYMat * rotZMat;
 	    glUniformMatrix4fv(uniformTrans, 1, GL_FALSE, transform.val);
 	    glBindVertexArray(vao);
-	    glDrawElements(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_SHORT, NULL);
+	    glDrawElements(GL_TRIANGLES, TRIANGLES_ * 3, GL_UNSIGNED_SHORT, NULL);
 
 	}
 
@@ -196,7 +183,12 @@ class VideoDemoPlan: public Plan {
 	}
 	#endif
 public:
+	VideoDemoPlan(const cv::Size& sz) : Plan(sz) {
+		int diag = hypot(double(size().width), double(size().height));
+		glowKernelSize_ = std::max(int(diag / 138 % 2 == 0 ? diag / 138 + 1 : diag / 138), 1);
+	}
 	void setup(cv::Ptr<V4D> window) override {
+
 		window->gl([](GLuint& vao, GLuint& shader, GLuint& uniformTrans) {
 			init_scene(vao, shader, uniformTrans);
 		}, vao_, shader_, uniform_transform_);
@@ -209,9 +201,9 @@ public:
 		}, vao_, shader_, uniform_transform_);
 
 #ifndef __EMSCRIPTEN__
-		window->fb([](cv::UMat &framebuffer, Cache& cache) {
-			glow_effect(framebuffer, framebuffer, GLOW_KERNEL_SIZE, cache);
-		}, cache_);
+		window->fb([](cv::UMat &framebuffer, int glowKernelSize, Cache& cache) {
+			glow_effect(framebuffer, framebuffer, glowKernelSize, cache);
+		}, glowKernelSize_, cache_);
 #endif
 
 		//Ignored in WebAssmebly builds because there is no sink set.
@@ -219,24 +211,31 @@ public:
 	}
 };
 
-#ifndef __EMSCRIPTEN__
 int main(int argc, char** argv) {
-    if (argc != 2) {
+#ifndef __EMSCRIPTEN__
+	if (argc != 2) {
         cerr << "Usage: video-demo <video-file>" << endl;
         exit(1);
     }
+
+	constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
+	cv::Ptr<VideoDemoPlan> plan = new VideoDemoPlan(cv::Size(1280,720));
 #else
-int main() {
+	CV_UNUSED(argc);
+	CV_UNUSED(argv);
+	cv::Ptr<VideoDemoPlan> plan = new VideoDemoPlan(cv::Size(960,960));
 #endif
+
     using namespace cv::v4d;
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Video Demo", NONE, OFFSCREEN);
+
+    cv::Ptr<V4D> window = V4D::make(plan->size(), "Video Demo", NONE);
 
 #ifndef __EMSCRIPTEN__
     //Creates a source from a file or a device
     auto src = makeCaptureSource(window, argv[1]);
     window->setSource(src);
 
-    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), cv::Size(WIDTH, HEIGHT));
+    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
     window->setSink(sink);
 #else
     //Creates a webcam source is available
@@ -244,7 +243,7 @@ int main() {
     window->setSource(src);
 #endif
 
-    window->run<VideoDemoPlan>(0);
+    window->run(plan, 0);
 
     return 0;
 }

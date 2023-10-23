@@ -5,22 +5,6 @@
 
 #include <opencv2/v4d/v4d.hpp>
 
-using std::cerr;
-using std::endl;
-
-/* Demo parameters */
-#ifndef __EMSCRIPTEN__
-constexpr long unsigned int WIDTH = 1280;
-constexpr long unsigned int HEIGHT = 720;
-#else
-constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 960;
-#endif
-constexpr bool OFFSCREEN = false;
-#ifndef __EMSCRIPTEN__
-constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
-#endif
-
 static void draw_color_wheel(float x, float y, float w, float h, double hue) {
     //color wheel drawing code taken from https://github.com/memononen/nanovg/blob/master/example/demo.c
     using namespace cv::v4d::nvg;
@@ -132,10 +116,13 @@ class NanoVGDemoPlan : public Plan {
 	cv::UMat hsv_;
 	cv::UMat hueChannel_;
 	long cnt_ = 0;
-	double hue_;
+	double hue_ = 0;
 public:
-	void infer(cv::Ptr<V4D> window) override {
+	/* Demo parameters */
 
+	NanoVGDemoPlan(cv::Size sz) : Plan(sz) {}
+
+	void infer(cv::Ptr<V4D> window) override {
 		window->parallel([](long& cnt, double& hue){
 			//we use frame count to calculate the current hue
 			double t = ++cnt / 60.0;
@@ -172,29 +159,33 @@ public:
 
 		//Render using nanovg
 		window->nvg([](const cv::Size &sz, const double& h) {
-			cerr << "HUE: " << h << endl;
 			draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, h);
-		}, window->fbSize(), hue_);
+		}, size(), hue_);
 
 		window->write();
 	}
 };
 
-#ifndef __EMSCRIPTEN__
 int main(int argc, char **argv) {
-    if (argc != 2) {
+#ifndef __EMSCRIPTEN__
+	if (argc != 2) {
         cerr << "Usage: nanovg-demo <video-file>" << endl;
         exit(1);
-    }
+	}
+
+	constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
+    cv::Ptr<NanoVGDemoPlan> plan = new NanoVGDemoPlan(cv::Size(1280, 960));
 #else
-int main() {
+    CV_UNUSED(argc, argv);
+    cv::Ptr<NanoVGDemoPlan> plan = new NanoVGDemoPlan(cv::Size(960, 960));
 #endif
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "NanoVG Demo", NANOVG, OFFSCREEN);
+
+    cv::Ptr<V4D> window = V4D::make(plan->size(), "NanoVG Demo", NANOVG);
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     auto src = makeCaptureSource(window, argv[1]);
-    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), cv::Size(WIDTH, HEIGHT));
+    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
     window->setSource(src);
     window->setSink(sink);
 #else
@@ -202,7 +193,7 @@ int main() {
     window->setSource(src);
 #endif
 
-    window->run<NanoVGDemoPlan>(0);
+    window->run(plan, 1);
 
     return 0;
 }

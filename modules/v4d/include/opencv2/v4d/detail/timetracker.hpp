@@ -105,18 +105,7 @@ public:
         for (auto it : tiMap_) {
             ss << "\t" << it.first << ": " << it.second << std::endl;
         }
-        long totalTime = 0;
-        long totalIterTime = 0;
-        long totalCnt = 0;
-        long iterCnt = 0;
-        for (auto& pair : getMap()) {
-            totalTime += pair.second.totalTime_;
-            totalIterTime += pair.second.iterTime_;
-            totalCnt = pair.second.totalCnt_;
-            iterCnt = pair.second.iterCnt_;
-        }
 
-        ss << std::endl << "FPS: " << (float(totalCnt) / float(totalTime / 1000000.0f)) << " / " << (float(iterCnt) / float(totalIterTime / 1000000.0f)) << std::endl;
         os << ss.str();
     }
 

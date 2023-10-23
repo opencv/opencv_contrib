@@ -13,8 +13,8 @@
 namespace cv {
 namespace v4d {
 
-cv::Ptr<V4D> V4D::make(int w, int h, const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples) {
-    V4D* v4d = new V4D(cv::Size(w,h), cv::Size(), title, flags, offscreen, debug, samples);
+cv::Ptr<V4D> V4D::make(const cv::Size& size, const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples) {
+    V4D* v4d = new V4D(size, cv::Size(), title, flags, offscreen, debug, samples);
     v4d->setVisible(!offscreen);
     v4d->fbCtx()->makeCurrent();
     return v4d->self();

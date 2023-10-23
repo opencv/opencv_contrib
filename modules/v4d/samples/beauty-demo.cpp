@@ -153,11 +153,20 @@ class BeautyDemoPlan : public Plan {
 		cv::UMat input_, down_, contrast_, faceOval_, eyesAndLips_, skin_;
 		cv::UMat lhalf_ = cv::UMat(DOWNSIZE_HEIGHT, DOWNSIZE_WIDTH, CV_8UC3);
 		cv::UMat rhalf_ = cv::UMat(DOWNSIZE_HEIGHT, DOWNSIZE_WIDTH, CV_8UC3);
-		cv::UMat frameOut_ = cv::UMat(HEIGHT, WIDTH, CV_8UC3);
 		//GREY
 		cv::UMat faceSkinMaskGrey_, eyesAndLipsMaskGrey_, backgroundMaskGrey_;
 	} frames_;
 
+	//results of face detection and facemark
+	struct Face {
+		vector<vector<cv::Point2f>> shapes_;
+		std::vector<cv::Rect> faceRects_;
+		bool found_ = false;
+		FaceFeatures features_;
+	} face_;
+
+	//the frame holding the final composed image
+	cv::UMat frameOut_ = cv::UMat(HEIGHT, WIDTH, CV_8UC3);
 	cv::Ptr<cv::face::Facemark> facemark_ = cv::face::createFacemarkLBF();
 	//Blender (used to put the different face parts back together)
 	cv::Ptr<cv::detail::MultiBandBlender> blender_ = new cv::detail::MultiBandBlender(false, 5);
@@ -167,12 +176,6 @@ class BeautyDemoPlan : public Plan {
 	#else
 	cv::Ptr<cv::FaceDetectorYN> detector_ = cv::FaceDetectorYN::create("assets/models/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
 	#endif
-
-	//list all of shapes (face features) found
-	vector<vector<cv::Point2f>> shapes_;
-	std::vector<cv::Rect> faceRects_;
-	bool faceFound_ = false;
-	FaceFeatures features_;
 
 	//based on the detected FaceFeatures it guesses a decent face oval and draws a mask for it.
 	static void draw_face_oval_mask(const FaceFeatures &ff) {
@@ -279,44 +282,44 @@ public:
 					cv::resize(frames.input_, frames.down_, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
 				}, frames_);
 
-				window->parallel([](cv::Ptr<cv::FaceDetectorYN>& de, cv::Ptr<cv::face::Facemark>& fm, vector<vector<cv::Point2f>>& sh, const cv::UMat& d, std::vector<cv::Rect>& fr, bool& ff, FaceFeatures& ft) {
-					sh.clear();
+				window->parallel([](cv::Ptr<cv::FaceDetectorYN>& detector, cv::Ptr<cv::face::Facemark>& facemark, const cv::UMat& down, Face& face) {
+					face.shapes_.clear();
 					cv::Mat faces;
 					//Detect faces in the down-scaled image
-					de->detect(d, faces);
+					detector->detect(down, faces);
 					//Only add the first face
 					cv::Rect faceRect;
 					if(!faces.empty())
 						faceRect = cv::Rect(int(faces.at<float>(0, 0)), int(faces.at<float>(0, 1)), int(faces.at<float>(0, 2)), int(faces.at<float>(0, 3)));
-					fr = {faceRect};
+					face.faceRects_ = {faceRect};
 					//find landmarks if faces have been detected
-					ff = !faceRect.empty() && fm->fit(d, fr, sh);
-					if(ff)
-						ft = FaceFeatures(fr[0], sh[0], float(d.size().width) / WIDTH);
-				}, detector_, facemark_, shapes_, frames_.down_, faceRects_, faceFound_, features_);
+					face.found_ = !faceRect.empty() && facemark->fit(down, face.faceRects_, face.shapes_);
+					if(face.found_)
+						face.features_ = FaceFeatures(face.faceRects_[0], face.shapes_[0], float(down.size().width) / WIDTH);
+				}, detector_, facemark_, frames_.down_, face_);
 			}
 			window->endbranch(always_);
 
-			window->branch(isTrue_, faceFound_);
+			window->branch(isTrue_, face_.found_);
 			{
-				window->nvg([](const FaceFeatures& f) {
+				window->nvg([](const FaceFeatures& features) {
 					//Draw the face oval of the first face
-					draw_face_oval_mask(f);
-				}, features_);
+					draw_face_oval_mask(features);
+				}, face_.features_);
 
-				window->fb([](const cv::UMat& frameBuffer, cv::UMat& fo) {
+				window->fb([](const cv::UMat& frameBuffer, cv::UMat& faceOval) {
 					//Convert/Copy the mask
-					cvtColor(frameBuffer, fo, cv::COLOR_BGRA2GRAY);
+					cvtColor(frameBuffer, faceOval, cv::COLOR_BGRA2GRAY);
 				}, frames_.faceOval_);
 
-				window->nvg([](const FaceFeatures& f) {
+				window->nvg([](const FaceFeatures& features) {
 					//Draw eyes eyes and lips areas of the first face
-					draw_face_eyes_and_lips_mask(f);
-				}, features_);
+					draw_face_eyes_and_lips_mask(features);
+				}, face_.features_);
 
-				window->fb([](const cv::UMat &frameBuffer, cv::UMat& ealmg) {
+				window->fb([](const cv::UMat &frameBuffer, cv::UMat& eyesAndLipsMaskGrey) {
 					//Convert/Copy the mask
-					cvtColor(frameBuffer, ealmg, cv::COLOR_BGRA2GRAY);
+					cvtColor(frameBuffer, eyesAndLipsMaskGrey, cv::COLOR_BGRA2GRAY);
 				}, frames_.eyesAndLipsMaskGrey_);
 
 				window->parallel([](Frames& frames, const Params& params, Cache& cache) {
@@ -336,7 +339,7 @@ public:
 					adjust_saturation(cache.blur_, frames.skin_, params.skinSaturation_, cache);
 				}, frames_, params_, cache_);
 
-				window->parallel([](cv::Ptr<cv::detail::MultiBandBlender>& bl, const Frames& frames, cv::UMat& frameOut, Cache& cache) {
+				window->parallel([](cv::Ptr<cv::detail::MultiBandBlender>& bl, Frames& frames, cv::UMat& frameOut, Cache& cache) {
 					CV_Assert(!frames.skin_.empty());
 					CV_Assert(!frames.input_.empty());
 					CV_Assert(!frames.eyesAndLips_.empty());
@@ -349,7 +352,7 @@ public:
 					bl->blend(cache.frameOutFloat_, cv::UMat());
 					CV_Assert(!cache.frameOutFloat_.empty());
 					cache.frameOutFloat_.convertTo(frameOut, CV_8U, 1.0);
-				}, blender_, frames_, frames_.frameOut_, cache_);
+				}, blender_, frames_, frameOut_, cache_);
 
 				window->parallel([](const cv::UMat& input, cv::UMat& frameOut, cv::UMat lhalf, cv::UMat rhalf, const Params& params) {
 					if (params.sideBySide_) {
@@ -361,11 +364,11 @@ public:
 						lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
 						rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
 					}
-				}, frames_.input_, frames_.frameOut_, frames_.lhalf_, frames_.rhalf_, params_);
+				}, frames_.input_, frameOut_, frames_.lhalf_, frames_.rhalf_, params_);
 			}
-			window->endbranch(isTrue_, faceFound_);
+			window->endbranch(isTrue_, face_.found_);
 
-			window->branch(isFalse_, faceFound_);
+			window->branch(isFalse_, face_.found_);
 			{
 				window->parallel([](const cv::UMat& input, cv::UMat& frameOut, cv::UMat lhalf, const Params& params) {
 					if (params.sideBySide_) {
@@ -377,16 +380,16 @@ public:
 					} else {
 						input.copyTo(frameOut);
 					}
-				}, frames_.input_, frames_.frameOut_, frames_.lhalf_, params_);
+				}, frames_.input_, frameOut_, frames_.lhalf_, params_);
 			}
-			window->endbranch(isFalse_, faceFound_);
+			window->endbranch(isFalse_, face_.found_);
 
 			window->branch(always_);
 			{
 				//write the result to the framebuffer
 				window->fb([](cv::UMat &frameBuffer, const cv::UMat& f) {
 					cvtColor(f, frameBuffer, cv::COLOR_BGR2BGRA);
-				}, frames_.frameOut_);
+				}, frameOut_);
 
 				//write the current framebuffer to video
 				window->write();
@@ -399,14 +402,15 @@ public:
 	}
 };
 
-#ifndef __EMSCRIPTEN__
 int main(int argc, char **argv) {
-    if (argc != 2) {
+#ifndef __EMSCRIPTEN__
+	if (argc != 2) {
         cerr << "Usage: beauty-demo <input-video-file>" << endl;
         exit(1);
     }
 #else
-int main() {
+	CV_UNUSED(argc);
+	CV_UNUSED(argv);
 #endif
     using namespace cv::v4d;
     cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Beautification Demo", ALL, OFFSCREEN);
