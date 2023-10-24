@@ -196,7 +196,7 @@ class CV_EXPORTS V4D {
     size_t numWorkers_ = 0;
     std::vector<std::tuple<std::string,bool,long>> accesses_;
     std::map<std::string, cv::Ptr<Transaction>> transactions_;
-
+    bool disableIO_;
 public:
     /*!
      * Creates a V4D object which is the central object to perform visualizations with.
@@ -399,6 +399,8 @@ public:
     }
 
     void capture(cv::UMat& frame) {
+    	if(disableIO_)
+    		return;
     	auto isTrue = [](const bool& b){ return b; };
     	capture([](const cv::UMat& inputFrame, cv::UMat& f){
     		if(!inputFrame.empty())
@@ -414,12 +416,16 @@ public:
     }
 
     void capture() {
+    	if(disableIO_)
+    		return;
     	static thread_local cv::UMat tmp;
     	capture(tmp);
     }
 
     template <typename Tfn, typename ... Args>
     void capture(Tfn fn, Args&& ... args) {
+    	if(disableIO_)
+    		return;
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("capture", fn);
 		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
@@ -432,6 +438,8 @@ public:
     }
 
     void write() {
+    	if(disableIO_)
+    		return;
     	static thread_local cv::UMat frame(fbSize(), CV_8UC4);
 
         fb([](const cv::UMat& frameBuffer, cv::UMat& f) {
@@ -444,6 +452,8 @@ public:
     }
 
     void write(const cv::UMat& frame) {
+    	if(disableIO_)
+    		return;
     	write([](cv::UMat& outputFrame, const cv::UMat& f){
     		f.copyTo(outputFrame);
     	}, frame);
@@ -451,6 +461,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void write(Tfn fn, Args&& ... args) {
+    	if(disableIO_)
+    		return;
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("write", fn);
 		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
@@ -583,7 +595,7 @@ public:
 											worker->setSink(sink);
 										}
 										cv::Ptr<Tplan> newPlan = new Tplan(plan->size());
-										worker->run(plan, 0);
+										worker->run(newPlan, 0);
 								}
 							)
 					);
@@ -707,6 +719,7 @@ public:
     CV_EXPORTS void setPrintFPS(bool p);
     CV_EXPORTS bool getShowTracking();
     CV_EXPORTS void setShowTracking(bool st);
+    CV_EXPORTS void setDisableIO(bool d);
 
     CV_EXPORTS bool isFullscreen();
     /*!

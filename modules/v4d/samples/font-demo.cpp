@@ -30,7 +30,7 @@ class FontDemoPlan : public Plan {
 		int maxStarCount_ = 3000;
 		float starAlpha_ = 0.3f;
 
-		float fontSize_ = 40.0f;
+		float fontSize_ = 10.0f;
 		cv::Scalar_<float> textColor_ = INITIAL_COLOR / 255.0;
 		float warpRatio_ = 1.0f/3.0f;
 		bool updateStars_ = true;

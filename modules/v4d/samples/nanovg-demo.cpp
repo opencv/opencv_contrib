@@ -158,9 +158,9 @@ public:
 		}, rgb_);
 
 		//Render using nanovg
-		window->nvg([](const cv::Size &sz, const double& h) {
-			draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, h);
-		}, size(), hue_);
+		window->nvg([](const cv::Size &sz, const cv::Size& fbSz, const double& h) {
+			draw_color_wheel(sz.width - (sz.width / 5), fbSz.height - (sz.width / 5), sz.width / 6, sz.width / 6, h);
+		}, size(), window->fbSize(), hue_);
 
 		window->write();
 	}

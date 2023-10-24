@@ -9,7 +9,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/optflow.hpp>
-#include <opencv2/core/ocl.hpp>
 
 #include <cmath>
 #include <vector>
@@ -20,44 +19,27 @@
 #include <array>
 #include <utility>
 
-using std::cerr;
-using std::endl;
 using std::vector;
 using std::string;
 
-/* Demo parameters */
-
-#ifndef __EMSCRIPTEN__
-constexpr long unsigned int WIDTH = 1280;
-constexpr long unsigned int HEIGHT = 720;
-#else
-constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 960;
-#endif
-const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-#ifndef __EMSCRIPTEN__
-constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
-#endif
-constexpr bool OFFSCREEN = false;
-
-//How the background will be visualized
-enum BackgroundModes {
-    GREY,
-    COLOR,
-    VALUE,
-    BLACK
-};
-
-//Post-processing modes for the foreground
-enum PostProcModes {
-    GLOW,
-    BLOOM,
-    DISABLED
-};
-
 using namespace cv::v4d;
 
-class OptflowPlan : public Plan {
+class OptflowDemoPlan : public Plan {
+	//How the background will be visualized
+	enum BackgroundModes {
+	    GREY,
+	    COLOR,
+	    VALUE,
+	    BLACK
+	};
+
+	//Post-processing modes for the foreground
+	enum PostProcModes {
+	    GLOW,
+	    BLOOM,
+	    DISABLED
+	};
+
 	struct Params {
 		// Generate the foreground at this scale.
 		float fgScale_ = 0.5f;
@@ -90,7 +72,7 @@ class OptflowPlan : public Plan {
 		PostProcModes postProcMode_ = DISABLED;
 #endif
 		// Intensity of glow or bloom defined by kernel size. The default scales with the image diagonal.
-		int glowKernelSize_ = std::max(int(DIAG / 150 % 2 == 0 ? DIAG / 150 + 1 : DIAG / 150), 1);
+		int glowKernelSize_ = 0;
 		//The lightness selection threshold
 		int bloomThresh_ = 210;
 		//The intensity of the bloom filter
@@ -133,7 +115,7 @@ class OptflowPlan : public Plan {
 	cv::UMat background_, down_;
 	//BGR
 	cv::UMat result_;
-	cv::UMat foreground_ = cv::UMat(cv::Size(WIDTH, HEIGHT), CV_8UC4, cv::Scalar::all(0));
+	cv::UMat foreground_;
 	//GREY
 	cv::UMat downPrevGrey_, downNextGrey_, downMotionMaskGrey_;
 	vector<cv::Point2f> detectedPoints_;
@@ -141,7 +123,11 @@ class OptflowPlan : public Plan {
 	cv::Ptr<cv::BackgroundSubtractor> bg_subtractor_ = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
 	cv::Ptr<cv::FastFeatureDetector> detector_ = cv::FastFeatureDetector::create(1, false);
 public:
-	virtual ~OptflowPlan() override {};
+	OptflowDemoPlan(const cv::Size& sz) : Plan(sz) {
+		int diag = hypot(double(sz.width), double(sz.height));
+		params_.glowKernelSize_ = std::max(int(diag / 150 % 2 == 0 ? diag / 150 + 1 : diag / 150), 1);
+	}
+
 	//Uses background subtraction to generate a "motion mask"
 	static void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey, cv::Ptr<cv::BackgroundSubtractor> bg_subtractor, Cache& cache) {
 	    bg_subtractor->apply(srcGrey, motionMaskGrey);
@@ -224,7 +210,7 @@ public:
 	                            && cache.upNextPoints_[i].y < nextGrey.rows / params.fgScale_ && cache.upNextPoints_[i].x < nextGrey.cols / params.fgScale_ //check bounds
 	                            ) {
 	                        float len = hypot(fabs(cache.upPrevPoints_[i].x - cache.upNextPoints_[i].x), fabs(cache.upPrevPoints_[i].y - cache.upNextPoints_[i].y));
-	                        //upper and lower bound of the flow vector lengthss
+	                        //upper and lower bound of the flow vector length
 	                        if (len > 0 && len < sqrt(area)) {
 	                            //collect new points
 	                        	cache.newPoints_.push_back(cache.nextPoints_[i]);
@@ -391,6 +377,7 @@ public:
 		cache_.rng_ = std::mt19937(cache_.rd_());
 		window->setStretching(params_.stretch_);
 		params_.effectColor_[3] /= pow(window->workers() + 1.0, 0.33);
+		foreground_ = cv::UMat(window->fbSize(), CV_8UC4, cv::Scalar::all(0));
 	}
 
 	virtual void infer(cv::Ptr<V4D> window) override {
@@ -444,21 +431,24 @@ int main(int argc, char **argv) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;
         exit(1);
     }
+    constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
+    cv::Ptr<OptflowDemoPlan> plan = new OptflowDemoPlan(cv::Size(1280, 720));
+#else
 #endif
     try {
         using namespace cv::v4d;
-        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Sparse Optical Flow Demo", ALL, OFFSCREEN);
+        cv::Ptr<V4D> window = V4D::make(plan->size(), "Sparse Optical Flow Demo", ALL);
 #ifndef __EMSCRIPTEN__
         auto src = makeCaptureSource(window, argv[1]);
         window->setSource(src);
-        auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), cv::Size(WIDTH, HEIGHT));
+        auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
         window->setSink(sink);
 #else
         cv::Ptr<Source> src = makeCaptureSource(window);
         window->setSource(src);
 #endif
 
-        window->run<OptflowPlan>(0);
+        window->run(plan, 0);
     } catch (std::exception& ex) {
         cerr << ex.what() << endl;
     }

@@ -11,7 +11,7 @@ class ManyCubesDemoPlan : public Plan {
 public:
 	/* Demo Parameters */
 #ifndef __EMSCRIPTEN__
-	constexpr static size_t NUMBER_OF_CUBES_ = 3;
+	constexpr static size_t NUMBER_OF_CUBES_ = 10;
 #else
 	constexpr static size_t NUMBER_OF_CUBES_ = 5;
 #endif

@@ -12,28 +12,8 @@
 #include <vector>
 #include <string>
 
-using std::cerr;
-using std::endl;
 using std::vector;
 using std::string;
-
-/* Demo parameters */
-#ifndef __EMSCRIPTEN__
-constexpr long unsigned int WIDTH = 1280;
-constexpr long unsigned int HEIGHT = 720;
-#else
-constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 960;
-#endif
-constexpr unsigned int DOWNSIZE_WIDTH = 960;
-constexpr unsigned int DOWNSIZE_HEIGHT = 540;
-constexpr bool OFFSCREEN = false;
-#ifndef __EMSCRIPTEN__
-constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
-#endif
-const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-
-constexpr int BLUR_DIV = 500;
 
 /*!
  * Data structure holding the points for all face landmarks
@@ -122,8 +102,12 @@ struct FaceFeatures {
 using namespace cv::v4d;
 
 class BeautyDemoPlan : public Plan {
+	cv::Size downSize_;
+	cv::Size_<float> scale_;
+	int blurFaceKernelSize_ = 0;
+
 	struct Params {
-		int blurSkinKernelSize_ = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
+		int blurSkinKernelSize_ = 0;
 		//Saturation boost factor for eyes and lips
 		float eyesAndLipsSaturation_ = 2.0f;
 		//Saturation boost factor for skin
@@ -151,8 +135,8 @@ class BeautyDemoPlan : public Plan {
 	struct Frames {
 		//BGR
 		cv::UMat input_, down_, contrast_, faceOval_, eyesAndLips_, skin_;
-		cv::UMat lhalf_ = cv::UMat(DOWNSIZE_HEIGHT, DOWNSIZE_WIDTH, CV_8UC3);
-		cv::UMat rhalf_ = cv::UMat(DOWNSIZE_HEIGHT, DOWNSIZE_WIDTH, CV_8UC3);
+		cv::UMat lhalf_;
+		cv::UMat rhalf_;
 		//GREY
 		cv::UMat faceSkinMaskGrey_, eyesAndLipsMaskGrey_, backgroundMaskGrey_;
 	} frames_;
@@ -166,16 +150,12 @@ class BeautyDemoPlan : public Plan {
 	} face_;
 
 	//the frame holding the final composed image
-	cv::UMat frameOut_ = cv::UMat(HEIGHT, WIDTH, CV_8UC3);
+	cv::UMat frameOut_;
 	cv::Ptr<cv::face::Facemark> facemark_ = cv::face::createFacemarkLBF();
 	//Blender (used to put the different face parts back together)
 	cv::Ptr<cv::detail::MultiBandBlender> blender_ = new cv::detail::MultiBandBlender(false, 5);
 	//Face detector
-	#ifndef __EMSCRIPTEN__
-	cv::Ptr<cv::FaceDetectorYN> detector_ = cv::FaceDetectorYN::create("modules/v4d/assets/models/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
-	#else
-	cv::Ptr<cv::FaceDetectorYN> detector_ = cv::FaceDetectorYN::create("assets/models/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
-	#endif
+	cv::Ptr<cv::FaceDetectorYN> detector_;
 
 	//based on the detected FaceFeatures it guesses a decent face oval and draws a mask for it.
 	static void draw_face_oval_mask(const FaceFeatures &ff) {
@@ -227,6 +207,22 @@ class BeautyDemoPlan : public Plan {
 	    cvtColor(cache.hls_, dstBGR, cv::COLOR_HLS2BGR);
 	}
 public:
+    BeautyDemoPlan(const cv::Size& sz) : Plan(sz) {
+    	int w = size().width;
+    	int h = size().height;
+    	int diag_ = hypot(double(w), double(h));
+    	downSize_ = { int(round(w * 0.75)), int(round(h * 0.75)) };
+    	scale_ = { float(w) / downSize_.width, float(h) / downSize_.height };
+    	blurFaceKernelSize_ = std::max(int(diag_ / 500 % 2 == 0 ? diag_ / 500 + 1 : diag_ / 500), 1);
+		frames_.lhalf_ = cv::UMat(downSize_, CV_8UC3);
+		frames_.rhalf_ = cv::UMat(downSize_, CV_8UC3);
+
+#ifndef __EMSCRIPTEN__
+		detector_ = cv::FaceDetectorYN::create("modules/v4d/assets/models/face_detection_yunet_2023mar.onnx", "", downSize_, 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
+#else
+		detector_ = cv::FaceDetectorYN::create("assets/models/face_detection_yunet_2023mar.onnx", "", downSize_, 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
+#endif
+    }
 	void gui(cv::Ptr<V4D> window) override {
 		window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params){
 			using namespace ImGui;
@@ -268,6 +264,7 @@ public:
 #endif
 			cerr << "Loading finished" << endl;
 		}, facemark_);
+		frameOut_ = cv::UMat(window->fbSize(), CV_8UC3);
 	}
 	void infer(cv::Ptr<V4D> window) override {
 		try {
@@ -276,13 +273,13 @@ public:
 				window->capture();
 
 				//Save the video frame as BGR
-				window->fb([](const cv::UMat &framebuffer, Frames& frames) {
+				window->fb([](const cv::UMat &framebuffer, const cv::Size& downSize, Frames& frames) {
 					cvtColor(framebuffer, frames.input_, cv::COLOR_BGRA2BGR);
 					//Downscale the video frame for face detection
-					cv::resize(frames.input_, frames.down_, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
-				}, frames_);
+					cv::resize(frames.input_, frames.down_, downSize);
+				}, downSize_, frames_);
 
-				window->parallel([](cv::Ptr<cv::FaceDetectorYN>& detector, cv::Ptr<cv::face::Facemark>& facemark, const cv::UMat& down, Face& face) {
+				window->parallel([](const cv::Size sz, cv::Ptr<cv::FaceDetectorYN>& detector, cv::Ptr<cv::face::Facemark>& facemark, const cv::UMat& down, Face& face) {
 					face.shapes_.clear();
 					cv::Mat faces;
 					//Detect faces in the down-scaled image
@@ -295,8 +292,8 @@ public:
 					//find landmarks if faces have been detected
 					face.found_ = !faceRect.empty() && facemark->fit(down, face.faceRects_, face.shapes_);
 					if(face.found_)
-						face.features_ = FaceFeatures(face.faceRects_[0], face.shapes_[0], float(down.size().width) / WIDTH);
-				}, detector_, facemark_, frames_.down_, face_);
+						face.features_ = FaceFeatures(face.faceRects_[0], face.shapes_[0], float(down.size().width) / sz.width);
+				}, size(), detector_, facemark_, frames_.down_, face_);
 			}
 			window->endbranch(always_);
 
@@ -339,48 +336,48 @@ public:
 					adjust_saturation(cache.blur_, frames.skin_, params.skinSaturation_, cache);
 				}, frames_, params_, cache_);
 
-				window->parallel([](cv::Ptr<cv::detail::MultiBandBlender>& bl, Frames& frames, cv::UMat& frameOut, Cache& cache) {
+				window->parallel([](const cv::Size& sz, cv::Ptr<cv::detail::MultiBandBlender>& bl, Frames& frames, cv::UMat& frameOut, Cache& cache) {
 					CV_Assert(!frames.skin_.empty());
 					CV_Assert(!frames.input_.empty());
 					CV_Assert(!frames.eyesAndLips_.empty());
 					//piece it all together
 					//FIXME prepare only once?
-					bl->prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
+					bl->prepare(cv::Rect(0, 0, sz.width, sz.height));
 					bl->feed(frames.skin_, frames.faceSkinMaskGrey_, cv::Point(0, 0));
 					bl->feed(frames.input_, frames.backgroundMaskGrey_, cv::Point(0, 0));
 					bl->feed(frames.eyesAndLips_, frames.eyesAndLipsMaskGrey_, cv::Point(0, 0));
 					bl->blend(cache.frameOutFloat_, cv::UMat());
 					CV_Assert(!cache.frameOutFloat_.empty());
 					cache.frameOutFloat_.convertTo(frameOut, CV_8U, 1.0);
-				}, blender_, frames_, frameOut_, cache_);
+				}, size(), blender_, frames_, frameOut_, cache_);
 
-				window->parallel([](const cv::UMat& input, cv::UMat& frameOut, cv::UMat lhalf, cv::UMat rhalf, const Params& params) {
+				window->parallel([](const cv::Size& sz, const cv::Size& fbSz, const cv::UMat& input, cv::UMat& frameOut, cv::UMat lhalf, cv::UMat rhalf, const Params& params) {
 					if (params.sideBySide_) {
 						//create side-by-side view with a result
 						cv::resize(input, lhalf, cv::Size(0, 0), 0.5, 0.5);
 						cv::resize(frameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
 
 						frameOut = cv::Scalar::all(0);
-						lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-						rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
+						lhalf.copyTo(frameOut(cv::Rect(0, fbSz.height / 2.0 - sz.height / 2.0, lhalf.size().width, lhalf.size().height)));
+						rhalf.copyTo(frameOut(cv::Rect(sz.width / 2.0, fbSz.height / 2.0 - sz.height / 2.0, lhalf.size().width, lhalf.size().height)));
 					}
-				}, frames_.input_, frameOut_, frames_.lhalf_, frames_.rhalf_, params_);
+				}, size(), window->fbSize(), frames_.input_, frameOut_, frames_.lhalf_, frames_.rhalf_, params_);
 			}
 			window->endbranch(isTrue_, face_.found_);
 
 			window->branch(isFalse_, face_.found_);
 			{
-				window->parallel([](const cv::UMat& input, cv::UMat& frameOut, cv::UMat lhalf, const Params& params) {
+				window->parallel([](const cv::Size& sz, const cv::Size& fbSz, const cv::UMat& input, cv::UMat& frameOut, cv::UMat lhalf, const Params& params) {
 					if (params.sideBySide_) {
 						//create side-by-side view without a result (using the input image for both sides)
 						frameOut = cv::Scalar::all(0);
 						cv::resize(input, lhalf, cv::Size(0, 0), 0.5, 0.5);
-						lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-						lhalf.copyTo(frameOut(cv::Rect(lhalf.size().width, 0, lhalf.size().width, lhalf.size().height)));
+						lhalf.copyTo(frameOut(cv::Rect(0, fbSz.height / 2.0 - sz.height / 2.0, lhalf.size().width, lhalf.size().height)));
+						lhalf.copyTo(frameOut(cv::Rect(sz.width / 2.0, fbSz.height / 2.0 - sz.height / 2.0, lhalf.size().width, lhalf.size().height)));
 					} else {
 						input.copyTo(frameOut);
 					}
-				}, frames_.input_, frameOut_, frames_.lhalf_, params_);
+				}, size(), window->fbSize(), frames_.input_, frameOut_, frames_.lhalf_, params_);
 			}
 			window->endbranch(isFalse_, face_.found_);
 
@@ -408,23 +405,26 @@ int main(int argc, char **argv) {
         cerr << "Usage: beauty-demo <input-video-file>" << endl;
         exit(1);
     }
+	constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
+	cv::Ptr<BeautyDemoPlan> plan = new BeautyDemoPlan(cv::Size(1280, 720));
 #else
 	CV_UNUSED(argc);
 	CV_UNUSED(argv);
+	cv::Ptr<BeautyDemoPlan> plan = new BeautyDemoPlan(cv::Size(960, 960));
 #endif
     using namespace cv::v4d;
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Beautification Demo", ALL, OFFSCREEN);
+    cv::Ptr<V4D> window = V4D::make(plan->size(), "Beautification Demo", ALL);
 #ifndef __EMSCRIPTEN__
     auto src = makeCaptureSource(window, argv[1]);
     window->setSource(src);
-    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), cv::Size(WIDTH, HEIGHT));
+    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
     window->setSink(sink);
 #else
     auto src = makeCaptureSource(window);
     window->setSource(src);
 #endif
 
-    window->run<BeautyDemoPlan>(0);
+    window->run(plan, 0);
 
     return 0;
 }

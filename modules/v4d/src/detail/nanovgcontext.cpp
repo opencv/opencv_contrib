@@ -73,16 +73,21 @@ void NanoVGContext::execute(std::function<void()> fn) {
     });
 }
 
+
 void NanoVGContext::begin() {
     float w = fbCtx()->size().width;
     float h = fbCtx()->size().height;
+    float ws = w / scale_.width;
+    float hs = h / scale_.height;
     float r = fbCtx()->pixelRatioX();
-
+    CV_UNUSED(ws);
+    CV_UNUSED(hs);
     nvgSave(context_);
     nvgBeginFrame(context_, w, h, r);
-//FIXME mirroring with text somehow doesn't work
-//    nvgTranslate(context_, 0, h);
-//    nvgScale(context_, 1, -1);
+//    nvgTranslate(context_, 0, (h - hs));
+//    nvgScale(context_, 1 / scale_.width, 1 / scale_.height);
+//    nvgTranslate(context_, ws * 2, hs * 2);
+
 }
 
 void NanoVGContext::end() {
@@ -90,6 +95,10 @@ void NanoVGContext::end() {
 
     nvgEndFrame(context_);
     nvgRestore(context_);
+}
+
+void NanoVGContext::setScale(const cv::Size_<float>& scale) {
+	scale_ = scale;
 }
 
 cv::Ptr<FrameBufferContext> NanoVGContext::fbCtx() {

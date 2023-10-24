@@ -266,6 +266,10 @@ void V4D::setShowTracking(bool st) {
     showTracking_ = st;
 }
 
+void V4D::setDisableIO(bool d) {
+	disableIO_ = d;
+}
+
 bool V4D::getShowTracking() {
     return showTracking_;
 }
