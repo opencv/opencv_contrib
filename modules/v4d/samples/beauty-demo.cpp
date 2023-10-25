@@ -103,7 +103,6 @@ using namespace cv::v4d;
 
 class BeautyDemoPlan : public Plan {
 	cv::Size downSize_;
-	cv::Size_<float> scale_;
 	int blurFaceKernelSize_ = 0;
 
 	struct Params {
@@ -116,7 +115,7 @@ class BeautyDemoPlan : public Plan {
 		float skinContrast_ = 0.7f;
 #ifndef __EMSCRIPTEN__
 		//Show input and output side by side
-		bool sideBySide_ = true;
+		bool sideBySide_ = false;
 		//Scale the video to the window size
 		bool stretch_ = true;
 #else
@@ -211,8 +210,7 @@ public:
     	int w = size().width;
     	int h = size().height;
     	int diag_ = hypot(double(w), double(h));
-    	downSize_ = { int(round(w * 0.75)), int(round(h * 0.75)) };
-    	scale_ = { float(w) / downSize_.width, float(h) / downSize_.height };
+    	downSize_ = { int(round(w)), int(round(h)) };
     	blurFaceKernelSize_ = std::max(int(diag_ / 500 % 2 == 0 ? diag_ / 500 + 1 : diag_ / 500), 1);
 		frames_.lhalf_ = cv::UMat(downSize_, CV_8UC3);
 		frames_.rhalf_ = cv::UMat(downSize_, CV_8UC3);
@@ -264,6 +262,9 @@ public:
 #endif
 			cerr << "Loading finished" << endl;
 		}, facemark_);
+		int diag = hypot(double(size().width), double(size().height));
+		blurFaceKernelSize_ = std::max(int(diag / 200 % 2 == 0 ? diag / 200 + 1 : diag / 200), 1);
+		params_.blurSkinKernelSize_ = std::max(int(diag / 200 % 2 == 0 ? diag / 200 + 1 : diag / 200), 1);
 		frameOut_ = cv::UMat(window->fbSize(), CV_8UC3);
 	}
 	void infer(cv::Ptr<V4D> window) override {
@@ -336,20 +337,20 @@ public:
 					adjust_saturation(cache.blur_, frames.skin_, params.skinSaturation_, cache);
 				}, frames_, params_, cache_);
 
-				window->parallel([](const cv::Size& sz, cv::Ptr<cv::detail::MultiBandBlender>& bl, Frames& frames, cv::UMat& frameOut, Cache& cache) {
+				window->parallel([](cv::Ptr<cv::detail::MultiBandBlender>& bl, Frames& frames, cv::UMat& frameOut, Cache& cache) {
 					CV_Assert(!frames.skin_.empty());
 					CV_Assert(!frames.input_.empty());
 					CV_Assert(!frames.eyesAndLips_.empty());
 					//piece it all together
 					//FIXME prepare only once?
-					bl->prepare(cv::Rect(0, 0, sz.width, sz.height));
+					bl->prepare(cv::Rect(0, 0, frames.skin_.cols, frames.skin_.rows));
 					bl->feed(frames.skin_, frames.faceSkinMaskGrey_, cv::Point(0, 0));
 					bl->feed(frames.input_, frames.backgroundMaskGrey_, cv::Point(0, 0));
 					bl->feed(frames.eyesAndLips_, frames.eyesAndLipsMaskGrey_, cv::Point(0, 0));
 					bl->blend(cache.frameOutFloat_, cv::UMat());
 					CV_Assert(!cache.frameOutFloat_.empty());
 					cache.frameOutFloat_.convertTo(frameOut, CV_8U, 1.0);
-				}, size(), blender_, frames_, frameOut_, cache_);
+				}, blender_, frames_, frameOut_, cache_);
 
 				window->parallel([](const cv::Size& sz, const cv::Size& fbSz, const cv::UMat& input, cv::UMat& frameOut, cv::UMat lhalf, cv::UMat rhalf, const Params& params) {
 					if (params.sideBySide_) {

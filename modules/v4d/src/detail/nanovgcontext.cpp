@@ -84,10 +84,6 @@ void NanoVGContext::begin() {
     CV_UNUSED(hs);
     nvgSave(context_);
     nvgBeginFrame(context_, w, h, r);
-//    nvgTranslate(context_, 0, (h - hs));
-//    nvgScale(context_, 1 / scale_.width, 1 / scale_.height);
-//    nvgTranslate(context_, ws * 2, hs * 2);
-
 }
 
 void NanoVGContext::end() {

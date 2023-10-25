@@ -40,54 +40,40 @@ int v4d_beauty_main(int argc, char **argv);
 #include "beauty-demo.cpp"
 #undef main
 
-
 class MontageDemoPlan : public Plan {
+	const cv::Size tiling_  = cv::Size(3, 3);
 	const cv::Size tileSz_ = cv::Size(640, 360);
-	CubeDemoPlan cubePlan_ = CubeDemoPlan(tileSz_);
-	ManyCubesDemoPlan manyCubesPlan_ = ManyCubesDemoPlan(tileSz_);
-	VideoDemoPlan videoPlan_ = VideoDemoPlan(tileSz_);
-	NanoVGDemoPlan nanovgPlan_ = NanoVGDemoPlan(tileSz_);
-	ShaderDemoPlan shaderPlan_ = ShaderDemoPlan(tileSz_);
-	FontDemoPlan fontPlan_ = FontDemoPlan(tileSz_);
-	PedestrianDemoPlan pedestrianPlan_ = PedestrianDemoPlan(tileSz_);
-	BeautyDemoPlan beautyPlan_ = BeautyDemoPlan(tileSz_);
-	OptflowDemoPlan optflowPlan_ = OptflowDemoPlan(tileSz_);
-	cv::Size_<float> scale_;
+
+	std::vector<Plan*> plans_ = {
+		new CubeDemoPlan(tileSz_),
+		new ManyCubesDemoPlan(tileSz_),
+		new VideoDemoPlan(tileSz_),
+		new NanoVGDemoPlan(tileSz_),
+		new ShaderDemoPlan(tileSz_),
+		new FontDemoPlan(tileSz_),
+		new PedestrianDemoPlan(tileSz_),
+		new BeautyDemoPlan(tileSz_),
+		new OptflowDemoPlan(tileSz_)
+	};
 	struct Frames {
-		cv::UMat cube_;
-		cv::UMat many_cubes_;
-		cv::UMat video_;
-		cv::UMat nanovg_;
-		cv::UMat shader_;
-		cv::UMat font_;
-		cv::UMat pedestrian_;
-		cv::UMat beauty_;
-		cv::UMat optflow_;
+		std::vector<cv::UMat> results_ = std::vector<cv::UMat>(9);
 		cv::UMat captured;
 	} frames_;
+
+	cv::Size_<float> scale_;
 public:
 	MontageDemoPlan(const cv::Size& sz) : Plan(sz) {
+		CV_Assert(plans_.size() == frames_.results_.size() &&  plans_.size() == size_t(tiling_.width * tiling_.height));
 		scale_ = cv::Size_<float>(float(size().width) / tileSz_.width, float(size().height) / tileSz_.height);
 	}
 
 	virtual void setup(cv::Ptr<V4D> window) override {
-		cubePlan_.setup(window);
-		manyCubesPlan_.setup(window);
-		videoPlan_.setup(window);
-		nanovgPlan_.setup(window);
-		shaderPlan_.setup(window);
-		fontPlan_.setup(window);
-		pedestrianPlan_.setup(window);
-		beautyPlan_.setup(window);
-		optflowPlan_.setup(window);
+		for(auto* plan : plans_) {
+			plan->setup(window);
+		}
 	}
 
 	virtual void infer(cv::Ptr<V4D> window) override {
-		window->nvg([](const cv::Size& sz, const cv::Size_<float>& scale) {
-			CV_UNUSED(scale);
-			glViewport(0, 0, sz.width, sz.height);
-		}, size(), scale_);
-
 		window->nvgCtx()->setScale(scale_);
 		window->capture();
 		window->setDisableIO(true);
@@ -96,100 +82,26 @@ public:
 		}, tileSz_, frames_.captured);
 
 
-		window->fb([](cv::UMat& framebuffer, const cv::Size& tileSize, const cv::UMat& captured){
-			framebuffer = cv::Scalar::all(0);
-			captured.copyTo(framebuffer(cv::Rect(0, tileSize.height * 2, tileSize.width, tileSize.height)));
-		}, tileSz_, frames_.captured);
-		cubePlan_.infer(window);
-		window->fb([](const cv::UMat& framebuffer, cv::UMat& cube){
-			framebuffer.copyTo(cube);
-		}, frames_.cube_);
-
-		window->fb([](cv::UMat& framebuffer, const cv::Size& tileSize, const cv::UMat& captured){
-			framebuffer = cv::Scalar::all(0);
-			captured.copyTo(framebuffer(cv::Rect(0, tileSize.height * 2, tileSize.width, tileSize.height)));
-		}, tileSz_, frames_.captured);
-		manyCubesPlan_.infer(window);
-		window->fb([](const cv::UMat& framebuffer, cv::UMat& many_cubes){
-			framebuffer.copyTo(many_cubes);
-		}, frames_.many_cubes_);
-
-		window->fb([](cv::UMat& framebuffer, const cv::Size& tileSize, const cv::UMat& captured){
-			framebuffer = cv::Scalar::all(0);
-			captured.copyTo(framebuffer(cv::Rect(0, tileSize.height * 2, tileSize.width, tileSize.height)));
-		}, tileSz_, frames_.captured);
-		videoPlan_.infer(window);
-		window->fb([](const cv::UMat& framebuffer, cv::UMat& video){
-			framebuffer.copyTo(video);
-		}, frames_.video_);
-
-		window->fb([](cv::UMat& framebuffer, const cv::Size& tileSize, const cv::UMat& captured){
-			framebuffer = cv::Scalar::all(0);
-			captured.copyTo(framebuffer(cv::Rect(0, tileSize.height * 2, tileSize.width, tileSize.height)));
-		}, tileSz_, frames_.captured);
-		nanovgPlan_.infer(window);
-		window->fb([](const cv::UMat& framebuffer, cv::UMat& nanovg){
-			framebuffer.copyTo(nanovg);
-		}, frames_.nanovg_);
-
-		window->fb([](cv::UMat& framebuffer, const cv::Size& tileSize, const cv::UMat& captured){
-			framebuffer = cv::Scalar::all(0);
-			captured.copyTo(framebuffer(cv::Rect(0, tileSize.height * 2, tileSize.width, tileSize.height)));
-		}, tileSz_, frames_.captured);
-		shaderPlan_.infer(window);
-		window->fb([](const cv::UMat& framebuffer, cv::UMat& shader){
-			framebuffer.copyTo(shader);
-		}, frames_.shader_);
-
-		window->fb([](cv::UMat& framebuffer, const cv::Size& tileSize, const cv::UMat& captured){
-			framebuffer = cv::Scalar::all(0);
-			captured.copyTo(framebuffer(cv::Rect(0, tileSize.height * 2, tileSize.width, tileSize.height)));
-		}, tileSz_, frames_.captured);
-		fontPlan_.infer(window);
-		window->fb([](const cv::UMat& framebuffer, cv::UMat& font){
-			framebuffer.copyTo(font);
-		}, frames_.font_);
-
-		window->fb([](cv::UMat& framebuffer, const cv::Size& tileSize, const cv::UMat& captured){
-			framebuffer = cv::Scalar::all(0);
-			captured.copyTo(framebuffer(cv::Rect(0, tileSize.height * 2, tileSize.width, tileSize.height)));
-		}, tileSz_, frames_.captured);
-		pedestrianPlan_.infer(window);
-		window->fb([](const cv::UMat& framebuffer, cv::UMat& pedestrian){
-			framebuffer.copyTo(pedestrian);
-		}, frames_.pedestrian_);
-
-		window->fb([](cv::UMat& framebuffer, const cv::Size& tileSize, const cv::UMat& captured){
-			framebuffer = cv::Scalar::all(0);
-			captured.copyTo(framebuffer(cv::Rect(0, tileSize.height * 2, tileSize.width, tileSize.height)));
-		}, tileSz_, frames_.captured);
-		optflowPlan_.infer(window);
-		window->fb([](const cv::UMat& framebuffer, cv::UMat& optflow){
-			framebuffer.copyTo(optflow);
-		}, frames_.optflow_);
-
-		window->fb([](cv::UMat& framebuffer, const cv::Size& tileSize, const cv::UMat& captured){
-			framebuffer = cv::Scalar::all(0);
-			captured.copyTo(framebuffer(cv::Rect(0, tileSize.height * 2, tileSize.width, tileSize.height)));
-		}, tileSz_, frames_.captured);
-		beautyPlan_.infer(window);
-		window->fb([](const cv::UMat& framebuffer, cv::UMat& beauty){
-			framebuffer.copyTo(beauty);
-		}, frames_.beauty_);
+		for(size_t i = 0; i < plans_.size(); ++i) {
+			auto* plan = plans_[i];
+			window->fb([](cv::UMat& framebuffer, const cv::Size& tileSize, const cv::UMat& captured){
+				framebuffer = cv::Scalar::all(0);
+				captured.copyTo(framebuffer(cv::Rect(0, tileSize.height * 2, tileSize.width, tileSize.height)));
+			}, tileSz_, frames_.captured);
+			plan->infer(window);
+			window->fb([](const cv::UMat& framebuffer, cv::UMat& result){
+				framebuffer.copyTo(result);
+			}, frames_.results_[i]);
+		}
 
 		window->fb([](cv::UMat& framebuffer, const cv::Size& tileSz, const Frames& frames){
 			int w = tileSz.width;
 			int h = tileSz.height;
 			framebuffer = cv::Scalar::all(0);
-			frames.cube_		(cv::Rect(0, h * 2, w, h)).copyTo(framebuffer(cv::Rect(0	, 0, w, h)));
-			frames.many_cubes_	(cv::Rect(0, h * 2, w, h)).copyTo(framebuffer(cv::Rect(w	, 0, w, h)));
-			frames.video_		(cv::Rect(0, h * 2, w, h)).copyTo(framebuffer(cv::Rect(w * 2, 0, w, h)));
-			frames.nanovg_		(cv::Rect(0, h * 2, w, h)).copyTo(framebuffer(cv::Rect(0	, h, w, h)));
-			frames.shader_		(cv::Rect(0, h * 2, w, h)).copyTo(framebuffer(cv::Rect(w	, h, w, h)));
-			frames.font_		(cv::Rect(0, h * 2, w, h)).copyTo(framebuffer(cv::Rect(w * 2, h, w, h)));
-			frames.pedestrian_	(cv::Rect(0, h * 2, w, h)).copyTo(framebuffer(cv::Rect(0    , h * 2, w, h)));
-			frames.optflow_		(cv::Rect(0, h * 2, w, h)).copyTo(framebuffer(cv::Rect(w    , h * 2, w, h)));
-			frames.beauty_		(cv::Rect(0, h * 2, w, h)).copyTo(framebuffer(cv::Rect(w * 2, h * 2, w, h)));
+
+			for(size_t x = 0; x < 3; ++x)
+				for(size_t y = 0; y < 3; ++y)
+					frames.results_[x * 3 + y]		(cv::Rect(0, h * 2, w, h)).copyTo(framebuffer(cv::Rect(w * x, h * y, w, h)));
 		}, tileSz_, frames_);
 
 		window->setDisableIO(false);
@@ -197,20 +109,16 @@ public:
 	}
 
 	virtual void teardown(cv::Ptr<V4D> window) override {
-		cubePlan_.teardown(window);
-		manyCubesPlan_.teardown(window);
-		videoPlan_.teardown(window);
-		shaderPlan_.teardown(window);
-		pedestrianPlan_.teardown(window);
-		optflowPlan_.teardown(window);
-		beautyPlan_.teardown(window);
+		for(auto* plan : plans_) {
+			plan->setup(window);
+		}
 	}
 };
 
 int main(int argc, char** argv) {
 #ifndef __EMSCRIPTEN__
-	if (argc != 2) {
-        cerr << "Usage: montage-demo <video-file>" << endl;
+	if (argc != 3) {
+        cerr << "Usage: montage-demo <video-file> <number of extra threads>" << endl;
         exit(1);
     }
 	constexpr double FPS = 60;
@@ -230,7 +138,7 @@ int main(int argc, char** argv) {
     auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, plan->size());
     window->setSink(sink);
 #endif
-    window->run(plan, 2);
+    window->run(plan, atoi(argv[2]));
 
     return 0;
 }

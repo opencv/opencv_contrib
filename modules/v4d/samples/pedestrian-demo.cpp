@@ -129,7 +129,7 @@ public:
     	int w = size().width;
     	int h = size().height;
     	diag_ = hypot(double(w), double(h));
-    	downSize_ = { w / 2, h / 2 };
+    	downSize_ = { w , h };
     	scale_ = { float(w) / downSize_.width, float(h) / downSize_.height };
     	blurKernelSize_ = std::max(int(diag_ / 200 % 2 == 0 ? diag_ / 200 + 1 : diag_ / 200), 1);
     }

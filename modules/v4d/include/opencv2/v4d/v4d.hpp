@@ -125,36 +125,29 @@ static std::size_t index(const std::thread::id id)
     return iter->second;
 }
 
-template<typename Tfn, typename Textra>
-const string make_id(const string& name, Tfn&& fn, const Textra& extra) {
+template<typename Tfn, typename ... Args>
+const string make_id(const string& name, Tfn&& fn, Args&& ... args) {
 	stringstream ss;
-	stringstream ssExtra;
-	ssExtra << extra;
-	if(ssExtra.str().empty()) {
-		ss << name << "(" << index(std::this_thread::get_id()) << "-" << detail::lambda_ptr_hex(std::forward<Tfn>(fn)) << ")";
-	}
-	else {
-		ss << name << "(" << index(std::this_thread::get_id()) << "-" << detail::lambda_ptr_hex(std::forward<Tfn>(fn)) << ")/" << ssExtra.str();
-	}
-
+	ss << name << "(" << index(std::this_thread::get_id()) << "-" << detail::lambda_ptr_hex(std::forward<Tfn>(fn)) << ")";
+	((ss << ',' << int_to_hex((long)&args)), ...);
 	return ss.str();
 }
 
-template<typename Tfn>
-const string make_id(const string& name, Tfn&& fn, const string& extra = "") {
-	return make_id<Tfn, std::string>(name, fn, extra);
-}
+//template<typename Tfn>
+//const string make_id(const string& name, Tfn&& fn, const string& extra = "") {
+//	return make_id<Tfn, std::string>(name, fn, extra);
+//}
 
 
-template<typename Tfn, typename Textra>
-void print_id(const string& name, Tfn&& fn, const Textra& extra) {
-		cerr << make_id<Tfn, Textra>(name, fn, extra) << endl;
-}
-
-template<typename Tfn>
-void print_id(const string& name, Tfn&& fn, const string& extra = "") {
-		cerr << make_id<Tfn, std::string>(name, fn, extra) << endl;
-}
+//template<typename Tfn, typename Textra>
+//void print_id(const string& name, Tfn&& fn, Textra& extra) {
+//		cerr << make_id<Tfn, Textra>(name, fn, extra) << endl;
+//}
+//
+//template<typename Tfn>
+//void print_id(const string& name, Tfn&& fn, const string& extra = "") {
+//		cerr << make_id<Tfn, std::string>(name, fn, extra) << endl;
+//}
 
 }
 
@@ -323,7 +316,7 @@ public:
     typename std::enable_if<std::is_invocable_v<Tfn, Args...>, void>::type
     gl(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("gl", fn, -1);
+        const string id = make_id("gl", fn, -1, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
@@ -335,7 +328,7 @@ public:
     void gl(int32_t idx, Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
 
-        const string id = make_id("gl", fn, idx);
+        const string id = make_id("gl", fn, idx, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
@@ -356,7 +349,7 @@ public:
     template <typename Tfn, typename ... Args>
     void branch(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("branch", fn);
+        const string id = make_id("branch", fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function functor = fn;
@@ -376,7 +369,7 @@ public:
     template <typename Tfn, typename ... Args>
     void endbranch(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("endbranch", fn);
+        const string id = make_id("endbranch", fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function functor = fn;
@@ -386,7 +379,7 @@ public:
     template <typename Tfn, typename ... Args>
     void fb(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("fb", fn);
+        const string id = make_id("fb", fn, args...);
 		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 		using Tfbbase = typename std::remove_cv<Tfb>::type;
 
@@ -427,7 +420,7 @@ public:
     	if(disableIO_)
     		return;
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("capture", fn);
+        const string id = make_id("capture", fn, args...);
 		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 
 		static_assert((std::is_same<Tfb,const cv::UMat&>::value) || !"The first argument must be of type 'const cv::UMat&'");
@@ -464,7 +457,7 @@ public:
     	if(disableIO_)
     		return;
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("write", fn);
+        const string id = make_id("write", fn, args...);
 		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 
 		static_assert((std::is_same<Tfb,cv::UMat&>::value) || !"The first argument must be of type 'cv::UMat&'");
@@ -478,7 +471,7 @@ public:
     template <typename Tfn, typename ... Args>
     void nvg(Tfn fn, Args&&... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("nvg", fn);
+        const string id = make_id("nvg", fn, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
@@ -489,7 +482,7 @@ public:
     template <typename Tfn, typename ... Args>
     void single(Tfn fn, Args&&... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("single", fn);
+        const string id = make_id("single", fn, args...);
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function functor(fn);
 		add_transaction<decltype(functor)>(singleCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
@@ -498,7 +491,7 @@ public:
     template <typename Tfn, typename ... Args>
     void parallel(Tfn fn, Args&&... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("parallel", fn);
+        const string id = make_id("parallel", fn, args...);
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function functor(fn);
 		add_transaction<decltype(functor)>(parallelCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
