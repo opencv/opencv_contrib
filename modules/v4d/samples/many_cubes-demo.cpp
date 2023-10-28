@@ -4,17 +4,20 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include <opencv2/v4d/v4d.hpp>
+#include <map>
+#include <fstream>
+#include <sstream>
+#include <chrono>
+
 //adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
 
 using namespace cv::v4d;
 class ManyCubesDemoPlan : public Plan {
 public:
 	/* Demo Parameters */
-#ifndef __EMSCRIPTEN__
-	constexpr static size_t NUMBER_OF_CUBES_ = 10;
-#else
-	constexpr static size_t NUMBER_OF_CUBES_ = 5;
-#endif
+	constexpr static size_t MAX_NUM_CUBES_ = 100;
+	constexpr static std::string subtitlesFile_ = "sub.txt";
+	size_t numCubes_ = 0;
 	int glowKernelSize_;
 
 	/* OpenGL constants and variables */
@@ -31,9 +34,14 @@ public:
 	};
 
 	constexpr static float VERTEX_COLORS_[24] = {
-		1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
-		0.2, 0.6, 1.0, 0.6, 1.0, 0.4, 0.6, 0.8, 0.8, 0.4, 0.8, 0.8
+		0.125, 0.125, 0.125, 1.00, 1.00, 1.00, 0.125, 0.125, 0.125, 1.00, 1.00, 1.00,
+		0.125, 0.125, 0.125, 1.00, 1.00, 1.00, 0.125, 0.125, 0.125, 1.00, 1.00, 1.00
 	};
+
+//	constexpr static float VERTEX_COLORS_[24] = {
+//			1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
+//			0.2, 0.6, 1.0, 0.6, 1.0, 0.4, 0.6, 0.8, 0.8, 0.4, 0.8, 0.8
+//	};
 
 	constexpr static unsigned short TRIANGLE_INDICES_[36] = {
 		// Front
@@ -60,20 +68,27 @@ private:
 	    cv::UMat up_;
 	    cv::UMat blur_;
 	    cv::UMat dst16_;
+	    cv::UMat invert_;
+	    cv::UMat bgr_;
+	    cv::UMat gray_;
 	} cache_;
-	GLuint vao_[NUMBER_OF_CUBES_];
-	GLuint shaderProgram_[NUMBER_OF_CUBES_];
-	GLuint uniformTransform_[NUMBER_OF_CUBES_];
+	GLuint vao_[MAX_NUM_CUBES_];
+	GLuint shaderProgram_[MAX_NUM_CUBES_];
+	GLuint uniformTransform_[MAX_NUM_CUBES_];
+	float start_ = 0;
+	std::map<long, std::pair<long, std::string>> subtitles_;
+	cv::UMat cubes_;
+	cv::UMat text_;
 
 	//Simple transform & pass-through shaders
 	static GLuint load_shader() {
 		//Shader versions "330" and "300 es" are very similar.
 		//If you are careful you can write the same code for both versions.
-	#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
+#if !defined(OPENCV_V4D_USE_ES3)
 	    const string shaderVersion = "330";
-	#else
+#else
 	    const string shaderVersion = "300 es";
-	#endif
+#endif
 
 	    const string vert =
 	            "    #version " + shaderVersion
@@ -219,11 +234,43 @@ private:
 public:
 	ManyCubesDemoPlan(cv::Size sz) : Plan(sz) {
 		int diag = hypot(double(size().width), double(size().height));
-		glowKernelSize_ = std::max(int(diag / 138 % 2 == 0 ? diag / 138 + 1 : diag / 138), 1);
+		glowKernelSize_ = 3;
 	}
 
 	void setup(cv::Ptr<V4D> window) override {
-		for(size_t i = 0; i < NUMBER_OF_CUBES_; ++i) {
+		window->parallel([](float& start, const std::string& subtitlesFile, std::map<long, std::pair<long, std::string>>& subtitles){
+			start = cv::getTickCount() / cv::getTickFrequency();
+
+			std::ifstream ifs(subtitlesFile);
+			std::string line;
+			std::string hours;
+			std::string minutes;
+			std::string seconds;
+			std::string millis;
+			std::string text;
+			size_t cnt = 0;
+			while(ifs) {
+				if(!getline(ifs, line))
+						break;
+				std::istringstream is(line);
+				CV_Assert(getline(is, hours, ':'));
+				CV_Assert(getline(is, minutes, ':'));
+				CV_Assert(getline(is, seconds, ','));
+				CV_Assert(getline(is, millis, ' '));
+				long timepointMillis = ((stol(hours) * 60 * 60) + (stol(minutes) * 60) + stol(seconds)) * 1000 + stol(millis);
+				getline(ifs, text);
+//				cerr << timepointMillis << " = " << text << endl;
+				long prev = 0;
+				if(!subtitles.empty())
+					std::prev(subtitles.end())->second.first = timepointMillis + 200;
+				subtitles[5052 * cnt] = { 0, text };
+				++cnt;
+			}
+			std::prev(subtitles.end())->second.first = std::prev(subtitles.end())->first + 5000;
+
+		}, start_, subtitlesFile_, subtitles_);
+
+		for(size_t i = 0; i < MAX_NUM_CUBES_; ++i) {
 			window->gl(i, [](const size_t& ctxIdx, const cv::Size& sz, GLuint& vao, GLuint& shader, GLuint& uniformTrans){
 				CV_UNUSED(ctxIdx);
 				init_scene(sz, vao, shader, uniformTrans);
@@ -234,47 +281,93 @@ public:
 	void infer(cv::Ptr<V4D> window) override {
 		window->gl([](){
 			//Clear the background
-			glClearColor(0.2, 0.24, 0.4, 1);
+			glClearColor(0.0, 0.0, 0.0, 1);
 			glClear(GL_COLOR_BUFFER_BIT);
 		});
 
+		window->parallel([](float& start, size_t& numCubes){
+			float t = cv::getTickCount() / cv::getTickFrequency() - start;
+			numCubes = std::max(size_t(round(pow(t / 182.0f,2.0f) * MAX_NUM_CUBES_)), size_t(1));
+			if(numCubes == MAX_NUM_CUBES_)
+				exit(0);
+		}, start_, numCubes_);
+
 		//Render using multiple OpenGL contexts
-		for(size_t i = 0; i < NUMBER_OF_CUBES_; ++i) {
-			window->gl(i, [](const int32_t& ctxIdx, const cv::Size& sz, GLuint& vao, GLuint& shader, GLuint& uniformTrans){
-				double x = sin((double(ctxIdx) / NUMBER_OF_CUBES_) * 2 * M_PI) / 1.5;
-				double y = cos((double(ctxIdx) / NUMBER_OF_CUBES_) * 2 * M_PI) / 1.5;
-				double angle = sin((double(ctxIdx) / NUMBER_OF_CUBES_) * 2 * M_PI);
-				render_scene(sz, x, y, angle, vao, shader, uniformTrans);
-			}, size(), vao_[i], shaderProgram_[i], uniformTransform_[i]);
+		for(size_t i = 0; i < MAX_NUM_CUBES_; ++i) {
+			window->gl(i, [](const int32_t& ctxIdx, const cv::Size& sz, const size_t& numCubes, GLuint& vao, GLuint& shader, GLuint& uniformTrans){
+				double x = sin((double(ctxIdx) / numCubes) * 2 * M_PI) / 1.5;
+				double y = cos((double(ctxIdx) / numCubes) * 2 * M_PI) / 1.5;
+				double angle = sin((double(ctxIdx) / numCubes) * 2 * M_PI);
+				if(ctxIdx < numCubes)
+					render_scene(sz, x, y, angle, vao, shader, uniformTrans);
+			}, size(), numCubes_, vao_[i], shaderProgram_[i], uniformTransform_[i]);
 		}
 
+		window->fb([](const cv::UMat& framebuffer, cv::UMat& cubes) {
+			framebuffer.copyTo(cubes);
+		}, cubes_);
+
+		window->nvg([](const cv::Size& sz, float& start, std::map<long, std::pair<long, std::string>>& subtitles){
+			if(subtitles.empty())
+				return;
+			float t = (cv::getTickCount() / cv::getTickFrequency() - start) * 1000;
+			long first = ((*subtitles.begin()).first);
+			long second = 0;
+			if(subtitles.size() > 1)
+				second = (std::next(subtitles.begin())->first);
+
+//			cerr << "t:" << t << " f:" << first << " s:" << second << endl;
+			if(second > 0 && t > second) {
+				subtitles.erase(subtitles.begin());
+				return;
+			}
+
+			if(t >= first) {
+				using namespace cv::v4d::nvg;
+				std::string txt = (*subtitles.begin()).second.second;
+//				cerr << "DRAW: " << txt << endl;
+				clear();
+				fontSize(38);
+				fontFace("sans-bold");
+				fillColor(cv::Scalar::all(255));
+				textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+				text(sz.width / 2.0, sz.height / 2.0, txt.c_str(), txt.c_str() + txt.size());
+			}
+		}, size(), start_, subtitles_);
+
 		//Aquire the frame buffer for use by OpenCV
-#ifndef __EMSCRIPTEN__
-		window->fb([](cv::UMat& framebuffer, int glowKernelSize, Cache& cache) {
-			glow_effect(framebuffer, framebuffer, glowKernelSize, cache);
-		}, glowKernelSize_, cache_);
-#endif
+		window->fb([](cv::UMat& framebuffer, cv::UMat& cubes, cv::UMat& text, int glowKernelSize, Cache& cache) {
+			glow_effect(framebuffer, text, glowKernelSize, cache);
+			cv::bitwise_not(text, cache.invert_);
+			cv::add(cubes, text, framebuffer);
+			glow_effect(text, text, glowKernelSize * 2, cache);
+			cv::add(framebuffer, text, framebuffer);
+			glow_effect(text, text, glowKernelSize * 4, cache);
+			cv::add(framebuffer, text, framebuffer);
+			cvtColor(cache.invert_, cache.gray_, cv::COLOR_BGRA2GRAY);
+			cv::threshold(cache.gray_, cache.gray_, 254, 255, cv::THRESH_BINARY);
+			cache.invert_.setTo(cv::Scalar::all(0), cache.gray_);
+			cv::bitwise_xor(framebuffer, cache.invert_, framebuffer);
+			glow_effect(framebuffer, framebuffer, glowKernelSize * 8, cache);
+		}, cubes_, text_, glowKernelSize_, cache_);
 
 		window->write();
 	}
 };
 
 int main() {
-#ifndef __EMSCRIPTEN__
-	cv::Ptr<ManyCubesDemoPlan> plan = new ManyCubesDemoPlan(cv::Size(1280, 720));
-#else
-	cv::Ptr<ManyCubesDemoPlan> plan = new ManyCubesDemoPlan(cv::Size(960, 960));
-#endif
-    cv::Ptr<V4D> window = V4D::make(plan->size(), "Many Cubes Demo", IMGUI);
+	cv::Ptr<ManyCubesDemoPlan> plan = new ManyCubesDemoPlan(cv::Size(1920, 1080));
+    cv::Ptr<V4D> window = V4D::make(plan->size(), "Many Cubes Demo", NANOVG);
 
-#ifndef __EMSCRIPTEN_
-	constexpr double FPS = 60;
+	constexpr double FPS = 47;
 	constexpr const char* OUTPUT_FILENAME = "many_cubes-demo.mkv";
     //Creates a writer sink (which might be hardware accelerated)
     auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, plan->size());
+    window->setPrintFPS(true);
+    window->setShowFPS(false);
+    window->setShowTracking(false);
     window->setSink(sink);
-#endif
-    window->run(plan, 1);
+    window->run(plan, 0);
 
     return 0;
 }

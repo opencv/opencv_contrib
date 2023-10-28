@@ -236,22 +236,6 @@ public:
 };
 
 int main() {
-//	std::thread t([](){
-//		cv::UMat src(cv::Size(1280, 720), CV_8UC3);
-//		cv::UMat dst;
-//		while(true) {
-//			cvtColor(src, dst, cv::COLOR_BGR2HSV);
-//		}
-//	});
-
-	cv::UMat src(cv::Size(1280, 720), CV_8UC3);
-	cv::UMat dst;
-
-	while(true) {
-		cvtColor(src, dst, cv::COLOR_BGR2HSV);
-	}
-
-
 #ifndef __EMSCRIPTEN__
 	constexpr double FPS = 60;
 	constexpr const char* OUTPUT_FILENAME = "cube-demo.mkv";

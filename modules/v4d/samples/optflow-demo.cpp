@@ -44,23 +44,23 @@ class OptflowDemoPlan : public Plan {
 		// Generate the foreground at this scale.
 		float fgScale_ = 0.5f;
 		// On every frame the foreground loses on brightness. Specifies the loss in percent.
-		float fgLoss_ = 1;
+		float fgLoss_ = 1.0f;
 		//Convert the background to greyscale
-		BackgroundModes backgroundMode_ = GREY;
+		BackgroundModes backgroundMode_ = COLOR;
 		// Peak thresholds for the scene change detection. Lowering them makes the detection more sensitive but
 		// the default should be fine.
 		float sceneChangeThresh_ = 0.29f;
 		float sceneChangeThreshDiff_ = 0.1f;
 		// The theoretical maximum number of points to track which is scaled by the density of detected points
 		// and therefor is usually much smaller.
-		int maxPoints_ = 300000;
+		int maxPoints_ = 5000000;
 		// How many of the tracked points to lose intentionally, in percent.
-		float pointLoss_ = 20;
+		float pointLoss_ = 5;
 		// The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
 		// of tracked points and therefor is usually much smaller.
-		int maxStroke_ = 6;
+		int maxStroke_ = 1;
 		// Blue, green, red and alpha. All from 0.0f to 1.0f
-		cv::Scalar_<float> effectColor_ = {0.4f, 0.75f, 1.0f, 0.15f};
+		cv::Scalar_<float> effectColor_ = {1.0f, 1.0f, 1.0f, 0.2f};
 		//display on-screen FPS
 		bool showFps_ = true;
 		//Stretch frame buffer to window size
@@ -198,10 +198,13 @@ public:
 	                }
 
 	                using namespace cv::v4d::nvg;
+	                static thread_local long cnt = 0;
 	                //start drawing
 	                beginPath();
 	                strokeWidth(strokeSize);
-	                strokeColor(params.effectColor_ * 255.0);
+	                cv::Scalar color = cv::v4d::colorConvert(cv::Scalar(++cnt % 180, 128, 128), cv::COLOR_HSV2BGR);
+	                color[3] = 40;
+	                strokeColor(color);
 
 	                for (size_t i = 0; i < cache.prevPoints_.size(); i++) {
 	                    if (cache.status_[i] == 1 //point was found in prev and new set
@@ -384,6 +387,10 @@ public:
 		window->capture();
 
 		window->fb([](const cv::UMat& framebuffer, cv::UMat& d, cv::UMat& b, const Params& params) {
+//			double contrast = 1.33;
+//			multiply(framebuffer, cv::Scalar::all(contrast), framebuffer);
+								//fix skin brightness
+//			add(framebuffer, cv::Scalar::all((1.0 - contrast) / 2.0) * 255.0, framebuffer);
 			//resize to foreground scale
 			cv::resize(framebuffer, d, cv::Size(framebuffer.size().width * params.fgScale_, framebuffer.size().height * params.fgScale_));
 			//save video background
@@ -432,7 +439,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
     constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
-    cv::Ptr<OptflowDemoPlan> plan = new OptflowDemoPlan(cv::Size(1280, 720));
+    cv::Ptr<OptflowDemoPlan> plan = new OptflowDemoPlan(cv::Size(1920, 1080));
 #else
 #endif
     try {
