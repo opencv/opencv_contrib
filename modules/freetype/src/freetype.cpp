@@ -67,6 +67,7 @@ public:
     FreeType2Impl();
     ~FreeType2Impl();
     void loadFontData(String fontFileName, int idx) CV_OVERRIDE;
+    void loadFontData(uchar* pBuf, size_t bufSize, int idx) CV_OVERRIDE;
     void setSplitNumber( int num ) CV_OVERRIDE;
     void putText(
         InputOutputArray img, const String& text, Point org,
@@ -181,16 +182,39 @@ FreeType2Impl::~FreeType2Impl()
 void FreeType2Impl::loadFontData(String fontFileName, int idx)
 {
     CV_Assert( idx >= 0 );
-    if( mIsFaceAvailable  == true )
+    if ( mIsFaceAvailable  == true )
     {
-        hb_font_destroy (mHb_font);
+        hb_font_destroy(mHb_font);
         CV_Assert(!FT_Done_Face(mFace));
     }
 
     mIsFaceAvailable = false;
-    CV_Assert( !FT_New_Face( mLibrary, fontFileName.c_str(), static_cast<FT_Long>(idx), &(mFace) ) );
+    CV_Assert( !FT_New_Face( mLibrary, fontFileName.c_str(), static_cast<FT_Long>(idx), &mFace ) );
 
-    mHb_font = hb_ft_font_create (mFace, NULL);
+    mHb_font = hb_ft_font_create(mFace, NULL);
+    if ( mHb_font == NULL )
+    {
+        CV_Assert(!FT_Done_Face(mFace));
+        return;
+    }
+    CV_Assert( mHb_font != NULL );
+    mIsFaceAvailable = true;
+}
+
+void FreeType2Impl::loadFontData(uchar* pBuf, size_t bufSize, int idx)
+{
+    CV_Assert( idx >= 0 );
+    if ( mIsFaceAvailable  == true )
+    {
+        hb_font_destroy(mHb_font);
+        CV_Assert(!FT_Done_Face(mFace));
+    }
+
+    mIsFaceAvailable = false;
+    FT_Open_Args args{ FT_OPEN_MEMORY, (FT_Byte*)pBuf, static_cast<FT_Long>(bufSize), nullptr, nullptr, nullptr, 0, nullptr };
+    CV_Assert( !FT_Open_Face(mLibrary, &args, idx, &mFace) );
+
+    mHb_font = hb_ft_font_create(mFace, NULL);
     if ( mHb_font == NULL )
     {
         CV_Assert(!FT_Done_Face(mFace));
