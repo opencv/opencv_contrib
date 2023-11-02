@@ -74,8 +74,8 @@ inline v_uint8x16 v_finalize_pix_ch(const v_int16x8& c0, const v_int16x8& c1,
     v_expand_f32(c0, f0, f1);
     v_expand_f32(c1, f2, f3);
 
-    v_int16x8 d0 = v_pack(v_round(s0*alpha + f0), v_round(s1*alpha + f1));
-    v_int16x8 d1 = v_pack(v_round(s2*alpha + f2), v_round(s3*alpha + f3));
+    v_int16x8 d0 = v_pack(v_round(v_add(v_mul(s0, alpha), f0)), v_round(v_add(v_mul(s1, alpha), f1)));
+    v_int16x8 d1 = v_pack(v_round(v_add(v_mul(s2, alpha), f2)), v_round(v_add(v_mul(s3, alpha), f3)));
 
     return v_pack_u(d0, d1);
 }
@@ -135,12 +135,12 @@ public:
                     v_expand_s(p1, p10, p11);
                     v_expand_s(p2, p20, p21);
 
-                    v_int16x8 d00 = p00 - c00, d01 = p01 - c01;
-                    v_int16x8 d10 = p10 - c10, d11 = p11 - c11;
-                    v_int16x8 d20 = p20 - c20, d21 = p21 - c21;
+                    v_int16x8 d00 = v_sub(p00, c00), d01 = v_sub(p01, c01);
+                    v_int16x8 d10 = v_sub(p10, c10), d11 = v_sub(p11, c11);
+                    v_int16x8 d20 = v_sub(p20, c20), d21 = v_sub(p21, c21);
 
-                    v_uint16x8 n0 = v_abs(d00) + v_abs(d10) + v_abs(d20);
-                    v_uint16x8 n1 = v_abs(d01) + v_abs(d11) + v_abs(d21);
+                    v_uint16x8 n0 = v_add(v_add(v_abs(d00), v_abs(d10)), v_abs(d20));
+                    v_uint16x8 n1 = v_add(v_add(v_abs(d01), v_abs(d11)), v_abs(d21));
 
                     ushort CV_DECL_ALIGNED(16) nbuf[16];
                     v_store(nbuf, n0);
@@ -153,13 +153,13 @@ public:
 
                     v_expand_f32(d00, fd0, fd1);
                     v_expand_f32(d01, fd2, fd3);
-                    s00 += fd0*w0; s01 += fd1*w1; s02 += fd2*w2; s03 += fd3*w3;
+                    s00 = v_add(s00, v_mul(fd0, w0)); s01 = v_add(s01, v_mul(fd1, w1)); s02 = v_add(s02, v_mul(fd2, w2)); s03 = v_add(s03, v_mul(fd3, w3));
                     v_expand_f32(d10, fd0, fd1);
                     v_expand_f32(d11, fd2, fd3);
-                    s10 += fd0*w0; s11 += fd1*w1; s12 += fd2*w2; s13 += fd3*w3;
+                    s10 = v_add(s10, v_mul(fd0, w0)); s11 = v_add(s11, v_mul(fd1, w1)); s12 = v_add(s12, v_mul(fd2, w2)); s13 = v_add(s13, v_mul(fd3, w3));
                     v_expand_f32(d20, fd0, fd1);
                     v_expand_f32(d21, fd2, fd3);
-                    s20 += fd0*w0; s21 += fd1*w1; s22 += fd2*w2; s23 += fd3*w3;
+                    s20 = v_add(s20, v_mul(fd0, w0)); s21 = v_add(s21, v_mul(fd1, w1)); s22 = v_add(s22, v_mul(fd2, w2)); s23 = v_add(s23, v_mul(fd3, w3));
                 }
 
                 c0 = v_finalize_pix_ch(c00, c01, s00, s01, s02, s03, v_alpha);
