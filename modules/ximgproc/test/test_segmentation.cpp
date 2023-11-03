@@ -8,79 +8,187 @@ using namespace cv::ximgproc::segmentation;
 namespace opencv_test { namespace {
 
 // See https://github.com/opencv/opencv_contrib/issues/3544
-TEST(ximgproc_ImageSegmentation, createGraphSegmentation_issueC3544)
+
+typedef tuple< int, double, int> GraphSegmentationTestParam;
+typedef testing::TestWithParam<GraphSegmentationTestParam> createGraphSegmentation_issueC3544;
+
+TEST_P( createGraphSegmentation_issueC3544, regression )
 {
-    cv::String testImagePath = cvtest::TS::ptr()->get_data_path() + "cv/ximgproc/" + "pascal_voc_bird.png";
-    Mat testImg = imread(testImagePath);
+    const int mat_type     = get<0>(GetParam());
+    const double alpha     = get<1>(GetParam());
+    const int expected_max = get<2>(GetParam());
+
+    cv::String testImagePath = cvtest::TS::ptr()->get_data_path() + "cv/ximgproc/pascal_voc_bird.png";
+    Mat testImg = imread(testImagePath, cv::IMREAD_COLOR);
     ASSERT_FALSE(testImg.empty()) << "Could not load input image " << testImagePath;
-    Ptr<GraphSegmentation> gs = createGraphSegmentation();
+
+    if( CV_MAT_CN( mat_type ) == 1 ) {
+        cvtColor( testImg, testImg, COLOR_BGR2GRAY );
+    }else if( CV_MAT_CN(mat_type) == 2 ){
+        // Do nothing.
+    }else if( CV_MAT_CN(mat_type) == 3 ){
+        // Do nothing.
+    }else if( CV_MAT_CN(mat_type) == 4 ){
+        cvtColor( testImg, testImg, COLOR_BGR2BGRA );
+    }
+
+    if ( alpha != 1.0 )
+    {
+        testImg.convertTo( testImg, mat_type, alpha );
+    }
+
+    // Force to convert from 3ch to 2ch.
+    if ( CV_MAT_CN(mat_type) == 2 )
+    {
+        std::vector<cv::Mat> planes;
+        cv::split( testImg, planes );
+        planes.erase( planes.begin() );
+        cv::merge( planes, testImg );
+    }
+
     Mat segImg;
-    double min,max;
+    Ptr<GraphSegmentation> gs = createGraphSegmentation();
 
-    // Try CV_8UC3
-    Mat testImg_8UC3;
-    testImg_8UC3 = testImg.clone();
-    ASSERT_EQ(testImg_8UC3.type(), CV_8UC3 ) << "Input image is not CV_8UC3";
-    ASSERT_NO_THROW( gs->processImage(testImg_8UC3, segImg) );
-    ASSERT_NO_THROW( minMaxLoc(segImg, &min, &max) );
-    EXPECT_EQ( min, 0 );
-    EXPECT_EQ( max, 17 );
+    if( expected_max > 0 )
+    {
+        ASSERT_NO_THROW( gs->processImage(testImg, segImg) );
 
-    // Try CV_8UC1
-    Mat testImg_8UC1;
-    cvtColor(testImg, testImg_8UC1, COLOR_BGR2GRAY);
-    ASSERT_EQ(testImg_8UC1.type(), CV_8UC1 ) << "Input image is not CV_8UC1";
-    ASSERT_NO_THROW( gs->processImage(testImg_8UC1, segImg) );
-    ASSERT_NO_THROW( minMaxLoc(segImg, &min, &max) );
-    EXPECT_EQ( min, 0 );
-    EXPECT_EQ( max, 14 ); // Gray image
+        double min,max;
+        ASSERT_NO_THROW( minMaxLoc(segImg, &min, &max) );
+        EXPECT_EQ( static_cast<int>(min), 0 );
+        EXPECT_EQ( static_cast<int>(max), expected_max );
+    }
+    else
+    {
+        ASSERT_ANY_THROW( gs->processImage(testImg, segImg) );
+    }
+}
 
-    // Try CV_8UC4
-    Mat testImg_8UC4;
-    cvtColor(testImg, testImg_8UC4, COLOR_BGR2BGRA);
-    ASSERT_EQ(testImg_8UC4.type(), CV_8UC4 ) << "Input image is not CV_8UC4";
-    ASSERT_NO_THROW( gs->processImage(testImg_8UC4, segImg) );
-    ASSERT_NO_THROW( minMaxLoc(segImg, &min, &max) );
-    EXPECT_EQ( min, 0 );
-    EXPECT_EQ( max, 17 );
+/*
+ * CV_8S results were different because some information are lost.    : [37,15,16,16]
+ *
+ * CV_16S results were slightly different from others.
+ *
+ * [CV_16S] -(convertTo(alpha)-> [CV_32F]                             : [13,18,15,15]
+ * [CV_16S] -(convertTo(alpha)-> [CV_8U ] -(convertTo(1.0)-> [CV_32F] : [14,17,17,17]
+ *
+ * [CV_any] -(convertTo(alpha)-> [CV_32F]                             : [14,17,17,17]
+ */
 
-    // Try CV_16UC3
-    Mat testImg_16UC3;
-    testImg.convertTo(testImg_16UC3, CV_16U, 257., 0.0);
-    ASSERT_EQ(testImg_16UC3.type(), CV_16UC3 ) << "Input image is not CV_16UC3";
-    ASSERT_NO_THROW( gs->processImage(testImg_16UC3, segImg) );
-    ASSERT_NO_THROW( minMaxLoc(segImg, &min, &max) );
-    EXPECT_EQ( min, 0 );
-    EXPECT_EQ( max, 17 );
+const GraphSegmentationTestParam gstest_list[] =
+{
+    make_tuple<int, double, int>( CV_8UC1,  1.0,                14 ),
+    make_tuple<int, double, int>( CV_8UC2,  1.0,                17 ),
+    make_tuple<int, double, int>( CV_8UC3,  1.0,                17 ),
+    make_tuple<int, double, int>( CV_8UC4,  1.0,                17 ),
 
-    // Try CV_32FC3
-    Mat testImg_32FC3;
-    testImg.convertTo(testImg_32FC3, CV_32F, 1./255. , 0.0);
-    ASSERT_EQ(testImg_32FC3.type(), CV_32FC3 ) << "Input image is not CV_32FC3";
-    ASSERT_NO_THROW( gs->processImage(testImg_32FC3, segImg) );
-    ASSERT_NO_THROW( minMaxLoc(segImg, &min, &max) );
-    EXPECT_EQ( min, 0 );
-    EXPECT_EQ( max, 17 );
+    make_tuple<int, double, int>( CV_8SC1,  127. / 255.,        37 ),
+    make_tuple<int, double, int>( CV_8SC2,  127. / 255.,        15 ),
+    make_tuple<int, double, int>( CV_8SC3,  127. / 255.,        16 ),
+    make_tuple<int, double, int>( CV_8SC4,  127. / 255.,        16 ),
 
-    // Try CV_64FC3
-    Mat testImg_64FC3;
-    testImg.convertTo(testImg_64FC3, CV_64F, 1./255. , 0.0);
-    ASSERT_EQ(testImg_64FC3.type(), CV_64FC3 ) << "Input image is not CV_64FC3";
-    ASSERT_NO_THROW( gs->processImage(testImg_64FC3, segImg) );
-    ASSERT_NO_THROW( minMaxLoc(segImg, &min, &max) );
-    EXPECT_EQ( min, 0 );
-    EXPECT_EQ( max, 17 );
+    make_tuple<int, double, int>( CV_16UC1, 65535. / 255.,      14 ),
+    make_tuple<int, double, int>( CV_16UC2, 65535. / 255.,      17 ),
+    make_tuple<int, double, int>( CV_16UC3, 65535. / 255.,      17 ),
+    make_tuple<int, double, int>( CV_16UC4, 65535. / 255.,      17 ),
 
-    // Unsupported Images
-    ASSERT_ANY_THROW( gs->processImage( cv::Mat::zeros(320,240, CV_8SC1), segImg) );
-    ASSERT_ANY_THROW( gs->processImage( cv::Mat::zeros(320,240, CV_8SC3), segImg) );
-    ASSERT_ANY_THROW( gs->processImage( cv::Mat::zeros(320,240, CV_8SC4), segImg) );
-    ASSERT_ANY_THROW( gs->processImage( cv::Mat::zeros(320,240, CV_16SC1), segImg) );
-    ASSERT_ANY_THROW( gs->processImage( cv::Mat::zeros(320,240, CV_16SC3), segImg) );
-    ASSERT_ANY_THROW( gs->processImage( cv::Mat::zeros(320,240, CV_16SC4), segImg) );
-    ASSERT_ANY_THROW( gs->processImage( cv::Mat::zeros(320,240, CV_32SC1), segImg) );
-    ASSERT_ANY_THROW( gs->processImage( cv::Mat::zeros(320,240, CV_32SC3), segImg) );
-    ASSERT_ANY_THROW( gs->processImage( cv::Mat::zeros(320,240, CV_32SC4), segImg) );
+    make_tuple<int, double, int>( CV_16SC1, 32767. / 255.,      13 ),
+    make_tuple<int, double, int>( CV_16SC2, 32767. / 255.,      18 ),
+    make_tuple<int, double, int>( CV_16SC3, 32767. / 255.,      15 ),
+    make_tuple<int, double, int>( CV_16SC4, 32767. / 255.,      15 ),
+
+    make_tuple<int, double, int>( CV_32SC1, 2147483647. / 255., 14 ),
+    make_tuple<int, double, int>( CV_32SC2, 2147483647. / 255., 17 ),
+    make_tuple<int, double, int>( CV_32SC3, 2147483647. / 255., 17 ),
+    make_tuple<int, double, int>( CV_32SC4, 2147483647. / 255., 17 ),
+
+    make_tuple<int, double, int>( CV_32FC1, 1. / 255.,          14 ),
+    make_tuple<int, double, int>( CV_32FC2, 1. / 255.,          17 ),
+    make_tuple<int, double, int>( CV_32FC3, 1. / 255.,          17 ),
+    make_tuple<int, double, int>( CV_32FC4, 1. / 255.,          17 ),
+
+    make_tuple<int, double, int>( CV_64FC1, 1. / 255.,          14 ),
+    make_tuple<int, double, int>( CV_64FC2, 1. / 255.,          17 ),
+    make_tuple<int, double, int>( CV_64FC3, 1. / 255.,          17 ),
+    make_tuple<int, double, int>( CV_64FC4, 1. / 255.,          17 ),
+
+    make_tuple<int, double, int>( CV_16FC1, 1. / 255.,          -1 ),
+    make_tuple<int, double, int>( CV_16FC2, 1. / 255.,          -1 ),
+    make_tuple<int, double, int>( CV_16FC3, 1. / 255.,          -1 ),
+    make_tuple<int, double, int>( CV_16FC4, 1. / 255.,          -1 )
+
+#ifdef CV_16BF
+    make_tuple<int, double, int>( CV_16BFC1, 1. / 255.,         -1 ),
+    make_tuple<int, double, int>( CV_16BFC2, 1. / 255.,         -1 ),
+    make_tuple<int, double, int>( CV_16BFC3, 1. / 255.,         -1 ),
+    make_tuple<int, double, int>( CV_16BFC4, 1. / 255.,         -1 )
+#endif // CV_16BF
+
+#ifdef CV_Bool
+    ,
+    make_tuple<int, double, int>( CV_BoolC1, 1.,                -1 ),
+    make_tuple<int, double, int>( CV_BoolC2, 1.,                -1 ),
+    make_tuple<int, double, int>( CV_BoolC3, 1.,                -1 ),
+    make_tuple<int, double, int>( CV_BoolC4, 1.,                -1 )
+#endif // CV_Bool
+
+#ifdef CV_64U
+    ,
+    make_tuple<int, double, int>( CV_64UC1,  1.,                -1 ),
+    make_tuple<int, double, int>( CV_64UC2,  1.,                -1 ),
+    make_tuple<int, double, int>( CV_64UC3,  1.,                -1 ),
+    make_tuple<int, double, int>( CV_64UC4,  1.,                -1 )
+#endif // CV_64U
+
+#ifdef CV_64S
+    ,
+    make_tuple<int, double, int>( CV_64SC1,  1.,                -1 ),
+    make_tuple<int, double, int>( CV_64SC2,  1.,                -1 ),
+    make_tuple<int, double, int>( CV_64SC3,  1.,                -1 ),
+    make_tuple<int, double, int>( CV_64SC4,  1.,                -1 )
+#endif // CV_64S
+
+#ifdef CV_32U
+    ,
+    make_tuple<int, double, int>( CV_32UC1,  1.,                -1 ),
+    make_tuple<int, double, int>( CV_32UC2,  1.,                -1 ),
+    make_tuple<int, double, int>( CV_32UC3,  1.,                -1 ),
+    make_tuple<int, double, int>( CV_32UC4,  1.,                -1 )
+#endif // CV_32U
+
+};
+
+INSTANTIATE_TEST_CASE_P(GraphSegmentation,
+                        createGraphSegmentation_issueC3544,
+                        testing::ValuesIn(gstest_list));
+
+
+TEST(ximgproc_ImageSegmentation, createGraphSegmentation_negativeValue)
+{
+    Ptr<GraphSegmentation> gs = createGraphSegmentation();
+    Mat src ;
+    Mat segImg;
+
+    src = cv::Mat(320,240,CV_8SC3);
+    src.at<int8_t>(0,0) = -1;
+    ASSERT_ANY_THROW( gs->processImage(src, segImg) );
+
+    src = cv::Mat(320,240,CV_16SC3);
+    src.at<int16_t>(0,0) = -1;
+    ASSERT_ANY_THROW( gs->processImage(src, segImg) );
+
+    src = cv::Mat(320,240,CV_32SC3);
+    src.at<int32_t>(0,0) = -1;
+    ASSERT_ANY_THROW( gs->processImage(src, segImg) );
+
+    src = cv::Mat(320,240,CV_32FC3);
+    src.at<float>(0,0) = -1.0;
+    ASSERT_ANY_THROW( gs->processImage(src, segImg) );
+
+    src = cv::Mat(320,240,CV_64FC3);
+    src.at<double>(0,0) = -1.0;
+    ASSERT_ANY_THROW( gs->processImage(src, segImg) );
+
 }
 
 }} // namespace
