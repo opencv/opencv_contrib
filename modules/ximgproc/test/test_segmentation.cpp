@@ -53,10 +53,11 @@ TEST_P( createGraphSegmentation_issueC3544, regression )
     {
         ASSERT_NO_THROW( gs->processImage(testImg, segImg) );
 
-        double min,max;
-        ASSERT_NO_THROW( minMaxLoc(segImg, &min, &max) );
-        EXPECT_EQ( static_cast<int>(min), 0 );
-        EXPECT_EQ( static_cast<int>(max), expected_max );
+        double minValue = DBL_MIN;
+        double maxValue = DBL_MAX;
+        ASSERT_NO_THROW( minMaxLoc(segImg, &minValue, &maxValue) );
+        EXPECT_EQ( static_cast<int>(minValue), 0 );
+        EXPECT_EQ( static_cast<int>(maxValue), expected_max );
     }
     else
     {
