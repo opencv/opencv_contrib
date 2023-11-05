@@ -210,12 +210,16 @@ public:
 		{
 			window->parallel([](cv::UMat& videoFrameDownGrey, Detection& detection, const uint64_t& frameCnt, cv::Rect& tracked, Cache& cache){
 //				cerr << "track: " << frameCnt << " " << cache.fps_ << endl;
+				cv::Rect oldTracked = tracked;
 				if((cache.fps_ == 0 || frameCnt % cache.fps_ == 0) || !detection.tracker_->update(videoFrameDownGrey, tracked)) {
 					cache.fps_ = uint64_t(std::ceil(Global::fps()));
 					//detection failed - re-detect
 					detection.redetect_ = true;
 				}
-
+				tracked.x = (oldTracked.x + tracked.x) / 2.0;
+				tracked.y = (oldTracked.y + tracked.y) / 2.0;
+				tracked.width = (oldTracked.width + tracked.width) / 2.0;
+				tracked.height = (oldTracked.height+ tracked.height) / 2.0;
 			}, videoFrameDownGrey_, detection_, window->frameCount(), tracked_, cache_);
 		}
 		window->endbranch(dontRedect_, detection_.trackerInitialized_, detection_.redetect_);
