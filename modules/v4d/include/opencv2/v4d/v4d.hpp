@@ -71,14 +71,17 @@ class Plan {
 	const cv::Size sz_;
 	const cv::Rect vp_;
 public:
+	//predefined branch predicates
 	constexpr static auto always_ = []() { return true; };
 	constexpr static auto isTrue_ = [](const bool& b) { return b; };
 	constexpr static auto isFalse_ = [](const bool& b) { return !b; };
 	constexpr static auto and_ = [](const bool& a, const bool& b) { return a && b; };
 	constexpr static auto or_ = [](const bool& a, const bool& b) { return a || b; };
+
 	explicit Plan(const cv::Rect& vp) : sz_(cv::Size(vp.width, vp.height)), vp_(vp){};
 	explicit Plan(const cv::Size& sz) : sz_(sz), vp_(0, 0, sz.width, sz.height){};
 	virtual ~Plan() {};
+
 	virtual void gui(cv::Ptr<V4D> window) { CV_UNUSED(window); };
 	virtual void setup(cv::Ptr<V4D> window) { CV_UNUSED(window); };
 	virtual void infer(cv::Ptr<V4D> window) = 0;
@@ -140,23 +143,6 @@ const string make_id(const string& name, Tfn&& fn, Args&& ... args) {
 	((ss << ',' << int_to_hex((long)&args)), ...);
 	return ss.str();
 }
-
-//template<typename Tfn>
-//const string make_id(const string& name, Tfn&& fn, const string& extra = "") {
-//	return make_id<Tfn, std::string>(name, fn, extra);
-//}
-
-
-//template<typename Tfn, typename Textra>
-//void print_id(const string& name, Tfn&& fn, Textra& extra) {
-//		cerr << make_id<Tfn, Textra>(name, fn, extra) << endl;
-//}
-//
-//template<typename Tfn>
-//void print_id(const string& name, Tfn&& fn, const string& extra = "") {
-//		cerr << make_id<Tfn, std::string>(name, fn, extra) << endl;
-//}
-
 }
 
 using namespace cv::v4d::detail;
