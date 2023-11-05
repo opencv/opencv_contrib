@@ -69,11 +69,7 @@ private:
 		//Stretch frame buffer to window size
 		bool stretch_ = false;
 		//The post processing mode
-#ifndef __EMSCRIPTEN__
 		PostProcModes postProcMode_ = GLOW;
-#else
-		PostProcModes postProcMode_ = DISABLED;
-#endif
 		// Intensity of glow or bloom defined by kernel size. The default scales with the image diagonal.
 		int glowKernelSize_ = 0;
 		//The lightness selection threshold
@@ -366,7 +362,7 @@ public:
 			if(Checkbox("Stretch", &params.stretch_)) {
 				win->setStretching(params.stretch_);
 			}
-	#ifndef __EMSCRIPTEN__
+
 			if(Button("Fullscreen")) {
 				win->setFullscreen(!win->isFullscreen());
 			};
@@ -374,7 +370,7 @@ public:
 			if(Button("Offscreen")) {
 				win->setVisible(!win->isVisible());
 			};
-	#endif
+
 			End();
 	    }, params_);
 	}
@@ -448,29 +444,18 @@ public:
 };
 
 int main(int argc, char **argv) {
-    CV_UNUSED(argc);
-    CV_UNUSED(argv);
-
-#ifndef __EMSCRIPTEN__
     if (argc != 2) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;
         exit(1);
     }
-    constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
+
     cv::Ptr<OptflowDemoPlan> plan = new OptflowDemoPlan(cv::Size(1280, 720));
-#else
-    cv::Ptr<OptflowDemoPlan> plan = new OptflowDemoPlan(cv::Size(960, 960));
-#endif
 	cv::Ptr<V4D> window = V4D::make(plan->size(), "Sparse Optical Flow Demo", ALL);
-#ifndef __EMSCRIPTEN__
+
 	auto src = makeCaptureSource(window, argv[1]);
+	auto sink = makeWriterSink(window, "optflow-demo.mkv", src->fps(), plan->size());
 	window->setSource(src);
-	auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
 	window->setSink(sink);
-#else
-	cv::Ptr<Source> src = makeCaptureSource(window);
-	window->setSource(src);
-#endif
 
 	window->run(plan);
     return 0;

@@ -8,10 +8,6 @@
 
 #include "framebuffercontext.hpp"
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#endif
-
 struct NVGcontext;
 namespace cv {
 namespace v4d {

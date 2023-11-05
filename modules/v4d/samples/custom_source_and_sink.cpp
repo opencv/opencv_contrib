@@ -1,7 +1,5 @@
 #include <opencv2/v4d/v4d.hpp>
-#ifndef __EMSCRIPTEN__
-#  include <opencv2/imgcodecs.hpp>
-#endif
+#include <opencv2/imgcodecs.hpp>
 
 using namespace cv;
 using namespace cv::v4d;
@@ -47,12 +45,7 @@ int main() {
 	//Make a sink the saves each frame to a PNG file (does nothing in case of WebAssembly).
 	cv::Ptr<Sink> sink = new Sink([](const uint64_t& seq, const cv::UMat& frame){
 	    try {
-#ifndef __EMSCRIPTEN__
 			imwrite(std::to_string(seq) + ".png", frame);
-#else
-			CV_UNUSED(seq);
-			CV_UNUSED(frame);
-#endif
 	    } catch(std::exception& ex) {
 	        cerr << "Unable to write frame: " << ex.what() << endl;
 	        return false;

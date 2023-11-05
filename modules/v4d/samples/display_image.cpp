@@ -12,11 +12,7 @@ public:
 
 	void setup(Ptr<V4D> win) override {
 		win->parallel([](cv::UMat& image){
-#ifdef __EMSCRIPTEN__
-		image = read_embedded_image("doc/lena.png").getUMat(ACCESS_READ);
-#else
-		image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
-#endif
+			image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
 		}, image_);
 	}
 

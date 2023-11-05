@@ -11,10 +11,6 @@
 #include <sstream>
 #include <limits>
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#endif
-
 using std::string;
 using std::vector;
 using std::istringstream;
@@ -197,20 +193,11 @@ public:
 FontDemoPlan::Params FontDemoPlan::params_;
 
 int main() {
-#ifndef __EMSCRIPTEN__
 	cv::Ptr<FontDemoPlan> plan = new FontDemoPlan(cv::Size(1280, 720));
-#else
-	cv::Ptr<FontDemoPlan> plan = new FontDemoPlan(cv::Size(960, 960));
-#endif
 	cv::Ptr<V4D> window = V4D::make(plan->size(), "Font Demo", ALL);
 
-#ifndef __EMSCRIPTEN__
-	constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
-	constexpr double FPS = 60;
-	auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, plan->size());
+	auto sink = makeWriterSink(window, "font-demo.mkv", 60, plan->size());
 	window->setSink(sink);
-#endif
-
 	window->run(plan);
     return 0;
 }

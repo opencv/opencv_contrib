@@ -69,7 +69,7 @@ private:
 	GLuint uniform_transform_ = 0;
 
 	static GLuint load_shader() {
-	#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
+	#if !defined(OPENCV_V4D_USE_ES3)
 	    const string shaderVersion = "330";
 	#else
 	    const string shaderVersion = "300 es";
@@ -168,7 +168,6 @@ private:
 
 	}
 
-	#ifndef __EMSCRIPTEN__
 	static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize, Cache& cache) {
 	    cv::bitwise_not(src, dst);
 
@@ -182,7 +181,6 @@ private:
 
 	    cv::bitwise_not(dst, dst);
 	}
-	#endif
 public:
 	void setup(cv::Ptr<V4D> window) override {
 		int diag = hypot(double(size().width), double(size().height));
@@ -199,49 +197,28 @@ public:
 			render_scene(vao, shader, uniformTrans);
 		}, vao_, shader_, uniform_transform_);
 
-#ifndef __EMSCRIPTEN__
 		window->fb([](cv::UMat& framebuffer, const cv::Rect& viewport, int glowKernelSize, Cache& cache) {
 			cv::UMat roi = framebuffer(viewport);
 			glow_effect(roi, roi, glowKernelSize, cache);
 		}, viewport(), glowKernelSize_, cache_);
-#endif
 
-		//Ignored in WebAssmebly builds because there is no sink set.
 		window->write();
 	}
 };
 
 int main(int argc, char** argv) {
-#ifndef __EMSCRIPTEN__
 	if (argc != 2) {
         cerr << "Usage: video-demo <video-file>" << endl;
         exit(1);
     }
 
-	constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
 	cv::Ptr<VideoDemoPlan> plan = new VideoDemoPlan(cv::Size(1280,720));
-#else
-	CV_UNUSED(argc);
-	CV_UNUSED(argv);
-	cv::Ptr<VideoDemoPlan> plan = new VideoDemoPlan(cv::Size(960,960));
-#endif
-
-    using namespace cv::v4d;
-
     cv::Ptr<V4D> window = V4D::make(plan->size(), "Video Demo", NONE);
 
-#ifndef __EMSCRIPTEN__
-    //Creates a source from a file or a device
     auto src = makeCaptureSource(window, argv[1]);
+    auto sink = makeWriterSink(window, "video-demo.mkv", src->fps(), plan->size());
     window->setSource(src);
-
-    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
     window->setSink(sink);
-#else
-    //Creates a webcam source is available
-    auto src = makeCaptureSource(window);
-    window->setSource(src);
-#endif
 
     window->run(plan);
 

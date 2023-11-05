@@ -117,28 +117,19 @@ public:
 };
 
 int main(int argc, char** argv) {
-#ifndef __EMSCRIPTEN__
 	if (argc != 3) {
         cerr << "Usage: montage-demo <video-file> <number of extra workers>" << endl;
         exit(1);
     }
-	constexpr double FPS = 60;
-	constexpr const char* OUTPUT_FILENAME = "montage-demo.mkv";
-#else
-	CV_UNUSED(argc);
-	CV_UNUSED(argv);
-#endif
-    using namespace cv::v4d;
-    cv::Ptr<MontageDemoPlan> plan = new MontageDemoPlan(cv::Size(1920, 1080));
+
+	cv::Ptr<MontageDemoPlan> plan = new MontageDemoPlan(cv::Size(1920, 1080));
     cv::Ptr<V4D> window = V4D::make(plan->size(), "Montage Demo", ALL);
-#ifndef __EMSCRIPTEN__
     //Creates a source from a file or a device
     auto src = makeCaptureSource(window, argv[1]);
     window->setSource(src);
     //Creates a writer sink (which might be hardware accelerated)
-    auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, plan->size());
+    auto sink = makeWriterSink(window, "montage-demo.mkv", 60, plan->size());
     window->setSink(sink);
-#endif
     window->run(plan, atoi(argv[2]));
 
     return 0;

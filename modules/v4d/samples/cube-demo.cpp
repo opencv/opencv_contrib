@@ -67,7 +67,7 @@ private:
 	static GLuint load_shader() {
 		//Shader versions "330" and "300 es" are very similar.
 		//If you are careful you can write the same code for both versions.
-	#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
+	#if !defined(OPENCV_V4D_USE_ES3)
 	    const string shaderVersion = "330";
 	#else
 	    const string shaderVersion = "300 es";
@@ -223,34 +223,24 @@ public:
 			render_scene(v, sp, ut);
 		}, vao_, shaderProgram_, uniformTransform_);
 
-#ifndef __EMSCRIPTEN__
 		//Aquire the frame buffer for use by OpenCV
 		window->fb([](cv::UMat& framebuffer, const cv::Rect& viewport, int glowKernelSize, Cache& cache) {
 			cv::UMat roi = framebuffer(viewport);
 			glow_effect(roi, roi, glowKernelSize, cache);
 		}, viewport(), glowKernelSize_, cache_);
-#endif
 
 		window->write();
 	}
 };
 
 int main() {
-#ifndef __EMSCRIPTEN__
-	constexpr double FPS = 60;
-	constexpr const char* OUTPUT_FILENAME = "cube-demo.mkv";
 	cv::Ptr<CubeDemoPlan> plan = new CubeDemoPlan(cv::Size(1280, 720));
-#else
-	cv::Ptr<CubeDemoPlan> plan = new CubeDemoPlan(cv::Size(960, 960));
-#endif
-
     cv::Ptr<V4D> window = V4D::make(plan->size(), "Cube Demo", ALL);
-#ifndef __EMSCRIPTEN__
+
     //Creates a writer sink (which might be hardware accelerated)
-    auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, plan->size());
+    auto sink = makeWriterSink(window, "cube-demo.mkv", 60, plan->size());
     window->setSink(sink);
-#endif
-    window->run(plan, 10);
+    window->run(plan);
 
     return 0;
 }

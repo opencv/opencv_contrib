@@ -102,7 +102,7 @@ private:
 
     //mandelbrot shader code adapted from my own project: https://github.com/kallaballa/FractalDive#after
     static GLuint load_shader() {
-        #if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
+        #if !defined(OPENCV_V4D_USE_ES3)
         const string shaderVersion = "330";
         #else
         const string shaderVersion = "300 es";
@@ -315,34 +315,18 @@ public:
 ShaderDemoPlan::Params ShaderDemoPlan::params_;
 
 int main(int argc, char** argv) {
-	CV_UNUSED(argc);
-	CV_UNUSED(argv);
-#ifndef __EMSCRIPTEN__
     if (argc != 2) {
         cerr << "Usage: shader-demo <video-file>" << endl;
         exit(1);
     }
-	cv::Ptr<ShaderDemoPlan> plan = new ShaderDemoPlan(cv::Size(1280, 720));
-#else
-	cv::Ptr<ShaderDemoPlan> plan = new ShaderDemoPlan(cv::Size(960, 960));
-#endif
 
+    cv::Ptr<ShaderDemoPlan> plan = new ShaderDemoPlan(cv::Size(1280, 720));
 	cv::Ptr<V4D> window = V4D::make(plan->size(), "Mandelbrot Shader Demo", IMGUI);
 
-#ifndef __EMSCRIPTEN_
-    constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
-
-	//Creates a source from a file or a device
 	auto src = makeCaptureSource(window, argv[1]);
+	auto sink = makeWriterSink(window, "shader-demo.mkv", src->fps(), plan->size());
 	window->setSource(src);
-
-	auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
 	window->setSink(sink);
-#else
-	//Creates a source from a file or a device
-	auto src = makeCaptureSource(window);
-	window->setSource(src);
-#endif
 
 	window->run(plan);
 

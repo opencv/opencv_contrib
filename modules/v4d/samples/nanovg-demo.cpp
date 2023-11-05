@@ -165,31 +165,19 @@ public:
 };
 
 int main(int argc, char **argv) {
-#ifndef __EMSCRIPTEN__
 	if (argc != 2) {
         cerr << "Usage: nanovg-demo <video-file>" << endl;
         exit(1);
 	}
 
-	constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
     cv::Ptr<NanoVGDemoPlan> plan = new NanoVGDemoPlan(cv::Size(1280, 960));
-#else
-    CV_UNUSED(argc, argv);
-    cv::Ptr<NanoVGDemoPlan> plan = new NanoVGDemoPlan(cv::Size(960, 960));
-#endif
-
     cv::Ptr<V4D> window = V4D::make(plan->size(), "NanoVG Demo", NANOVG);
     window->printSystemInfo();
 
-#ifndef __EMSCRIPTEN__
     auto src = makeCaptureSource(window, argv[1]);
-    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
+    auto sink = makeWriterSink(window, "nanovg-demo.mkv", src->fps(), plan->size());
     window->setSource(src);
     window->setSink(sink);
-#else
-    auto src = makeCaptureSource(window);
-    window->setSource(src);
-#endif
 
     window->run(plan);
 

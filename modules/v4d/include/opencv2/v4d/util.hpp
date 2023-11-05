@@ -19,12 +19,6 @@
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/imgproc.hpp>
 
-#ifdef __EMSCRIPTEN__
-#  include <emscripten.h>
-#  include <emscripten/bind.h>
-#  include <emscripten/threading.h>
-#  include <fstream>
-#endif
 #include <unistd.h>
 #include <mutex>
 #include <functional>
@@ -44,14 +38,9 @@ inline uint64_t get_epoch_nanos() {
 }
 
 static thread_local std::mutex mtx_;
-static thread_local bool sync_run_ = false;
 
 class CV_EXPORTS ThreadLocal {
 public:
-	CV_EXPORTS static bool& sync_run() {
-    	return sync_run_;
-    }
-
 	CV_EXPORTS static std::mutex& mutex() {
     	return mtx_;
     }
@@ -224,23 +213,6 @@ struct Lambda {
     }
 };
 
-
-
-template<std::size_t Tid>
-void run_sync_on_main(std::function<void()> fn) {
-	std::unique_lock<std::mutex> lock(ThreadLocal::mutex());
-    CV_Assert(fn);
-    CV_Assert(!ThreadLocal::sync_run());
-    ThreadLocal::sync_run() = true;
-#ifdef __EMSCRIPTEN__
-		emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, cv::v4d::detail::get_fn_ptr<Tid>(fn));
-#else
-    	fn();
-#endif
-
-	ThreadLocal::sync_run() = false;
-}
-
 CV_EXPORTS size_t cnz(const cv::UMat& m);
 }
 using std::string;
@@ -253,10 +225,6 @@ class V4D;
  * @return The color converted scalar
  */
 CV_EXPORTS cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code);
-
-#ifdef __EMSCRIPTEN__
-CV_EXPORTS Mat read_embedded_image(const string &path);
-#endif
 
 /*!
  * Convenience function to check for OpenGL errors. Should only be used via the macro #GL_CHECK.
@@ -312,7 +280,6 @@ CV_EXPORTS bool keepRunning();
 
 CV_EXPORTS void requestFinish();
 
-#ifndef __EMSCRIPTEN__
 /*!
  * Creates an Intel VAAPI enabled VideoWriter sink object to use in conjunction with #V4D::setSink().
  * Usually you would call #makeWriterSink() and let it automatically decide if VAAPI is available.
@@ -353,15 +320,6 @@ CV_EXPORTS cv::Ptr<Sink> makeWriterSink(cv::Ptr<V4D> window, const string& outpu
  * @return A (optionally VAAPI enabled) VideoCapture enabled source object.
  */
 CV_EXPORTS cv::Ptr<Source> makeCaptureSource(cv::Ptr<V4D> window, const string& inputFilename);
-#else
-/*!
- * Creates a WebCam source object to use in conjunction with #V4D::setSource().
- * @param width The frame width to capture (usually the initial width of the V4D object)
- * @param height The frame height to capture (usually the initial height of the V4D object)
- * @return A WebCam source object.
- */
-CV_EXPORTS cv::Ptr<Source> makeCaptureSource(cv::Ptr<V4D> window);
-#endif
 
 void resizePreserveAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize, const cv::Scalar& bgcolor = {0,0,0,255});
 

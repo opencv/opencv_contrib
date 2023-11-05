@@ -1,15 +1,13 @@
 #ifndef MODULES_V4D_INCLUDE_OPENCV2_V4D_DETAIL_CL_HPP_
 #define MODULES_V4D_INCLUDE_OPENCV2_V4D_DETAIL_CL_HPP_
 
-#ifndef __EMSCRIPTEN__
-#  ifndef CL_TARGET_OPENCL_VERSION
-#    define CL_TARGET_OPENCL_VERSION 120
-#  endif
-#  ifdef __APPLE__
-#    include <OpenCL/cl_gl_ext.h>
-#  else
-#    include <CL/cl_gl.h>
-#  endif
+#ifndef CL_TARGET_OPENCL_VERSION
+#  define CL_TARGET_OPENCL_VERSION 120
+#endif
+#ifdef __APPLE__
+#  include <OpenCL/cl_gl_ext.h>
+#else
+#  include <CL/cl_gl.h>
 #endif
 
 #endif /* MODULES_V4D_INCLUDE_OPENCV2_V4D_DETAIL_CL_HPP_ */

@@ -256,37 +256,22 @@ public:
 
 
 int main(int argc, char **argv) {
-	CV_UNUSED(argc);
-	CV_UNUSED(argv);
-
     if (argc != 2) {
         std::cerr << "Usage: pedestrian-demo <video-input>" << endl;
         exit(1);
     }
-#ifndef __EMSCRIPTEN__
-    constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
-    cv::Ptr<PedestrianDemoPlan> plan = new PedestrianDemoPlan(cv::Size(1280, 720));
-#else
-    cv::Ptr<PedestrianDemoPlan> plan = new PedestrianDemoPlan(cv::Size(960, 960));
-#endif
 
-    using namespace cv::v4d;
+    cv::Ptr<PedestrianDemoPlan> plan = new PedestrianDemoPlan(cv::Size(1280, 720));
     cv::Ptr<V4D> window = V4D::make(plan->size(), "Pedestrian Demo", ALL);
 
     window->printSystemInfo();
 
-#ifndef __EMSCRIPTEN__
     auto src = makeCaptureSource(window, argv[1]);
+    auto sink = makeWriterSink(window, "pedestrian-demo.mkv", src->fps(), plan->size());
     window->setSource(src);
-
-    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
     window->setSink(sink);
-#else
-    auto src = makeCaptureSource(WIDTH, HEIGHT, window);
-    window->setSource(src);
-#endif
 
-    window->run(plan,0);
+    window->run(plan);
 
     return 0;
 }

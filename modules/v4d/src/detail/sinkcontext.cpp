@@ -16,22 +16,16 @@ SinkContext::SinkContext(cv::Ptr<FrameBufferContext> mainFbContext) : mainFbCont
 }
 
 void SinkContext::execute(std::function<void()> fn) {
-    run_sync_on_main<31>([this,fn](){
-#ifndef __EMSCRIPTEN__
     if (hasContext()) {
         CLExecScope_t scope(getCLExecContext());
-#endif
         fn();
-#ifndef __EMSCRIPTEN__
     } else {
     	fn();
     }
-#endif
-		auto v4d = mainFbContext_->getV4D();
-		if(v4d->hasSink()) {
-			v4d->getSink()->operator ()(v4d->sourceCtx()->sequenceNumber(), sinkBuffer());
-		}
-    });
+	auto v4d = mainFbContext_->getV4D();
+	if(v4d->hasSink()) {
+		v4d->getSink()->operator ()(v4d->sourceCtx()->sequenceNumber(), sinkBuffer());
+	}
 }
 
 bool SinkContext::hasContext() {
@@ -39,9 +33,7 @@ bool SinkContext::hasContext() {
 }
 
 void SinkContext::copyContext() {
-#ifndef __EMSCRIPTEN__
     context_ = CLExecContext_t::getCurrent();
-#endif
 }
 
 CLExecContext_t SinkContext::getCLExecContext() {

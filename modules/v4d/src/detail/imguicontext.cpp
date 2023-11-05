@@ -10,26 +10,24 @@ namespace v4d {
 namespace detail {
 ImGuiContextImpl::ImGuiContextImpl(cv::Ptr<FrameBufferContext> fbContext) :
         mainFbContext_(fbContext) {
-    run_sync_on_main<27>([&,this](){
-        FrameBufferContext::GLScope glScope(mainFbContext_, GL_FRAMEBUFFER);
-        IMGUI_CHECKVERSION();
-        context_ = ImGui::CreateContext();
-        ImGui::SetCurrentContext(context_);
+	FrameBufferContext::GLScope glScope(mainFbContext_, GL_FRAMEBUFFER);
+	IMGUI_CHECKVERSION();
+	context_ = ImGui::CreateContext();
+	ImGui::SetCurrentContext(context_);
 
-        ImGuiIO& io = ImGui::GetIO();
-        (void)io;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-        ImGui::StyleColorsDark();
+	ImGuiIO& io = ImGui::GetIO();
+	(void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+	ImGui::StyleColorsDark();
 
-        ImGui_ImplGlfw_InitForOpenGL(mainFbContext_->getGLFWWindow(), false);
-        ImGui_ImplGlfw_SetCallbacksChainForAllWindows(true);
-#if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
-        ImGui_ImplOpenGL3_Init("#version 330");
+	ImGui_ImplGlfw_InitForOpenGL(mainFbContext_->getGLFWWindow(), false);
+	ImGui_ImplGlfw_SetCallbacksChainForAllWindows(true);
+#if !defined(OPENCV_V4D_USE_ES3)
+	ImGui_ImplOpenGL3_Init("#version 330");
 #else
-        ImGui_ImplOpenGL3_Init("#version 300 es");
+	ImGui_ImplOpenGL3_Init("#version 300 es");
 #endif
-    });
 }
 
 void ImGuiContextImpl::build(std::function<void(ImGuiContext*)> fn) {
@@ -42,57 +40,52 @@ void ImGuiContextImpl::makeCurrent() {
 }
 
 void ImGuiContextImpl::render(bool showFPS) {
-    {
-        mainFbContext_->makeCurrent();
-        ImGui::SetCurrentContext(context_);
+	mainFbContext_->makeCurrent();
+	ImGui::SetCurrentContext(context_);
 
-        GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-#if !defined(OPENCV_V4D_USE_ES3) && !defined(EMSCRIPTEN)
-        GL_CHECK(glDrawBuffer(GL_BACK));
+	GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+#if !defined(OPENCV_V4D_USE_ES3)
+	GL_CHECK(glDrawBuffer(GL_BACK));
 #endif
-        GL_CHECK(
-                glViewport(0, 0, mainFbContext_->getWindowSize().width,
-                        mainFbContext_->getWindowSize().height));
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-        if (showFPS) {
-            static bool open_ptr[1] = { true };
-            static ImGuiWindowFlags window_flags = 0;
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+	if (showFPS) {
+		static bool open_ptr[1] = { true };
+		static ImGuiWindowFlags window_flags = 0;
 //            window_flags |= ImGuiWindowFlags_NoBackground;
-            window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
-            window_flags |= ImGuiWindowFlags_NoMove;
-            window_flags |= ImGuiWindowFlags_NoScrollWithMouse;
-            window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
-            window_flags |= ImGuiWindowFlags_NoSavedSettings;
-            window_flags |= ImGuiWindowFlags_NoFocusOnAppearing;
-            window_flags |= ImGuiWindowFlags_NoNav;
-            window_flags |= ImGuiWindowFlags_NoDecoration;
-            window_flags |= ImGuiWindowFlags_NoInputs;
-            static ImVec2 pos(0, 0);
-            ImGui::SetNextWindowPos(pos, ImGuiCond_Once);
-            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.5f));
-            ImGui::Begin("Display", open_ptr, window_flags);
-            ImGui::Text("%.3f ms/frame (%.1f FPS)", (1000.0f / Global::fps()) , Global::fps());
-            ImGui::End();
-            ImGui::PopStyleColor(1);
-            std::stringstream ss;
-            TimeTracker::getInstance()->print(ss);
-            std::string line;
-            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.5f));
-            ImGui::Begin("Time Tracking");
-            while(getline(ss, line)) {
-                ImGui::Text("%s", line.c_str());
-            }
-            ImGui::End();
-            ImGui::PopStyleColor(1);
-        }
-        if (renderCallback_)
-            renderCallback_(context_);
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        mainFbContext_->makeNoneCurrent();
-    }
+		window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+		window_flags |= ImGuiWindowFlags_NoMove;
+		window_flags |= ImGuiWindowFlags_NoScrollWithMouse;
+		window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
+		window_flags |= ImGuiWindowFlags_NoSavedSettings;
+		window_flags |= ImGuiWindowFlags_NoFocusOnAppearing;
+		window_flags |= ImGuiWindowFlags_NoNav;
+		window_flags |= ImGuiWindowFlags_NoDecoration;
+		window_flags |= ImGuiWindowFlags_NoInputs;
+		static ImVec2 pos(0, 0);
+		ImGui::SetNextWindowPos(pos, ImGuiCond_Once);
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.5f));
+		ImGui::Begin("Display", open_ptr, window_flags);
+		ImGui::Text("%.3f ms/frame (%.1f FPS)", (1000.0f / Global::fps()) , Global::fps());
+		ImGui::End();
+		ImGui::PopStyleColor(1);
+		std::stringstream ss;
+		TimeTracker::getInstance()->print(ss);
+		std::string line;
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.5f));
+		ImGui::Begin("Time Tracking");
+		while(getline(ss, line)) {
+			ImGui::Text("%s", line.c_str());
+		}
+		ImGui::End();
+		ImGui::PopStyleColor(1);
+	}
+	if (renderCallback_)
+		renderCallback_(context_);
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	mainFbContext_->makeNoneCurrent();
 }
 }
 }

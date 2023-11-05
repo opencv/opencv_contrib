@@ -12,11 +12,6 @@
 
 #include "imgui_impl_glfw.h"
 
-#ifdef __EMSCRIPTEN__
-#  include <emscripten.h>
-#  include <emscripten/bind.h>
-#endif
-
 namespace cv {
 namespace v4d {
 
@@ -40,7 +35,7 @@ FrameBufferContext::FrameBufferContext(V4D& v4d, const cv::Size& framebufferSize
         const string& title, int major, int minor, int samples, bool debug, GLFWwindow* rootWindow, cv::Ptr<FrameBufferContext> parent, bool root) :
         v4d_(&v4d), offscreen_(offscreen), title_(title), major_(major), minor_(
                 minor), samples_(samples), debug_(debug), isVisible_(offscreen), viewport_(0, 0, framebufferSize.width, framebufferSize.height), framebufferSize_(framebufferSize), hasParent_(false), rootWindow_(rootWindow), parent_(parent), framebuffer_(), isRoot_(root) {
-    run_sync_on_main<1>([this](){ init(); });
+    init();
     index_ = ++frameBufferContextCnt;
 }
 
@@ -58,7 +53,7 @@ GLuint FrameBufferContext::getTextureID() {
 
 
 void FrameBufferContext::loadShader(const size_t& index) {
-#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
+#if !defined(OPENCV_V4D_USE_ES3)
     const string shaderVersion = "330";
 #else
     const string shaderVersion = "300 es";
@@ -119,96 +114,10 @@ void FrameBufferContext::loadBuffers(const size_t& index) {
     glBindVertexArray(0);
 }
 
-void FrameBufferContext::initWebGLCopy(const size_t& index) {
-#ifdef __EMSCRIPTEN__
-    this->makeCurrent();
-    GL_CHECK(glGenFramebuffers(1, &copyFramebuffers_[index]));
-    GL_CHECK(glGenTextures(1, &copyTextures_[index]));
-    loadShader(index);
-    loadBuffers(index);
-
-    // lookup the sampler locations.
-    texture_hdls_[index] = glGetUniformLocation(shader_program_hdls_[index], "texture0");
-    resolution_hdls_[index] = glGetUniformLocation(shader_program_hdls_[index], "resolution");
-#else
-    CV_UNUSED(index);
-    CV_Error(Error::StsNotImplemented, "WebGL not supported in none WASM builds");
-#endif
-}
-
-void FrameBufferContext::doWebGLCopy(cv::Ptr<FrameBufferContext> other) {
-#ifdef __EMSCRIPTEN__
-	cerr << "do copy" << endl;
-    size_t index = other->getIndex();
-    this->makeCurrent();
-    int width = getWindowSize().width;
-    int height = getWindowSize().height;
-    {
-        FrameBufferContext::GLScope glScope(self(), GL_READ_FRAMEBUFFER);
-        other->blitFrameBufferToFrameBuffer(
-                cv::Rect(0,0, other->size().width, other->size().height),
-                this->getWindowSize(),
-                0, false);
-        emscripten_webgl_commit_frame();
-    }
-    this->makeCurrent();
-    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, copyFramebuffers_[index]));
-    GL_CHECK(glBindTexture(GL_TEXTURE_2D, copyTextures_[index]));
-
-    EM_ASM({
-        var gl = Module.ctx;
-
-        var canvas;
-        if($0 > 0)
-            canvas = document.getElementById('canvas' + $0);
-        else
-            canvas = document.getElementById('canvas');
-
-        if(typeof Module["copyFramebuffers" + $0] === 'undefined') {
-            Module["copyFramebuffers" + $0] = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-        }
-
-        if(typeof Module["copyTextures" + $0] === 'undefined') {
-            Module["copyTextures" + $0]= gl.getParameter(gl.TEXTURE_BINDING_2D);
-        }
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, Module["copyFramebuffers" + $0]);
-        gl.bindTexture(gl.TEXTURE_2D, Module["copyTextures" + $0] );
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, Module["copyTextures" + $0] , 0);
-    }, index - 1);
-    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-    GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-    GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-    GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT1));
-    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, this->getFramebufferID()));
-    glViewport(0, 0, width, height);
-    GL_CHECK(glUseProgram(shader_program_hdls_[index]));
-
-    // set which texture units to render with.
-    GL_CHECK(glUniform1i(texture_hdls_[index], 0));  // texture unit 0
-    float res[2] = {float(width), float(height)};
-    GL_CHECK(glUniform2fv(resolution_hdls_[index], 1, res));
-    // Set each texture unit to use a particular texture.
-    GL_CHECK(glActiveTexture(GL_TEXTURE0));
-    GL_CHECK(glBindTexture(GL_TEXTURE_2D, copyTextures_[index]));
-
-    GL_CHECK(glBindVertexArray(copyVaos[index]));
-    GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-    GL_CHECK(glDisable(GL_BLEND));
-#else
-    CV_UNUSED(other);
-    CV_Error(Error::StsNotImplemented, "WebGL not supported in none WASM builds");
-#endif
-}
-
-
 void FrameBufferContext::init() {
 	static std::mutex initMtx;
 	std::unique_lock<std::mutex> lock(initMtx);
 
-#if !defined(__EMSCRIPTEN__)
     if(parent_) {
     	hasParent_ = true;
 
@@ -223,14 +132,11 @@ void FrameBufferContext::init() {
             onscreenTextureID_ = parent_->onscreenTextureID_;
             onscreenRenderBufferID_ = parent_->onscreenRenderBufferID_;
         }
-    }
-#else
-    hasParent_ = false;
-#endif
-    if (!parent_ && glfwInit() != GLFW_TRUE) {
-	cerr << "Can't init GLFW" << endl;
+    } else if (glfwInit() != GLFW_TRUE) {
+    	cerr << "Can't init GLFW" << endl;
     	exit(1);
     }
+
     glfwSetErrorCallback(cv::v4d::detail::glfw_error_callback);
 
     if (debug_)
@@ -242,7 +148,7 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#elif defined(OPENCV_V4D_USE_ES3) || defined(__EMSCRIPTEN__)
+#elif defined(OPENCV_V4D_USE_ES3)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
@@ -262,11 +168,7 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_STENCIL_BITS, 8);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-#ifndef __EMSCRIPTEN__
     glfwWindowHint(GLFW_VISIBLE, offscreen_ ? GLFW_FALSE : GLFW_TRUE );
-#else
-    glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
-#endif
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
 
     glfwWindow_ = glfwCreateWindow(framebufferSize_.width, framebufferSize_.height, title_.c_str(), nullptr,
@@ -290,10 +192,9 @@ void FrameBufferContext::init() {
     	rootWindow_ = glfwWindow_;
 
     this->makeCurrent();
-#ifndef __EMSCRIPTEN__
     glfwSwapInterval(0);
-#endif
-#if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
+//FIXME?
+//#if !defined(OPENCV_V4D_USE_ES3)
     if (!parent_) {
         GLenum err = glewInit();
         if (err != GLEW_OK && err != GLEW_ERROR_NO_GLX_DISPLAY) {
@@ -312,12 +213,11 @@ void FrameBufferContext::init() {
     	CV_LOG_WARNING(nullptr, "CL-GL sharing failed with unknown error");
         clglSharing_ = false;
     }
-#else
-    clglSharing_ = false;
-#endif
-#ifndef __EMSCRIPTEN__
+//#else
+//    clglSharing_ = false;
+//#endif
+
     context_ = CLExecContext_t::getCurrent();
-#endif
 
     setup();
     glfwSetWindowUserPointer(getGLFWWindow(), getV4D().get());
@@ -405,7 +305,6 @@ void FrameBufferContext::init() {
 ////                            if(v4d->hasNguiCtx())
 ////                                v4d->nguiCtx().screen().resize_callback_event(width, height);
 ////                        });
-////        #ifndef __EMSCRIPTEN__
 ////                        if(v4d->isResizable()) {
 ////                            v4d->nvgCtx().fbCtx()->teardown();
 ////                            v4d->glCtx().fbCtx()->teardown();
@@ -414,7 +313,6 @@ void FrameBufferContext::init() {
 ////                            v4d->glCtx().fbCtx()->setup(cv::Size(width, height));
 ////                            v4d->nvgCtx().fbCtx()->setup(cv::Size(width, height));
 ////                        }
-////        #endif
 //            });
     glfwSetWindowFocusCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int i) {
             V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
@@ -434,9 +332,7 @@ int FrameBufferContext::getIndex() {
 
 void FrameBufferContext::setup() {
 	cv::Size sz = framebufferSize_;
-#ifndef __EMSCRIPTEN__
     CLExecScope_t clExecScope(getCLExecContext());
-#endif
     framebuffer_.create(sz, CV_8UC4);
     if(isRoot()) {
         GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
@@ -487,7 +383,6 @@ void FrameBufferContext::teardown() {
     using namespace cv::ocl;
     this->makeCurrent();
 
-#ifndef __EMSCRIPTEN__
     if(clImage_ != nullptr && !getCLExecContext().empty()) {
         CLExecScope_t clExecScope(getCLExecContext());
 
@@ -507,7 +402,6 @@ void FrameBufferContext::teardown() {
             CV_Error_(cv::Error::OpenCLApiCallError, ("OpenCL: clReleaseMemObject failed: %d", status));
         clImage_ = nullptr;
     }
-#endif
     glBindTexture(GL_TEXTURE_2D, 0);
     glGetError();
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -523,10 +417,6 @@ void FrameBufferContext::teardown() {
 }
 
 void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture) {
-#ifdef __EMSCRIPTEN__
-    CV_UNUSED(u);
-    CV_UNUSED(texture);
-#else
     using namespace cv::ocl;
 
     cl_int status = 0;
@@ -558,14 +448,9 @@ void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture)
     status = clFinish(q);
     if (status != CL_SUCCESS)
         throw std::runtime_error("OpenCL: clFinish failed: " + std::to_string(status));
-#endif
 }
 
 void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::UMat& u) {
-#ifdef __EMSCRIPTEN__
-    CV_UNUSED(u);
-    CV_UNUSED(texture);
-#else
     using namespace cv::ocl;
 
     const int dtype = CV_8UC4;
@@ -608,7 +493,6 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
     status = clFinish(q);
     if (status != CL_SUCCESS)
         throw std::runtime_error("OpenCL: clFinish failed: " + std::to_string(status));
-#endif
 }
 
 const cv::Size& FrameBufferContext::size() const {
@@ -616,41 +500,29 @@ const cv::Size& FrameBufferContext::size() const {
 }
 
 void FrameBufferContext::copyTo(cv::UMat& dst) {
-    run_sync_on_main<7>([&,this](){
-#ifndef __EMSCRIPTEN__
-        if(!getCLExecContext().empty()) {
-            CLExecScope_t clExecScope(getCLExecContext());
-#endif
-            FrameBufferContext::GLScope glScope(this, GL_FRAMEBUFFER);
-            FrameBufferContext::FrameBufferScope fbScope(this, framebuffer_);
-            framebuffer_.copyTo(dst);
-#ifndef __EMSCRIPTEN__
-        } else {
-            FrameBufferContext::GLScope glScope(this, GL_FRAMEBUFFER);
-            FrameBufferContext::FrameBufferScope fbScope(this, framebuffer_);
-            framebuffer_.copyTo(dst);
-        }
-#endif
-    });
+	if(!getCLExecContext().empty()) {
+		CLExecScope_t clExecScope(getCLExecContext());
+		FrameBufferContext::GLScope glScope(this, GL_FRAMEBUFFER);
+		FrameBufferContext::FrameBufferScope fbScope(this, framebuffer_);
+		framebuffer_.copyTo(dst);
+	} else {
+		FrameBufferContext::GLScope glScope(this, GL_FRAMEBUFFER);
+		FrameBufferContext::FrameBufferScope fbScope(this, framebuffer_);
+		framebuffer_.copyTo(dst);
+	}
 }
 
 void FrameBufferContext::copyFrom(const cv::UMat& src) {
-    run_sync_on_main<18>([&,this](){
-#ifndef __EMSCRIPTEN__
-        if(!getCLExecContext().empty()) {
-            CLExecScope_t clExecScope(getCLExecContext());
-#endif
-            FrameBufferContext::GLScope glScope(this, GL_FRAMEBUFFER);
-            FrameBufferContext::FrameBufferScope fbScope(this, framebuffer_);
-            src.copyTo(framebuffer_);
-#ifndef __EMSCRIPTEN__
-        } else {
-            FrameBufferContext::GLScope glScope(this, GL_FRAMEBUFFER);
-            FrameBufferContext::FrameBufferScope fbScope(this, framebuffer_);
-            src.copyTo(framebuffer_);
-        }
-#endif
-    });
+	if(!getCLExecContext().empty()) {
+		CLExecScope_t clExecScope(getCLExecContext());
+		FrameBufferContext::GLScope glScope(this, GL_FRAMEBUFFER);
+		FrameBufferContext::FrameBufferScope fbScope(this, framebuffer_);
+		src.copyTo(framebuffer_);
+	} else {
+		FrameBufferContext::GLScope glScope(this, GL_FRAMEBUFFER);
+		FrameBufferContext::FrameBufferScope fbScope(this, framebuffer_);
+		src.copyTo(framebuffer_);
+	}
 }
 
 void FrameBufferContext::copyToRootWindow() {
@@ -670,11 +542,9 @@ GLFWwindow* FrameBufferContext::getGLFWWindow() const {
     return glfwWindow_;
 }
 
-#ifndef __EMSCRIPTEN__
 CLExecContext_t& FrameBufferContext::getCLExecContext() {
     return context_;
 }
-#endif
 
 void FrameBufferContext::blitFrameBufferToFrameBuffer(const cv::Rect& srcViewport,
         const cv::Size& targetFbSize, GLuint targetFramebufferID, bool stretch, bool flipY) {
@@ -791,29 +661,17 @@ cv::Vec2f FrameBufferContext::position() {
 }
 
 float FrameBufferContext::pixelRatioX() {
-#ifdef __EMSCRIPTEN__
-    float r = emscripten_get_device_pixel_ratio();
-
-    return r;
-#else
     float xscale, yscale;
     glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
 
     return xscale;
-#endif
 }
 
 float FrameBufferContext::pixelRatioY() {
-#ifdef __EMSCRIPTEN__
-    float r = emscripten_get_device_pixel_ratio();
-
-    return r;
-#else
     float xscale, yscale;
     glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
 
     return yscale;
-#endif
 }
 
 void FrameBufferContext::makeCurrent() {
@@ -822,9 +680,7 @@ void FrameBufferContext::makeCurrent() {
 }
 
 void FrameBufferContext::makeNoneCurrent() {
-#ifndef __EMSCRIPTEN__
 	glfwMakeContextCurrent(nullptr);
-#endif
 }
 
 

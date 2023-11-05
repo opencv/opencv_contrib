@@ -18,11 +18,7 @@ public:
 
 	void setup(Ptr<V4D> win) override{
 		//Set the filename
-	#ifdef __EMSCRIPTEN__
-		image_.filename_ = "doc/lena.png";
-	#else
 		image_.filename_ = samples::findFile("lena.jpg");
-	#endif
 
 		//Creates a NanoVG context. The wrapped C-functions of NanoVG are available in the namespace cv::v4d::nvg;
 		win->nvg([](Image_t& img) {

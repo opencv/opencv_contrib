@@ -6,11 +6,6 @@
 #ifndef SRC_OPENCV_FRAMEBUFFERCONTEXT_HPP_
 #define SRC_OPENCV_FRAMEBUFFERCONTEXT_HPP_
 
-#ifdef __EMSCRIPTEN__
-#  include <emscripten/threading.h>
-#endif
-
-//FIXME
 #include "cl.hpp"
 #include "context.hpp"
 #include <opencv2/core.hpp>
@@ -80,10 +75,8 @@ class CV_EXPORTS FrameBufferContext : public V4DContext {
     GLuint textureID_ = 0;
     GLuint renderBufferID_ = 0;
     GLint viewport_[4];
-#ifndef __EMSCRIPTEN__
     cl_mem clImage_ = nullptr;
     CLExecContext_t context_;
-#endif
     const cv::Size framebufferSize_;
     bool hasParent_ = false;
     GLFWwindow* rootWindow_;
@@ -126,9 +119,7 @@ public:
     class CV_EXPORTS FrameBufferScope {
     	cv::Ptr<FrameBufferContext> ctx_;
         cv::UMat& m_;
-#ifndef __EMSCRIPTEN__
         std::shared_ptr<ocl::OpenCLExecutionContext> pExecCtx;
-#endif
     public:
         /*!
          * Aquires the framebuffer via cl-gl sharing.
@@ -137,18 +128,13 @@ public:
          */
         CV_EXPORTS FrameBufferScope(cv::Ptr<FrameBufferContext> ctx, cv::UMat& m) :
                 ctx_(ctx), m_(m)
-#ifndef __EMSCRIPTEN__
         , pExecCtx(std::static_pointer_cast<ocl::OpenCLExecutionContext>(m.u->allocatorContext))
-#endif
         {
             CV_Assert(!m.empty());
-#ifndef __EMSCRIPTEN__
             if(pExecCtx) {
                 CLExecScope_t execScope(*pExecCtx.get());
                 ctx_->acquireFromGL(m_);
-            } else
-#endif
-            {
+            } else {
                 ctx_->acquireFromGL(m_);
             }
         }
@@ -156,15 +142,11 @@ public:
          * Releases the framebuffer via cl-gl sharing.
          */
         CV_EXPORTS virtual ~FrameBufferScope() {
-#ifndef __EMSCRIPTEN__
-
             if (pExecCtx) {
                 CLExecScope_t execScope(*pExecCtx.get());
                 ctx_->releaseToGL(m_);
             }
-            else
-#endif
-            {
+            else {
                 ctx_->releaseToGL(m_);
             }
         }
@@ -229,21 +211,16 @@ public:
       * @param fn A function object that is passed the framebuffer to be read/manipulated.
       */
     virtual void execute(std::function<void()> fn) override {
-        run_sync_on_main<2>([this,fn](){
-    #ifndef __EMSCRIPTEN__
-            if(!getCLExecContext().empty()) {
-                CLExecScope_t clExecScope(getCLExecContext());
-                FrameBufferContext::GLScope glScope(self(), GL_FRAMEBUFFER);
-                FrameBufferContext::FrameBufferScope fbScope(self(), framebuffer_);
-                fn();
-            } else
-    #endif
-            {
-                FrameBufferContext::GLScope glScope(self(), GL_FRAMEBUFFER);
-                FrameBufferContext::FrameBufferScope fbScope(self(), framebuffer_);
-                fn();
-            }
-        });
+		if(!getCLExecContext().empty()) {
+			CLExecScope_t clExecScope(getCLExecContext());
+			FrameBufferContext::GLScope glScope(self(), GL_FRAMEBUFFER);
+			FrameBufferContext::FrameBufferScope fbScope(self(), framebuffer_);
+			fn();
+		} else {
+			FrameBufferContext::GLScope glScope(self(), GL_FRAMEBUFFER);
+			FrameBufferContext::FrameBufferScope fbScope(self(), framebuffer_);
+			fn();
+		}
     }
     cv::Vec2f position();
     float pixelRatioX();
@@ -264,8 +241,7 @@ public:
     bool isRoot();
     bool hasParent();
     bool hasRootWindow();
-    void fence();
-    bool wait(const uint64_t& timeout = 0);
+
     /*!
      * Blit the framebuffer to the screen
      * @param viewport ROI to blit
@@ -274,23 +250,14 @@ public:
      */
     void blitFrameBufferToFrameBuffer(const cv::Rect& srcViewport, const cv::Size& targetFbSize,
             GLuint targetFramebufferID = 0, bool stretch = true, bool flipY = false);
-
-//FIXME make it protected again
-#ifndef __EMSCRIPTEN__
-    /*!
-     * Get the current OpenCLExecutionContext
-     * @return The current OpenCLExecutionContext
-     */
-    CLExecContext_t& getCLExecContext();
-#endif
-
 protected:
+    void fence();
+    bool wait(const uint64_t& timeout = 0);
+    CLExecContext_t& getCLExecContext();
     cv::Ptr<V4D> getV4D();
     int getIndex();
     void setup();
     void teardown();
-    void initWebGLCopy(const size_t& index);
-    void doWebGLCopy(cv::Ptr<FrameBufferContext> other);
     /*!
      * The UMat used to copy or bind (depending on cl-gl interop capability) the OpenGL framebuffer.
      */

@@ -12,11 +12,8 @@ public:
 	using Plan::Plan;
 
 	/* Demo Parameters */
-#ifndef __EMSCRIPTEN__
 	constexpr static size_t NUMBER_OF_CUBES_ = 10;
-#else
-	constexpr static size_t NUMBER_OF_CUBES_ = 5;
-#endif
+
 	int glowKernelSize_;
 
 	/* OpenGL constants and variables */
@@ -71,7 +68,7 @@ private:
 	static GLuint load_shader() {
 		//Shader versions "330" and "300 es" are very similar.
 		//If you are careful you can write the same code for both versions.
-	#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
+	#if !defined(OPENCV_V4D_USE_ES3)
 	    const string shaderVersion = "330";
 	#else
 	    const string shaderVersion = "300 es";
@@ -197,7 +194,6 @@ private:
 	    glDrawElements(GL_TRIANGLES, TRIANGLES_ * 3, GL_UNSIGNED_SHORT, NULL);
 	}
 
-#ifndef __EMSCRIPTEN__
 	//applies a glow effect to an image
 	static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize, Cache& cache) {
 	    cv::bitwise_not(src, dst);
@@ -217,7 +213,7 @@ private:
 
 	    cv::bitwise_not(dst, dst);
 	}
-#endif
+
 public:
 	void setup(cv::Ptr<V4D> window) override {
 		int diag = hypot(double(size().width), double(size().height));
@@ -249,32 +245,22 @@ public:
 		}
 
 		//Aquire the frame buffer for use by OpenCV
-#ifndef __EMSCRIPTEN__
 		window->fb([](cv::UMat& framebuffer, const cv::Rect& viewport, int glowKernelSize, Cache& cache) {
 			cv::UMat roi = framebuffer(viewport);
 			glow_effect(roi, roi, glowKernelSize, cache);
 		}, viewport(), glowKernelSize_, cache_);
-#endif
 
 		window->write();
 	}
 };
 
 int main() {
-#ifndef __EMSCRIPTEN__
 	cv::Ptr<ManyCubesDemoPlan> plan = new ManyCubesDemoPlan(cv::Size(1280, 720));
-#else
-	cv::Ptr<ManyCubesDemoPlan> plan = new ManyCubesDemoPlan(cv::Size(960, 960));
-#endif
     cv::Ptr<V4D> window = V4D::make(plan->size(), "Many Cubes Demo", IMGUI);
 
-#ifndef __EMSCRIPTEN_
-	constexpr double FPS = 60;
-	constexpr const char* OUTPUT_FILENAME = "many_cubes-demo.mkv";
     //Creates a writer sink (which might be hardware accelerated)
-    auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, plan->size());
+    auto sink = makeWriterSink(window, "many_cubes-demo.mkv", 60, plan->size());
     window->setSink(sink);
-#endif
     window->run(plan, 1);
 
     return 0;

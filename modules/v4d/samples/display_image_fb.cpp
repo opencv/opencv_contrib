@@ -14,11 +14,8 @@ public:
 	void setup(cv::Ptr<V4D> win) override {
 		win->parallel([](cv::UMat& image, cv::UMat& converted, const cv::Size& sz){
 			//Loads an image as a UMat (just in case we have hardware acceleration available)
-#ifdef __EMSCRIPTEN__
-			image = read_embedded_image("doc/lena.png").getUMat(ACCESS_READ);
-#else
 			image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
-#endif
+
 			//We have to manually resize and color convert the image when using direct frambuffer access.
 			resize(image, converted, sz);
 			cvtColor(converted, converted, COLOR_RGB2BGRA);

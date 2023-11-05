@@ -31,27 +31,18 @@ public:
 };
 
 int main(int argc, char** argv) {
-    //In case of WebAssembly
-    CV_UNUSED(argc);
-    CV_UNUSED(argv);
     Ptr<VideoEditingPlan> plan = new VideoEditingPlan(cv::Size(960,960));
     Ptr<V4D> window = V4D::make(plan->size(), "Video Editing");
 
-#ifndef __EMSCRIPTEN__
     //Make the video source
     auto src = makeCaptureSource(window, argv[1]);
 
     //Make the video sink
     auto sink = makeWriterSink(window, argv[2], src->fps(), plan->size());
+
     //Attach source and sink
     window->setSource(src);
     window->setSink(sink);
-#else
-    //Make a webcam Source
-    auto src = makeCaptureSource(window);
-    //Attach webcam source
-    window->setSource(src);
-#endif
 
     window->run(plan);
 }

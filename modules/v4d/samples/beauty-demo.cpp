@@ -115,15 +115,10 @@ private:
 		float skinSaturation_ = 1.4f;
 		//Contrast factor skin
 		float skinContrast_ = 0.7f;
-#ifndef __EMSCRIPTEN__
 		//Show input and output side by side
 		bool sideBySide_ = false;
 		//Scale the video to the window size
 		bool stretch_ = true;
-#else
-		bool sideBySide_ = false;
-		bool stretch_ = false;
-#endif
 	} params_;
 
 	struct Cache {
@@ -220,11 +215,9 @@ public:
 			} else
 				win->setStretching(false);
 
-#ifndef __EMSCRIPTEN__
 			if(Button("Fullscreen")) {
 				win->setFullscreen(!win->isFullscreen());
 			};
-#endif
 
 			if(Button("Offscreen")) {
 				win->setVisible(!win->isVisible());
@@ -243,22 +236,13 @@ public:
     	int w = size().width;
     	int h = size().height;
     	downSize_ = { std::min(w, std::max(640, int(round(w / 2.0)))), std::min(h, std::max(360, int(round(h / 2.0)))) };
-#ifndef __EMSCRIPTEN__
 		detector_ = cv::FaceDetectorYN::create("modules/v4d/assets/models/face_detection_yunet_2023mar.onnx", "", downSize_, 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
-#else
-		detector_ = cv::FaceDetectorYN::create("assets/models/face_detection_yunet_2023mar.onnx", "", downSize_, 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
-#endif
 		int diag = hypot(double(size().width), double(size().height));
 		params_.blurSkinKernelSize_ = std::max(int(diag / 2000 % 2 == 0 ? diag / 2000 + 1 : diag / 2000), 1);
 
 		window->setStretching(params_.stretch_);
 		window->parallel([](cv::Ptr<cv::face::Facemark>& facemark){
-#ifndef __EMSCRIPTEN__
 			facemark->loadModel("modules/v4d/assets/models/lbfmodel.yaml");
-#else
-			facemark->loadModel("assets/models/lbfmodel.yaml");
-#endif
-			cerr << "Loading finished" << endl;
 		}, facemark_);
 	}
 	void infer(cv::Ptr<V4D> window) override {
@@ -397,30 +381,17 @@ public:
 BeautyDemoPlan::Params BeautyDemoPlan::params_;
 
 int main(int argc, char **argv) {
-#ifndef __EMSCRIPTEN__
 	if (argc != 2) {
         cerr << "Usage: beauty-demo <input-video-file>" << endl;
         exit(1);
     }
-	constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
-	cv::Ptr<BeautyDemoPlan> plan = new BeautyDemoPlan(cv::Size(1920, 1080));
-#else
-	CV_UNUSED(argc);
-	CV_UNUSED(argv);
-	cv::Ptr<BeautyDemoPlan> plan = new BeautyDemoPlan(cv::Size(960, 960));
-#endif
-    using namespace cv::v4d;
-    cv::Ptr<V4D> window = V4D::make(plan->size(), "Beautification Demo", ALL);
-#ifndef __EMSCRIPTEN__
-    auto src = makeCaptureSource(window, argv[1]);
-    window->setSource(src);
-    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
-    window->setSink(sink);
-#else
-    auto src = makeCaptureSource(window);
-    window->setSource(src);
-#endif
 
+	cv::Ptr<BeautyDemoPlan> plan = new BeautyDemoPlan(cv::Size(1920, 1080));
+    cv::Ptr<V4D> window = V4D::make(plan->size(), "Beautification Demo", ALL);
+    auto src = makeCaptureSource(window, argv[1]);
+    auto sink = makeWriterSink(window, "beauty-demo.mkv", src->fps(), plan->size());
+    window->setSource(src);
+    window->setSink(sink);
     window->run(plan);
 
     return 0;

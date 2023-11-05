@@ -23,9 +23,7 @@ class SingleContext : public V4DContext {
 public:
 	virtual ~SingleContext() {}
     virtual void execute(std::function<void()> fn) override {
-        run_sync_on_main<28>([&,this](){
-        	fn();
-        });
+    	fn();
     }
 };
 

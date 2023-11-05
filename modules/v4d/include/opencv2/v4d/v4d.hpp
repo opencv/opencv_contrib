@@ -6,11 +6,6 @@
 #ifndef SRC_OPENCV_V4D_V4D_HPP_
 #define SRC_OPENCV_V4D_V4D_HPP_
 
-#ifdef __EMSCRIPTEN__
-#  include <emscripten.h>
-#  include <emscripten/threading.h>
-#endif
-
 #include "source.hpp"
 #include "sink.hpp"
 #include "util.hpp"
@@ -536,24 +531,6 @@ public:
      * @param arr The array to copy.
      */
     CV_EXPORTS void copyFrom(const cv::UMat& arr);
-    /*!
-     * Execute function object fn in a loop.
-     * This function main purpose is to abstract the run loop for portability reasons.
-     * @param fn A functor that will be called repeatetly until the application terminates or the functor returns false
-     */
-
-
-	#ifdef __EMSCRIPTEN__
-	static void do_frame(void* void_fn_ptr) {
-		glfwSwapInterval(0);
-
-		 auto* fn_ptr = reinterpret_cast<std::function<bool()>*>(void_fn_ptr);
-		 if (fn_ptr) {
-			 auto& fn = *fn_ptr;
-				 fn();
-		 }
-	 }
-	#endif
 
 	template<typename Tplan>
 	void run(cv::Ptr<Tplan> plan, int32_t workers = -1) {
@@ -631,15 +608,12 @@ public:
 			}
 		}
 
-#ifndef __EMSCRIPTEN__
 		CLExecScope_t scope(this->fbCtx()->getCLExecContext());
-#endif
 		this->fbCtx()->makeCurrent();
-#ifndef __EMSCRIPTEN__
+
 		if(Global::is_main()) {
 			this->printSystemInfo();
 		}
-#endif
 
 		try {
 			plan->setup(self());
@@ -665,7 +639,6 @@ public:
 			plan->infer(self());
 			this->makePlan();
 
-#ifndef __EMSCRIPTEN__
 			if(Global::is_main()) {
 				do {
 					//display with 120hz
@@ -689,22 +662,6 @@ public:
 					reseq.waitFor(seq);
 				} while(keepRunning() && this->display());
 			}
-#else
-			if(Global::is_main()) {
-				std::function<bool()> fnFrame([this](){
-					this->printSystemInfo();
-					do {
-						this->runPlan();
-					} while(keepRunning() && this->display());
-					return false;
-				});
-				emscripten_set_main_loop_arg(do_frame, &fnFrame, -1, true);
-			} else {
-				do {
-					this->runPlan();
-				} while(keepRunning() && this->display());
-			}
-#endif
 		} catch(std::exception& ex) {
 			requestFinish();
 			reseq.finish();
@@ -902,11 +859,7 @@ protected:
     bool wait(uint64_t timeout = 0);
 };
 }
-} /* namespace kb */
-
-#ifdef __EMSCRIPTEN__
-#  define thread_local
-#endif
+} /* namespace cv */
 
 #endif /* SRC_OPENCV_V4D_V4D_HPP_ */
 

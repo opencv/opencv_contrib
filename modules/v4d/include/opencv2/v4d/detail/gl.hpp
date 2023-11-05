@@ -7,7 +7,7 @@
 #ifndef MODULES_V4D_INCLUDE_OPENCV2_V4D_DETAIL_GL_HPP_
 #define MODULES_V4D_INCLUDE_OPENCV2_V4D_DETAIL_GL_HPP_
 
-#  if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
+#  if !defined(OPENCV_V4D_USE_ES3)
 #    include "GL/glew.h"
 #    define GLFW_INCLUDE_NONE
 #  else
