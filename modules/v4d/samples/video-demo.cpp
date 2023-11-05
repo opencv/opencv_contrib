@@ -18,6 +18,7 @@ using namespace cv::v4d;
 
 class VideoDemoPlan: public Plan {
 public:
+	using Plan::Plan;
 	/* Demo Parameters */
 	int glowKernelSize_ = 0;
 private:
@@ -183,11 +184,9 @@ private:
 	}
 	#endif
 public:
-	VideoDemoPlan(const cv::Size& sz) : Plan(sz) {
+	void setup(cv::Ptr<V4D> window) override {
 		int diag = hypot(double(size().width), double(size().height));
 		glowKernelSize_ = std::max(int(diag / 138 % 2 == 0 ? diag / 138 + 1 : diag / 138), 1);
-	}
-	void setup(cv::Ptr<V4D> window) override {
 
 		window->gl([](GLuint& vao, GLuint& shader, GLuint& uniformTrans) {
 			init_scene(vao, shader, uniformTrans);
@@ -201,9 +200,10 @@ public:
 		}, vao_, shader_, uniform_transform_);
 
 #ifndef __EMSCRIPTEN__
-		window->fb([](cv::UMat &framebuffer, int glowKernelSize, Cache& cache) {
-			glow_effect(framebuffer, framebuffer, glowKernelSize, cache);
-		}, glowKernelSize_, cache_);
+		window->fb([](cv::UMat& framebuffer, const cv::Rect& viewport, int glowKernelSize, Cache& cache) {
+			cv::UMat roi = framebuffer(viewport);
+			glow_effect(roi, roi, glowKernelSize, cache);
+		}, viewport(), glowKernelSize_, cache_);
 #endif
 
 		//Ignored in WebAssmebly builds because there is no sink set.
@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
     window->setSource(src);
 #endif
 
-    window->run(plan, 0);
+    window->run(plan);
 
     return 0;
 }

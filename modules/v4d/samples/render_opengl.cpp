@@ -5,6 +5,9 @@ using namespace cv::v4d;
 
 class RenderOpenGLPlan : public Plan {
 public:
+	RenderOpenGLPlan(const cv::Size& sz) : Plan(sz) {
+	}
+
 	void setup(Ptr<V4D> window) override {
 		window->gl([]() {
 			//Sets the clear color to blue
@@ -20,7 +23,8 @@ public:
 };
 
 int main() {
-    Ptr<V4D> window = V4D::make(960, 960, "GL Blue Screen");
-    window->run<RenderOpenGLPlan>(0);
+	Ptr<RenderOpenGLPlan> plan = new RenderOpenGLPlan(cv::Size(960, 960));
+    Ptr<V4D> window = V4D::make(plan->size(), "GL Blue Screen");
+    window->run(plan);
 }
 

@@ -115,15 +115,13 @@ class NanoVGDemoPlan : public Plan {
 	cv::UMat bgra_;
 	cv::UMat hsv_;
 	cv::UMat hueChannel_;
-	long cnt_ = 0;
+	inline static long cnt_ = 0;
 	double hue_ = 0;
 public:
-	/* Demo parameters */
-
-	NanoVGDemoPlan(cv::Size sz) : Plan(sz) {}
+	using Plan::Plan;
 
 	void infer(cv::Ptr<V4D> window) override {
-		window->parallel([](long& cnt, double& hue){
+		window->single([](long& cnt, double& hue){
 			//we use frame count to calculate the current hue
 			double t = ++cnt / 60.0;
 			//nanovg hue fading depending on t
@@ -133,9 +131,9 @@ public:
 		window->capture();
 
 		//Acquire the framebuffer and convert it to RGB
-		window->fb([](const cv::UMat &framebuffer, cv::UMat& rgb) {
-			cvtColor(framebuffer, rgb, cv::COLOR_BGRA2RGB);
-		}, rgb_);
+		window->fb([](const cv::UMat &framebuffer, const cv::Rect& viewport, cv::UMat& rgb) {
+			cvtColor(framebuffer(viewport), rgb, cv::COLOR_BGRA2RGB);
+		}, viewport(), rgb_);
 
 		window->parallel([](cv::UMat& rgb, cv::UMat& hsv, std::vector<cv::UMat>& hsvChannels, double& hue){
 			//Color-conversion from RGB to HSV
@@ -153,14 +151,14 @@ public:
 		}, rgb_, hsv_, hsvChannels_, hue_);
 
 		//Acquire the framebuffer and convert the rgb_ into it
-		window->fb([](cv::UMat &framebuffer, const cv::UMat& rgb) {
-			cv::cvtColor(rgb, framebuffer, cv::COLOR_BGR2BGRA);
-		}, rgb_);
+		window->fb([](cv::UMat &framebuffer, const cv::Rect& viewport, const cv::UMat& rgb) {
+			cv::cvtColor(rgb, framebuffer(viewport), cv::COLOR_BGR2BGRA);
+		}, viewport(), rgb_);
 
 		//Render using nanovg
-		window->nvg([](const cv::Size &sz, const cv::Size& fbSz, const double& h) {
-			draw_color_wheel(sz.width - (sz.width / 5), fbSz.height - (sz.width / 5), sz.width / 6, sz.width / 6, h);
-		}, size(), window->fbSize(), hue_);
+		window->nvg([](const cv::Size &sz, const double& h) {
+			draw_color_wheel(sz.width - (sz.width / 5), sz.height - (sz.width / 5), sz.width / 6, sz.width / 6, h);
+		}, size(), hue_);
 
 		window->write();
 	}
@@ -193,7 +191,7 @@ int main(int argc, char **argv) {
     window->setSource(src);
 #endif
 
-    window->run(plan, 1);
+    window->run(plan);
 
     return 0;
 }

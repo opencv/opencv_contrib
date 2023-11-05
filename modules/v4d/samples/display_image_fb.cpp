@@ -8,6 +8,9 @@ class DisplayImageFB : public Plan {
 	UMat image_;
 	UMat converted_;
 public:
+	DisplayImageFB(const cv::Size& sz) : Plan(sz) {
+	}
+
 	void setup(cv::Ptr<V4D> win) override {
 		win->parallel([](cv::UMat& image, cv::UMat& converted, const cv::Size& sz){
 			//Loads an image as a UMat (just in case we have hardware acceleration available)
@@ -33,7 +36,8 @@ public:
 };
 
 int main() {
-    //Creates a V4D object
-    Ptr<V4D> window = V4D::make(960, 960, "Display an Image through direct FB access");
-    window->run<DisplayImageFB>(0);
+	Ptr<DisplayImageFB> plan = new DisplayImageFB(cv::Size(960,960));
+	//Creates a V4D object
+    Ptr<V4D> window = V4D::make(plan->size(), "Display an Image through direct FB access");
+    window->run(plan);
 }

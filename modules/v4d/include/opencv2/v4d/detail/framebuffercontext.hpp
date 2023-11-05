@@ -74,20 +74,21 @@ class CV_EXPORTS FrameBufferContext : public V4DContext {
     GLFWwindow* glfwWindow_ = nullptr;
     bool clglSharing_ = true;
     bool isVisible_;
-    GLuint frameBufferID_ = 0;
     GLuint onscreenTextureID_ = 0;
+    GLuint onscreenRenderBufferID_ = 0;
+    GLuint frameBufferID_ = 0;
     GLuint textureID_ = 0;
     GLuint renderBufferID_ = 0;
-    GLuint pboID_ = 0;
     GLint viewport_[4];
 #ifndef __EMSCRIPTEN__
     cl_mem clImage_ = nullptr;
     CLExecContext_t context_;
 #endif
     const cv::Size framebufferSize_;
-    bool isShared_ = false;
-    GLFWwindow* sharedWindow_;
-    const FrameBufferContext* parent_;
+    bool hasParent_ = false;
+    GLFWwindow* rootWindow_;
+    cv::Ptr<FrameBufferContext> parent_;
+    bool isRoot_ = true;
 
     //data and handles for webgl copying
     std::map<size_t, GLint> texture_hdls_;
@@ -196,9 +197,9 @@ public:
      * @param frameBufferSize The frame buffer size.
      */
     FrameBufferContext(V4D& v4d, const cv::Size& frameBufferSize, bool offscreen,
-            const string& title, int major, int minor, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent);
+            const string& title, int major, int minor, int samples, bool debug, GLFWwindow* rootWindow, cv::Ptr<FrameBufferContext> parent, bool root);
 
-    FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other);
+    FrameBufferContext(V4D& v4d, const string& title, cv::Ptr<FrameBufferContext> other);
 
     /*!
      * Default destructor.
@@ -218,6 +219,7 @@ public:
     const cv::Size& size() const;
     void copyTo(cv::UMat& dst);
     void copyFrom(const cv::UMat& src);
+    void copyToRootWindow();
 
     /*!
       * Execute function object fn inside a framebuffer context.
@@ -259,7 +261,9 @@ public:
     bool isVisible();
     void close();
     bool isClosed();
-    bool isShared();
+    bool isRoot();
+    bool hasParent();
+    bool hasRootWindow();
     void fence();
     bool wait(const uint64_t& timeout = 0);
     /*!
@@ -296,7 +300,7 @@ protected:
      */
     cv::ogl::Texture2D& getTexture2D();
 
-    GLFWwindow* getGLFWWindow();
+    GLFWwindow* getGLFWWindow() const;
 private:
     void loadBuffers(const size_t& index);
     void loadShader(const size_t& index);

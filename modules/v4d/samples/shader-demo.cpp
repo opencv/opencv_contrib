@@ -5,333 +5,346 @@
 
 #include <opencv2/v4d/v4d.hpp>
 
-
 using namespace cv::v4d;
 
 class ShaderDemoPlan : public Plan {
-	// vertex position, color
-	constexpr static float vertices[12] = {
-	//    x      y      z
-	        -1.0f, -1.0f, -0.0f, 1.0f, 1.0f, -0.0f, -1.0f, 1.0f, -0.0f, 1.0f, -1.0f, -0.0f };
-
-	constexpr static unsigned int indices[6] = {
-	//  2---,1
-	//  | .' |
-	//  0'---3
-	        0, 1, 2, 0, 3, 1 };
-
-	struct Params {
-		/* Mandelbrot control parameters */
-		int glowKernelSize_ = 0;
-		// Red, green, blue and alpha. All from 0.0f to 1.0f
-		float baseColorVal_[4] = {0.2, 0.6, 1.0, 1.0};
-		//contrast boost
-		int contrastBoost_ = 50; //0.0-255
-		//max fractal iterations
-		int maxIterations_ = 1000;
-		//center x coordinate
-		float centerX_ = -0.119609;
-		//center y coordinate
-		float centerY_ = 0.13262;
-		float zoomFactor_ = 1.0;
-		float currentZoom_ = 1.0;
-		float zoomIncr_ = 0.99;
-		bool manualNavigation_ = false;
-	} params_;
-
-	struct Handles {
-		/* GL uniform handles */
-		GLint baseColorHdl_;
-		GLint contrastBoostHdl_;
-		GLint maxIterationsHdl_;
-		GLint centerXHdl_;
-		GLint centerYHdl_;
-		GLint currentZoomHdl_;
-		GLint resolutionHdl_;
-
-		/* Shader program handle */
-		GLuint shaderHdl_;
-
-		/* Object handles */
-		GLuint vao_;
-		GLuint vbo_, ebo_;
-	} handles_;
-
-	struct Cache {
-		cv::UMat down;
-		cv::UMat up;
-		cv::UMat blur;
-		cv::UMat dst16;
-	} cache_;
-
-	//easing function for the bungee zoom
-	static float easeInOutQuint(float x) {
-	    return x < 0.5f ? 16.0f * x * x * x * x * x : 1.0f - std::pow(-2.0f * x + 2.0f, 5.0f) / 2.0f;
-	}
-
-#ifndef __EMSCRIPTEN__
-	static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize, Cache& cache) {
-		cv::bitwise_not(src, dst);
-
-		cv::resize(dst, cache.down, cv::Size(), 0.5, 0.5);
-		cv::boxFilter(cache.down, cache.blur, -1, cv::Size(ksize, ksize), cv::Point(-1, -1), true,
-				cv::BORDER_REPLICATE);
-		cv::resize(cache.blur, cache.up, src.size());
-
-		cv::multiply(dst, cache.up, cache.dst16, 1, CV_16U);
-		cv::divide(cache.dst16, cv::Scalar::all(255.0), dst, 1, CV_8U);
-
-		cv::bitwise_not(dst, dst);
-	}
-#endif
-
-	//Load objects and buffers
-	static void load_buffers(Handles& handles) {
-	    GL_CHECK(glGenVertexArrays(1, &handles.vao_));
-	    GL_CHECK(glBindVertexArray(handles.vao_));
-
-	    GL_CHECK(glGenBuffers(1, &handles.vbo_));
-	    GL_CHECK(glGenBuffers(1, &handles.ebo_));
-
-	    GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, handles.vbo_));
-	    GL_CHECK(glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW));
-
-	    GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, handles.ebo_));
-	    GL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW));
-
-	    GL_CHECK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0));
-	    GL_CHECK(glEnableVertexAttribArray(0));
-
-	    GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
-	    GL_CHECK(glBindVertexArray(0));
-	}
-
-	//mandelbrot shader code adapted from my own project: https://github.com/kallaballa/FractalDive#after
-	static GLuint load_shader() {
-	#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
-	    const string shaderVersion = "330";
-	#else
-	    const string shaderVersion = "300 es";
-	#endif
-
-	    const string vert =
-	            "    #version " + shaderVersion
-	                    + R"(
-	    in vec4 position;
-	    
-	    void main()
-	    {
-	        gl_Position = vec4(position.xyz, 1.0);
-	    })";
-
-	    const string frag =
-	            "    #version " + shaderVersion
-	                    + R"(
-	    precision lowp float;
-
-	    out vec4 outColor;
-	    
-	    uniform vec4 base_color;
-	    uniform int contrast_boost;
-	    uniform int max_iterations;
-	    uniform float current_zoom;
-	    uniform float center_y;
-	    uniform float center_x;
-		uniform vec2 resolution;
-
-	    int get_iterations()
-	    {
-	        float pointr = (((gl_FragCoord.x / resolution[1]) - 0.5f) * current_zoom + center_x) * 5.0f;
-	        float pointi = (((gl_FragCoord.y / resolution[1]) - 0.5f) * current_zoom + center_y) * 5.0f;
-	        const float four = 4.0f;
-
-	        int iterations = 0;
-	        float zi = 0.0f;
-	        float zr = 0.0f;
-	        float zrsqr = 0.0f;
-	        float zisqr = 0.0f;
-
-	        while (iterations < max_iterations && zrsqr + zisqr < four) {
-	           //equals following line as a consequence of binomial expansion: zi = (((zr + zi)*(zr + zi)) - zrsqr) - zisqr
-	            zi = (zr + zr) * zi;
-
-	            zi += pointi;
-	            zr = (zrsqr - zisqr) + pointr;
-	    
-	            zrsqr = zr * zr;
-	            zisqr = zi * zi;
-	            ++iterations;
-	        }
-	        return iterations;
-	    }
-	     
-	    void mandelbrot()
-	    {
-	        int iter = get_iterations();
-	        if (iter < max_iterations) {   
-	            float iterations = float(iter) / float(max_iterations);
-	            float cb = float(contrast_boost);
-	    
-	            outColor = vec4(base_color[0] * iterations * cb, base_color[1] * iterations * cb, base_color[2] * iterations * cb, base_color[3]);
-	        } else {
-	            outColor = vec4(0,0,0,0);
-	        }
-	    }
-
-	    void main()
-	    {
-	        mandelbrot();
-	    })";
-
-	    return cv::v4d::initShader(vert.c_str(), frag.c_str(), "fragColor");
-	}
-
-	//Initialize shaders, objects, buffers and uniforms
-	static void init_scene(const cv::Size& sz, Handles& handles) {
-	    GL_CHECK(glEnable(GL_BLEND));
-	    GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-	    handles.shaderHdl_ = load_shader();
-	    load_buffers(handles);
-
-	    handles.baseColorHdl_ = glGetUniformLocation(handles.shaderHdl_, "base_color");
-	    handles.contrastBoostHdl_ = glGetUniformLocation(handles.shaderHdl_, "contrast_boost");
-	    handles.maxIterationsHdl_ = glGetUniformLocation(handles.shaderHdl_, "max_iterations");
-	    handles.currentZoomHdl_ = glGetUniformLocation(handles.shaderHdl_, "current_zoom");
-	    handles.centerXHdl_ = glGetUniformLocation(handles.shaderHdl_, "center_x");
-	    handles.centerYHdl_ = glGetUniformLocation(handles.shaderHdl_, "center_y");
-	    handles.resolutionHdl_ = glGetUniformLocation(handles.shaderHdl_, "resolution");
-	    GL_CHECK(glViewport(0, 0, sz.width, sz.height));
-	}
-
-	//Free OpenGL resources
-	static void destroy_scene(Handles& handles) {
-		glDeleteShader(handles.shaderHdl_);
-		glDeleteBuffers(1, &handles.vbo_);
-		glDeleteBuffers(1, &handles.ebo_);
-		glDeleteVertexArrays(1, &handles.vao_);
-	}
-
-	//Render the mandelbrot fractal on top of a video
-	static void render_scene(const cv::Size& sz, Params& params, Handles& handles) {
-	    GL_CHECK(glViewport(0, 0, sz.width, sz.height));
-		//bungee zoom
-	    if (params.currentZoom_ >= 1) {
-	    	params.zoomIncr_ = -0.01;
-	    } else if (params.currentZoom_ < 2.5e-06) {
-	    	params.zoomIncr_ = +0.01;
-	    }
-
-	    GL_CHECK(glUseProgram(handles.shaderHdl_));
-	    GL_CHECK(glUniform4f(handles.baseColorHdl_, params.baseColorVal_[0], params.baseColorVal_[1], params.baseColorVal_[2], params.baseColorVal_[3]));
-	    GL_CHECK(glUniform1i(handles.contrastBoostHdl_, params.contrastBoost_));
-	    GL_CHECK(glUniform1i(handles.maxIterationsHdl_, params.maxIterations_));
-	    GL_CHECK(glUniform1f(handles.centerYHdl_, params.centerY_));
-	    GL_CHECK(glUniform1f(handles.centerXHdl_, params.centerX_));
-	    if (!params.manualNavigation_) {
-	    	params.currentZoom_ += params.zoomIncr_;
-	        GL_CHECK(glUniform1f(handles.currentZoomHdl_, easeInOutQuint(params.currentZoom_)));
-	    } else {
-	    	params.currentZoom_ = 1.0 / pow(params.zoomFactor_, 5.0f);
-	        GL_CHECK(glUniform1f(handles.currentZoomHdl_, params.currentZoom_));
-	    }
-	    float res[2] = {float(sz.width), float(sz.height)};
-	    GL_CHECK(glUniform2fv(handles.resolutionHdl_, 1, res));
-
-	    GL_CHECK(glBindVertexArray(handles.vao_));
-	    GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-	}
 public:
-	ShaderDemoPlan(cv::Size sz) : Plan(sz) {
-		const unsigned long diag = hypot(double(size().width), double(size().height));
-		params_.glowKernelSize_ = std::max(int(diag / 200 % 2 == 0 ? diag / 200 + 1 : diag / 200), 1);
-	}
+	using Plan::Plan;
 
-	void gui(cv::Ptr<V4D> window) override {
-		window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params) {
-			CV_UNUSED(win);
-			using namespace ImGui;
-			SetCurrentContext(ctx);
-			Begin("Fractal");
-			Text("Navigation");
-			SliderInt("Iterations", &params.maxIterations_, 3, 50000);
-			if(SliderFloat("X", &params.centerX_, -1.0f, 1.0f))
-				params.manualNavigation_ = true;
+	//A value greater 1 will enable experimental tiling with one context per tile.
+	constexpr static size_t TILING_ = 1;
+    constexpr static size_t NUM_CONTEXTS_ = TILING_ * TILING_;
+private:
+    // vertex position, color
+    constexpr static float vertices[12] = {
+        //    x      y      z
+        -1.0f, -1.0f, -0.0f, 1.0f, 1.0f, -0.0f, -1.0f, 1.0f, -0.0f, 1.0f, -1.0f, -0.0f };
 
-			if(SliderFloat("Y", &params.centerY_, -1.0f, 1.0f))
-				params.manualNavigation_ = true;
+    constexpr static unsigned int indices[6] = {
+        //  2---,1
+        //  | .' |
+        //  0'---3
+        0, 1, 2, 0, 3, 1 };
 
-			if(SliderFloat("Zoom", &params.zoomFactor_, 1.0f, 100.0f))
-				params.manualNavigation_ = true;
-	#ifndef __EMSCRIPTEN__
-			Text("Glow");
-			SliderInt("Kernel Size", &params.glowKernelSize_, 1, 127);
-	#endif
-			Text("Color");
-			ColorPicker4("Color", params.baseColorVal_);
-			SliderInt("Contrast boost", &params.contrastBoost_, 1, 255);
-			End();
-		}, params_);
-	}
+    static struct Params {
+        /* Mandelbrot control parameters */
+        // Red, green, blue and alpha. All from 0.0f to 1.0f
+        float baseColorVal_[4] = {0.2, 0.6, 1.0, 0.8};
+        //contrast boost
+        int contrastBoost_ = 255; //0.0-255
+        //max fractal iterations
+        int maxIterations_ = 50000;
+        //center x coordinate
+        float centerX_ = -0.466;
+        //center y coordinate
+        float centerY_ = 0.57052;
+        float zoomFactor_ = 1.0;
+        float currentZoom_ = 4.0;
+        bool zoomIn = true;
+        float zoomIncr_ = -currentZoom_ / 1000;
+        bool manualNavigation_ = false;
+    } params_;
 
-	void setup(cv::Ptr<V4D> window) override {
-		window->gl([](const cv::Size &sz, Handles& handles) {
-			init_scene(sz, handles);
-		}, size(), handles_);
-	}
+    struct Handles {
+        /* GL uniform handles */
+        GLint baseColorHdl_;
+        GLint contrastBoostHdl_;
+        GLint maxIterationsHdl_;
+        GLint centerXHdl_;
+        GLint centerYHdl_;
+        GLint offsetXHdl_;
+        GLint offsetYHdl_;
+        GLint currentZoomHdl_;
+        GLint resolutionHdl_;
 
-	void infer(cv::Ptr<V4D> window) override {
-		window->capture();
+        /* Shader program handle */
+        GLuint shaderHdl_;
 
-		window->gl([](const cv::Size &sz, Params& params, Handles& handles) {
-			render_scene(sz, params, handles);
-		}, size(), params_, handles_);
+        /* Object handles */
+        GLuint vao_;
+        GLuint vbo_, ebo_;
+    } handles_[NUM_CONTEXTS_];
 
-#ifndef __EMSCRIPTEN__
-		window->fb([](cv::UMat& framebuffer, const Params& params, Cache& cache) {
-			glow_effect(framebuffer, framebuffer, params.glowKernelSize_, cache);
-		}, params_, cache_);
-#endif
+    cv::Rect viewports_[NUM_CONTEXTS_];
 
-		window->write();
-	}
+    struct Cache {
+        cv::UMat down;
+        cv::UMat up;
+        cv::UMat blur;
+        cv::UMat dst16;
+    } cache_;
 
-	void teardown(cv::Ptr<V4D> window) override {
-		window->gl([](Handles& handles) {
-			destroy_scene(handles);
-		}, handles_);
-	}
+    //easing function for the bungee zoom
+    static float easeInOutQuint(float x) {
+        return x < 0.5f ? 16.0f * x * x * x * x * x : 1.0f - std::pow(-2.0f * x + 2.0f, 5.0f) / 2.0f;
+    }
+
+    //Load objects and buffers
+    static void load_buffers(Handles& handles) {
+        GL_CHECK(glGenVertexArrays(1, &handles.vao_));
+        GL_CHECK(glBindVertexArray(handles.vao_));
+
+        GL_CHECK(glGenBuffers(1, &handles.vbo_));
+        GL_CHECK(glGenBuffers(1, &handles.ebo_));
+
+        GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, handles.vbo_));
+        GL_CHECK(glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW));
+
+        GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, handles.ebo_));
+        GL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW));
+
+        GL_CHECK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0));
+        GL_CHECK(glEnableVertexAttribArray(0));
+
+        GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
+        GL_CHECK(glBindVertexArray(0));
+    }
+
+    //mandelbrot shader code adapted from my own project: https://github.com/kallaballa/FractalDive#after
+    static GLuint load_shader() {
+        #if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
+        const string shaderVersion = "330";
+        #else
+        const string shaderVersion = "300 es";
+        #endif
+
+        const string vert =
+        "    #version " + shaderVersion
+        + R"(
+        in vec4 position;
+
+        void main()
+        {
+            gl_Position = vec4(position.xyz, 1.0);
+        })";
+
+        const string frag =
+                "    #version " + shaderVersion
+                        + R"(
+        precision lowp float;
+
+        out vec4 outColor;
+
+        uniform vec4 base_color;
+        uniform int contrast_boost;
+        uniform int max_iterations;
+        uniform float current_zoom;
+        uniform float center_y;
+        uniform float center_x;
+        uniform float offset_y;
+        uniform float offset_x;
+
+        uniform vec2 resolution;
+
+        int get_iterations()
+        {
+            float pointr = (((gl_FragCoord.x / resolution[0]) - 0.5f) * current_zoom + center_x);
+            float pointi = (((gl_FragCoord.y / resolution[1]) - 0.5f) * current_zoom + center_y);
+            const float four = 4.0f;
+
+            int iterations = 0;
+            float zi = 0.0f;
+            float zr = 0.0f;
+            float zrsqr = 0.0f;
+            float zisqr = 0.0f;
+
+            while (iterations < max_iterations && zrsqr + zisqr < four) {
+            //equals following line as a consequence of binomial expansion: zi = (((zr + zi)*(zr + zi)) - zrsqr) - zisqr
+                zi = (zr + zr) * zi;
+
+                zi += pointi;
+                zr = (zrsqr - zisqr) + pointr;
+
+                zrsqr = zr * zr;
+                zisqr = zi * zi;
+                ++iterations;
+            }
+            return iterations;
+        }
+
+        void mandelbrot()
+        {
+            int iter = get_iterations();
+            if (iter < max_iterations) {
+                float iterations = float(iter) / float(max_iterations);
+                float cb = float(contrast_boost);
+                float lb;
+                if(iter % 2 == 0)
+					lb = 25;
+				else
+					lb = 50;
+                
+				outColor = vec4(log2((lb - 1) * base_color[0] * iterations * cb + 1)/log2(lb), log2((lb - 1) * base_color[1] * iterations * cb + 1)/log2(lb), log2((lb - 1) * base_color[2] * iterations * cb + 1)/log2(lb), base_color[3]);
+            } else {
+                outColor = vec4(0,0,0,0);
+            }
+        }
+
+        void main()
+        {
+            mandelbrot();
+        })";
+
+        return cv::v4d::initShader(vert.c_str(), frag.c_str(), "fragColor");
+    }
+
+    //Initialize shaders, objects, buffers and uniforms
+    static void init_scene(const cv::Rect& viewport, Handles& handles) {
+        GL_CHECK(glEnable(GL_BLEND));
+        GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+        handles.shaderHdl_ = load_shader();
+        load_buffers(handles);
+
+        handles.baseColorHdl_ = glGetUniformLocation(handles.shaderHdl_, "base_color");
+        handles.contrastBoostHdl_ = glGetUniformLocation(handles.shaderHdl_, "contrast_boost");
+        handles.maxIterationsHdl_ = glGetUniformLocation(handles.shaderHdl_, "max_iterations");
+        handles.currentZoomHdl_ = glGetUniformLocation(handles.shaderHdl_, "current_zoom");
+        handles.centerXHdl_ = glGetUniformLocation(handles.shaderHdl_, "center_x");
+        handles.centerYHdl_ = glGetUniformLocation(handles.shaderHdl_, "center_y");
+        handles.offsetXHdl_ = glGetUniformLocation(handles.shaderHdl_, "offset_x");
+        handles.offsetYHdl_ = glGetUniformLocation(handles.shaderHdl_, "offset_y");
+        handles.resolutionHdl_ = glGetUniformLocation(handles.shaderHdl_, "resolution");
+        GL_CHECK(glViewport(viewport.x, viewport.y, viewport.width, viewport.height));
+    }
+
+    //Free OpenGL resources
+    static void destroy_scene(Handles& handles) {
+        glDeleteShader(handles.shaderHdl_);
+        glDeleteBuffers(1, &handles.vbo_);
+        glDeleteBuffers(1, &handles.ebo_);
+        glDeleteVertexArrays(1, &handles.vao_);
+    }
+
+    //Render the mandelbrot fractal on top of a video
+    static void render_scene(const cv::Size& sz, const cv::Rect& viewport, Params& params, Handles& handles) {
+        GL_CHECK(glViewport(viewport.x, viewport.y, viewport.width, viewport.height));
+
+        //bungee zoom
+        if (params.currentZoom_ >= 3) {
+            params.zoomIn = true;
+        } else if (params.currentZoom_ < 0.05) {
+        	params.zoomIn = false;
+        }
+
+        params.zoomIncr_ = (params.currentZoom_ / 100);
+    	if(params.zoomIn)
+    		params.zoomIncr_ = -params.zoomIncr_;
+
+        GL_CHECK(glUseProgram(handles.shaderHdl_));
+        GL_CHECK(glUniform4f(handles.baseColorHdl_, params.baseColorVal_[0], params.baseColorVal_[1], params.baseColorVal_[2], params.baseColorVal_[3]));
+        GL_CHECK(glUniform1i(handles.contrastBoostHdl_, params.contrastBoost_));
+        GL_CHECK(glUniform1i(handles.maxIterationsHdl_, params.maxIterations_));
+        GL_CHECK(glUniform1f(handles.centerYHdl_, params.centerY_));
+        GL_CHECK(glUniform1f(handles.centerXHdl_, params.centerX_));
+        GL_CHECK(glUniform1f(handles.offsetYHdl_, viewport.x));
+        GL_CHECK(glUniform1f(handles.offsetXHdl_, viewport.y));
+
+        if (!params.manualNavigation_) {
+            params.currentZoom_ += params.zoomIncr_;
+            GL_CHECK(glUniform1f(handles.currentZoomHdl_, easeInOutQuint(params.currentZoom_)));
+        } else {
+            params.currentZoom_ = 1.0 / pow(params.zoomFactor_, 5.0f);
+            GL_CHECK(glUniform1f(handles.currentZoomHdl_, params.currentZoom_));
+        }
+        float res[2] = {float(sz.width), float(sz.height)};
+        GL_CHECK(glUniform2fv(handles.resolutionHdl_, 1, res));
+
+        GL_CHECK(glBindVertexArray(handles.vao_));
+        GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+    }
+public:
+    void gui(cv::Ptr<V4D> window) override {
+        window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params) {
+            CV_UNUSED(win);
+            using namespace ImGui;
+            SetCurrentContext(ctx);
+            Begin("Fractal");
+            Text("Navigation");
+            SliderInt("Iterations", &params.maxIterations_, 3, 100000);
+            DragFloat("X", &params.centerX_, 0.000001, -1.0f, 1.0f);
+            DragFloat("Y", &params.centerY_, 0.000001, -1.0f, 1.0f);
+            if(SliderFloat("Zoom", &params.zoomFactor_, 0.0001f, 10.0f))
+                params.manualNavigation_ = true;
+            Text("Color");
+            ColorPicker4("Color", params.baseColorVal_);
+            SliderInt("Contrast boost", &params.contrastBoost_, 1, 255);
+            End();
+        }, params_);
+    }
+
+    void setup(cv::Ptr<V4D> window) override {
+        float w = size().width;
+        float h = size().height;
+        float tw = w / TILING_;
+        float th = h / TILING_;
+
+        for(size_t i = 0; i < TILING_; ++i) {
+            for(size_t j = 0; j < TILING_; ++j) {
+            	viewports_[i * TILING_ + j] = cv::Rect(tw * i, th * j, tw - 1, th - 1);
+            }
+        }
+
+        for(size_t i = 0; i < NUM_CONTEXTS_; ++i) {
+            window->gl(i, [](const int32_t& ctxID, const cv::Rect& viewport, Handles& handles) {
+                init_scene(viewport, handles);
+            }, viewports_[i], handles_[i]);
+        }
+    }
+
+    void infer(cv::Ptr<V4D> window) override {
+        window->capture();
+
+        for(size_t i = 0; i < NUM_CONTEXTS_; ++i) {
+            window->gl(i,[](const int32_t& ctxID, const cv::Size& sz, const cv::Rect& viewport, Params& params, Handles& handles) {
+                render_scene(sz, viewport, params, handles);
+            }, size(), viewports_[i], params_, handles_[i]);
+        }
+
+        window->write();
+    }
+
+    void teardown(cv::Ptr<V4D> window) override {
+        for(size_t i = 0; i < NUM_CONTEXTS_; ++i) {
+            window->gl(i, [](const int32_t& ctxID, Handles& handles) {
+                destroy_scene(handles);
+            }, handles_[i]);
+        }
+    }
 };
 
+ShaderDemoPlan::Params ShaderDemoPlan::params_;
+
 int main(int argc, char** argv) {
+	CV_UNUSED(argc);
+	CV_UNUSED(argv);
 #ifndef __EMSCRIPTEN__
-	if (argc != 2) {
+    if (argc != 2) {
         cerr << "Usage: shader-demo <video-file>" << endl;
         exit(1);
     }
-
-	constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 	cv::Ptr<ShaderDemoPlan> plan = new ShaderDemoPlan(cv::Size(1280, 720));
 #else
-	CV_UNUSED(args);
-	CV_UNUSED(argv);
 	cv::Ptr<ShaderDemoPlan> plan = new ShaderDemoPlan(cv::Size(960, 960));
 #endif
-    try {
-        cv::Ptr<V4D> window = V4D::make(plan->size(), "Mandelbrot Shader Demo", IMGUI);
 
-#ifndef __EMSCRIPTEN__
-        auto src = makeCaptureSource(window, argv[1]);
-        window->setSource(src);
-        auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
-        window->setSink(sink);
+	cv::Ptr<V4D> window = V4D::make(plan->size(), "Mandelbrot Shader Demo", IMGUI);
+
+#ifndef __EMSCRIPTEN_
+    constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
+
+	//Creates a source from a file or a device
+	auto src = makeCaptureSource(window, argv[1]);
+	window->setSource(src);
+
+	auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
+	window->setSink(sink);
 #else
-        auto src = makeCaptureSource(window);
-        window->setSource(src);
+	//Creates a source from a file or a device
+	auto src = makeCaptureSource(window);
+	window->setSource(src);
 #endif
 
-        window->run(plan, 0);
-    } catch (std::exception& ex) {
-        cerr << "Exception: " << ex.what() << endl;
-    }
-    return 0;
+	window->run(plan);
+
+	return 0;
 }

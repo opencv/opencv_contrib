@@ -22,7 +22,7 @@ using std::istringstream;
 using namespace cv::v4d;
 
 class FontDemoPlan : public Plan {
-	struct Params {
+	static struct Params {
 		const cv::Scalar_<float> INITIAL_COLOR = cv::v4d::colorConvert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2RGB);
 		float minStarSize_ = 0.5f;
 		float maxStarSize_ = 1.5f;
@@ -30,34 +30,38 @@ class FontDemoPlan : public Plan {
 		int maxStarCount_ = 3000;
 		float starAlpha_ = 0.3f;
 
-		float fontSize_ = 10.0f;
+		float fontSize_ = 0.0f;
 		cv::Scalar_<float> textColor_ = INITIAL_COLOR / 255.0;
 		float warpRatio_ = 1.0f/3.0f;
 		bool updateStars_ = true;
 		bool updatePerspective_ = true;
 	} params_;
 
-	//the text to display
-	vector<string> lines_;
-
     //BGRA
-    cv::UMat stars_, warped_, frame_;
-    //transformation matrix
-    cv::Mat tm_;
-    cv::RNG rng_ = cv::getTickCount();
-    //line count
-    uint32_t cnt_ = 0;
+	inline static cv::UMat stars_;
+	cv::UMat warped_;
+	//transformation matrix
+    inline static cv::Mat tm_;
+
+    //the text to display
+	inline static vector<string> lines_;
+    //global frame count
+    inline static uint32_t global_cnt_ = 0;
     //Total number of lines in the text
-    int32_t numLines_ = 0;
+    inline static int32_t numLines_ = 0;
     //Height of the text in pixels
-    int32_t textHeight_ = 0;
+    inline static int32_t textHeight_ = 0;
+    //the sequence number of the current frame
+    uint32_t seqNum_ = 0;
     //y-value of the current line
     int32_t y_ = 0;
 
     int32_t translateY_ = 0;
+
+    cv::RNG rng_ = cv::getTickCount();
 public:
-    FontDemoPlan(const cv::Size& sz) : Plan(sz) {
-    }
+	using Plan::Plan;
+
     void gui(cv::Ptr<V4D> window) override {
         window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params){
         	CV_UNUSED(win);
@@ -86,7 +90,6 @@ public:
     }
 
     void setup(cv::Ptr<V4D> window) override {
-    	CV_UNUSED(window);
         //The text to display
         string txt = cv::getBuildInformation();
         //Save the text to a vector
@@ -95,12 +98,13 @@ public:
         for (std::string line; std::getline(iss, line); ) {
             lines_.push_back(line);
         }
+        params_.fontSize_ = hypot(size().width, size().height) / 60.0;
         numLines_ = lines_.size();
         textHeight_ = (numLines_ * params_.fontSize_);
     }
 
     void infer(cv::Ptr<V4D> window) override {
-		window->branch(isTrue_, params_.updateStars_);
+		window->branch(0, isTrue_, params_.updateStars_);
 		{
 			window->nvg([](const cv::Size& sz, cv::RNG& rng, const Params& params) {
 				using namespace cv::v4d::nvg;
@@ -118,15 +122,16 @@ public:
 				}
 			}, size(), rng_, params_);
 
-			window->fb([](const cv::UMat& frameBuffer, cv::UMat& f){
-				frameBuffer.copyTo(f);
-			}, stars_);
+			window->fb([](const cv::UMat& framebuffer, const cv::Rect& viewport, cv::UMat& f, Params& params){
+				framebuffer(viewport).copyTo(f);
+				params.updateStars_ = false;
+			}, viewport(), stars_, params_);
 		}
-		window->endbranch(isTrue_, params_.updateStars_);
+		window->endbranch(0, isTrue_, params_.updateStars_);
 
-		window->branch(isTrue_, params_.updatePerspective_);
+		window->branch(0, isTrue_, params_.updatePerspective_);
 		{
-			window->parallel([](const cv::Size& sz, cv::Mat& tm, const Params& params){
+			window->single([](const cv::Size& sz, cv::Mat& tm, Params& params){
 				//Derive the transformation matrix tm for the pseudo 3D effect from quad1 and quad2.
 				vector<cv::Point2f> quad1 = {cv::Point2f(0,0),cv::Point2f(sz.width,0),
 						cv::Point2f(sz.width,sz.height),cv::Point2f(0,sz.height)};
@@ -136,15 +141,16 @@ public:
 				vector<cv::Point2f> quad2 = {cv::Point2f(l, 0.0f),cv::Point2f(r, 0.0f),
 						cv::Point2f(sz.width,sz.height), cv::Point2f(0,sz.height)};
 				tm = cv::getPerspectiveTransform(quad1, quad2);
+				params.updatePerspective_ = false;
 			}, size(), tm_, params_);
 		}
-		window->endbranch(isTrue_, params_.updatePerspective_);
+		window->endbranch(0, isTrue_, params_.updatePerspective_);
 
 		window->branch(always_);
 		{
-			window->nvg([](const cv::Size& sz, int32_t& ty, const int32_t& cnt, int32_t& y, const int32_t& textHeight, const std::vector<std::string> lines, const Params& params) {
+			window->nvg([](const cv::Size& sz, int32_t& ty, const int32_t& seqNum, int32_t& y, const int32_t& textHeight, const std::vector<std::string> lines, const Params& params) {
 				//How many pixels to translate the text up.
-		    	ty = sz.height - cnt;
+		    	ty = sz.height - seqNum;
 				using namespace cv::v4d::nvg;
 				clear();
 				fontSize(params.fontSize_);
@@ -161,53 +167,50 @@ public:
 						text(sz.width / 2.0, y, lines[i].c_str(), lines[i].c_str() + lines[i].size());
 					}
 				}
-			}, size(), translateY_, cnt_, y_, textHeight_, lines_, params_);
+			}, size(), translateY_, seqNum_, y_, textHeight_, lines_, params_);
 
-			window->fb([](cv::UMat& framebuffer, cv::UMat& w, cv::UMat& s, cv::Mat& t) {
-				//Pseudo 3D text effect.
-				cv::warpPerspective(framebuffer, w, t, framebuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
-				//Combine layers
-				cv::add(s, w, framebuffer);
-			}, warped_, stars_, tm_);
+			window->fb([](cv::UMat& framebuffer, const cv::Rect& viewport, cv::UMat& w, cv::UMat& s, cv::Mat& t) {
+				if(s.empty() || t.empty())
+					return;
+				cv::warpPerspective(framebuffer(viewport), w, t, viewport.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
+				cv::add(s.clone(), w, framebuffer(viewport));
+			}, viewport(), warped_, stars_, tm_);
 
 			window->write();
 
-			window->parallel([](const int32_t& translateY, const int32_t& textHeight, uint32_t& cnt, Params& params) {
-				params.updatePerspective_ = false;
-				params.updateStars_ = false;
-
+			window->single([](const int32_t& translateY, const int32_t& textHeight, uint32_t& gcnt, uint32_t& seqNum) {
 				if(-translateY > textHeight) {
 					//reset the scroll once the text is out of the picture
-					cnt = 0;
+					gcnt = 0;
 				}
-				++cnt;
+				++gcnt;
 				//Wrap the cnt around if it becomes to big.
-				if(cnt > std::numeric_limits<uint32_t>().max() / 2.0)
-					cnt = 0;
-			}, translateY_, textHeight_, cnt_, params_);
+				if(gcnt > std::numeric_limits<uint32_t>().max() / 2.0)
+					gcnt = 0;
+				seqNum = gcnt;
+			}, translateY_, textHeight_, global_cnt_, seqNum_);
 		}
 		window->endbranch(always_);
     }
 };
+
+FontDemoPlan::Params FontDemoPlan::params_;
+
 int main() {
-    try {
 #ifndef __EMSCRIPTEN__
-    	cv::Ptr<FontDemoPlan> plan = new FontDemoPlan(cv::Size(1280, 720));
+	cv::Ptr<FontDemoPlan> plan = new FontDemoPlan(cv::Size(1280, 720));
 #else
-    	cv::Ptr<FontDemoPlan> plan = new FontDemoPlan(cv::Size(960, 960));
+	cv::Ptr<FontDemoPlan> plan = new FontDemoPlan(cv::Size(960, 960));
 #endif
-        cv::Ptr<V4D> window = V4D::make(plan->size(), "Font Demo", ALL);
+	cv::Ptr<V4D> window = V4D::make(plan->size(), "Font Demo", ALL);
 
 #ifndef __EMSCRIPTEN__
-        constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
-        constexpr double FPS = 60;
-        auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, plan->size());
-        window->setSink(sink);
+	constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
+	constexpr double FPS = 60;
+	auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, plan->size());
+	window->setSink(sink);
 #endif
 
-        window->run(plan,0);
-    } catch(std::exception& ex) {
-        cerr << "Exception: " << ex.what() << endl;
-    }
+	window->run(plan);
     return 0;
 }

@@ -10,7 +10,7 @@ namespace cv {
 namespace v4d {
 namespace detail {
 GLContext::GLContext(const int32_t& idx, cv::Ptr<FrameBufferContext> fbContext) :
-        idx_(idx), mainFbContext_(fbContext), glFbContext_(new FrameBufferContext(*fbContext->getV4D(), "OpenGL", *fbContext)) {
+        idx_(idx), mainFbContext_(fbContext), glFbContext_(new FrameBufferContext(*fbContext->getV4D(), "OpenGL" + std::to_string(idx), fbContext)) {
 #ifdef __EMSCRIPTEN__
     run_sync_on_main<19>([&,this](){
         mainFbContext_->initWebGLCopy(fbCtx()->getIndex());
@@ -21,7 +21,7 @@ GLContext::GLContext(const int32_t& idx, cv::Ptr<FrameBufferContext> fbContext) 
 void GLContext::execute(std::function<void()> fn) {
     run_sync_on_main<15>([this, fn](){
 #ifndef __EMSCRIPTEN__
-        if(!fbCtx()->isShared()) {
+        if(!fbCtx()->hasParent()) {
             UMat tmp;
             mainFbContext_->copyTo(tmp);
             fbCtx()->copyFrom(tmp);
@@ -40,7 +40,7 @@ void GLContext::execute(std::function<void()> fn) {
 #endif
             fn();
         }
-        if(!fbCtx()->isShared()) {
+        if(!fbCtx()->hasParent()) {
 #ifdef __EMSCRIPTEN__
             mainFbContext_->doWebGLCopy(fbCtx());
 #else

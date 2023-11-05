@@ -9,6 +9,9 @@ using namespace cv::v4d;
 class CustomSourceAndSinkPlan : public Plan {
 	string hr_ = "Hello Rainbow!";
 public:
+	CustomSourceAndSinkPlan(const cv::Size& sz) : Plan(sz) {
+	}
+
 	void infer(cv::Ptr<V4D> win) override {
 		win->capture();
 
@@ -28,7 +31,8 @@ public:
 };
 
 int main() {
-    Ptr<V4D> window = V4D::make(960, 960, "Custom Source/Sink");
+	Ptr<CustomSourceAndSinkPlan> plan = new CustomSourceAndSinkPlan(cv::Size(960, 960));
+    Ptr<V4D> window = V4D::make(plan->size(), "Custom Source/Sink");
 
 	//Make a source that generates rainbow frames.
 	cv::Ptr<Source> src = new Source([](cv::UMat& frame){
@@ -46,7 +50,8 @@ int main() {
 #ifndef __EMSCRIPTEN__
 			imwrite(std::to_string(seq) + ".png", frame);
 #else
-	        CV_UNUSED(frame);
+			CV_UNUSED(seq);
+			CV_UNUSED(frame);
 #endif
 	    } catch(std::exception& ex) {
 	        cerr << "Unable to write frame: " << ex.what() << endl;
@@ -59,6 +64,6 @@ int main() {
 	window->setSource(src);
 	window->setSink(sink);
 
-	window->run<CustomSourceAndSinkPlan>(0);
+	window->run(plan);
 }
 

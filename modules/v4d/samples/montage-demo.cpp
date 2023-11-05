@@ -43,17 +43,18 @@ int v4d_beauty_main(int argc, char **argv);
 class MontageDemoPlan : public Plan {
 	const cv::Size tiling_  = cv::Size(3, 3);
 	const cv::Size tileSz_ = cv::Size(640, 360);
+	const cv::Rect viewport_ = cv::Rect(0, 720, 640, 360);
 
 	std::vector<Plan*> plans_ = {
-		new CubeDemoPlan(tileSz_),
-		new ManyCubesDemoPlan(tileSz_),
-		new VideoDemoPlan(tileSz_),
-		new NanoVGDemoPlan(tileSz_),
-		new ShaderDemoPlan(tileSz_),
-		new FontDemoPlan(tileSz_),
-		new PedestrianDemoPlan(tileSz_),
-		new BeautyDemoPlan(tileSz_),
-		new OptflowDemoPlan(tileSz_)
+		new CubeDemoPlan(viewport_),
+		new ManyCubesDemoPlan(viewport_),
+		new VideoDemoPlan(viewport_),
+		new NanoVGDemoPlan(viewport_),
+		new ShaderDemoPlan(viewport_),
+		new FontDemoPlan(viewport_),
+		new PedestrianDemoPlan(viewport_),
+		new BeautyDemoPlan(viewport_),
+		new OptflowDemoPlan(viewport_)
 	};
 	struct Frames {
 		std::vector<cv::UMat> results_ = std::vector<cv::UMat>(9);
@@ -101,7 +102,7 @@ public:
 
 			for(size_t x = 0; x < 3; ++x)
 				for(size_t y = 0; y < 3; ++y)
-					frames.results_[x * 3 + y]		(cv::Rect(0, h * 2, w, h)).copyTo(framebuffer(cv::Rect(w * x, h * y, w, h)));
+					frames.results_[x * 3 + y](cv::Rect(0, h * 2, w, h)).copyTo(framebuffer(cv::Rect(w * x, h * y, w, h)));
 		}, tileSz_, frames_);
 
 		window->setDisableIO(false);
@@ -110,7 +111,7 @@ public:
 
 	virtual void teardown(cv::Ptr<V4D> window) override {
 		for(auto* plan : plans_) {
-			plan->setup(window);
+			plan->teardown(window);
 		}
 	}
 };
@@ -118,7 +119,7 @@ public:
 int main(int argc, char** argv) {
 #ifndef __EMSCRIPTEN__
 	if (argc != 3) {
-        cerr << "Usage: montage-demo <video-file> <number of extra threads>" << endl;
+        cerr << "Usage: montage-demo <video-file> <number of extra workers>" << endl;
         exit(1);
     }
 	constexpr double FPS = 60;

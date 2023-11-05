@@ -42,6 +42,7 @@ using std::endl;
 inline uint64_t get_epoch_nanos() {
 	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
+
 static thread_local std::mutex mtx_;
 static thread_local bool sync_run_ = false;
 
@@ -59,11 +60,15 @@ public:
 class CV_EXPORTS Global {
 	inline static std::mutex mtx_;
 	inline static uint64_t frame_cnt_ = 0;
+	inline static uint64_t run_cnt_ = 0;
 	inline static uint64_t start_time_ = get_epoch_nanos();
 	inline static bool first_run_ = true;
 	inline static double fps_ = 0;
 	inline static const std::thread::id default_thread_id_;
 	inline static std::thread::id main_thread_id_;
+	inline static thread_local bool is_main_;
+	inline static size_t workers_ready_ = 0;
+    inline static size_t workers_running_ = 0;
 public:
 	CV_EXPORTS static std::mutex& mutex() {
     	return mtx_;
@@ -71,6 +76,10 @@ public:
 
 	CV_EXPORTS static uint64_t& frame_cnt() {
     	return frame_cnt_;
+    }
+
+	CV_EXPORTS static uint64_t& run_cnt() {
+    	return run_cnt_;
     }
 
 	CV_EXPORTS static uint64_t& start_time() {
@@ -92,8 +101,17 @@ public:
     	return main_thread_id_;
     }
 
-	CV_EXPORTS static bool is_main() {
-		return  main_thread_id_ == default_thread_id_ || main_thread_id_ == std::this_thread::get_id();
+	CV_EXPORTS static const bool& is_main() {
+		is_main_ = (main_thread_id_ == default_thread_id_ || main_thread_id_ == std::this_thread::get_id());
+		return is_main_;
+	}
+
+	CV_EXPORTS static size_t& workers_ready() {
+		return workers_ready_;
+	}
+
+	CV_EXPORTS static size_t& workers_running() {
+		return workers_running_;
 	}
 };
 
@@ -292,6 +310,7 @@ CV_EXPORTS bool isClGlSharingSupported();
  */
 CV_EXPORTS bool keepRunning();
 
+CV_EXPORTS void requestFinish();
 
 #ifndef __EMSCRIPTEN__
 /*!

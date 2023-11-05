@@ -4,6 +4,7 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "opencv2/v4d/sink.hpp"
+#include <opencv2/core/utils/logger.hpp>
 
 namespace cv {
 namespace v4d {
@@ -40,7 +41,27 @@ void Sink::setThreadSafe(bool ts) {
 void Sink::operator()(const uint64_t& seq, const cv::UMat& frame) {
 	if(isThreadSafe()) {
 		std::unique_lock<std::mutex> lock(mtx_);
-		open_ = consumer_(seq, frame);
+		if(seq == nextSeq_) {
+			uint64_t currentSeq = seq;
+			cv::UMat currentFrame = frame;
+			buffer_[seq] = frame;
+			do {
+				open_ = consumer_(currentSeq, currentFrame.clone());
+				++nextSeq_;
+				buffer_.erase(buffer_.begin());
+				if(buffer_.empty())
+					break;
+				auto pair = (*buffer_.begin());
+				currentSeq = pair.first;
+				currentFrame = pair.second;
+			} while(currentSeq == nextSeq_);
+		} else {
+			buffer_[seq] = frame;
+		}
+		if(buffer_.size() > 240) {
+			CV_LOG_WARNING(nullptr, "Buffer overrun in sink.");
+			buffer_.clear();
+		}
 	} else {
 		open_ = consumer_(seq, frame);
 	}

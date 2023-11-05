@@ -13,6 +13,9 @@ class FontWithGuiPlan: public Plan {
 	//The text
 	string hw_ = "hello world";
 public:
+	FontWithGuiPlan(const cv::Size& sz) : Plan(sz) {
+	}
+
 	void gui(Ptr<V4D> window) override {
 		window->imgui([](Ptr<V4D> win, ImGuiContext* ctx, Params& params) {
 			CV_UNUSED(win);
@@ -40,7 +43,8 @@ public:
 };
 
 int main() {
-    Ptr<V4D> window = V4D::make(960, 960, "Font Rendering with GUI");
-	window->run<FontWithGuiPlan>(0);
+	Ptr<FontWithGuiPlan> plan = new FontWithGuiPlan(cv::Size(960,960));
+    Ptr<V4D> window = V4D::make(plan->size(), "Font Rendering with GUI");
+	window->run(plan);
 }
 

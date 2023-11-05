@@ -15,6 +15,9 @@ using std::string;
 using namespace cv::v4d;
 
 class PedestrianDemoPlan : public Plan {
+public:
+	using Plan::Plan;
+private:
 	unsigned long diag_;
 	cv::Size downSize_;
 	cv::Size_<float> scale_;
@@ -22,6 +25,8 @@ class PedestrianDemoPlan : public Plan {
 
 	struct Cache {
 		cv::UMat blur_;
+		cv::UMat local_;
+		uint64_t fps_;
 	} cache_;
     //BGRA
     cv::UMat background_;
@@ -30,22 +35,25 @@ class PedestrianDemoPlan : public Plan {
     //GREY
     cv::UMat videoFrameDownGrey_;
 
-    //detected pedestrian locations rectangles
-    std::vector<cv::Rect> locations_;
-    //detected pedestrian locations as boxes
-    vector<vector<double>> boxes_;
-    //probability of detected object being a pedestrian - currently always set to 1.0
-    vector<double> probs_;
-    //Faster tracking parameters
-    cv::TrackerKCF::Params params_;
-    //KCF tracker used instead of continous detection
-    cv::Ptr<cv::Tracker> tracker_;
-    cv::Rect tracked_ = cv::Rect(0,0,1,1);
-    bool trackerInitialized_ = false;
-    //If tracking fails re-detect
-    bool redetect_ = true;
-    //Descriptor used for pedestrian detection
-    cv::HOGDescriptor hog_;
+    struct Detection {
+		//detected pedestrian locations rectangles
+		std::vector<cv::Rect> locations_;
+		//detected pedestrian locations as boxes
+		vector<vector<double>> boxes_;
+		//probability of detected object being a pedestrian - currently always set to 1.0
+		vector<double> probs_;
+		//Faster tracking parameters
+		cv::TrackerKCF::Params params_;
+		//KCF tracker used instead of continous detection
+		cv::Ptr<cv::Tracker> tracker_;
+		bool trackerInitialized_ = false;
+		//If tracking fails re-detect
+		bool redetect_ = true;
+		//Descriptor used for pedestrian detection
+		cv::HOGDescriptor hog_;
+    } detection_;
+
+    inline static cv::Rect tracked_ = cv::Rect(0,0,1,1);
 
 	constexpr static auto doRedect_ = [](const bool& trackerInit, const bool& redetect){ return !trackerInit || redetect; };
 	constexpr static auto dontRedect_ = [](const bool& trackerInit, const bool& redetect){ return trackerInit && !redetect; };
@@ -125,23 +133,21 @@ class PedestrianDemoPlan : public Plan {
         cv::add(background, cache.blur_, dst);
     }
 public:
-    PedestrianDemoPlan(const cv::Size& sz) : Plan(sz) {
+    void setup(cv::Ptr<V4D> window) override {
     	int w = size().width;
     	int h = size().height;
-    	diag_ = hypot(double(w), double(h));
-    	downSize_ = { w , h };
+    	diag_ = hypot(w, h);
+    	downSize_ = { 640 , 360 };
     	scale_ = { float(w) / downSize_.width, float(h) / downSize_.height };
     	blurKernelSize_ = std::max(int(diag_ / 200 % 2 == 0 ? diag_ / 200 + 1 : diag_ / 200), 1);
-    }
 
-    void setup(cv::Ptr<V4D> window) override {
-		window->parallel([](cv::TrackerKCF::Params& params, cv::Ptr<cv::Tracker>& tracker, cv::HOGDescriptor& hog){
-			params.desc_pca = cv::TrackerKCF::GRAY;
-			params.compress_feature = false;
-			params.compressed_size = 1;
-			tracker = cv::TrackerKCF::create(params);
-			hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
-		}, params_, tracker_, hog_);
+    	window->parallel([](Detection& detection){
+    		detection.params_.desc_pca = cv::TrackerKCF::GRAY;
+    		detection.params_.compress_feature = false;
+    		detection.params_.compressed_size = 1;
+    		detection.tracker_ = cv::TrackerKCF::create(detection.params_);
+    		detection.hog_.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
+		}, detection_);
 	}
 
 	void infer(cv::Ptr<V4D> window) override {
@@ -149,11 +155,11 @@ public:
 		{
 			window->capture();
 
-			window->fb([](const cv::UMat& frameBuffer, cv::UMat& videoFrame){
+			window->fb([](const cv::UMat& frameBuffer, const cv::Rect& viewport, cv::UMat& videoFrame){
 				//copy video frame
-				cvtColor(frameBuffer,videoFrame,cv::COLOR_BGRA2RGB);
+				cvtColor(frameBuffer(viewport),videoFrame,cv::COLOR_BGRA2RGB);
 				//downsample video frame for hog_ detection
-			}, videoFrame_);
+			}, viewport(), videoFrame_);
 
 			window->parallel([](const cv::Size downSize, const cv::UMat& videoFrame, cv::UMat& videoFrameDown, cv::UMat& videoFrameDownGrey, cv::UMat& background){
 				cv::resize(videoFrame, videoFrameDown, downSize);
@@ -164,51 +170,55 @@ public:
 		window->endbranch(always_);
 
 		//Try to track the pedestrian (if we currently are tracking one), else re-detect using HOG descriptor
-		window->branch(doRedect_, trackerInitialized_, redetect_);
+		window->branch(doRedect_, detection_.trackerInitialized_, detection_.redetect_);
 		{
-			window->parallel([](cv::HOGDescriptor& hog, bool& redetect, cv::UMat& videoFrameDownGrey, std::vector<cv::Rect>& locations, vector<vector<double>>& boxes, vector<double>& probs, cv::Ptr<cv::Tracker>& tracker, cv::Rect& tracked, bool& trackerInitialized){
-				redetect = false;
-				//Detect pedestrians
-				hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.15, 2.0, false);
+			window->single([](cv::UMat& videoFrameDownGrey, Detection& detection, cv::Rect& tracked, Cache& cache){
+				detection.redetect_ = false;
 
-				if (!locations.empty()) {
-					boxes.clear();
-					probs.clear();
+				//Detect pedestrians
+				detection.hog_.detectMultiScale(videoFrameDownGrey, detection.locations_, 0, cv::Size(), cv::Size(), 1.15, 2.0, true);
+//				cerr << "detect" << endl;
+				if (!detection.locations_.empty()) {
+					detection.boxes_.clear();
+					detection.probs_.clear();
 					//collect all found boxes
-					for (const auto &rect : locations) {
-						boxes.push_back( { double(rect.x), double(rect.y), double(rect.x + rect.width), double(rect.y + rect.height) });
-						probs.push_back(1.0);
+					for (const auto &rect : detection.locations_) {
+						detection.boxes_.push_back( { double(rect.x), double(rect.y), double(rect.x + rect.width), double(rect.y + rect.height) });
+						detection.probs_.push_back(1.0);
 					}
 
 					//use nms to filter overlapping boxes (https://medium.com/analytics-vidhya/non-max-suppression-nms-6623e6572536)
-					vector<bool> keep = non_maximal_suppression(&boxes, &probs, 0.1);
+					vector<bool> keep = non_maximal_suppression(&detection.boxes_, &detection.probs_, 0.1);
 					for (size_t i = 0; i < keep.size(); ++i) {
 						if (keep[i]) {
 							//only track the first pedestrian found
-							tracked = locations[i];
+							tracked = detection.locations_[i];
 							break;
 						}
 					}
 
-					if(!trackerInitialized) {
+					if(!detection.trackerInitialized_) {
 		//            	initialize the tracker once
-						tracker->init(videoFrameDownGrey, tracked);
-						trackerInitialized = true;
+						detection.tracker_->init(videoFrameDownGrey, tracked);
+						detection.trackerInitialized_ = true;
 					}
 				}
-			}, hog_, redetect_, videoFrameDownGrey_, locations_, boxes_, probs_, tracker_, tracked_, trackerInitialized_);
+			}, videoFrameDownGrey_, detection_, tracked_, cache_);
 		}
-		window->endbranch(doRedect_, trackerInitialized_, redetect_);
-		window->branch(dontRedect_, trackerInitialized_, redetect_);
+		window->endbranch(doRedect_, detection_.trackerInitialized_, detection_.redetect_);
+		window->branch(dontRedect_, detection_.trackerInitialized_, detection_.redetect_);
 		{
-			window->parallel([](bool& redetect, cv::UMat& videoFrameDownGrey, cv::Ptr<cv::Tracker>& tracker, cv::Rect& tracked){
-				if(!tracker->update(videoFrameDownGrey, tracked)) {
+			window->parallel([](cv::UMat& videoFrameDownGrey, Detection& detection, const uint64_t& frameCnt, cv::Rect& tracked, Cache& cache){
+//				cerr << "track: " << frameCnt << " " << cache.fps_ << endl;
+				if((cache.fps_ == 0 || frameCnt % cache.fps_ == 0) || !detection.tracker_->update(videoFrameDownGrey, tracked)) {
+					cache.fps_ = uint64_t(std::ceil(Global::fps()));
 					//detection failed - re-detect
-					redetect = true;
+					detection.redetect_ = true;
 				}
-			}, redetect_, videoFrameDownGrey_, tracker_, tracked_);
+
+			}, videoFrameDownGrey_, detection_, window->frameCount(), tracked_, cache_);
 		}
-		window->endbranch(dontRedect_, trackerInitialized_, redetect_);
+		window->endbranch(dontRedect_, detection_.trackerInitialized_, detection_.redetect_);
 
 		window->branch(always_);
 		{
@@ -217,26 +227,30 @@ public:
 				using namespace cv::v4d::nvg;
 				clear();
 				beginPath();
-				strokeWidth(std::fmax(2.0, sz.width / 960.0));
+				strokeWidth(std::fmax(5, sz.width / 960.0));
 				strokeColor(cv::v4d::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
 				float width = tracked.width * scale.width;
 				float height = tracked.height * scale.height;
-				float cx = tracked.x * scale.width + (width / 2.0f);
-				float cy = tracked.y * scale.height + (height / 2.0f);
-				ellipse(cx, cy, width / 2.0f, height / 2.0f);
+				float cx = (tracked.x + (width / 2.0));
+				float cy = (scale.height * tracked.y + ((height) / 2.0));
+
+				ellipse(cx, cy, (width), (height));
+//				cerr << cx << ": " << cy << " | " << (width / 2.0f) << " " << (height / 2.0f) << endl;
 				stroke();
-			}, size(), scale_, tracked_);
+			}, size(), scale_,	tracked_);
 
 			//Put it all together
-			window->fb([](cv::UMat& frameBuffer, cv::UMat& bg, int blurKernelSize, Cache& cache){
-				composite_layers(bg, frameBuffer, frameBuffer, blurKernelSize, cache);
-			}, background_, blurKernelSize_, cache_);
+			window->fb([](cv::UMat& frameBuffer, const cv::Rect& viewport, cv::UMat& bg, int blurKernelSize, Cache& cache){
+				composite_layers(bg, frameBuffer(viewport), frameBuffer(viewport), blurKernelSize, cache);
+			}, viewport(), background_, blurKernelSize_, cache_);
 
 			window->write();
 		}
 		window->endbranch(always_);
 	}
 };
+
+
 int main(int argc, char **argv) {
 	CV_UNUSED(argc);
 	CV_UNUSED(argv);
@@ -268,7 +282,7 @@ int main(int argc, char **argv) {
     window->setSource(src);
 #endif
 
-    window->run(plan, 0);
+    window->run(plan,0);
 
     return 0;
 }

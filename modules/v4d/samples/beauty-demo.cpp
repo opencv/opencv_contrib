@@ -102,15 +102,17 @@ struct FaceFeatures {
 using namespace cv::v4d;
 
 class BeautyDemoPlan : public Plan {
+public:
+	using Plan::Plan;
+private:
 	cv::Size downSize_;
-	int blurFaceKernelSize_ = 0;
 
-	struct Params {
+	static struct Params {
 		int blurSkinKernelSize_ = 0;
 		//Saturation boost factor for eyes and lips
-		float eyesAndLipsSaturation_ = 2.0f;
+		float eyesAndLipsSaturation_ = 1.8f;
 		//Saturation boost factor for skin
-		float skinSaturation_ = 1.7f;
+		float skinSaturation_ = 1.4f;
 		//Contrast factor skin
 		float skinContrast_ = 0.7f;
 #ifndef __EMSCRIPTEN__
@@ -129,11 +131,12 @@ class BeautyDemoPlan : public Plan {
 	    cv::UMat hls_;
 	    cv::UMat blur_;
 	    cv::UMat frameOutFloat_;
+	    cv::UMat bgra_;
 	} cache_;
 
 	struct Frames {
 		//BGR
-		cv::UMat input_, down_, contrast_, faceOval_, eyesAndLips_, skin_;
+		cv::UMat orig_, down_, contrast_, faceOval_, eyesAndLips_, skin_;
 		cv::UMat lhalf_;
 		cv::UMat rhalf_;
 		//GREY
@@ -152,7 +155,7 @@ class BeautyDemoPlan : public Plan {
 	cv::UMat frameOut_;
 	cv::Ptr<cv::face::Facemark> facemark_ = cv::face::createFacemarkLBF();
 	//Blender (used to put the different face parts back together)
-	cv::Ptr<cv::detail::MultiBandBlender> blender_ = new cv::detail::MultiBandBlender(false, 5);
+	cv::Ptr<cv::detail::MultiBandBlender> blender_ = new cv::detail::MultiBandBlender(true, 5);
 	//Face detector
 	cv::Ptr<cv::FaceDetectorYN> detector_;
 
@@ -161,12 +164,11 @@ class BeautyDemoPlan : public Plan {
 	    using namespace cv::v4d::nvg;
 	    clear();
 
-	    vector<vector<cv::Point2f>> features = ff.features();
-	    cv::RotatedRect rotRect = cv::fitEllipse(features[0]);
+	    cv::RotatedRect rotRect = cv::fitEllipse(ff.points());
 
 	    beginPath();
 	    fillColor(cv::Scalar(255, 255, 255, 255));
-	    ellipse(rotRect.center.x, rotRect.center.y * 1, rotRect.size.width / 2, rotRect.size.height / 2.5);
+	    ellipse(rotRect.center.x, rotRect.center.y * 0.875, rotRect.size.width / 2, rotRect.size.height / 1.75);
 	    rotate(rotRect.angle);
 	    fill();
 	}
@@ -206,21 +208,6 @@ class BeautyDemoPlan : public Plan {
 	    cvtColor(cache.hls_, dstBGR, cv::COLOR_HLS2BGR);
 	}
 public:
-    BeautyDemoPlan(const cv::Size& sz) : Plan(sz) {
-    	int w = size().width;
-    	int h = size().height;
-    	int diag_ = hypot(double(w), double(h));
-    	downSize_ = { int(round(w)), int(round(h)) };
-    	blurFaceKernelSize_ = std::max(int(diag_ / 500 % 2 == 0 ? diag_ / 500 + 1 : diag_ / 500), 1);
-		frames_.lhalf_ = cv::UMat(downSize_, CV_8UC3);
-		frames_.rhalf_ = cv::UMat(downSize_, CV_8UC3);
-
-#ifndef __EMSCRIPTEN__
-		detector_ = cv::FaceDetectorYN::create("modules/v4d/assets/models/face_detection_yunet_2023mar.onnx", "", downSize_, 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
-#else
-		detector_ = cv::FaceDetectorYN::create("assets/models/face_detection_yunet_2023mar.onnx", "", downSize_, 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
-#endif
-    }
 	void gui(cv::Ptr<V4D> window) override {
 		window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params){
 			using namespace ImGui;
@@ -244,7 +231,7 @@ public:
 			};
 
 			Text("Face Skin");
-			SliderInt("Blur", &params.blurSkinKernelSize_, 0, 128);
+			SliderInt("Blur", &params.blurSkinKernelSize_, 1, 128);
 			SliderFloat("Saturation", &params.skinSaturation_, 0.0f, 100.0f);
 			SliderFloat("Contrast", &params.skinContrast_, 0.0f, 1.0f);
 			Text("Eyes and Lips");
@@ -253,6 +240,17 @@ public:
 		}, params_);
 	}
 	void setup(cv::Ptr<V4D> window) override {
+    	int w = size().width;
+    	int h = size().height;
+    	downSize_ = { std::min(w, std::max(640, int(round(w / 2.0)))), std::min(h, std::max(360, int(round(h / 2.0)))) };
+#ifndef __EMSCRIPTEN__
+		detector_ = cv::FaceDetectorYN::create("modules/v4d/assets/models/face_detection_yunet_2023mar.onnx", "", downSize_, 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
+#else
+		detector_ = cv::FaceDetectorYN::create("assets/models/face_detection_yunet_2023mar.onnx", "", downSize_, 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
+#endif
+		int diag = hypot(double(size().width), double(size().height));
+		params_.blurSkinKernelSize_ = std::max(int(diag / 2000 % 2 == 0 ? diag / 2000 + 1 : diag / 2000), 1);
+
 		window->setStretching(params_.stretch_);
 		window->parallel([](cv::Ptr<cv::face::Facemark>& facemark){
 #ifndef __EMSCRIPTEN__
@@ -262,10 +260,6 @@ public:
 #endif
 			cerr << "Loading finished" << endl;
 		}, facemark_);
-		int diag = hypot(double(size().width), double(size().height));
-		blurFaceKernelSize_ = std::max(int(diag / 200 % 2 == 0 ? diag / 200 + 1 : diag / 200), 1);
-		params_.blurSkinKernelSize_ = std::max(int(diag / 200 % 2 == 0 ? diag / 200 + 1 : diag / 200), 1);
-		frameOut_ = cv::UMat(window->fbSize(), CV_8UC3);
 	}
 	void infer(cv::Ptr<V4D> window) override {
 		try {
@@ -274,11 +268,12 @@ public:
 				window->capture();
 
 				//Save the video frame as BGR
-				window->fb([](const cv::UMat &framebuffer, const cv::Size& downSize, Frames& frames) {
-					cvtColor(framebuffer, frames.input_, cv::COLOR_BGRA2BGR);
+				window->fb([](const cv::UMat &framebuffer, const cv::Rect& viewport, const cv::Size& downSize, Frames& frames) {
+					cvtColor(framebuffer(viewport), frames.orig_, cv::COLOR_BGRA2BGR);
+
 					//Downscale the video frame for face detection
-					cv::resize(frames.input_, frames.down_, downSize);
-				}, downSize_, frames_);
+					cv::resize(frames.orig_, frames.down_, downSize);
+				}, viewport(), downSize_, frames_);
 
 				window->parallel([](const cv::Size sz, cv::Ptr<cv::FaceDetectorYN>& detector, cv::Ptr<cv::face::Facemark>& facemark, const cv::UMat& down, Face& face) {
 					face.shapes_.clear();
@@ -305,20 +300,20 @@ public:
 					draw_face_oval_mask(features);
 				}, face_.features_);
 
-				window->fb([](const cv::UMat& frameBuffer, cv::UMat& faceOval) {
+				window->fb([](const cv::UMat& framebuffer, const cv::Rect& viewport, cv::UMat& faceOval) {
 					//Convert/Copy the mask
-					cvtColor(frameBuffer, faceOval, cv::COLOR_BGRA2GRAY);
-				}, frames_.faceOval_);
+					cvtColor(framebuffer(viewport), faceOval, cv::COLOR_BGRA2GRAY);
+				}, viewport(), frames_.faceOval_);
 
 				window->nvg([](const FaceFeatures& features) {
 					//Draw eyes eyes and lips areas of the first face
 					draw_face_eyes_and_lips_mask(features);
 				}, face_.features_);
 
-				window->fb([](const cv::UMat &frameBuffer, cv::UMat& eyesAndLipsMaskGrey) {
+				window->fb([](const cv::UMat &framebuffer, const cv::Rect& viewport, cv::UMat& eyesAndLipsMaskGrey) {
 					//Convert/Copy the mask
-					cvtColor(frameBuffer, eyesAndLipsMaskGrey, cv::COLOR_BGRA2GRAY);
-				}, frames_.eyesAndLipsMaskGrey_);
+					cvtColor(framebuffer(viewport), eyesAndLipsMaskGrey, cv::COLOR_BGRA2GRAY);
+				}, viewport(), frames_.eyesAndLipsMaskGrey_);
 
 				window->parallel([](Frames& frames, const Params& params, Cache& cache) {
 					//Create the skin mask
@@ -326,9 +321,9 @@ public:
 					//Create the background mask
 					cv::bitwise_not(frames.faceOval_, frames.backgroundMaskGrey_);
 					//boost saturation of eyes and lips
-					adjust_saturation(frames.input_,  frames.eyesAndLips_, params.eyesAndLipsSaturation_, cache);
+					adjust_saturation(frames.orig_,  frames.eyesAndLips_, params.eyesAndLipsSaturation_, cache);
 					//reduce skin contrast
-					multiply(frames.input_, cv::Scalar::all(params.skinContrast_), frames.contrast_);
+					multiply(frames.orig_, cv::Scalar::all(params.skinContrast_), frames.contrast_);
 					//fix skin brightness
 					add(frames.contrast_, cv::Scalar::all((1.0 - params.skinContrast_) / 2.0) * 255.0, frames.contrast_);
 					//blur the skin_
@@ -339,55 +334,54 @@ public:
 
 				window->parallel([](cv::Ptr<cv::detail::MultiBandBlender>& bl, Frames& frames, cv::UMat& frameOut, Cache& cache) {
 					CV_Assert(!frames.skin_.empty());
-					CV_Assert(!frames.input_.empty());
 					CV_Assert(!frames.eyesAndLips_.empty());
 					//piece it all together
-					//FIXME prepare only once?
 					bl->prepare(cv::Rect(0, 0, frames.skin_.cols, frames.skin_.rows));
 					bl->feed(frames.skin_, frames.faceSkinMaskGrey_, cv::Point(0, 0));
-					bl->feed(frames.input_, frames.backgroundMaskGrey_, cv::Point(0, 0));
+					bl->feed(frames.orig_, frames.backgroundMaskGrey_, cv::Point(0, 0));
 					bl->feed(frames.eyesAndLips_, frames.eyesAndLipsMaskGrey_, cv::Point(0, 0));
 					bl->blend(cache.frameOutFloat_, cv::UMat());
 					CV_Assert(!cache.frameOutFloat_.empty());
 					cache.frameOutFloat_.convertTo(frameOut, CV_8U, 1.0);
 				}, blender_, frames_, frameOut_, cache_);
 
-				window->parallel([](const cv::Size& sz, const cv::Size& fbSz, const cv::UMat& input, cv::UMat& frameOut, cv::UMat lhalf, cv::UMat rhalf, const Params& params) {
+				window->parallel([](const cv::Size& sz, const cv::UMat& orig, cv::UMat& frameOut, cv::UMat lhalf, cv::UMat rhalf, const Params& params) {
 					if (params.sideBySide_) {
 						//create side-by-side view with a result
-						cv::resize(input, lhalf, cv::Size(0, 0), 0.5, 0.5);
+						cv::resize(orig, lhalf, cv::Size(0, 0), 0.5, 0.5);
 						cv::resize(frameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
 
 						frameOut = cv::Scalar::all(0);
-						lhalf.copyTo(frameOut(cv::Rect(0, fbSz.height / 2.0 - sz.height / 2.0, lhalf.size().width, lhalf.size().height)));
-						rhalf.copyTo(frameOut(cv::Rect(sz.width / 2.0, fbSz.height / 2.0 - sz.height / 2.0, lhalf.size().width, lhalf.size().height)));
+						lhalf.copyTo(frameOut(cv::Rect(0, sz.height / 2.0, lhalf.size().width, lhalf.size().height)));
+						rhalf.copyTo(frameOut(cv::Rect(sz.width / 2.0, sz.height / 2.0, lhalf.size().width, lhalf.size().height)));
 					}
-				}, size(), window->fbSize(), frames_.input_, frameOut_, frames_.lhalf_, frames_.rhalf_, params_);
+				}, size(), frames_.orig_, frameOut_, frames_.lhalf_, frames_.rhalf_, params_);
 			}
 			window->endbranch(isTrue_, face_.found_);
 
 			window->branch(isFalse_, face_.found_);
 			{
-				window->parallel([](const cv::Size& sz, const cv::Size& fbSz, const cv::UMat& input, cv::UMat& frameOut, cv::UMat lhalf, const Params& params) {
+				window->parallel([](const cv::Size& sz, const cv::UMat& orig, cv::UMat& frameOut, cv::UMat lhalf, const Params& params) {
 					if (params.sideBySide_) {
 						//create side-by-side view without a result (using the input image for both sides)
 						frameOut = cv::Scalar::all(0);
-						cv::resize(input, lhalf, cv::Size(0, 0), 0.5, 0.5);
-						lhalf.copyTo(frameOut(cv::Rect(0, fbSz.height / 2.0 - sz.height / 2.0, lhalf.size().width, lhalf.size().height)));
-						lhalf.copyTo(frameOut(cv::Rect(sz.width / 2.0, fbSz.height / 2.0 - sz.height / 2.0, lhalf.size().width, lhalf.size().height)));
+						cv::resize(orig, lhalf, cv::Size(0, 0), 0.5, 0.5);
+						lhalf.copyTo(frameOut(cv::Rect(0, sz.height / 2.0, lhalf.size().width, lhalf.size().height)));
+						lhalf.copyTo(frameOut(cv::Rect(sz.width / 2.0, sz.height / 2.0, lhalf.size().width, lhalf.size().height)));
 					} else {
-						input.copyTo(frameOut);
+						orig.copyTo(frameOut);
 					}
-				}, size(), window->fbSize(), frames_.input_, frameOut_, frames_.lhalf_, params_);
+				}, size(), frames_.orig_, frameOut_, frames_.lhalf_, params_);
 			}
 			window->endbranch(isFalse_, face_.found_);
 
 			window->branch(always_);
 			{
 				//write the result to the framebuffer
-				window->fb([](cv::UMat &frameBuffer, const cv::UMat& f) {
-					cvtColor(f, frameBuffer, cv::COLOR_BGR2BGRA);
-				}, frameOut_);
+				window->fb([](cv::UMat& framebuffer, const cv::Rect& viewport, const cv::UMat& f, Cache& cache) {
+					cvtColor(f, cache.bgra_, cv::COLOR_BGR2BGRA);
+					cv::resize(cache.bgra_, framebuffer(viewport), viewport.size());
+				}, viewport(), frameOut_, cache_);
 
 				//write the current framebuffer to video
 				window->write();
@@ -400,6 +394,8 @@ public:
 	}
 };
 
+BeautyDemoPlan::Params BeautyDemoPlan::params_;
+
 int main(int argc, char **argv) {
 #ifndef __EMSCRIPTEN__
 	if (argc != 2) {
@@ -407,7 +403,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 	constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
-	cv::Ptr<BeautyDemoPlan> plan = new BeautyDemoPlan(cv::Size(1280, 720));
+	cv::Ptr<BeautyDemoPlan> plan = new BeautyDemoPlan(cv::Size(1920, 1080));
 #else
 	CV_UNUSED(argc);
 	CV_UNUSED(argv);
@@ -425,7 +421,7 @@ int main(int argc, char **argv) {
     window->setSource(src);
 #endif
 
-    window->run(plan, 0);
+    window->run(plan);
 
     return 0;
 }

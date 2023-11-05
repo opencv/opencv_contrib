@@ -13,6 +13,9 @@ class DisplayImageNVG : public Plan {
 	    int h_;
 	} image_;
 public:
+	DisplayImageNVG(const cv::Size& sz) : Plan(sz) {
+	}
+
 	void setup(Ptr<V4D> win) override{
 		//Set the filename
 	#ifdef __EMSCRIPTEN__
@@ -54,6 +57,7 @@ public:
 };
 
 int main() {
-    cv::Ptr<V4D> window = V4D::make(960, 960, "Display an Image using NanoVG", ALL, false, true);
-    window->run<DisplayImageNVG>(0);
+    Ptr<DisplayImageNVG> plan = new DisplayImageNVG(cv::Size(960,960));
+	Ptr<V4D> window = V4D::make(plan->size(), "Display an Image using NanoVG");
+    window->run(plan);
 }

@@ -13,7 +13,7 @@ namespace v4d {
 namespace detail {
 
 NanoVGContext::NanoVGContext(cv::Ptr<FrameBufferContext> fbContext) :
-        mainFbContext_(fbContext), nvgFbContext_(new FrameBufferContext(*fbContext->getV4D(), "NanoVG", *fbContext)), context_(
+        mainFbContext_(fbContext), nvgFbContext_(new FrameBufferContext(*fbContext->getV4D(), "NanoVG", fbContext)), context_(
                 nullptr) {
     run_sync_on_main<13>([this]() {
         {
@@ -24,7 +24,7 @@ NanoVGContext::NanoVGContext(cv::Ptr<FrameBufferContext> fbContext) :
             context_ = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 #endif
             if (!context_)
-                throw std::runtime_error("Could not initialize NanoVG!");
+                CV_Error(Error::StsError, "Could not initialize NanoVG!");
 #ifdef __EMSCRIPTEN__
             nvgCreateFont(context_, "icons", "assets/fonts/entypo.ttf");
             nvgCreateFont(context_, "sans", "assets/fonts/Roboto-Regular.ttf");
@@ -44,7 +44,7 @@ NanoVGContext::NanoVGContext(cv::Ptr<FrameBufferContext> fbContext) :
 void NanoVGContext::execute(std::function<void()> fn) {
     run_sync_on_main<14>([this, fn]() {
 #ifndef __EMSCRIPTEN__
-        if (!fbCtx()->isShared()) {
+        if (!fbCtx()->hasParent()) {
             UMat tmp;
             mainFbContext_->copyTo(tmp);
             fbCtx()->copyFrom(tmp);
@@ -61,7 +61,7 @@ void NanoVGContext::execute(std::function<void()> fn) {
             cv::v4d::nvg::detail::NVG::initializeContext(context_);
             fn();
         }
-        if (!fbCtx()->isShared()) {
+        if (!fbCtx()->hasParent()) {
 #ifdef __EMSCRIPTEN__
             mainFbContext_->doWebGLCopy(fbCtx());
 #else
@@ -84,6 +84,7 @@ void NanoVGContext::begin() {
     CV_UNUSED(hs);
     nvgSave(context_);
     nvgBeginFrame(context_, w, h, r);
+    nvgTranslate(context_, 0, h - hs);
 }
 
 void NanoVGContext::end() {

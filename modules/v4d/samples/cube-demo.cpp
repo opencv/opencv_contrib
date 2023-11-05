@@ -10,6 +10,8 @@ using namespace cv::v4d;
 
 class CubeDemoPlan : public Plan {
 public:
+	using Plan::Plan;
+
 	/* Demo Parameters */
 	int glowKernelSize_ = 0;
 
@@ -201,12 +203,9 @@ private:
 	}
 
 public:
-	CubeDemoPlan(const cv::Size& sz) : Plan(sz) {
+	void setup(cv::Ptr<V4D> window) override {
 		int diag = hypot(double(size().width), double(size().height));
 		glowKernelSize_ = std::max(int(diag / 138 % 2 == 0 ? diag / 138 + 1 : diag / 138), 1);
-	}
-
-	void setup(cv::Ptr<V4D> window) override {
 		window->gl([](const cv::Size& sz, GLuint& v, GLuint& sp, GLuint& ut){
 			init_scene(sz, v, sp, ut);
 		}, size(), vao_, shaderProgram_, uniformTransform_);
@@ -226,9 +225,10 @@ public:
 
 #ifndef __EMSCRIPTEN__
 		//Aquire the frame buffer for use by OpenCV
-		window->fb([](cv::UMat& framebuffer, int glowKernelSize, Cache& cache) {
-			glow_effect(framebuffer, framebuffer, glowKernelSize, cache);
-		}, glowKernelSize_, cache_);
+		window->fb([](cv::UMat& framebuffer, const cv::Rect& viewport, int glowKernelSize, Cache& cache) {
+			cv::UMat roi = framebuffer(viewport);
+			glow_effect(roi, roi, glowKernelSize, cache);
+		}, viewport(), glowKernelSize_, cache_);
 #endif
 
 		window->write();
@@ -250,7 +250,7 @@ int main() {
     auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, plan->size());
     window->setSink(sink);
 #endif
-    window->run(plan, 1);
+    window->run(plan, 10);
 
     return 0;
 }

@@ -23,20 +23,23 @@ namespace v4d {
 namespace detail {
 
 static void glfw_error_callback(int error, const char* description) {
+#ifndef NDEBUG
     fprintf(stderr, "GLFW Error: (%d) %s\n", error, description);
+#endif
 }
 
 bool FrameBufferContext::firstSync_ = true;
 
 int frameBufferContextCnt = 0;
 
-FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other) : FrameBufferContext(v4d, other.framebufferSize_, !other.debug_, title, other.major_,  other.minor_, other.samples_, other.debug_, other.glfwWindow_, &other) {
+FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, cv::Ptr<FrameBufferContext> other) :
+		FrameBufferContext(v4d, other->framebufferSize_, !other->debug_, title, other->major_,  other->minor_, other->samples_, other->debug_, other->rootWindow_, other, false) {
 }
 
 FrameBufferContext::FrameBufferContext(V4D& v4d, const cv::Size& framebufferSize, bool offscreen,
-        const string& title, int major, int minor, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent) :
+        const string& title, int major, int minor, int samples, bool debug, GLFWwindow* rootWindow, cv::Ptr<FrameBufferContext> parent, bool root) :
         v4d_(&v4d), offscreen_(offscreen), title_(title), major_(major), minor_(
-                minor), samples_(samples), debug_(debug), isVisible_(offscreen), viewport_(0, 0, framebufferSize.width, framebufferSize.height), framebufferSize_(framebufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent), framebuffer_() {
+                minor), samples_(samples), debug_(debug), isVisible_(offscreen), viewport_(0, 0, framebufferSize.width, framebufferSize.height), framebufferSize_(framebufferSize), hasParent_(false), rootWindow_(rootWindow), parent_(parent), framebuffer_(), isRoot_(root) {
     run_sync_on_main<1>([this](){ init(); });
     index_ = ++frameBufferContextCnt;
 }
@@ -129,7 +132,7 @@ void FrameBufferContext::initWebGLCopy(const size_t& index) {
     resolution_hdls_[index] = glGetUniformLocation(shader_program_hdls_[index], "resolution");
 #else
     CV_UNUSED(index);
-    throw std::runtime_error("WebGL not supported in none WASM builds");
+    CV_Error(Error::StsNotImplemented, "WebGL not supported in none WASM builds");
 #endif
 }
 
@@ -196,22 +199,35 @@ void FrameBufferContext::doWebGLCopy(cv::Ptr<FrameBufferContext> other) {
     GL_CHECK(glDisable(GL_BLEND));
 #else
     CV_UNUSED(other);
-    throw std::runtime_error("WebGL not supported in none WASM builds");
+    CV_Error(Error::StsNotImplemented, "WebGL not supported in none WASM builds");
 #endif
 }
 
 
 void FrameBufferContext::init() {
+	static std::mutex initMtx;
+	std::unique_lock<std::mutex> lock(initMtx);
+
 #if !defined(__EMSCRIPTEN__)
-    if(parent_ != nullptr) {
-        textureID_ = parent_->textureID_;
-        renderBufferID_ = parent_->renderBufferID_;
-        isShared_ = true;
+    if(parent_) {
+    	hasParent_ = true;
+
+        if(isRoot()) {
+            textureID_ = 0;
+            renderBufferID_ = 0;
+    		onscreenTextureID_ = parent_->textureID_;
+    		onscreenRenderBufferID_ = parent_->renderBufferID_;
+        } else {
+            textureID_ = parent_->textureID_;
+            renderBufferID_ = parent_->renderBufferID_;
+            onscreenTextureID_ = parent_->onscreenTextureID_;
+            onscreenRenderBufferID_ = parent_->onscreenRenderBufferID_;
+        }
     }
 #else
-    isShared_ = false;
+    hasParent_ = false;
 #endif
-    if (parent_ == nullptr && glfwInit() != GLFW_TRUE) {
+    if (!parent_ && glfwInit() != GLFW_TRUE) {
 	cerr << "Can't init GLFW" << endl;
     	exit(1);
     }
@@ -254,39 +270,46 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
 
     glfwWindow_ = glfwCreateWindow(framebufferSize_.width, framebufferSize_.height, title_.c_str(), nullptr,
-            sharedWindow_);
+    		rootWindow_);
+
 
     if (glfwWindow_ == nullptr) {
         //retry with native api
         glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
         glfwWindow_ = glfwCreateWindow(framebufferSize_.width, framebufferSize_.height, title_.c_str(), nullptr,
-                sharedWindow_);
+        		rootWindow_);
 
         if (glfwWindow_ == nullptr) {
-            throw std::runtime_error("Unable to initialize window.");
+        	CV_Error(Error::StsError, "Unable to initialize window.");
         }
     }
+
+
+
+    if(isRoot())
+    	rootWindow_ = glfwWindow_;
+
     this->makeCurrent();
 #ifndef __EMSCRIPTEN__
     glfwSwapInterval(0);
 #endif
 #if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
-    if (parent_ == nullptr) {
+    if (!parent_) {
         GLenum err = glewInit();
         if (err != GLEW_OK && err != GLEW_ERROR_NO_GLX_DISPLAY) {
-            throw std::runtime_error("Could not initialize GLEW!");
+        	CV_Error(Error::StsError, "Could not initialize GLEW!");
         }
     }
     try {
-        if (parent_ == nullptr && isClGlSharingSupported())
+        if (isRoot() && isClGlSharingSupported())
             cv::ogl::ocl::initializeContextFromGL();
         else
             clglSharing_ = false;
     } catch (std::exception& ex) {
-        cerr << "CL-GL sharing failed: " << ex.what() << endl;
+        CV_LOG_WARNING(nullptr, "CL-GL sharing failed: " << ex.what());
         clglSharing_ = false;
     } catch (...) {
-        cerr << "CL-GL sharing failed with unknown error." << endl;
+    	CV_LOG_WARNING(nullptr, "CL-GL sharing failed with unknown error");
         clglSharing_ = false;
     }
 #else
@@ -415,7 +438,7 @@ void FrameBufferContext::setup() {
     CLExecScope_t clExecScope(getCLExecContext());
 #endif
     framebuffer_.create(sz, CV_8UC4);
-    if(!isShared_) {
+    if(isRoot()) {
         GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
         GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
         GL_CHECK(glGenRenderbuffers(1, &renderBufferID_));
@@ -438,9 +461,7 @@ void FrameBufferContext::setup() {
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
 
         assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-    } else {
-        assert(parent_ != nullptr);
-
+    } else if(hasParent()) {
         GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
         GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
         GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
@@ -458,9 +479,9 @@ void FrameBufferContext::setup() {
         GL_CHECK(
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
         assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-    }
+    } else
+    	CV_Assert(false);
 }
-
 
 void FrameBufferContext::teardown() {
     using namespace cv::ocl;
@@ -493,7 +514,7 @@ void FrameBufferContext::teardown() {
     glGetError();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glGetError();
-    assert(texture_ != nullptr);
+    CV_Assert(texture_ != nullptr);
     delete texture_;
     GL_CHECK(glDeleteTextures(1, &textureID_));
     GL_CHECK(glDeleteRenderbuffers(1, &renderBufferID_));
@@ -632,11 +653,20 @@ void FrameBufferContext::copyFrom(const cv::UMat& src) {
     });
 }
 
+void FrameBufferContext::copyToRootWindow() {
+	GLScope scope(self_, GL_READ_FRAMEBUFFER);
+	GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
+
+	GL_CHECK(glActiveTexture(GL_TEXTURE0));
+	GL_CHECK(glBindTexture(GL_TEXTURE_2D, onscreenTextureID_));
+	GL_CHECK(glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, size().width, size().height));
+}
+
 cv::ogl::Texture2D& FrameBufferContext::getTexture2D() {
     return *texture_;
 }
 
-GLFWwindow* FrameBufferContext::getGLFWWindow() {
+GLFWwindow* FrameBufferContext::getGLFWWindow() const {
     return glfwWindow_;
 }
 
@@ -689,7 +719,6 @@ cv::UMat& FrameBufferContext::fb() {
 
 void FrameBufferContext::begin(GLenum framebufferTarget) {
     this->makeCurrent();
-//    CV_Assert(this->wait(1000000000) == true);
     GL_CHECK(glFinish());
     GL_CHECK(glBindFramebuffer(framebufferTarget, frameBufferID_));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
@@ -706,7 +735,6 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
 void FrameBufferContext::end() {
     GL_CHECK(glFinish());
     this->makeNoneCurrent();
-    //    this->fence();
 }
 
 void FrameBufferContext::download(cv::UMat& m) {
@@ -866,8 +894,17 @@ void FrameBufferContext::close() {
     glfwWindow_ = nullptr;
 }
 
-bool FrameBufferContext::isShared() {
-    return isShared_;
+bool FrameBufferContext::isRoot() {
+    return isRoot_;
+}
+
+
+bool FrameBufferContext::hasParent() {
+    return hasParent_;
+}
+
+bool FrameBufferContext::hasRootWindow() {
+    return rootWindow_ != nullptr;
 }
 
 void FrameBufferContext::fence() {

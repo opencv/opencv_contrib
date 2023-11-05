@@ -7,6 +7,9 @@ using namespace cv::v4d;
 class DisplayImagePlan : public Plan {
 	UMat image_;
 public:
+	DisplayImagePlan(const cv::Size& sz) : Plan(sz) {
+	}
+
 	void setup(Ptr<V4D> win) override {
 		win->parallel([](cv::UMat& image){
 #ifdef __EMSCRIPTEN__
@@ -24,9 +27,10 @@ public:
 };
 
 int main() {
-    //Creates a V4D window for on screen rendering with a window size of 960x960 and a framebuffer of the same size.
+	cv::Ptr<DisplayImagePlan> plan = new DisplayImagePlan(cv::Size(960,960));
+	//Creates a V4D window for on screen rendering with a window size of 960x960 and a framebuffer of the same size.
 	//Please note that while the window size may change the framebuffer size may not. If you need multiple framebuffer
 	//sizes you need multiple V4D objects
-    cv::Ptr<V4D> window = V4D::make(960, 960, "Display an Image");
-    window->run<DisplayImagePlan>(0);
+    cv::Ptr<V4D> window = V4D::make(plan->size(), "Display an Image");
+    window->run(plan);
 }

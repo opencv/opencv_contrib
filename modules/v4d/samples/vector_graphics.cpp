@@ -5,6 +5,9 @@ using namespace cv::v4d;
 
 class VectorGraphicsPlan: public Plan {
 public:
+	VectorGraphicsPlan(const cv::Size& sz) : Plan(sz) {
+	}
+
 	void infer(Ptr<V4D> win) override {
 		//Creates a NanoVG context and draws googly eyes that occasionally blink.
 		win->nvg([](const Size &sz) {
@@ -101,7 +104,8 @@ public:
 };
 
 int main() {
-    Ptr<V4D> window = V4D::make(960, 960, "Vector Graphics");
-    window->run<VectorGraphicsPlan>(0);
+    Ptr<VectorGraphicsPlan> plan = new VectorGraphicsPlan(cv::Size(960, 960));
+	Ptr<V4D> window = V4D::make(plan->size(), "Vector Graphics");
+    window->run(plan);
 }
 

@@ -128,7 +128,7 @@ void gl_check_error(const std::filesystem::path& file, unsigned int line, const 
         std::stringstream ss;
         ss << "GL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   "
                 << expression << "\nError code:\n   " << errorCode;
-        throw std::runtime_error(ss.str());
+        CV_LOG_WARNING(nullptr, ss.str());
     }
 #else
     CV_UNUSED(file);
@@ -211,30 +211,30 @@ std::string getGlInfo() {
 
 std::string getClInfo() {
     std::stringstream ss;
-//#ifndef __EMSCRIPTEN__
-//    std::vector<cv::ocl::PlatformInfo> plt_info;
-//    cv::ocl::getPlatfomsInfo(plt_info);
-//    const cv::ocl::Device& defaultDevice = cv::ocl::Device::getDefault();
-//    cv::ocl::Device current;
-//    ss << endl;
-//    for (const auto& info : plt_info) {
-//        for (int i = 0; i < info.deviceNumber(); ++i) {
-//            ss << "\t";
-//            info.getDevice(current, i);
-//            if (defaultDevice.name() == current.name())
-//                ss << "* ";
-//            else
-//                ss << "  ";
-//            ss << info.version() << " = " << info.name() << endl;
-//            ss << "\t\t  GL sharing: "
-//                    << (current.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false")
-//                    << endl;
-//            ss << "\t\t  VAAPI media sharing: "
-//                    << (current.isExtensionSupported("cl_intel_va_api_media_sharing") ?
-//                            "true" : "false") << endl;
-//        }
-//    }
-//#endif
+#ifndef __EMSCRIPTEN__
+    std::vector<cv::ocl::PlatformInfo> plt_info;
+    cv::ocl::getPlatfomsInfo(plt_info);
+    const cv::ocl::Device& defaultDevice = cv::ocl::Device::getDefault();
+    cv::ocl::Device current;
+    ss << endl;
+    for (const auto& info : plt_info) {
+        for (int i = 0; i < info.deviceNumber(); ++i) {
+            ss << "\t";
+            info.getDevice(current, i);
+            if (defaultDevice.name() == current.name())
+                ss << "* ";
+            else
+                ss << "  ";
+            ss << info.version() << " = " << info.name() << endl;
+            ss << "\t\t  GL sharing: "
+                    << (current.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false")
+                    << endl;
+            ss << "\t\t  VAAPI media sharing: "
+                    << (current.isExtensionSupported("cl_intel_va_api_media_sharing") ?
+                            "true" : "false") << endl;
+        }
+    }
+#endif
     return ss.str();
 }
 
@@ -313,6 +313,10 @@ bool keepRunning() {
         install_signal_handlers();
     }
     return !finish_requested;
+}
+
+void requestFinish() {
+	request_finish(0);
 }
 
 #ifndef __EMSCRIPTEN__

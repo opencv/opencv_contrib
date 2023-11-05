@@ -25,6 +25,9 @@ using std::string;
 using namespace cv::v4d;
 
 class OptflowDemoPlan : public Plan {
+public:
+	using Plan::Plan;
+private:
 	//How the background will be visualized
 	enum BackgroundModes {
 	    GREY,
@@ -44,23 +47,23 @@ class OptflowDemoPlan : public Plan {
 		// Generate the foreground at this scale.
 		float fgScale_ = 0.5f;
 		// On every frame the foreground loses on brightness. Specifies the loss in percent.
-		float fgLoss_ = 1.0f;
+		float fgLoss_ = 1;
 		//Convert the background to greyscale
-		BackgroundModes backgroundMode_ = COLOR;
+		BackgroundModes backgroundMode_ = GREY;
 		// Peak thresholds for the scene change detection. Lowering them makes the detection more sensitive but
 		// the default should be fine.
 		float sceneChangeThresh_ = 0.29f;
 		float sceneChangeThreshDiff_ = 0.1f;
 		// The theoretical maximum number of points to track which is scaled by the density of detected points
 		// and therefor is usually much smaller.
-		int maxPoints_ = 5000000;
+		int maxPoints_ = 300000;
 		// How many of the tracked points to lose intentionally, in percent.
-		float pointLoss_ = 5;
+		float pointLoss_ = 20;
 		// The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
 		// of tracked points and therefor is usually much smaller.
-		int maxStroke_ = 1;
+		int maxStroke_ = 6;
 		// Blue, green, red and alpha. All from 0.0f to 1.0f
-		cv::Scalar_<float> effectColor_ = {1.0f, 1.0f, 1.0f, 0.2f};
+		cv::Scalar_<float> effectColor_ = {0.4f, 0.75f, 1.0f, 0.15f};
 		//display on-screen FPS
 		bool showFps_ = true;
 		//Stretch frame buffer to window size
@@ -109,26 +112,22 @@ class OptflowDemoPlan : public Plan {
 	    cv::UMat post_;
 	    cv::UMat backgroundGrey_;
 	    vector<cv::UMat> channels_;
+	    cv::UMat localFg_;
 	} cache_;
 
 	//BGRA
-	cv::UMat background_, down_;
+	cv::UMat background_, down_, frame_;
+    inline static cv::UMat foreground_;
 	//BGR
 	cv::UMat result_;
-	cv::UMat foreground_;
 	//GREY
 	cv::UMat downPrevGrey_, downNextGrey_, downMotionMaskGrey_;
 	vector<cv::Point2f> detectedPoints_;
 
 	cv::Ptr<cv::BackgroundSubtractor> bg_subtractor_ = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
 	cv::Ptr<cv::FastFeatureDetector> detector_ = cv::FastFeatureDetector::create(1, false);
-public:
-	OptflowDemoPlan(const cv::Size& sz) : Plan(sz) {
-		int diag = hypot(double(sz.width), double(sz.height));
-		params_.glowKernelSize_ = std::max(int(diag / 150 % 2 == 0 ? diag / 150 + 1 : diag / 150), 1);
-	}
 
-	//Uses background subtraction to generate a "motion mask"
+    //Uses background subtraction to generate a "motion mask"
 	static void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey, cv::Ptr<cv::BackgroundSubtractor> bg_subtractor, Cache& cache) {
 	    bg_subtractor->apply(srcGrey, motionMaskGrey);
 	    //Surpress speckles
@@ -198,13 +197,10 @@ public:
 	                }
 
 	                using namespace cv::v4d::nvg;
-	                static thread_local long cnt = 0;
 	                //start drawing
 	                beginPath();
 	                strokeWidth(strokeSize);
-	                cv::Scalar color = cv::v4d::colorConvert(cv::Scalar(++cnt % 180, 128, 128), cv::COLOR_HSV2BGR);
-	                color[3] = 40;
-	                strokeColor(color);
+	                strokeColor(params.effectColor_ * 255.0);
 
 	                for (size_t i = 0; i < cache.prevPoints_.size(); i++) {
 	                    if (cache.status_[i] == 1 //point was found in prev and new set
@@ -320,8 +316,15 @@ public:
 	    //Add background and post-processed foreground into dst
 	    cv::add(background, cache.post_, dst);
 	}
+public:
+    OptflowDemoPlan(const cv::Rect& viewport) : Plan(viewport) {
+		foreground_ = cv::UMat(size(), CV_8UC4, cv::Scalar::all(0));
+    }
 
-	virtual void gui(cv::Ptr<V4D> window) override {
+    OptflowDemoPlan(const cv::Size& sz) : OptflowDemoPlan(cv::Rect(0,0, sz.width, sz.height)) {
+    }
+
+    virtual void gui(cv::Ptr<V4D> window) override {
 		window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params){
 	        using namespace ImGui;
 	        SetCurrentContext(ctx);
@@ -377,25 +380,30 @@ public:
 	}
 
 	virtual void setup(cv::Ptr<V4D> window) override {
+		int diag = hypot(double(size().width), double(size().height));
+		params_.glowKernelSize_ = std::max(int(diag / 150 % 2 == 0 ? diag / 150 + 1 : diag / 150), 1);
 		cache_.rng_ = std::mt19937(cache_.rd_());
 		window->setStretching(params_.stretch_);
-		params_.effectColor_[3] /= pow(window->workers() + 1.0, 0.33);
-		foreground_ = cv::UMat(window->fbSize(), CV_8UC4, cv::Scalar::all(0));
+		params_.effectColor_[3] /= pow(window->workers_running() + 1.0, 0.33);
 	}
 
 	virtual void infer(cv::Ptr<V4D> window) override {
 		window->capture();
 
-		window->fb([](const cv::UMat& framebuffer, cv::UMat& d, cv::UMat& b, const Params& params) {
-//			double contrast = 1.33;
-//			multiply(framebuffer, cv::Scalar::all(contrast), framebuffer);
-								//fix skin brightness
-//			add(framebuffer, cv::Scalar::all((1.0 - contrast) / 2.0) * 255.0, framebuffer);
+        window->fb([](const cv::UMat& framebuffer, const cv::Rect& viewport, cv::UMat& frame) {
+            framebuffer(viewport).copyTo(frame);
+        }, viewport(), frame_);
+
+        window->single([](const cv::UMat& frame, cv::UMat& background) {
+            frame.copyTo(background);
+        }, frame_, background_);
+
+		window->fb([](const cv::UMat& framebuffer, const cv::Rect& viewport, cv::UMat& d, cv::UMat& b, const Params& params) {
 			//resize to foreground scale
-			cv::resize(framebuffer, d, cv::Size(framebuffer.size().width * params.fgScale_, framebuffer.size().height * params.fgScale_));
+			cv::resize(framebuffer(viewport), d, cv::Size(viewport.width * params.fgScale_, viewport.height * params.fgScale_));
 			//save video background
-			framebuffer.copyTo(b);
-		}, down_, background_, params_);
+			framebuffer(viewport).copyTo(b);
+		}, viewport(), down_, background_, params_);
 
 		window->parallel([](const cv::UMat& d, cv::UMat& dng, cv::UMat& dmmg, std::vector<cv::Point2f>& dp, cv::Ptr<cv::BackgroundSubtractor>& bg_subtractor, cv::Ptr<cv::FastFeatureDetector>& detector, Cache& cache){
 			cv::cvtColor(d, dng, cv::COLOR_RGBA2GRAY);
@@ -420,12 +428,22 @@ public:
 			dpg = dng.clone();
 		}, downPrevGrey_, downNextGrey_);
 
-		window->fb([](cv::UMat& framebuffer, cv::UMat& b, cv::UMat& f, const Params& params, Cache& cache) {
-			//Put it all together (OpenCL)
-			composite_layers(b, f, framebuffer, framebuffer, params, cache);
-		}, background_, foreground_, params_, cache_);
+        window->fb([](const cv::UMat& framebuffer, const cv::Rect& viewport, cv::UMat& frame) {
+            framebuffer(viewport).copyTo(frame);
+        }, viewport(), frame_);
 
-		window->write();
+        window->single([](cv::UMat& frame, cv::UMat& background, cv::UMat& foreground, const Params& params, Cache& cache) {
+            //Put it all together (OpenCL)
+            foreground.getMat(cv::ACCESS_READ).copyTo(cache.localFg_);
+            composite_layers(background, cache.localFg_, frame, frame, params, cache);
+            cache.localFg_.copyTo(foreground.getMat(cv::ACCESS_READ));
+        }, frame_, background_, foreground_, params_, cache_);
+
+        window->fb([](cv::UMat& framebuffer, const cv::Rect& viewport, const cv::UMat& frame) {
+            frame.copyTo(framebuffer(viewport));
+        }, viewport(), frame_);
+
+        window->write();
 	}
 };
 
@@ -439,25 +457,21 @@ int main(int argc, char **argv) {
         exit(1);
     }
     constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
-    cv::Ptr<OptflowDemoPlan> plan = new OptflowDemoPlan(cv::Size(1920, 1080));
+    cv::Ptr<OptflowDemoPlan> plan = new OptflowDemoPlan(cv::Size(1280, 720));
 #else
+    cv::Ptr<OptflowDemoPlan> plan = new OptflowDemoPlan(cv::Size(960, 960));
 #endif
-    try {
-        using namespace cv::v4d;
-        cv::Ptr<V4D> window = V4D::make(plan->size(), "Sparse Optical Flow Demo", ALL);
+	cv::Ptr<V4D> window = V4D::make(plan->size(), "Sparse Optical Flow Demo", ALL);
 #ifndef __EMSCRIPTEN__
-        auto src = makeCaptureSource(window, argv[1]);
-        window->setSource(src);
-        auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
-        window->setSink(sink);
+	auto src = makeCaptureSource(window, argv[1]);
+	window->setSource(src);
+	auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), plan->size());
+	window->setSink(sink);
 #else
-        cv::Ptr<Source> src = makeCaptureSource(window);
-        window->setSource(src);
+	cv::Ptr<Source> src = makeCaptureSource(window);
+	window->setSource(src);
 #endif
 
-        window->run(plan, 0);
-    } catch (std::exception& ex) {
-        cerr << ex.what() << endl;
-    }
+	window->run(plan);
     return 0;
 }

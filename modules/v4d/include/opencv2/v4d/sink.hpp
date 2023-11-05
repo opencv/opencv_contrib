@@ -7,6 +7,7 @@
 #define SRC_OPENCV_V4D_SINK_HPP_
 
 #include <functional>
+#include <map>
 #include <opencv2/core/cvdef.h>
 #include <opencv2/core/mat.hpp>
 #include <mutex>
@@ -21,10 +22,12 @@ class CV_EXPORTS Sink {
     std::mutex mtx_;
     bool threadSafe_ = false;
     bool open_ = true;
+    uint64_t nextSeq_ = 0;
+    std::map<uint64_t, cv::UMat> buffer_;
     std::function<bool(const uint64_t&, const cv::UMat&)> consumer_;
 public:
     /*!
-     * Consturcts the Sink object from a consumer functor.
+     * Constructs the Sink object from a consumer functor.
      * @param consumer A function object that consumes a UMat frame (e.g. writes it to a video file).
      */
     CV_EXPORTS Sink(std::function<bool(const uint64_t&, const cv::UMat&)> consumer);

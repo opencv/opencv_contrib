@@ -16,7 +16,6 @@
 #include "util.hpp"
 #include "nvg.hpp"
 #include "detail/transaction.hpp"
-#include "detail/threadpool.hpp"
 #include "detail/gl.hpp"
 #include "detail/framebuffercontext.hpp"
 #include "detail/nanovgcontext.hpp"
@@ -25,6 +24,7 @@
 #include "detail/glcontext.hpp"
 #include "detail/sourcecontext.hpp"
 #include "detail/sinkcontext.hpp"
+#include "detail/resequence.hpp"
 
 
 #include <iostream>
@@ -40,11 +40,13 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
+#include <opencv2/core/utils/logger.hpp>
 
 using std::cout;
 using std::cerr;
 using std::endl;
 using std::string;
+using namespace std::chrono_literals;
 
 struct GLFWwindow;
 
@@ -67,20 +69,26 @@ enum AllocateFlags {
 
 class Plan {
 	const cv::Size sz_;
+	const cv::Rect vp_;
 public:
 	constexpr static auto always_ = []() { return true; };
 	constexpr static auto isTrue_ = [](const bool& b) { return b; };
 	constexpr static auto isFalse_ = [](const bool& b) { return !b; };
 	constexpr static auto and_ = [](const bool& a, const bool& b) { return a && b; };
 	constexpr static auto or_ = [](const bool& a, const bool& b) { return a || b; };
-	Plan(const cv::Size& sz) : sz_(sz) {};
+	explicit Plan(const cv::Rect& vp) : sz_(cv::Size(vp.width, vp.height)), vp_(vp){};
+	explicit Plan(const cv::Size& sz) : sz_(sz), vp_(0, 0, sz.width, sz.height){};
 	virtual ~Plan() {};
 	virtual void gui(cv::Ptr<V4D> window) { CV_UNUSED(window); };
 	virtual void setup(cv::Ptr<V4D> window) { CV_UNUSED(window); };
 	virtual void infer(cv::Ptr<V4D> window) = 0;
 	virtual void teardown(cv::Ptr<V4D> window) { CV_UNUSED(window); };
+
 	const cv::Size& size() {
 		return sz_;
+	}
+	const cv::Rect& viewport() {
+		return vp_;
 	}
 };
 /*!
@@ -156,11 +164,13 @@ using namespace cv::v4d::detail;
 class CV_EXPORTS V4D {
 	friend class detail::FrameBufferContext;
     friend class HTML5Capture;
+    int32_t workerIdx_ = -1;
     cv::Ptr<V4D> self_;
     const cv::Size initialSize_;
     bool debug_;
     cv::Rect viewport_;
     bool stretching_;
+    int samples_;
     bool focused_ = false;
     cv::Ptr<FrameBufferContext> mainFbContext_ = nullptr;
     cv::Ptr<SourceContext> sourceContext_ = nullptr;
@@ -186,10 +196,9 @@ class CV_EXPORTS V4D {
     bool showFPS_ = true;
     bool printFPS_ = false;
     bool showTracking_ = true;
-    size_t numWorkers_ = 0;
     std::vector<std::tuple<std::string,bool,long>> accesses_;
     std::map<std::string, cv::Ptr<Transaction>> transactions_;
-    bool disableIO_;
+    bool disableIO_ = false;
 public:
     /*!
      * Creates a V4D object which is the central object to perform visualizations with.
@@ -205,18 +214,20 @@ public:
      */
     CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const string& title, AllocateFlags flags = ALL, bool offscreen = false, bool debug = false, int samples = 0);
     CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const cv::Size& fbsize, const string& title, AllocateFlags flags = ALL, bool offscreen = false, bool debug = false, int samples = 0);
+    CV_EXPORTS static cv::Ptr<V4D> make(const V4D& v4d, const string& title);
     /*!
      * Default destructor
      */
     CV_EXPORTS virtual ~V4D();
 
-    CV_EXPORTS size_t workers();
+    CV_EXPORTS const int32_t& workerIndex() const;
+    CV_EXPORTS size_t workers_running();
     /*!
      * The internal framebuffer exposed as OpenGL Texture2D.
      * @return The texture object.
      */
     CV_EXPORTS cv::ogl::Texture2D& texture();
-    CV_EXPORTS std::string title();
+    CV_EXPORTS std::string title() const;
 
     struct Node {
     	string name_;
@@ -268,7 +279,7 @@ public:
     	}
     }
 
-	void runPlan() {
+    void runPlan() {
 		bool isEnabled = true;
 
 		for (auto& n : nodes_) {
@@ -298,7 +309,7 @@ public:
     template<typename Tenabled, typename T, typename ...Args>
     typename std::enable_if<std::is_same<Tenabled, std::true_type>::value, void>::type
 	emit_access(const string& context, bool read, const T* tp) {
-    	cout << "access: " << std::this_thread::get_id() << " " << context << string(read ? " <- " : " -> ") << demangle(typeid(std::remove_const_t<T>).name()) << "(" << (long)tp << ") " << endl;
+//    	cout << "access: " << std::this_thread::get_id() << " " << context << string(read ? " <- " : " -> ") << demangle(typeid(std::remove_const_t<T>).name()) << "(" << (long)tp << ") " << endl;
     	accesses_.push_back(std::make_tuple(context, read, (long)tp));
     }
 
@@ -316,7 +327,7 @@ public:
     typename std::enable_if<std::is_invocable_v<Tfn, Args...>, void>::type
     gl(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("gl", fn, -1, args...);
+        const string id = make_id("gl-1", fn, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
@@ -328,12 +339,12 @@ public:
     void gl(int32_t idx, Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
 
-        const string id = make_id("gl", fn, idx, args...);
+        const string id = make_id("gl" + std::to_string(idx), fn, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
 		std::function<void((const int32_t&,Args...))> functor(fn);
-		add_transaction<decltype(functor),const int32_t&>(fbCtx(),id, std::forward<decltype(functor)>(functor), glCtx(idx)->getIndex(), std::forward<Args>(args)...);
+		add_transaction<decltype(functor),const int32_t&>(glCtx(idx),id, std::forward<decltype(functor)>(functor), glCtx(idx)->getIndex(), std::forward<Args>(args)...);
     }
 
     template <typename Tfn>
@@ -356,6 +367,19 @@ public:
 		add_transaction(singleCtx(), id, functor, std::forward<Args>(args)...);
     }
 
+    template <typename Tfn, typename ... Args>
+    void branch(int workerIdx, Tfn fn, Args&& ... args) {
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("branch-pin" + std::to_string(workerIdx), fn, args...);
+
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		std::function<bool(Args...)> functor = fn;
+		std::function<bool(Args...)> wrap = [this, workerIdx, functor](Args&& ... args){
+			return this->workerIndex() == workerIdx && functor(args...);
+		};
+		add_transaction(singleCtx(), id, wrap, std::forward<Args>(args)...);
+    }
+
     template <typename Tfn>
     void endbranch(Tfn fn) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
@@ -372,7 +396,21 @@ public:
         const string id = make_id("endbranch", fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-		std::function functor = fn;
+		std::function<bool(Args...)> functor = [this](Args&& ... args){
+			return true;
+		};
+		add_transaction(singleCtx(), id, functor, std::forward<Args>(args)...);
+    }
+
+    template <typename Tfn, typename ... Args>
+    void endbranch(int workerIdx, Tfn fn, Args&& ... args) {
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("endbranch-pin" + std::to_string(workerIdx), fn, args...);
+
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		std::function<bool(Args...)> functor = [this, workerIdx](Args&& ... args){
+			return this->workerIndex() == workerIdx;
+		};
 		add_transaction(singleCtx(), id, functor, std::forward<Args>(args)...);
     }
 
@@ -394,18 +432,15 @@ public:
     void capture(cv::UMat& frame) {
     	if(disableIO_)
     		return;
-    	auto isTrue = [](const bool& b){ return b; };
     	capture([](const cv::UMat& inputFrame, cv::UMat& f){
     		if(!inputFrame.empty())
     			inputFrame.copyTo(f);
     	}, frame);
 
-    	branch(isTrue, frame.empty());
         fb([](cv::UMat& frameBuffer, const cv::UMat& f) {
         	if(!f.empty())
         		f.copyTo(frameBuffer);
         }, frame);
-    	endbranch(isTrue, frame.empty());
     }
 
     void capture() {
@@ -535,13 +570,24 @@ public:
 	#endif
 
 	template<typename Tplan>
-	void run(cv::Ptr<Tplan> plan, size_t workers) {
+	void run(cv::Ptr<Tplan> plan, int32_t workers = -1) {
+		static Resequence reseq;
+		//for now, if automatic determination of the number of workers is requested,
+		//set workers always to 2
+		CV_Assert(workers > -2);
+		if(workers == -1) {
+			workers = 2;
+		} else {
+			++workers;
+		}
+
 		std::vector<std::thread*> threads;
 		{
 			static std::mutex runMtx;
 			std::unique_lock<std::mutex> lock(runMtx);
 
-			numWorkers_ = workers;
+			cerr << "run plan: " << std::this_thread::get_id() << " workers: " << workers << endl;
+
 			if (this->hasSource()) {
 				this->getSource()->setThreadSafe(true);
 			}
@@ -553,12 +599,12 @@ public:
 			if(Global::first_run()) {
 				Global::first_run() = false;
 				Global::main_id() = std::this_thread::get_id();
-				cerr << "Starting with " << workers << " extra workers" << endl;
+				cerr << "Starting with " << workers - 1<< " extra workers" << endl;
+				cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
 			}
 
-			if(workers > 0  || !Global::is_main()) {
+			if(workers > 1) {
 				cv::setNumThreads(0);
-				cerr << "Setting threads to 0" << endl;
 			}
 
 			if(Global::is_main()) {
@@ -567,31 +613,34 @@ public:
 				bool debug = this->debug_;
 				auto src = this->getSource();
 				auto sink = this->getSink();
-
 				for (size_t i = 0; i < workers; ++i) {
 					threads.push_back(
-							new std::thread(
-									[sz, i, title, debug, src, sink, plan] {
-										cv::Ptr<cv::v4d::V4D> worker = V4D::make(
-												sz,
-												title + "-worker-" + std::to_string(i),
-												NANOVG,
-												!debug,
-												debug,
-												0);
-										if (src) {
-											src->setThreadSafe(true);
-											worker->setSource(src);
-										}
-										if (sink) {
-											sink->setThreadSafe(true);
-											worker->setSink(sink);
-										}
-										cv::Ptr<Tplan> newPlan = new Tplan(plan->size());
-										worker->run(newPlan, 0);
+						new std::thread(
+							[this, i, src, sink, plan] {
+								cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
+								cv::Ptr<cv::v4d::V4D> worker = V4D::make(*this, this->title() + "-worker-" + std::to_string(i));
+								if (src) {
+									src->setThreadSafe(true);
+									worker->setSource(src);
 								}
-							)
+								if (sink) {
+									sink->setThreadSafe(true);
+									worker->setSink(sink);
+								}
+								cv::Ptr<Tplan> newPlan = new Tplan(plan->size());
+								worker->run(newPlan, 0);
+							}
+						)
 					);
+				}
+
+
+				for (int32_t i = 0; i < workers; ++i) {
+					CV_Assert(i >= 0);
+					if(!threads[i]->joinable()) {
+						--i;
+						std::this_thread::sleep_for(1ms);
+					}
 				}
 			}
 		}
@@ -605,39 +654,87 @@ public:
 			this->printSystemInfo();
 		}
 #endif
-		if(Global::is_main()) {
-			plan->gui(self());
-		}
-		plan->setup(self());
-		this->makePlan();
-		this->runPlan();
-		this->clearPlan();
-		plan->infer(self());
-		this->makePlan();
-#ifndef __EMSCRIPTEN__
-		do {
+
+		try {
+			plan->setup(self());
+			this->makePlan();
 			this->runPlan();
-		} while(this->display());
-#else
+			this->clearPlan();
+			if(!Global::is_main() && Global::workers_running() == Global::workers_ready()) {
+				cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_INFO);
+			}
+		} catch(std::exception& ex) {
+			CV_Error_(cv::Error::StsError, ("Setup plan failed: %s", ex.what()));
+		}
+
 		if(Global::is_main()) {
-			std::function<bool()> fnFrame([this](){
-			    this->printSystemInfo();
+			try {
+				plan->gui(self());
+			} catch(std::exception& ex) {
+				CV_Error_(cv::Error::StsError, ("GUI failed: %s", ex.what()));
+			}
+		}
+
+		try {
+			plan->infer(self());
+			this->makePlan();
+
+#ifndef __EMSCRIPTEN__
+			if(Global::is_main()) {
+				do {
+					//display with 120hz
+					std::this_thread::sleep_for(8.33333334ms);
+				} while(keepRunning() && this->display());
+				requestFinish();
+				reseq.finish();
+			} else {
+				cerr << "Starting pipeling with " << this->nodes_.size() << " nodes." << endl;
+
+				static std::mutex seqMtx;
+				do {
+					reseq.notify();
+					uint64_t seq;
+					{
+						std::unique_lock<std::mutex> lock(seqMtx);
+						seq = Global::run_cnt()++;
+					}
+
+					this->runPlan();
+					reseq.waitFor(seq);
+				} while(keepRunning() && this->display());
+			}
+#else
+			if(Global::is_main()) {
+				std::function<bool()> fnFrame([this](){
+					this->printSystemInfo();
+					do {
+						this->runPlan();
+					} while(keepRunning() && this->display());
+					return false;
+				});
+				emscripten_set_main_loop_arg(do_frame, &fnFrame, -1, true);
+			} else {
 				do {
 					this->runPlan();
-				} while(this->display());
-				return false;
-			});
-			emscripten_set_main_loop_arg(do_frame, &fnFrame, -1, true);
-		} else {
-			do {
-				this->runPlan();
-			} while(this->display());
-		}
+				} while(keepRunning() && this->display());
+			}
 #endif
-		plan->teardown(self());
-		this->makePlan();
-		this->runPlan();
+		} catch(std::exception& ex) {
+			requestFinish();
+			reseq.finish();
+			CV_Error_(cv::Error::StsError, ("Run plan failed: %s", ex.what()));
+		}
+
 		this->clearPlan();
+
+		try {
+			plan->teardown(self());
+			this->makePlan();
+			this->runPlan();
+			this->clearPlan();
+		} catch(std::exception& ex) {
+			CV_Error_(cv::Error::StsError, ("Tear-down plan failed: %s", ex.what()));
+		}
 
 		if(Global::is_main()) {
 			for(auto& t : threads)
@@ -690,7 +787,7 @@ public:
      */
     CV_EXPORTS float pixelRatioY();
     CV_EXPORTS const cv::Size& initialSize() const;
-    CV_EXPORTS const cv::Size& fbSize();
+    CV_EXPORTS const cv::Size& fbSize() const;
     /*!
      * Set the window size
      * @param sz The future size of the window.
@@ -764,7 +861,7 @@ public:
      * Everytime a frame is displayed this count is incremented-
      * @return the current frame count-
      */
-    CV_EXPORTS uint64_t frameCount();
+    CV_EXPORTS const uint64_t& frameCount() const;
     /*!
      * Determine if the window is closed.
      * @return true if the window is closed.
@@ -784,9 +881,9 @@ public:
      */
     CV_EXPORTS void printSystemInfo();
 
-    CV_EXPORTS GLFWwindow* getGLFWWindow();
+    CV_EXPORTS GLFWwindow* getGLFWWindow() const;
 
-    CV_EXPORTS cv::Ptr<FrameBufferContext> fbCtx();
+    CV_EXPORTS cv::Ptr<FrameBufferContext> fbCtx() const;
     CV_EXPORTS cv::Ptr<SourceContext> sourceCtx();
     CV_EXPORTS cv::Ptr<SinkContext> sinkCtx();
     CV_EXPORTS cv::Ptr<NanoVGContext> nvgCtx();
@@ -805,6 +902,7 @@ public:
     CV_EXPORTS bool hasGlCtx(uint32_t idx = 0);
     CV_EXPORTS size_t numGlCtx();
 private:
+    V4D(const V4D& v4d, const string& title);
     V4D(const cv::Size& size, const cv::Size& fbsize,
             const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples);
 
