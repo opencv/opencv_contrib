@@ -34,7 +34,6 @@ cv::Ptr<V4D> V4D::make(const V4D& other, const string& title) {
     return v4d->self();
 }
 
-
 V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples) :
         initialSize_(size), debug_(debug), viewport_(0, 0, size.width, size.height), stretching_(true), samples_(samples) {
     self_ = cv::Ptr<V4D>(this);
@@ -92,7 +91,6 @@ cv::ogl::Texture2D& V4D::texture() {
 std::string V4D::title() const {
     return fbCtx()->title_;
 }
-
 
 cv::Point2f V4D::getMousePosition() {
     return mousePos_;
@@ -175,7 +173,6 @@ bool V4D::hasParallelCtx() {
 bool V4D::hasImguiCtx() {
     return imguiContext_ != nullptr;
 }
-
 
 bool V4D::hasGlCtx(uint32_t idx) {
     return glContexts_.find(idx) != glContexts_.end();

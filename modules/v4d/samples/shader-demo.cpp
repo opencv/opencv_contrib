@@ -121,7 +121,7 @@ private:
         const string frag =
                 "    #version " + shaderVersion
                         + R"(
-        precision lowp float;
+        precision highp float;
 
         out vec4 outColor;
 
@@ -168,13 +168,18 @@ private:
             if (iter < max_iterations) {
                 float iterations = float(iter) / float(max_iterations);
                 float cb = float(contrast_boost);
-                float lb;
+                float logBase;
                 if(iter % 2 == 0)
-					lb = 25;
+					logBase = 25.0f;
 				else
-					lb = 50;
+					logBase = 50.0f;
                 
-				outColor = vec4(log2((lb - 1) * base_color[0] * iterations * cb + 1)/log2(lb), log2((lb - 1) * base_color[1] * iterations * cb + 1)/log2(lb), log2((lb - 1) * base_color[2] * iterations * cb + 1)/log2(lb), base_color[3]);
+				float logDiv = log2(logBase);
+				float colorBoost = iterations * cb;
+				outColor = vec4(log2((logBase - 1.0f) * base_color[0] * colorBoost + 1.0f)/logDiv, 
+								log2((logBase - 1.0f) * base_color[1] * colorBoost + 1.0f)/logDiv, 
+								log2((logBase - 1.0f) * base_color[2] * colorBoost + 1.0f)/logDiv, 
+								base_color[3]);
             } else {
                 outColor = vec4(0,0,0,0);
             }

@@ -193,14 +193,15 @@ void FrameBufferContext::init() {
 
     this->makeCurrent();
     glfwSwapInterval(0);
-//FIXME?
-//#if !defined(OPENCV_V4D_USE_ES3)
+
+#if !defined(OPENCV_V4D_USE_ES3)
     if (!parent_) {
         GLenum err = glewInit();
         if (err != GLEW_OK && err != GLEW_ERROR_NO_GLX_DISPLAY) {
         	CV_Error(Error::StsError, "Could not initialize GLEW!");
         }
     }
+#endif
     try {
         if (isRoot() && isClGlSharingSupported())
             cv::ogl::ocl::initializeContextFromGL();
