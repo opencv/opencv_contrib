@@ -448,7 +448,7 @@ OptflowDemoPlan::Params OptflowDemoPlan::params_;
 
 int main(int argc, char **argv) {
     if (argc != 2) {
-        std::cerr << "Usage: optflow <input-video-file>" << endl;
+        std::cerr << "Usage: optflow-demo <input-video-file>" << endl;
         exit(1);
     }
 

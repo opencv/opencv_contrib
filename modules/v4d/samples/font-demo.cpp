@@ -59,7 +59,6 @@ public:
 	using Plan::Plan;
 
 	FontDemoPlan(const cv::Size& sz) : FontDemoPlan(cv::Rect(0, 0, sz.width, sz.height)) {
-
 	}
 
 	FontDemoPlan(const cv::Rect& vp) : Plan(vp) {
