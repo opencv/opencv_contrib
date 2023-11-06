@@ -58,7 +58,25 @@ class FontDemoPlan : public Plan {
 public:
 	using Plan::Plan;
 
-    void gui(cv::Ptr<V4D> window) override {
+	FontDemoPlan(const cv::Size& sz) : FontDemoPlan(cv::Rect(0, 0, sz.width, sz.height)) {
+
+	}
+
+	FontDemoPlan(const cv::Rect& vp) : Plan(vp) {
+        //The text to display
+        string txt = cv::getBuildInformation();
+        //Save the text to a vector
+        std::istringstream iss(txt);
+
+        for (std::string line; std::getline(iss, line); ) {
+            lines_.push_back(line);
+        }
+        params_.fontSize_ = hypot(size().width, size().height) / 60.0;
+        numLines_ = lines_.size();
+        textHeight_ = (numLines_ * params_.fontSize_);
+	}
+
+	void gui(cv::Ptr<V4D> window) override {
         window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params){
         	CV_UNUSED(win);
         	using namespace ImGui;
@@ -86,17 +104,6 @@ public:
     }
 
     void setup(cv::Ptr<V4D> window) override {
-        //The text to display
-        string txt = cv::getBuildInformation();
-        //Save the text to a vector
-        std::istringstream iss(txt);
-
-        for (std::string line; std::getline(iss, line); ) {
-            lines_.push_back(line);
-        }
-        params_.fontSize_ = hypot(size().width, size().height) / 60.0;
-        numLines_ = lines_.size();
-        textHeight_ = (numLines_ * params_.fontSize_);
     }
 
     void infer(cv::Ptr<V4D> window) override {
