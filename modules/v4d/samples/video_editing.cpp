@@ -31,6 +31,10 @@ public:
 };
 
 int main(int argc, char** argv) {
+	if (argc != 3) {
+        cerr << "Usage: video_editing <input-video-file> <output-video-file>" << endl;
+        exit(1);
+    }
     Ptr<VideoEditingPlan> plan = new VideoEditingPlan(cv::Size(960,960));
     Ptr<V4D> window = V4D::make(plan->size(), "Video Editing");
 
