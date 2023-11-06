@@ -55,8 +55,8 @@ private:
 
     inline static cv::Rect tracked_ = cv::Rect(0,0,1,1);
 
-	constexpr static auto doRedect_ = [](const bool& trackerInit, const bool& redetect){ return !trackerInit || redetect; };
-	constexpr static auto dontRedect_ = [](const bool& trackerInit, const bool& redetect){ return trackerInit && !redetect; };
+	constexpr static auto doRedect_ = [](const Detection& detection){ return !detection.trackerInitialized_ || detection.redetect_; };
+	constexpr static auto dontRedect_ = [](const Detection& detection){ return detection.trackerInitialized_ && !detection.redetect_; };
 
 	//adapted from cv::dnn_objdetect::InferBbox
 	static inline bool pair_comparator(std::pair<double, size_t> l1, std::pair<double, size_t> l2) {
@@ -170,14 +170,13 @@ public:
 		window->endbranch(always_);
 
 		//Try to track the pedestrian (if we currently are tracking one), else re-detect using HOG descriptor
-		window->branch(doRedect_, detection_.trackerInitialized_, detection_.redetect_);
+		window->branch(doRedect_, detection_);
 		{
 			window->single([](cv::UMat& videoFrameDownGrey, Detection& detection, cv::Rect& tracked, Cache& cache){
 				detection.redetect_ = false;
 
 				//Detect pedestrians
 				detection.hog_.detectMultiScale(videoFrameDownGrey, detection.locations_, 0, cv::Size(), cv::Size(), 1.15, 2.0, true);
-//				cerr << "detect" << endl;
 				if (!detection.locations_.empty()) {
 					detection.boxes_.clear();
 					detection.probs_.clear();
@@ -198,18 +197,18 @@ public:
 					}
 
 					if(!detection.trackerInitialized_) {
-		//            	initialize the tracker once
+						//initialize the tracker once
 						detection.tracker_->init(videoFrameDownGrey, tracked);
 						detection.trackerInitialized_ = true;
 					}
 				}
 			}, videoFrameDownGrey_, detection_, tracked_, cache_);
 		}
-		window->endbranch(doRedect_, detection_.trackerInitialized_, detection_.redetect_);
-		window->branch(dontRedect_, detection_.trackerInitialized_, detection_.redetect_);
+		window->endbranch(doRedect_, detection_);
+
+		window->branch(dontRedect_, detection_);
 		{
 			window->parallel([](cv::UMat& videoFrameDownGrey, Detection& detection, const uint64_t& frameCnt, cv::Rect& tracked, Cache& cache){
-//				cerr << "track: " << frameCnt << " " << cache.fps_ << endl;
 				cv::Rect oldTracked = tracked;
 				if((cache.fps_ == 0 || frameCnt % cache.fps_ == 0) || !detection.tracker_->update(videoFrameDownGrey, tracked)) {
 					cache.fps_ = uint64_t(std::ceil(Global::fps()));
@@ -222,11 +221,11 @@ public:
 				tracked.height = (oldTracked.height+ tracked.height) / 2.0;
 			}, videoFrameDownGrey_, detection_, window->frameCount(), tracked_, cache_);
 		}
-		window->endbranch(dontRedect_, detection_.trackerInitialized_, detection_.redetect_);
+		window->endbranch(dontRedect_, detection_);
 
 		window->branch(always_);
 		{
-		//Draw an ellipse around the tracked pedestrian
+			//Draw an ellipse around the tracked pedestrian
 			window->nvg([](const cv::Size& sz, const cv::Size_<float> scale, cv::Rect& tracked) {
 				using namespace cv::v4d::nvg;
 				clear();
@@ -235,11 +234,10 @@ public:
 				strokeColor(cv::v4d::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
 				float width = tracked.width * scale.width;
 				float height = tracked.height * scale.height;
-				float cx = (tracked.x + (width / 2.0));
+				float cx = (scale.width * tracked.x + (width / 2.0));
 				float cy = (scale.height * tracked.y + ((height) / 2.0));
 
 				ellipse(cx, cy, (width), (height));
-//				cerr << cx << ": " << cy << " | " << (width / 2.0f) << " " << (height / 2.0f) << endl;
 				stroke();
 			}, size(), scale_,	tracked_);
 
