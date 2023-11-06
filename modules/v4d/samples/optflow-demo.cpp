@@ -43,7 +43,7 @@ private:
 	    DISABLED
 	};
 
-	struct Params {
+	static struct Params {
 		// Generate the foreground at this scale.
 		float fgScale_ = 0.5f;
 		// On every frame the foreground loses on brightness. Specifies the loss in percent.
@@ -442,6 +442,8 @@ public:
         window->write();
 	}
 };
+
+OptflowDemoPlan::Params OptflowDemoPlan::params_;
 
 int main(int argc, char **argv) {
     if (argc != 2) {
