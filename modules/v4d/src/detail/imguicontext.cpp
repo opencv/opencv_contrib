@@ -36,7 +36,6 @@ void ImGuiContextImpl::build(std::function<void(ImGuiContext*)> fn) {
 
 void ImGuiContextImpl::makeCurrent() {
     ImGui::SetCurrentContext(context_);
-    cerr << "ImguiCtx: " << context_ << endl;
 }
 
 void ImGuiContextImpl::render(bool showFPS) {
