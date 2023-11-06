@@ -314,6 +314,8 @@ private:
 	}
 public:
     OptflowDemoPlan(const cv::Rect& viewport) : Plan(viewport) {
+		int diag = hypot(double(size().width), double(size().height));
+		params_.glowKernelSize_ = std::max(int(diag / 150 % 2 == 0 ? diag / 150 + 1 : diag / 150), 1);
 		foreground_ = cv::UMat(size(), CV_8UC4, cv::Scalar::all(0));
     }
 
@@ -376,11 +378,10 @@ public:
 	}
 
 	virtual void setup(cv::Ptr<V4D> window) override {
-		int diag = hypot(double(size().width), double(size().height));
-		params_.glowKernelSize_ = std::max(int(diag / 150 % 2 == 0 ? diag / 150 + 1 : diag / 150), 1);
 		cache_.rng_ = std::mt19937(cache_.rd_());
 		window->setStretching(params_.stretch_);
-		params_.effectColor_[3] /= pow(window->workers_running() + 1.0, 0.33);
+		int ws = Global::workers_started();
+		params_.effectColor_[3] -= (params_.effectColor_[3] / pow(double(ws),2.0)) * ((ws - 1));
 	}
 
 	virtual void infer(cv::Ptr<V4D> window) override {
@@ -459,6 +460,6 @@ int main(int argc, char **argv) {
 	window->setSource(src);
 	window->setSink(sink);
 
-	window->run(plan);
+	window->run(plan, 5);
     return 0;
 }
