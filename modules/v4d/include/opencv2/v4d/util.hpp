@@ -57,7 +57,8 @@ class CV_EXPORTS Global {
 	inline static std::thread::id main_thread_id_;
 	inline static thread_local bool is_main_;
 	inline static size_t workers_ready_ = 0;
-    inline static size_t workers_running_ = 0;
+    inline static size_t workers_started_ = 0;
+    inline static size_t next_worker_idx_ = 0;
 public:
 	CV_EXPORTS static std::mutex& mutex() {
     	return mtx_;
@@ -86,6 +87,7 @@ public:
 	CV_EXPORTS static const std::thread::id& default_id() {
     	return default_thread_id_;
     }
+
 	CV_EXPORTS static std::thread::id& main_id() {
     	return main_thread_id_;
     }
@@ -95,12 +97,20 @@ public:
 		return is_main_;
 	}
 
-	CV_EXPORTS static size_t& workers_ready() {
-		return workers_ready_;
+	CV_EXPORTS static size_t& workers_started() {
+		return workers_started_;
 	}
 
-	CV_EXPORTS static size_t& workers_running() {
-		return workers_running_;
+	CV_EXPORTS static size_t next_worker_ready() {
+	    static std::mutex mtx;
+	    std::unique_lock<std::mutex> lock(mtx);
+		return ++workers_ready_;
+	}
+
+	CV_EXPORTS static size_t next_worker_idx() {
+	    static std::mutex mtx;
+	    std::unique_lock<std::mutex> lock(mtx);
+		return next_worker_idx_++;
 	}
 };
 

@@ -55,7 +55,7 @@ V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, Allo
 
 V4D::V4D(const V4D& other, const string& title) :
         initialSize_(other.initialSize_), debug_(other.debug_), viewport_(0, 0, other.fbSize().width, other.fbSize().height), stretching_(other.stretching_), samples_(other.samples_) {
-    workerIdx_ = Global::workers_running()++;
+	workerIdx_ = Global::next_worker_idx();
     self_ = cv::Ptr<V4D>(this);
     mainFbContext_ = new detail::FrameBufferContext(*this, other.fbSize(), !other.debug_, title, 3,
                 2, other.samples_, other.debug_, other.fbCtx()->rootWindow_, other.fbCtx(), true);
@@ -81,7 +81,7 @@ const int32_t& V4D::workerIndex() const {
 }
 
 size_t V4D::workers_running() {
-	return Global::workers_running();
+	return Global::workers_started();
 }
 
 cv::ogl::Texture2D& V4D::texture() {
@@ -371,10 +371,16 @@ bool V4D::display() {
 	if (Global::is_main()) {
 		auto start = Global::start_time();
 		auto now = get_epoch_nanos();
+		auto diff = now - start;
+		double diffSeconds = diff / 1000000000.0;
 
-		double diff_seconds = (now - start) / 1000000000.0;
+		if(Global::fps() > 0 && diffSeconds > 1.0) {
+			Global::start_time() += (diff / 2.0);
+			Global::frame_cnt() /= 2.0;
+		} else {
+			Global::fps() = (Global::fps() * 3.0 + (Global::frame_cnt() / diffSeconds)) / 4.0;
+		}
 
-		Global::fps() = (Global::frame_cnt()) / diff_seconds;
 		if(getPrintFPS())
 			cerr << "\rFPS:" << Global::fps() << endl;
 		{

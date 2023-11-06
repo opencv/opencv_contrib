@@ -25,7 +25,7 @@ void SourceContext::execute(std::function<void()> fn) {
 				currentSeqNr_ = p.first;
 
 				if(p.second.empty()) {
-					throw std::runtime_error("End of stream");
+					CV_Error(cv::Error::StsError, "End of stream");
 				}
 
 				resizePreserveAspectRatio(p.second, captureBufferRGB_, mainFbContext_->size());
@@ -42,7 +42,7 @@ void SourceContext::execute(std::function<void()> fn) {
 				currentSeqNr_ = p.first;
 
 				if(p.second.empty()) {
-					throw std::runtime_error("End of stream");
+					CV_Error(cv::Error::StsError, "End of stream");
 				}
 				resizePreserveAspectRatio(p.second, captureBufferRGB_, mainFbContext_->size());
 				cv::cvtColor(captureBufferRGB_, sourceBuffer(), cv::COLOR_RGB2BGRA);

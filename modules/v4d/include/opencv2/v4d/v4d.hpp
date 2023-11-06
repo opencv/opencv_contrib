@@ -576,6 +576,7 @@ public:
 				bool debug = this->debug_;
 				auto src = this->getSource();
 				auto sink = this->getSink();
+				Global::workers_started() = workers;
 				for (size_t i = 0; i < workers; ++i) {
 					threads.push_back(
 						new std::thread(
@@ -596,15 +597,6 @@ public:
 						)
 					);
 				}
-
-
-				for (int32_t i = 0; i < workers; ++i) {
-					CV_Assert(i >= 0);
-					if(!threads[i]->joinable()) {
-						--i;
-						std::this_thread::sleep_for(1ms);
-					}
-				}
 			}
 		}
 
@@ -620,18 +612,18 @@ public:
 			this->makePlan();
 			this->runPlan();
 			this->clearPlan();
-			if(!Global::is_main() && Global::workers_running() == Global::workers_ready()) {
+			if(!Global::is_main() && Global::workers_started() == Global::next_worker_ready()) {
 				cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_INFO);
 			}
 		} catch(std::exception& ex) {
-			CV_Error_(cv::Error::StsError, ("Setup plan failed: %s", ex.what()));
+			CV_Error_(cv::Error::StsError, ("pipeline setup failed: %s", ex.what()));
 		}
 
 		if(Global::is_main()) {
 			try {
 				plan->gui(self());
 			} catch(std::exception& ex) {
-				CV_Error_(cv::Error::StsError, ("GUI failed: %s", ex.what()));
+				CV_Error_(cv::Error::StsError, ("GUI setup failed: %s", ex.what()));
 			}
 		}
 
@@ -665,7 +657,7 @@ public:
 		} catch(std::exception& ex) {
 			requestFinish();
 			reseq.finish();
-			CV_Error_(cv::Error::StsError, ("Run plan failed: %s", ex.what()));
+			CV_LOG_WARNING(nullptr, "-> pipeline terminated: " << ex.what());
 		}
 
 		this->clearPlan();
@@ -676,7 +668,7 @@ public:
 			this->runPlan();
 			this->clearPlan();
 		} catch(std::exception& ex) {
-			CV_Error_(cv::Error::StsError, ("Tear-down plan failed: %s", ex.what()));
+			CV_Error_(cv::Error::StsError, ("pipeline tear-down failed: %s", ex.what()));
 		}
 
 		if(Global::is_main()) {
