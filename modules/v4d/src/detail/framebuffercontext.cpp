@@ -418,24 +418,12 @@ void FrameBufferContext::teardown() {
 }
 
 void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture) {
-    using namespace cv::ocl;
+    CV_Assert(clImage_ != nullptr);
+
+	using namespace cv::ocl;
 
     cl_int status = 0;
     cl_command_queue q = (cl_command_queue) context_.getQueue().ptr();
-
-    if (clImage_ == nullptr) {
-        Context& ctx = context_.getContext();
-        cl_context context = (cl_context) ctx.ptr();
-        clImage_ = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, 0x0DE1, 0, texture.texId(),
-                &status);
-        if (status != CL_SUCCESS)
-            throw std::runtime_error("OpenCL: clCreateFromGLTexture failed: " + std::to_string(status));
-
-        status = clEnqueueAcquireGLObjects(q, 1, &clImage_, 0, NULL, NULL);
-        if (status != CL_SUCCESS)
-            throw std::runtime_error("OpenCL: clEnqueueAcquireGLObjects failed: " + std::to_string(status));
-    }
-
     cl_mem clBuffer = (cl_mem) u.handle(ACCESS_READ);
 
     size_t offset = 0;
@@ -446,9 +434,9 @@ void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture)
     if (status != CL_SUCCESS)
         throw std::runtime_error("OpenCL: clEnqueueCopyBufferToImage failed: " + std::to_string(status));
 
-    status = clFinish(q);
+    status = clEnqueueReleaseGLObjects(q, 1, &clImage_, 0, NULL, NULL);
     if (status != CL_SUCCESS)
-        throw std::runtime_error("OpenCL: clFinish failed: " + std::to_string(status));
+         throw std::runtime_error("OpenCL: clEnqueueReleaseGLObjects failed: " + std::to_string(status));
 }
 
 void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::UMat& u) {
@@ -464,10 +452,6 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
     cl_command_queue q = (cl_command_queue) context_.getQueue().ptr();
     cl_int status = 0;
 
-//    status = clFinish(q);
-//    if (status != CL_SUCCESS)
-//        throw std::runtime_error("OpenCL: clFinish failed: " + std::to_string(status));
-
     if (clImage_ == nullptr) {
         Context& ctx = context_.getContext();
         cl_context context = (cl_context) ctx.ptr();
@@ -475,13 +459,13 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
                 &status);
         if (status != CL_SUCCESS)
             throw std::runtime_error("OpenCL: clCreateFromGLTexture failed: " + std::to_string(status));
-
-        status = clEnqueueAcquireGLObjects(q, 1, &clImage_, 0, NULL, NULL);
-        if (status != CL_SUCCESS)
-            throw std::runtime_error("OpenCL: clEnqueueAcquireGLObjects failed: " + std::to_string(status));
     }
 
-    cl_mem clBuffer = (cl_mem) u.handle(ACCESS_WRITE);
+    status = clEnqueueAcquireGLObjects(q, 1, &clImage_, 0, NULL, NULL);
+    if (status != CL_SUCCESS)
+        throw std::runtime_error("OpenCL: clEnqueueAcquireGLObjects failed: " + std::to_string(status));
+
+    cl_mem clBuffer = (cl_mem) u.handle(ACCESS_READ);
 
     size_t offset = 0;
     size_t src_origin[3] = { 0, 0, 0 };
@@ -490,10 +474,6 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
     NULL);
     if (status != CL_SUCCESS)
         throw std::runtime_error("OpenCL: clEnqueueCopyImageToBuffer failed: " + std::to_string(status));
-
-    status = clFinish(q);
-    if (status != CL_SUCCESS)
-        throw std::runtime_error("OpenCL: clFinish failed: " + std::to_string(status));
 }
 
 const cv::Size& FrameBufferContext::size() const {
@@ -590,7 +570,6 @@ cv::UMat& FrameBufferContext::fb() {
 
 void FrameBufferContext::begin(GLenum framebufferTarget) {
     this->makeCurrent();
-    GL_CHECK(glFinish());
     GL_CHECK(glBindFramebuffer(framebufferTarget, frameBufferID_));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
@@ -604,7 +583,6 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
 }
 
 void FrameBufferContext::end() {
-    GL_CHECK(glFinish());
     this->makeNoneCurrent();
 }
 
