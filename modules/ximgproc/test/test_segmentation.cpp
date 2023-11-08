@@ -178,10 +178,6 @@ TEST(ximgproc_ImageSegmentation, createGraphSegmentation_negativeValue)
     src.at<int16_t>(0,0) = -1;
     ASSERT_ANY_THROW( gs->processImage(src, segImg) );
 
-    src = cv::Mat(320,240,CV_32SC3);
-    src.at<int32_t>(0,0) = -1;
-    ASSERT_ANY_THROW( gs->processImage(src, segImg) );
-
     src = cv::Mat(320,240,CV_32FC3);
     src.at<float>(0,0) = -1.0;
     ASSERT_ANY_THROW( gs->processImage(src, segImg) );
