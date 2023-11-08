@@ -171,7 +171,6 @@ namespace cv {
                     case CV_16U: alpha = 255. / 65535. ;      break;
                     case CV_8S:  alpha = 255. / 127. ;        break;
                     case CV_16S: alpha = 255. / 32767. ;      break;
-                    case CV_32S: alpha = 255. / 2147483647. ; break;
                     case CV_32F: alpha = 255. ;               break; // [0,1]->[0,255]
                     case CV_64F: alpha = 255. ;               break; // [0,1]->[0,255]
                     default: CV_Error(Error::StsBadArg,"Unsupported Mat type"); break;

@@ -98,10 +98,10 @@ const GraphSegmentationTestParam gstest_list[] =
     make_tuple<int, double, int>( CV_16SC3, 32767. / 255.,      15 ),
     make_tuple<int, double, int>( CV_16SC4, 32767. / 255.,      15 ),
 
-    make_tuple<int, double, int>( CV_32SC1, 2147483647. / 255., 14 ),
-    make_tuple<int, double, int>( CV_32SC2, 2147483647. / 255., 17 ),
-    make_tuple<int, double, int>( CV_32SC3, 2147483647. / 255., 17 ),
-    make_tuple<int, double, int>( CV_32SC4, 2147483647. / 255., 17 ),
+    make_tuple<int, double, int>( CV_32SC1, 2147483647. / 255., -1 ),
+    make_tuple<int, double, int>( CV_32SC2, 2147483647. / 255., -1 ),
+    make_tuple<int, double, int>( CV_32SC3, 2147483647. / 255., -1 ),
+    make_tuple<int, double, int>( CV_32SC4, 2147483647. / 255., -1 ),
 
     make_tuple<int, double, int>( CV_32FC1, 1. / 255.,          14 ),
     make_tuple<int, double, int>( CV_32FC2, 1. / 255.,          17 ),
