@@ -217,7 +217,17 @@ TEST_P(ctol_range, success)
     const string root = cvtest::TS::ptr()->get_data_path();
     const string fontdata = root + "freetype/mplus/Mplus1-Regular.ttf";
     EXPECT_NO_THROW( ft2->loadFontData( fontdata, 0 ) );
-    EXPECT_NO_THROW( ft2->setSplitNumber(GetParam()) );
+
+    int ctol = GetParam();
+
+    if ( ctol < 1 )
+    {
+        EXPECT_THROW( ft2->setSplitNumber(GetParam()), cv::Exception );
+    }
+    else
+    {
+        EXPECT_NO_THROW( ft2->setSplitNumber(GetParam()) );
+    }
 
     Mat dst(600,600, CV_8UC3, Scalar::all(255) );
     Scalar col(128,64,255,192);
@@ -234,7 +244,11 @@ TEST_P(ctol_range, success)
 
 const int ctol_list[] =
 {
-    1,
+    INT_MIN,     // invalid min
+    INT_MIN + 1,
+    -1,
+    0,           // invalid max
+    1,           // valid min
     2,
     4,
     8,
@@ -249,7 +263,7 @@ const int ctol_list[] =
     4096,
     8192,
     INT_MAX -1,
-    INT_MAX
+    INT_MAX      // valid max
 };
 
 INSTANTIATE_TEST_CASE_P(Freetype_setSplitNumber, ctol_range,
