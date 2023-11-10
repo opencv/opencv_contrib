@@ -37,6 +37,8 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/core/utils/logger.hpp>
 
+
+
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -148,6 +150,7 @@ class CV_EXPORTS V4D {
     int32_t workerIdx_ = -1;
     cv::Ptr<V4D> self_;
     const cv::Size initialSize_;
+    AllocateFlags flags_;
     bool debug_;
     cv::Rect viewport_;
     bool stretching_;
@@ -159,6 +162,7 @@ class CV_EXPORTS V4D {
     cv::Ptr<NanoVGContext> nvgContext_ = nullptr;
     cv::Ptr<ImGuiContextImpl> imguiContext_ = nullptr;
     cv::Ptr<SingleContext> singleContext_ = nullptr;
+    cv::Ptr<OnceContext> onceContext_ = nullptr;
     cv::Ptr<ParallelContext> parallelContext_ = nullptr;
     std::mutex glCtxMtx_;
     std::map<int32_t,cv::Ptr<GLContext>> glContexts_;
@@ -505,6 +509,15 @@ public:
     }
 
     template <typename Tfn, typename ... Args>
+    void once(Tfn fn, Args&&... args) {
+        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("once", fn, args...);
+		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+		std::function functor(fn);
+		add_transaction<decltype(functor)>(onceCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
+    }
+
+    template <typename Tfn, typename ... Args>
     void parallel(Tfn fn, Args&&... args) {
         CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("parallel", fn, args...);
@@ -605,32 +618,31 @@ public:
 
 		if(Global::is_main()) {
 			this->printSystemInfo();
-		}
-
-		try {
-			plan->setup(self());
-			this->makePlan();
-			this->runPlan();
-			this->clearPlan();
-			if(!Global::is_main() && Global::workers_started() == Global::next_worker_ready()) {
-				cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_INFO);
+		} else {
+			try {
+				plan->setup(self());
+				this->makePlan();
+				this->runPlan();
+				this->clearPlan();
+				if(!Global::is_main() && Global::workers_started() == Global::next_worker_ready()) {
+					cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_INFO);
+				}
+			} catch(std::exception& ex) {
+				CV_Error_(cv::Error::StsError, ("pipeline setup failed: %s", ex.what()));
 			}
-		} catch(std::exception& ex) {
-			CV_Error_(cv::Error::StsError, ("pipeline setup failed: %s", ex.what()));
 		}
-
 		if(Global::is_main()) {
 			try {
 				plan->gui(self());
 			} catch(std::exception& ex) {
 				CV_Error_(cv::Error::StsError, ("GUI setup failed: %s", ex.what()));
 			}
+		} else {
+			plan->infer(self());
+			this->makePlan();
 		}
 
 		try {
-			plan->infer(self());
-			this->makePlan();
-
 			if(Global::is_main()) {
 				do {
 					//display with 120hz
@@ -660,18 +672,18 @@ public:
 			CV_LOG_WARNING(nullptr, "-> pipeline terminated: " << ex.what());
 		}
 
-		this->clearPlan();
-
-		try {
-			plan->teardown(self());
-			this->makePlan();
-			this->runPlan();
+		if(!Global::is_main()) {
 			this->clearPlan();
-		} catch(std::exception& ex) {
-			CV_Error_(cv::Error::StsError, ("pipeline tear-down failed: %s", ex.what()));
-		}
 
-		if(Global::is_main()) {
+			try {
+				plan->teardown(self());
+				this->makePlan();
+				this->runPlan();
+				this->clearPlan();
+			} catch(std::exception& ex) {
+				CV_Error_(cv::Error::StsError, ("pipeline tear-down failed: %s", ex.what()));
+			}
+		} else {
 			for(auto& t : threads)
 				t->join();
 		}
@@ -823,6 +835,7 @@ public:
     CV_EXPORTS cv::Ptr<SinkContext> sinkCtx();
     CV_EXPORTS cv::Ptr<NanoVGContext> nvgCtx();
     CV_EXPORTS cv::Ptr<SingleContext> singleCtx();
+    CV_EXPORTS cv::Ptr<OnceContext> onceCtx();
     CV_EXPORTS cv::Ptr<ParallelContext> parallelCtx();
     CV_EXPORTS cv::Ptr<ImGuiContextImpl> imguiCtx();
     CV_EXPORTS cv::Ptr<GLContext> glCtx(int32_t idx = 0);
@@ -832,6 +845,7 @@ public:
     CV_EXPORTS bool hasSinkCtx();
     CV_EXPORTS bool hasNvgCtx();
     CV_EXPORTS bool hasSingleCtx();
+    CV_EXPORTS bool hasOnceCtx();
     CV_EXPORTS bool hasParallelCtx();
     CV_EXPORTS bool hasImguiCtx();
     CV_EXPORTS bool hasGlCtx(uint32_t idx = 0);
@@ -846,6 +860,7 @@ private:
 
     void swapContextBuffers();
 protected:
+    AllocateFlags flags();
     cv::Ptr<V4D> self();
     void fence();
     bool wait(uint64_t timeout = 0);

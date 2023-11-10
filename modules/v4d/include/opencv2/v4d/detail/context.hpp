@@ -27,6 +27,16 @@ public:
     }
 };
 
+class OnceContext : public V4DContext {
+	std::once_flag flag;
+public:
+	virtual ~OnceContext() {}
+    virtual void execute(std::function<void()> fn) override {
+    	std::call_once(flag, fn);
+    }
+};
+
+
 class ParallelContext : public V4DContext {
 public:
 	virtual ~ParallelContext() {}

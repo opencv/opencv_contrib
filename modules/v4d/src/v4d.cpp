@@ -34,19 +34,20 @@ cv::Ptr<V4D> V4D::make(const V4D& other, const string& title) {
     return v4d->self();
 }
 
-V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples) :
-        initialSize_(size), debug_(debug), viewport_(0, 0, size.width, size.height), stretching_(true), samples_(samples) {
+V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, AllocateFlags aflags, bool offscreen, bool debug, int samples) :
+        initialSize_(size), flags_(aflags), debug_(debug), viewport_(0, 0, size.width, size.height), stretching_(true), samples_(samples) {
     self_ = cv::Ptr<V4D>(this);
     mainFbContext_ = new detail::FrameBufferContext(*this, fbsize.empty() ? size : fbsize, offscreen, title, 3,
                 2, samples, debug, nullptr, nullptr, true);
     CLExecScope_t scope(mainFbContext_->getCLExecContext());
-    if(flags & NANOVG)
+    if(flags() & NANOVG)
         nvgContext_ = new detail::NanoVGContext(mainFbContext_);
     sourceContext_ = new detail::SourceContext(mainFbContext_);
     sinkContext_ = new detail::SinkContext(mainFbContext_);
     singleContext_ = new detail::SingleContext();
+    onceContext_ = new detail::OnceContext();
     parallelContext_ = new detail::ParallelContext();
-    if(flags & IMGUI)
+    if(flags() & IMGUI)
         imguiContext_ = new detail::ImGuiContextImpl(mainFbContext_);
 
     //preallocate the primary gl context
@@ -54,18 +55,19 @@ V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, Allo
 }
 
 V4D::V4D(const V4D& other, const string& title) :
-        initialSize_(other.initialSize_), debug_(other.debug_), viewport_(0, 0, other.fbSize().width, other.fbSize().height), stretching_(other.stretching_), samples_(other.samples_) {
+        initialSize_(other.initialSize_), flags_(other.flags_), debug_(other.debug_), viewport_(0, 0, other.fbSize().width, other.fbSize().height), stretching_(other.stretching_), samples_(other.samples_) {
 	workerIdx_ = Global::next_worker_idx();
     self_ = cv::Ptr<V4D>(this);
     mainFbContext_ = new detail::FrameBufferContext(*this, other.fbSize(), !other.debug_, title, 3,
                 2, other.samples_, other.debug_, other.fbCtx()->rootWindow_, other.fbCtx(), true);
 
     CLExecScope_t scope(mainFbContext_->getCLExecContext());
-    //FIXME we don't always need the nvg context
-    nvgContext_ = new detail::NanoVGContext(mainFbContext_);
+    if(flags() & NANOVG)
+    	nvgContext_ = new detail::NanoVGContext(mainFbContext_);
     sourceContext_ = new detail::SourceContext(mainFbContext_);
     sinkContext_ = new detail::SinkContext(mainFbContext_);
     singleContext_ = new detail::SingleContext();
+    onceContext_ = new detail::OnceContext();
     parallelContext_ = new detail::ParallelContext();
 
     //preallocate the primary gl context
@@ -125,6 +127,11 @@ cv::Ptr<SingleContext> V4D::singleCtx() {
     return singleContext_;
 }
 
+cv::Ptr<OnceContext> V4D::onceCtx() {
+    assert(onceContext_ != nullptr);
+    return onceContext_;
+}
+
 cv::Ptr<ParallelContext> V4D::parallelCtx() {
     assert(parallelContext_ != nullptr);
     return parallelContext_;
@@ -164,6 +171,10 @@ bool V4D::hasNvgCtx() {
 
 bool V4D::hasSingleCtx() {
     return singleContext_ != nullptr;
+}
+
+bool V4D::hasOnceCtx() {
+    return onceContext_ != nullptr;
 }
 
 bool V4D::hasParallelCtx() {
@@ -434,6 +445,10 @@ GLFWwindow* V4D::getGLFWWindow() const {
 void V4D::printSystemInfo() {
 	cerr << "OpenGL: " << getGlInfo() << endl;
     cerr << "OpenCL Platforms: " << getClInfo() << endl;
+}
+
+AllocateFlags V4D::flags() {
+	return flags_;
 }
 
 cv::Ptr<V4D> V4D::self() {
