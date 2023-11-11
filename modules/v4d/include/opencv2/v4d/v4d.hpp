@@ -21,7 +21,7 @@
 #include "detail/sinkcontext.hpp"
 #include "detail/resequence.hpp"
 
-
+#include <type_traits>
 #include <iostream>
 #include <future>
 #include <set>
@@ -304,10 +304,20 @@ public:
     	}
     }
 
+    template <typename Tfn>
+    void checkFunction(Tfn fn) {
+        static_assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value, "All passed functors must be stateless lambdas");
+    }
+
+    template <typename ... Args>
+    void checkArgs(Args&& ... args) {
+        static_assert(std::conjunction<std::is_lvalue_reference<Args>...>::value, "All arguments must be l-value references");
+    }
+
     template <typename Tfn, typename ... Args>
     typename std::enable_if<std::is_invocable_v<Tfn, Args...>, void>::type
     gl(Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
         const string id = make_id("gl-1", fn, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -318,7 +328,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void gl(int32_t idx, Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
 
         const string id = make_id("gl" + std::to_string(idx), fn, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
@@ -330,7 +340,7 @@ public:
 
     template <typename Tfn>
     void branch(Tfn fn) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
         const string id = make_id("branch", fn);
 
 		std::function functor = fn;
@@ -340,7 +350,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void branch(Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
         const string id = make_id("branch", fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -350,7 +360,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void branch(int workerIdx, Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
         const string id = make_id("branch-pin" + std::to_string(workerIdx), fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -363,7 +373,7 @@ public:
 
     template <typename Tfn>
     void endbranch(Tfn fn) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
         const string id = make_id("endbranch", fn);
 
 		std::function functor = fn;
@@ -373,7 +383,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void endbranch(Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
         const string id = make_id("endbranch", fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -385,7 +395,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void endbranch(int workerIdx, Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
         const string id = make_id("endbranch-pin" + std::to_string(workerIdx), fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -397,7 +407,7 @@ public:
 
     template <typename Tfn, typename ... Args>
     void fb(Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
         const string id = make_id("fb", fn, args...);
 		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 		using Tfbbase = typename std::remove_cv<Tfb>::type;
@@ -435,7 +445,7 @@ public:
     void capture(Tfn fn, Args&& ... args) {
     	if(disableIO_)
     		return;
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
         const string id = make_id("capture", fn, args...);
 		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 
@@ -470,9 +480,10 @@ public:
 
     template <typename Tfn, typename ... Args>
     void write(Tfn fn, Args&& ... args) {
+        checkFunction(fn);
+        checkArgs(args...);
     	if(disableIO_)
     		return;
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("write", fn, args...);
 		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 
@@ -486,7 +497,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void nvg(Tfn fn, Args&&... args) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
+        checkArgs(args...);
         const string id = make_id("nvg", fn, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -497,7 +509,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void single(Tfn fn, Args&&... args) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
+        checkArgs(args...);
         const string id = make_id("single", fn, args...);
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function functor(fn);
@@ -506,7 +519,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void parallel(Tfn fn, Args&&... args) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        checkFunction(fn);
+        checkArgs(args...);
         const string id = make_id("parallel", fn, args...);
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function functor(fn);
@@ -515,8 +529,9 @@ public:
 
     template<typename Tfn, typename ... Args>
     void imgui(Tfn fn, Args&& ... args) {
-        CV_Assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-		auto s = self();
+        checkFunction(fn);
+        checkArgs(args...);
+        auto s = self();
 		imguiCtx()->build([s, fn, &args...](ImGuiContext* ctx) {
 			fn(s, ctx, args...);
 		});
