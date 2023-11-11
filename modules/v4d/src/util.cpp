@@ -133,9 +133,6 @@ unsigned int initShader(const char* vShader, const char* fShader, const char* ou
         exit (EXIT_FAILURE);
     }
 
-    /* use program object */
-    glUseProgram(program);
-
     return program;
 }
 
