@@ -46,6 +46,7 @@
 #include "opencv2/structured_light/structured_light.hpp"
 #include "opencv2/structured_light/graycodepattern.hpp"
 #include "opencv2/structured_light/sinusoidalpattern.hpp"
+#include "opencv2/structured_light/sinus_comple_graycode_pattern.hpp"
 
 /** @defgroup structured_light Structured Light API
 
