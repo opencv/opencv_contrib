@@ -44,9 +44,8 @@ V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, Allo
         nvgContext_ = new detail::NanoVGContext(mainFbContext_);
     sourceContext_ = new detail::SourceContext(mainFbContext_);
     sinkContext_ = new detail::SinkContext(mainFbContext_);
-    singleContext_ = new detail::SingleContext();
     onceContext_ = new detail::OnceContext();
-    parallelContext_ = new detail::ParallelContext();
+    plainContext_ = new detail::PlainContext();
     if(flags() & IMGUI)
         imguiContext_ = new detail::ImGuiContextImpl(mainFbContext_);
 
@@ -66,9 +65,8 @@ V4D::V4D(const V4D& other, const string& title) :
     	nvgContext_ = new detail::NanoVGContext(mainFbContext_);
     sourceContext_ = new detail::SourceContext(mainFbContext_);
     sinkContext_ = new detail::SinkContext(mainFbContext_);
-    singleContext_ = new detail::SingleContext();
     onceContext_ = new detail::OnceContext();
-    parallelContext_ = new detail::ParallelContext();
+    plainContext_ = new detail::PlainContext();
 
     //preallocate the primary gl context
     glCtx(-1);
@@ -122,19 +120,14 @@ cv::Ptr<NanoVGContext> V4D::nvgCtx() {
     return nvgContext_;
 }
 
-cv::Ptr<SingleContext> V4D::singleCtx() {
-    assert(singleContext_ != nullptr);
-    return singleContext_;
-}
-
 cv::Ptr<OnceContext> V4D::onceCtx() {
     assert(onceContext_ != nullptr);
     return onceContext_;
 }
 
-cv::Ptr<ParallelContext> V4D::parallelCtx() {
-    assert(parallelContext_ != nullptr);
-    return parallelContext_;
+cv::Ptr<PlainContext> V4D::plainCtx() {
+    assert(plainContext_ != nullptr);
+    return plainContext_;
 }
 
 cv::Ptr<ImGuiContextImpl> V4D::imguiCtx() {
@@ -169,16 +162,12 @@ bool V4D::hasNvgCtx() {
     return nvgContext_ != nullptr;
 }
 
-bool V4D::hasSingleCtx() {
-    return singleContext_ != nullptr;
-}
-
 bool V4D::hasOnceCtx() {
     return onceContext_ != nullptr;
 }
 
 bool V4D::hasParallelCtx() {
-    return parallelContext_ != nullptr;
+    return plainContext_ != nullptr;
 }
 
 bool V4D::hasImguiCtx() {
@@ -215,7 +204,7 @@ bool V4D::hasSource() {
 void V4D::feed(cv::UMat& in) {
 	static thread_local cv::UMat frame;
 
-	parallel([](cv::UMat& src, cv::UMat& f, const cv::Size sz) {
+	plain([](cv::UMat& src, cv::UMat& f, const cv::Size sz) {
 		cv::UMat rgb;
 
 		resizePreserveAspectRatio(src, rgb, sz);
@@ -374,7 +363,7 @@ void V4D::swapContextBuffers() {
 bool V4D::display() {
     bool result = true;
     if(!Global::is_main())
-    	++Global::frame_cnt();
+    	Global::next_frame_cnt();
 
 	if(debug_) {
 		swapContextBuffers();
@@ -386,10 +375,10 @@ bool V4D::display() {
 		double diffSeconds = diff / 1000000000.0;
 
 		if(Global::fps() > 0 && diffSeconds > 1.0) {
-			Global::start_time() += (diff / 2.0);
-			Global::frame_cnt() /= 2.0;
+			Global::add_to_start_time(diff / 2.0);
+			Global::mul_frame_cnt(0.5);
 		} else {
-			Global::fps() = (Global::fps() * 3.0 + (Global::frame_cnt() / diffSeconds)) / 4.0;
+			Global::set_fps((Global::fps() * 3.0 + (Global::frame_cnt() / diffSeconds)) / 4.0);
 		}
 
 		if(getPrintFPS())
@@ -444,7 +433,9 @@ GLFWwindow* V4D::getGLFWWindow() const {
 
 void V4D::printSystemInfo() {
 	cerr << "OpenGL: " << getGlInfo() << endl;
+#ifdef HAVE_OPENCL
     cerr << "OpenCL Platforms: " << getClInfo() << endl;
+#endif
 }
 
 AllocateFlags V4D::flags() {

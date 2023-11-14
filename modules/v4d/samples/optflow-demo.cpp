@@ -314,9 +314,8 @@ private:
 	}
 public:
     OptflowDemoPlan(const cv::Rect& viewport) : Plan(viewport) {
-		int diag = hypot(double(size().width), double(size().height));
-		params_.glowKernelSize_ = std::max(int(diag / 150 % 2 == 0 ? diag / 150 + 1 : diag / 150), 1);
-		foreground_ = cv::UMat(size(), CV_8UC4, cv::Scalar::all(0));
+		Global::registerShared(params_);
+		Global::registerShared(foreground_);
     }
 
     OptflowDemoPlan(const cv::Size& sz) : OptflowDemoPlan(cv::Rect(0,0, sz.width, sz.height)) {
@@ -380,8 +379,13 @@ public:
 	virtual void setup(cv::Ptr<V4D> window) override {
 		cache_.rng_ = std::mt19937(cache_.rd_());
 		window->setStretching(params_.stretch_);
-		int ws = Global::workers_started();
-		params_.effectColor_[3] -= (params_.effectColor_[3] / pow(double(ws),2.0)) * ((ws - 1));
+		window->once([](const cv::Size& sz, Params& params, cv::UMat& foreground){
+			int diag = hypot(double(sz.width), double(sz.height));
+			params.glowKernelSize_ = std::max(int(diag / 150 % 2 == 0 ? diag / 150 + 1 : diag / 150), 1);
+			params.effectColor_[3] /= (Global::workers_started() - 1);
+			foreground.create(sz, CV_8UC4);
+			foreground = cv::Scalar::all(0);
+		}, size(), params_, foreground_);
 	}
 
 	virtual void infer(cv::Ptr<V4D> window) override {
@@ -391,18 +395,19 @@ public:
             framebuffer(viewport).copyTo(frame);
         }, viewport(), frame_);
 
-        window->single([](const cv::UMat& frame, cv::UMat& background) {
+        window->plain([](const cv::UMat& frame, cv::UMat& background) {
             frame.copyTo(background);
         }, frame_, background_);
 
 		window->fb([](const cv::UMat& framebuffer, const cv::Rect& viewport, cv::UMat& d, cv::UMat& b, const Params& params) {
+			Params p = Global::safe_copy(params);
 			//resize to foreground scale
-			cv::resize(framebuffer(viewport), d, cv::Size(viewport.width * params.fgScale_, viewport.height * params.fgScale_));
+			cv::resize(framebuffer(viewport), d, cv::Size(viewport.width * p.fgScale_, viewport.height * p.fgScale_));
 			//save video background
 			framebuffer(viewport).copyTo(b);
 		}, viewport(), down_, background_, params_);
 
-		window->parallel([](const cv::UMat& d, cv::UMat& dng, cv::UMat& dmmg, std::vector<cv::Point2f>& dp, cv::Ptr<cv::BackgroundSubtractor>& bg_subtractor, cv::Ptr<cv::FastFeatureDetector>& detector, Cache& cache){
+		window->plain([](const cv::UMat& d, cv::UMat& dng, cv::UMat& dmmg, std::vector<cv::Point2f>& dp, cv::Ptr<cv::BackgroundSubtractor>& bg_subtractor, cv::Ptr<cv::FastFeatureDetector>& detector, Cache& cache){
 			cv::cvtColor(d, dng, cv::COLOR_RGBA2GRAY);
 			//Subtract the background to create a motion mask
 			prepare_motion_mask(dng, dmmg, bg_subtractor, cache);
@@ -411,17 +416,18 @@ public:
 		}, down_, downNextGrey_, downMotionMaskGrey_, detectedPoints_, bg_subtractor_, detector_, cache_);
 
 		window->nvg([](const cv::UMat& dmmg, const cv::UMat& dpg, const cv::UMat& dng, const std::vector<cv::Point2f>& dp, const Params& params, Cache& cache) {
+			Params p = Global::safe_copy(params);
 			cv::v4d::nvg::clear();
 			if (!dpg.empty()) {
 				//We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
-				if (!detect_scene_change(dmmg, params, cache)) {
+				if (!detect_scene_change(dmmg, p, cache)) {
 					//Visualize the sparse optical flow using nanovg
-					visualize_sparse_optical_flow(dpg, dng, dp, params, cache);
+					visualize_sparse_optical_flow(dpg, dng, dp, p, cache);
 				}
 			}
 		}, downMotionMaskGrey_, downPrevGrey_, downNextGrey_, detectedPoints_, params_, cache_);
 
-		window->parallel([](cv::UMat& dpg, const cv::UMat& dng) {
+		window->plain([](cv::UMat& dpg, const cv::UMat& dng) {
 			dpg = dng.clone();
 		}, downPrevGrey_, downNextGrey_);
 
@@ -429,8 +435,9 @@ public:
             framebuffer(viewport).copyTo(frame);
         }, viewport(), frame_);
 
-        window->single([](cv::UMat& frame, cv::UMat& background, cv::UMat& foreground, const Params& params, Cache& cache) {
+        window->plain([](cv::UMat& frame, cv::UMat& background, cv::UMat& foreground, const Params& params, Cache& cache) {
             //Put it all together (OpenCL)
+            Global::Scope scope(foreground);
             foreground.getMat(cv::ACCESS_READ).copyTo(cache.localFg_);
             composite_layers(background, cache.localFg_, frame, frame, params, cache);
             cache.localFg_.copyTo(foreground.getMat(cv::ACCESS_READ));

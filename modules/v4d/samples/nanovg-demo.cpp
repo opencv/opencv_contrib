@@ -120,12 +120,22 @@ class NanoVGDemoPlan : public Plan {
 public:
 	using Plan::Plan;
 
+	NanoVGDemoPlan(const cv::Rect& vp) : Plan(vp) {
+		Global::registerShared(cnt_);
+	}
+
+	NanoVGDemoPlan(const cv::Size& sz) : NanoVGDemoPlan(cv::Rect(0, 0, sz.width, sz.height)) {
+	}
+
 	void infer(cv::Ptr<V4D> window) override {
-		window->single([](long& cnt, double& hue){
+		window->plain([](long& cnt, double& hue){
+			long c;
+			Global::lock(cnt);
 			//we use frame count to calculate the current hue
-			double t = ++cnt / 60.0;
+			double t = ++c / 60.0;
 			//nanovg hue fading depending on t
 			hue = (sinf(t * 0.12) + 1.0) * 127.5;
+			Global::unlock(cnt);
 		},  cnt_, hue_);
 
 		window->capture();
@@ -135,7 +145,7 @@ public:
 			cvtColor(framebuffer(viewport), rgb, cv::COLOR_BGRA2RGB);
 		}, viewport(), rgb_);
 
-		window->parallel([](cv::UMat& rgb, cv::UMat& hsv, std::vector<cv::UMat>& hsvChannels, double& hue){
+		window->plain([](cv::UMat& rgb, cv::UMat& hsv, std::vector<cv::UMat>& hsvChannels, double& hue){
 			//Color-conversion from RGB to HSV
 			cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
 

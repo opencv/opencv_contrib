@@ -18,10 +18,10 @@ class PedestrianDemoPlan : public Plan {
 public:
 	using Plan::Plan;
 private:
-	unsigned long diag_;
+	unsigned long diag_ = 0;
 	cv::Size downSize_;
 	cv::Size_<float> scale_;
-	int blurKernelSize_;
+	int blurKernelSize_ = 0;
 
 	struct Cache {
 		cv::UMat blur_;
@@ -133,6 +133,13 @@ private:
         cv::add(background, cache.blur_, dst);
     }
 public:
+    PedestrianDemoPlan(const cv::Rect& viewport) : Plan(viewport) {
+    	Global::registerShared(tracked_);
+    }
+
+    PedestrianDemoPlan(const cv::Size& sz) : PedestrianDemoPlan(cv::Rect(0,0,sz.width, sz.height)) {
+    }
+
     void setup(cv::Ptr<V4D> window) override {
     	int w = size().width;
     	int h = size().height;
@@ -141,7 +148,7 @@ public:
     	scale_ = { float(w) / downSize_.width, float(h) / downSize_.height };
     	blurKernelSize_ = std::max(int(diag_ / 200 % 2 == 0 ? diag_ / 200 + 1 : diag_ / 200), 1);
 
-    	window->parallel([](Detection& detection){
+    	window->plain([](Detection& detection){
     		detection.params_.desc_pca = cv::TrackerKCF::GRAY;
     		detection.params_.compress_feature = false;
     		detection.params_.compressed_size = 1;
@@ -161,7 +168,7 @@ public:
 				//downsample video frame for hog_ detection
 			}, viewport(), videoFrame_);
 
-			window->parallel([](const cv::Size downSize, const cv::UMat& videoFrame, cv::UMat& videoFrameDown, cv::UMat& videoFrameDownGrey, cv::UMat& background){
+			window->plain([](const cv::Size downSize, const cv::UMat& videoFrame, cv::UMat& videoFrameDown, cv::UMat& videoFrameDownGrey, cv::UMat& background){
 				cv::resize(videoFrame, videoFrameDown, downSize);
 				cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
 				cv::cvtColor(videoFrame, background, cv::COLOR_RGB2BGRA);
@@ -172,7 +179,7 @@ public:
 		//Try to track the pedestrian (if we currently are tracking one), else re-detect using HOG descriptor
 		window->branch(doRedect_, detection_);
 		{
-			window->single([](cv::UMat& videoFrameDownGrey, Detection& detection, cv::Rect& tracked, Cache& cache){
+			window->plain([](cv::UMat& videoFrameDownGrey, Detection& detection, cv::Rect& tracked, Cache& cache){
 				detection.redetect_ = false;
 
 				//Detect pedestrians
@@ -190,6 +197,7 @@ public:
 					vector<bool> keep = non_maximal_suppression(&detection.boxes_, &detection.probs_, 0.1);
 					for (size_t i = 0; i < keep.size(); ++i) {
 						if (keep[i]) {
+							Global::Scope scope(tracked);
 							//only track the first pedestrian found
 							tracked = detection.locations_[i];
 							break;
@@ -197,6 +205,7 @@ public:
 					}
 
 					if(!detection.trackerInitialized_) {
+						Global::Scope scope(tracked);
 						//initialize the tracker once
 						detection.tracker_->init(videoFrameDownGrey, tracked);
 						detection.trackerInitialized_ = true;
@@ -208,7 +217,8 @@ public:
 
 		window->branch(dontRedect_, detection_);
 		{
-			window->parallel([](cv::UMat& videoFrameDownGrey, Detection& detection, const uint64_t& frameCnt, cv::Rect& tracked, Cache& cache){
+			window->plain([](cv::UMat& videoFrameDownGrey, Detection& detection, const uint64_t& frameCnt, cv::Rect& tracked, Cache& cache){
+				Global::Scope scope(tracked);
 				cv::Rect oldTracked = tracked;
 				if((cache.fps_ == 0 || frameCnt % cache.fps_ == 0) || !detection.tracker_->update(videoFrameDownGrey, tracked)) {
 					cache.fps_ = uint64_t(std::ceil(Global::fps()));
@@ -228,15 +238,22 @@ public:
 			//Draw an ellipse around the tracked pedestrian
 			window->nvg([](const cv::Size& sz, const cv::Size_<float> scale, cv::Rect& tracked) {
 				using namespace cv::v4d::nvg;
+				float width;
+				float height;
+				float cx;
+				float cy;
+				{
+					Global::Scope scope(tracked);
+					width = tracked.width * scale.width;
+					height = tracked.height * scale.height;
+					cx = (scale.width * tracked.x + (width / 2.0));
+					cy = (scale.height * tracked.y + ((height) / 2.0));
+				}
+
 				clear();
 				beginPath();
 				strokeWidth(std::fmax(5, sz.width / 960.0));
 				strokeColor(cv::v4d::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
-				float width = tracked.width * scale.width;
-				float height = tracked.height * scale.height;
-				float cx = (scale.width * tracked.x + (width / 2.0));
-				float cy = (scale.height * tracked.y + ((height) / 2.0));
-
 				ellipse(cx, cy, (width), (height));
 				stroke();
 			}, size(), scale_,	tracked_);

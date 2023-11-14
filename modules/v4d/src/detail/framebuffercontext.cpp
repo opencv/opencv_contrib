@@ -91,7 +91,9 @@ void FrameBufferContext::loadShader(const size_t& index) {
     }
 )";
 
-    shader_program_hdls_[index] = cv::v4d::initShader(vert.c_str(), frag.c_str(), "FragColor");
+    unsigned int handles[3];
+    cv::v4d::initShader(handles, vert.c_str(), frag.c_str(), "fragColor");
+    shader_program_hdls_[index] = handles[0];
 }
 
 void FrameBufferContext::loadBuffers(const size_t& index) {
@@ -383,7 +385,7 @@ void FrameBufferContext::setup() {
 void FrameBufferContext::teardown() {
     using namespace cv::ocl;
     this->makeCurrent();
-
+#ifdef HAVE_OPENCL
     if(clImage_ != nullptr && !getCLExecContext().empty()) {
         CLExecScope_t clExecScope(getCLExecContext());
 
@@ -403,6 +405,7 @@ void FrameBufferContext::teardown() {
             CV_Error_(cv::Error::OpenCLApiCallError, ("OpenCL: clReleaseMemObject failed: %d", status));
         clImage_ = nullptr;
     }
+#endif
     glBindTexture(GL_TEXTURE_2D, 0);
     glGetError();
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -417,6 +420,7 @@ void FrameBufferContext::teardown() {
     this->makeNoneCurrent();
 }
 
+#ifdef HAVE_OPENCL
 void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture) {
     CV_Assert(clImage_ != nullptr);
 
@@ -475,7 +479,7 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
     if (status != CL_SUCCESS)
         throw std::runtime_error("OpenCL: clEnqueueCopyImageToBuffer failed: " + std::to_string(status));
 }
-
+#endif
 const cv::Size& FrameBufferContext::size() const {
     return framebufferSize_;
 }
@@ -603,6 +607,7 @@ void FrameBufferContext::upload(const cv::UMat& m) {
 }
 
 void FrameBufferContext::acquireFromGL(cv::UMat& m) {
+#ifdef HAVE_OPENCL
     if (clglSharing_) {
         try {
             GL_CHECK(fromGLTexture2D(getTexture2D(), m));
@@ -610,7 +615,9 @@ void FrameBufferContext::acquireFromGL(cv::UMat& m) {
             clglSharing_ = false;
             download(m);
         }
-    } else {
+    } else
+#endif
+    {
         download(m);
     }
     //FIXME
@@ -620,7 +627,7 @@ void FrameBufferContext::acquireFromGL(cv::UMat& m) {
 void FrameBufferContext::releaseToGL(cv::UMat& m) {
     //FIXME
     cv::flip(m, m, 0);
-
+#ifdef HAVE_OPENCL
     if (clglSharing_) {
         try {
             GL_CHECK(toGLTexture2D(m, getTexture2D()));
@@ -628,7 +635,9 @@ void FrameBufferContext::releaseToGL(cv::UMat& m) {
             clglSharing_ = false;
             upload(m);
         }
-    } else {
+    } else
+#endif
+    {
         upload(m);
     }
 }

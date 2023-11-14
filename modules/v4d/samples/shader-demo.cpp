@@ -189,8 +189,9 @@ private:
         {
             mandelbrot();
         })";
-
-        return cv::v4d::initShader(vert.c_str(), frag.c_str(), "fragColor");
+        unsigned int handles[3];
+        cv::v4d::initShader(handles, vert.c_str(), frag.c_str(), "fragColor");
+        return handles[0];
     }
 
     //Initialize shaders, objects, buffers and uniforms
@@ -258,6 +259,13 @@ private:
         GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
     }
 public:
+    ShaderDemoPlan(const cv::Rect& viewport) : Plan(viewport) {
+		Global::registerShared(params_);
+	}
+
+	ShaderDemoPlan(const cv::Size& sz) : ShaderDemoPlan(cv::Rect(0,0,sz.width, sz.height)) {
+	}
+
     void gui(cv::Ptr<V4D> window) override {
         window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params) {
             CV_UNUSED(win);
@@ -301,7 +309,8 @@ public:
 
         for(size_t i = 0; i < NUM_CONTEXTS_; ++i) {
             window->gl(i,[](const int32_t& ctxID, const cv::Size& sz, const cv::Rect& viewport, Params& params, Handles& handles) {
-                render_scene(sz, viewport, params, handles);
+            	Params p = Global::safe_copy(params);
+                render_scene(sz, viewport, p, handles);
             }, size(), viewports_[i], params_, handles_[i]);
         }
 

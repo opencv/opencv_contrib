@@ -4,6 +4,7 @@
 namespace cv {
 namespace v4d {
 	void Resequence::finish() {
+		std::unique_lock<std::mutex> lock(putMtx_);
 		finish_ = true;
 		notify();
 	}
@@ -13,15 +14,19 @@ namespace v4d {
 	}
 
 	void Resequence::waitFor(const uint64_t& seq) {
-		while(!finish_) {
-			if(seq == nextSeq_) {
+		while(true) {
+			{
 				std::unique_lock<std::mutex> lock(putMtx_);
-				++nextSeq_;
-				break;
-			} else {
-				std::unique_lock<std::mutex> lock(waitMtx_);
-				cv_.wait(lock, [this, seq](){return seq == nextSeq_;});
+				if(finish_)
+					break;
+
+				if(seq == nextSeq_) {
+					++nextSeq_;
+					break;
+				}
 			}
+			std::unique_lock<std::mutex> lock(waitMtx_);
+			cv_.wait(lock);
 		}
     }
 } /* namespace v4d */

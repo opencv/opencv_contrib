@@ -4,7 +4,7 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include <functional>
-#include "../../include/opencv2/v4d/util.hpp"
+#include "../../../../include/opencv2/v4d/util.hpp"
 
 #ifndef MODULES_V4D_INCLUDE_OPENCV2_V4D_DETAIL_V4DCONTEXT_HPP_
 #define MODULES_V4D_INCLUDE_OPENCV2_V4D_DETAIL_V4DCONTEXT_HPP_
@@ -19,27 +19,19 @@ public:
     virtual void execute(std::function<void()> fn) = 0;
 };
 
-class SingleContext : public V4DContext {
-public:
-	virtual ~SingleContext() {}
-    virtual void execute(std::function<void()> fn) override {
-    	fn();
-    }
-};
-
 class OnceContext : public V4DContext {
-	std::once_flag flag;
+	inline static std::once_flag flag_;
 public:
 	virtual ~OnceContext() {}
     virtual void execute(std::function<void()> fn) override {
-    	std::call_once(flag, fn);
+    	std::call_once(flag_, fn);
     }
 };
 
 
-class ParallelContext : public V4DContext {
+class PlainContext : public V4DContext {
 public:
-	virtual ~ParallelContext() {}
+	virtual ~PlainContext() {}
     virtual void execute(std::function<void()> fn) override {
     	fn();
     }

@@ -203,6 +203,7 @@ private:
 	    cvtColor(cache.hls_, dstBGR, cv::COLOR_HLS2BGR);
 	}
 public:
+
 	void gui(cv::Ptr<V4D> window) override {
 		window->imgui([](cv::Ptr<V4D> win, ImGuiContext* ctx, Params& params){
 			using namespace ImGui;
@@ -241,7 +242,7 @@ public:
 		params_.blurSkinKernelSize_ = std::max(int(diag / 2000 % 2 == 0 ? diag / 2000 + 1 : diag / 2000), 1);
 
 		window->setStretching(params_.stretch_);
-		window->parallel([](cv::Ptr<cv::face::Facemark>& facemark){
+		window->plain([](cv::Ptr<cv::face::Facemark>& facemark){
 			facemark->loadModel("modules/v4d/assets/models/lbfmodel.yaml");
 		}, facemark_);
 	}
@@ -259,7 +260,7 @@ public:
 					cv::resize(frames.orig_, frames.down_, downSize);
 				}, viewport(), downSize_, frames_);
 
-				window->parallel([](const cv::Size sz, cv::Ptr<cv::FaceDetectorYN>& detector, cv::Ptr<cv::face::Facemark>& facemark, const cv::UMat& down, Face& face) {
+				window->plain([](const cv::Size sz, cv::Ptr<cv::FaceDetectorYN>& detector, cv::Ptr<cv::face::Facemark>& facemark, const cv::UMat& down, Face& face) {
 					face.shapes_.clear();
 					cv::Mat faces;
 					//Detect faces in the down-scaled image
@@ -299,7 +300,7 @@ public:
 					cvtColor(framebuffer(viewport), eyesAndLipsMaskGrey, cv::COLOR_BGRA2GRAY);
 				}, viewport(), frames_.eyesAndLipsMaskGrey_);
 
-				window->parallel([](Frames& frames, const Params& params, Cache& cache) {
+				window->plain([](Frames& frames, const Params& params, Cache& cache) {
 					//Create the skin mask
 					cv::subtract(frames.faceOval_, frames.eyesAndLipsMaskGrey_, frames.faceSkinMaskGrey_);
 					//Create the background mask
@@ -316,7 +317,7 @@ public:
 					adjust_saturation(cache.blur_, frames.skin_, params.skinSaturation_, cache);
 				}, frames_, params_, cache_);
 
-				window->parallel([](cv::Ptr<cv::detail::MultiBandBlender>& bl, Frames& frames, cv::UMat& frameOut, Cache& cache) {
+				window->plain([](cv::Ptr<cv::detail::MultiBandBlender>& bl, Frames& frames, cv::UMat& frameOut, Cache& cache) {
 					CV_Assert(!frames.skin_.empty());
 					CV_Assert(!frames.eyesAndLips_.empty());
 					//piece it all together
@@ -329,7 +330,7 @@ public:
 					cache.frameOutFloat_.convertTo(frameOut, CV_8U, 1.0);
 				}, blender_, frames_, frameOut_, cache_);
 
-				window->parallel([](const cv::Size& sz, const cv::UMat& orig, cv::UMat& frameOut, cv::UMat lhalf, cv::UMat rhalf, const Params& params) {
+				window->plain([](const cv::Size& sz, const cv::UMat& orig, cv::UMat& frameOut, cv::UMat lhalf, cv::UMat rhalf, const Params& params) {
 					if (params.sideBySide_) {
 						//create side-by-side view with a result
 						cv::resize(orig, lhalf, cv::Size(0, 0), 0.5, 0.5);
@@ -345,7 +346,7 @@ public:
 
 			window->branch(isFalse_, face_.found_);
 			{
-				window->parallel([](const cv::Size& sz, const cv::UMat& orig, cv::UMat& frameOut, cv::UMat lhalf, const Params& params) {
+				window->plain([](const cv::Size& sz, const cv::UMat& orig, cv::UMat& frameOut, cv::UMat lhalf, const Params& params) {
 					if (params.sideBySide_) {
 						//create side-by-side view without a result (using the input image for both sides)
 						frameOut = cv::Scalar::all(0);

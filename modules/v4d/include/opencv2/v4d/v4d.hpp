@@ -22,6 +22,7 @@
 #include "detail/resequence.hpp"
 
 #include <type_traits>
+#include <shared_mutex>
 #include <iostream>
 #include <future>
 #include <set>
@@ -68,6 +69,7 @@ class Plan {
 	const cv::Size sz_;
 	const cv::Rect vp_;
 public:
+
 	//predefined branch predicates
 	constexpr static auto always_ = []() { return true; };
 	constexpr static auto isTrue_ = [](const bool& b) { return b; };
@@ -140,7 +142,19 @@ const string make_id(const string& name, Tfn&& fn, Args&& ... args) {
 	((ss << ',' << int_to_hex((long)&args)), ...);
 	return ss.str();
 }
+
+template <typename Tfn>
+void check_function(Tfn fn) {
+	static_assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value, "All passed functors must be stateless lambdas");
 }
+
+template <typename ... Args>
+void check_args(Args&& ... args) {
+	static_assert(std::conjunction<std::is_lvalue_reference<Args>...>::value, "All arguments must be l-value references");
+}
+
+}
+
 
 using namespace cv::v4d::detail;
 
@@ -149,6 +163,7 @@ class CV_EXPORTS V4D {
     friend class HTML5Capture;
     int32_t workerIdx_ = -1;
     cv::Ptr<V4D> self_;
+    cv::Ptr<Plan> plan_;
     const cv::Size initialSize_;
     AllocateFlags flags_;
     bool debug_;
@@ -161,19 +176,15 @@ class CV_EXPORTS V4D {
     cv::Ptr<SinkContext> sinkContext_ = nullptr;
     cv::Ptr<NanoVGContext> nvgContext_ = nullptr;
     cv::Ptr<ImGuiContextImpl> imguiContext_ = nullptr;
-    cv::Ptr<SingleContext> singleContext_ = nullptr;
     cv::Ptr<OnceContext> onceContext_ = nullptr;
-    cv::Ptr<ParallelContext> parallelContext_ = nullptr;
+    cv::Ptr<PlainContext> plainContext_ = nullptr;
     std::mutex glCtxMtx_;
     std::map<int32_t,cv::Ptr<GLContext>> glContexts_;
     bool closed_ = false;
     cv::Ptr<Source> source_;
     cv::Ptr<Sink> sink_;
-    cv::UMat currentReaderFrame_;
-    cv::UMat nextReaderFrame_;
-    cv::UMat currentWriterFrame_;
-    std::future<bool> futureReader_;
-    std::future<void> futureWriter_;
+    cv::UMat captureFrame_;
+    cv::UMat writerFrame_;
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
     std::function<void(int button, int action, int modifiers)> mouseEventCb_;
     cv::Point2f mousePos_;
@@ -236,7 +247,7 @@ public:
 
     }
 
-    void makePlan() {
+    void makeGraph() {
 //    	cout << std::this_thread::get_id() << " ### MAKE PLAN ### " << endl;
     	for(const auto& t : accesses_) {
     		const string& name = std::get<0>(t);
@@ -264,23 +275,32 @@ public:
     	}
     }
 
-    void runPlan() {
+    void runGraph() {
 		bool isEnabled = true;
 
 		for (auto& n : nodes_) {
-			if (n->tx_->isCondition()) {
+			if (n->tx_->isPredicate()) {
 				isEnabled = n->tx_->enabled();
 			} else if (isEnabled) {
-				n->tx_->getContext()->execute([n]() {
-				    TimeTracker::getInstance()->execute(n->name_, [n](){
-				    	n->tx_->perform();
-				    });
-				});
+				if(n->tx_->lock()) {
+					std::lock_guard<std::mutex> guard(Global::mutex());
+					n->tx_->getContext()->execute([n]() {
+						TimeTracker::getInstance()->execute(n->name_, [n](){
+							n->tx_->perform();
+						});
+					});
+				} else {
+					n->tx_->getContext()->execute([n]() {
+						TimeTracker::getInstance()->execute(n->name_, [n](){
+							n->tx_->perform();
+						});
+					});
+				}
 			}
 		}
 	}
 
-	void clearPlan() {
+	void clearGraph() {
 		nodes_.clear();
 		accesses_.clear();
 	}
@@ -299,72 +319,64 @@ public:
     }
 
     template<typename Tfn, typename ...Args>
-    void add_transaction(cv::Ptr<V4DContext> ctx, const string& invocation, Tfn fn, Args&& ...args) {
+    void add_transaction(bool lock, cv::Ptr<V4DContext> ctx, const string& invocation, Tfn fn, Args&& ...args) {
     	auto it = transactions_.find(invocation);
     	if(it == transactions_.end()) {
-    		auto tx = make_transaction(fn, std::forward<Args>(args)...);
+    		auto tx = make_transaction(lock, fn, std::forward<Args>(args)...);
     		tx->setContext(ctx);
     		transactions_.insert({invocation, tx});
     	}
     }
 
-    template <typename Tfn>
-    void checkFunction(Tfn fn) {
-        static_assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value, "All passed functors must be stateless lambdas");
-    }
-
-    template <typename ... Args>
-    void checkArgs(Args&& ... args) {
-        static_assert(std::conjunction<std::is_lvalue_reference<Args>...>::value, "All arguments must be l-value references");
-    }
-
     template <typename Tfn, typename ... Args>
     typename std::enable_if<std::is_invocable_v<Tfn, Args...>, void>::type
     gl(Tfn fn, Args&& ... args) {
-        checkFunction(fn);
+        check_function(fn);
+        check_args(args...);
         const string id = make_id("gl-1", fn, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
 		std::function functor(fn);
-		add_transaction(glCtx(-1), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
+		add_transaction(false, glCtx(-1), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
     }
 
     template <typename Tfn, typename ... Args>
     void gl(int32_t idx, Tfn fn, Args&& ... args) {
-        checkFunction(fn);
-
+        check_function(fn);
+        check_args(args...);
         const string id = make_id("gl" + std::to_string(idx), fn, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
 		std::function<void((const int32_t&,Args...))> functor(fn);
-		add_transaction<decltype(functor),const int32_t&>(glCtx(idx),id, std::forward<decltype(functor)>(functor), glCtx(idx)->getIndex(), std::forward<Args>(args)...);
+		add_transaction<decltype(functor),const int32_t&>(false, glCtx(idx),id, std::forward<decltype(functor)>(functor), glCtx(idx)->getIndex(), std::forward<Args>(args)...);
     }
 
     template <typename Tfn>
     void branch(Tfn fn) {
-        checkFunction(fn);
+        check_function(fn);
         const string id = make_id("branch", fn);
-
 		std::function functor = fn;
 		emit_access<std::true_type, decltype(fn)>(id, true, &fn);
-		add_transaction(singleCtx(), id, functor);
+		add_transaction(true, plainCtx(), id, functor);
     }
 
     template <typename Tfn, typename ... Args>
     void branch(Tfn fn, Args&& ... args) {
-        checkFunction(fn);
+        check_function(fn);
+        check_args(args...);
         const string id = make_id("branch", fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function functor = fn;
-		add_transaction(singleCtx(), id, functor, std::forward<Args>(args)...);
+		add_transaction(true, plainCtx(), id, functor, std::forward<Args>(args)...);
     }
 
     template <typename Tfn, typename ... Args>
     void branch(int workerIdx, Tfn fn, Args&& ... args) {
-        checkFunction(fn);
+        check_function(fn);
+        check_args(args...);
         const string id = make_id("branch-pin" + std::to_string(workerIdx), fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -372,46 +384,49 @@ public:
 		std::function<bool(Args...)> wrap = [this, workerIdx, functor](Args&& ... args){
 			return this->workerIndex() == workerIdx && functor(args...);
 		};
-		add_transaction(singleCtx(), id, wrap, std::forward<Args>(args)...);
+		add_transaction(true, plainCtx(), id, wrap, std::forward<Args>(args)...);
     }
 
     template <typename Tfn>
     void endbranch(Tfn fn) {
-        checkFunction(fn);
+        check_function(fn);
         const string id = make_id("endbranch", fn);
 
 		std::function functor = fn;
 		emit_access<std::true_type, decltype(fn)>(id, true, &fn);
-		add_transaction(singleCtx(), id, functor);
+		add_transaction(true, plainCtx(), id, functor);
     }
 
     template <typename Tfn, typename ... Args>
     void endbranch(Tfn fn, Args&& ... args) {
-        checkFunction(fn);
+        check_function(fn);
+        check_args(args...);
         const string id = make_id("endbranch", fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function<bool(Args...)> functor = [this](Args&& ... args){
 			return true;
 		};
-		add_transaction(singleCtx(), id, functor, std::forward<Args>(args)...);
+		add_transaction(true, plainCtx(), id, functor, std::forward<Args>(args)...);
     }
 
     template <typename Tfn, typename ... Args>
     void endbranch(int workerIdx, Tfn fn, Args&& ... args) {
-        checkFunction(fn);
+        check_function(fn);
+        check_args(args...);
         const string id = make_id("endbranch-pin" + std::to_string(workerIdx), fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function<bool(Args...)> functor = [this, workerIdx](Args&& ... args){
 			return this->workerIndex() == workerIdx;
 		};
-		add_transaction(singleCtx(), id, functor, std::forward<Args>(args)...);
+		add_transaction(true, plainCtx(), id, functor, std::forward<Args>(args)...);
     }
 
     template <typename Tfn, typename ... Args>
     void fb(Tfn fn, Args&& ... args) {
-        checkFunction(fn);
+        check_function(fn);
+        check_args(args...);
         const string id = make_id("fb", fn, args...);
 		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 		using Tfbbase = typename std::remove_cv<Tfb>::type;
@@ -421,35 +436,30 @@ public:
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Tfb, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		emit_access<static_not<typename std::is_const<Tfbbase>::type>, cv::UMat, Tfb, Args...>(id, false, &fbCtx()->fb());
 		std::function<void((Tfb,Args...))> functor(fn);
-		add_transaction<decltype(functor),Tfb>(fbCtx(),id, std::forward<decltype(functor)>(functor), fbCtx()->fb(), std::forward<Args>(args)...);
-    }
-
-    void capture(cv::UMat& frame) {
-    	if(disableIO_)
-    		return;
-    	capture([](const cv::UMat& inputFrame, cv::UMat& f){
-    		if(!inputFrame.empty())
-    			inputFrame.copyTo(f);
-    	}, frame);
-
-        fb([](cv::UMat& frameBuffer, const cv::UMat& f) {
-        	if(!f.empty())
-        		f.copyTo(frameBuffer);
-        }, frame);
+		add_transaction<decltype(functor),Tfb>(false, fbCtx(),id, std::forward<decltype(functor)>(functor), fbCtx()->fb(), std::forward<Args>(args)...);
     }
 
     void capture() {
     	if(disableIO_)
     		return;
-    	static thread_local cv::UMat tmp;
-    	capture(tmp);
+    	capture([](const cv::UMat& inputFrame, cv::UMat& f){
+    		if(!inputFrame.empty())
+    			inputFrame.copyTo(f);
+    	}, captureFrame_);
+
+        fb([](cv::UMat& frameBuffer, const cv::UMat& f) {
+        	if(!f.empty())
+        		f.copyTo(frameBuffer);
+        }, captureFrame_);
     }
 
     template <typename Tfn, typename ... Args>
     void capture(Tfn fn, Args&& ... args) {
+        check_function(fn);
+        check_args(args...);
+
     	if(disableIO_)
     		return;
-        checkFunction(fn);
         const string id = make_id("capture", fn, args...);
 		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 
@@ -457,35 +467,27 @@ public:
 		emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, true, &sourceCtx()->sourceBuffer());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Tfb, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function<void((Tfb,Args...))> functor(fn);
-		add_transaction<decltype(functor),Tfb>(std::dynamic_pointer_cast<V4DContext>(sourceCtx()),id, std::forward<decltype(functor)>(functor), sourceCtx()->sourceBuffer(), std::forward<Args>(args)...);
+		add_transaction<decltype(functor),Tfb>(false, std::dynamic_pointer_cast<V4DContext>(sourceCtx()),id, std::forward<decltype(functor)>(functor), sourceCtx()->sourceBuffer(), std::forward<Args>(args)...);
     }
 
     void write() {
     	if(disableIO_)
     		return;
-    	static thread_local cv::UMat frame(fbSize(), CV_8UC4);
 
         fb([](const cv::UMat& frameBuffer, cv::UMat& f) {
             frameBuffer.copyTo(f);
-        }, frame);
+        }, writerFrame_);
 
     	write([](cv::UMat& outputFrame, const cv::UMat& f){
     		f.copyTo(outputFrame);
-    	}, frame);
-    }
-
-    void write(const cv::UMat& frame) {
-    	if(disableIO_)
-    		return;
-    	write([](cv::UMat& outputFrame, const cv::UMat& f){
-    		f.copyTo(outputFrame);
-    	}, frame);
+    	}, writerFrame_);
     }
 
     template <typename Tfn, typename ... Args>
     void write(Tfn fn, Args&& ... args) {
-        checkFunction(fn);
-        checkArgs(args...);
+        check_function(fn);
+        check_args(args...);
+
     	if(disableIO_)
     		return;
         const string id = make_id("write", fn, args...);
@@ -496,29 +498,19 @@ public:
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Tfb, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, false, &sinkCtx()->sinkBuffer());
 		std::function<void((Tfb,Args...))> functor(fn);
-		add_transaction<decltype(functor),Tfb>(std::dynamic_pointer_cast<V4DContext>(sinkCtx()),id, std::forward<decltype(functor)>(functor), sinkCtx()->sinkBuffer(), std::forward<Args>(args)...);
+		add_transaction<decltype(functor),Tfb>(false, std::dynamic_pointer_cast<V4DContext>(sinkCtx()),id, std::forward<decltype(functor)>(functor), sinkCtx()->sinkBuffer(), std::forward<Args>(args)...);
     }
 
     template <typename Tfn, typename ... Args>
     void nvg(Tfn fn, Args&&... args) {
-        checkFunction(fn);
-        checkArgs(args...);
+        check_function(fn);
+        check_args(args...);
         const string id = make_id("nvg", fn, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
 		std::function functor(fn);
-		add_transaction<decltype(functor)>(nvgCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
-    }
-
-    template <typename Tfn, typename ... Args>
-    void single(Tfn fn, Args&&... args) {
-        checkFunction(fn);
-        checkArgs(args...);
-        const string id = make_id("single", fn, args...);
-		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-		std::function functor(fn);
-		add_transaction<decltype(functor)>(singleCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
+		add_transaction<decltype(functor)>(false, nvgCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
     }
 
     template <typename Tfn, typename ... Args>
@@ -527,25 +519,30 @@ public:
         const string id = make_id("once", fn, args...);
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function functor(fn);
-		add_transaction<decltype(functor)>(onceCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
+		add_transaction<decltype(functor)>(false, onceCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
     }
 
     template <typename Tfn, typename ... Args>
-    void parallel(Tfn fn, Args&&... args) {
-        checkFunction(fn);
-        checkArgs(args...);
-        const string id = make_id("parallel", fn, args...);
+    void plain(Tfn fn, Args&&... args) {
+        check_function(fn);
+        check_args(args...);
+        const string id = make_id("plain", fn, args...);
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function functor(fn);
-		add_transaction<decltype(functor)>(parallelCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
+		add_transaction<decltype(functor)>(false, plainCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
     }
 
     template<typename Tfn, typename ... Args>
     void imgui(Tfn fn, Args&& ... args) {
-        checkFunction(fn);
-        checkArgs(args...);
+    	check_function(fn);
+        check_args(args...);
+
+        if(!hasImguiCtx())
+        	return;
+
         auto s = self();
-		imguiCtx()->build([s, fn, &args...](ImGuiContext* ctx) {
+
+        imguiCtx()->build([s, fn, &args...](ImGuiContext* ctx) {
 			fn(s, ctx, args...);
 		});
     }
@@ -562,6 +559,8 @@ public:
 
 	template<typename Tplan>
 	void run(cv::Ptr<Tplan> plan, int32_t workers = -1) {
+		plan_ = std::static_pointer_cast<Plan>(plan);
+
 		static Resequence reseq;
 		//for now, if automatic determination of the number of workers is requested,
 		//set workers always to 2
@@ -579,17 +578,8 @@ public:
 
 			cerr << "run plan: " << std::this_thread::get_id() << " workers: " << workers << endl;
 
-			if (this->hasSource()) {
-				this->getSource()->setThreadSafe(true);
-			}
-
-			if (this->hasSink()) {
-				this->getSink()->setThreadSafe(true);
-			}
-
-			if(Global::first_run()) {
-				Global::first_run() = false;
-				Global::main_id() = std::this_thread::get_id();
+			if(Global::is_first_run()) {
+				Global::set_main_id(std::this_thread::get_id());
 				cerr << "Starting with " << workers - 1<< " extra workers" << endl;
 				cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
 			}
@@ -604,22 +594,25 @@ public:
 				bool debug = this->debug_;
 				auto src = this->getSource();
 				auto sink = this->getSink();
-				Global::workers_started() = workers;
+				Global::set_workers_started(workers);
+				std::vector<cv::Ptr<Tplan>> plans;
+				//make sure all Plans are constructed before starting the workers
+				for (size_t i = 0; i < workers; ++i) {
+					plans.push_back(new Tplan(plan->size()));
+				}
 				for (size_t i = 0; i < workers; ++i) {
 					threads.push_back(
 						new std::thread(
-							[this, i, src, sink, plan] {
+							[this, i, src, sink, plans] {
 								cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
 								cv::Ptr<cv::v4d::V4D> worker = V4D::make(*this, this->title() + "-worker-" + std::to_string(i));
 								if (src) {
-									src->setThreadSafe(true);
 									worker->setSource(src);
 								}
 								if (sink) {
-									sink->setThreadSafe(true);
 									worker->setSink(sink);
 								}
-								cv::Ptr<Tplan> newPlan = new Tplan(plan->size());
+								cv::Ptr<Tplan> newPlan = plans[i];
 								worker->run(newPlan, 0);
 							}
 						)
@@ -636,9 +629,9 @@ public:
 		} else {
 			try {
 				plan->setup(self());
-				this->makePlan();
-				this->runPlan();
-				this->clearPlan();
+				this->makeGraph();
+				this->runGraph();
+				this->clearGraph();
 				if(!Global::is_main() && Global::workers_started() == Global::next_worker_ready()) {
 					cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_INFO);
 				}
@@ -654,7 +647,7 @@ public:
 			}
 		} else {
 			plan->infer(self());
-			this->makePlan();
+			this->makeGraph();
 		}
 
 		try {
@@ -674,10 +667,10 @@ public:
 					uint64_t seq;
 					{
 						std::unique_lock<std::mutex> lock(seqMtx);
-						seq = Global::run_cnt()++;
+						seq = Global::next_run_cnt();
 					}
 
-					this->runPlan();
+					this->runGraph();
 					reseq.waitFor(seq);
 				} while(keepRunning() && this->display());
 			}
@@ -688,13 +681,13 @@ public:
 		}
 
 		if(!Global::is_main()) {
-			this->clearPlan();
+			this->clearGraph();
 
 			try {
 				plan->teardown(self());
-				this->makePlan();
-				this->runPlan();
-				this->clearPlan();
+				this->makeGraph();
+				this->runGraph();
+				this->clearGraph();
 			} catch(std::exception& ex) {
 				CV_Error_(cv::Error::StsError, ("pipeline tear-down failed: %s", ex.what()));
 			}
@@ -849,9 +842,8 @@ public:
     CV_EXPORTS cv::Ptr<SourceContext> sourceCtx();
     CV_EXPORTS cv::Ptr<SinkContext> sinkCtx();
     CV_EXPORTS cv::Ptr<NanoVGContext> nvgCtx();
-    CV_EXPORTS cv::Ptr<SingleContext> singleCtx();
     CV_EXPORTS cv::Ptr<OnceContext> onceCtx();
-    CV_EXPORTS cv::Ptr<ParallelContext> parallelCtx();
+    CV_EXPORTS cv::Ptr<PlainContext> plainCtx();
     CV_EXPORTS cv::Ptr<ImGuiContextImpl> imguiCtx();
     CV_EXPORTS cv::Ptr<GLContext> glCtx(int32_t idx = 0);
 
@@ -859,7 +851,6 @@ public:
     CV_EXPORTS bool hasSourceCtx();
     CV_EXPORTS bool hasSinkCtx();
     CV_EXPORTS bool hasNvgCtx();
-    CV_EXPORTS bool hasSingleCtx();
     CV_EXPORTS bool hasOnceCtx();
     CV_EXPORTS bool hasParallelCtx();
     CV_EXPORTS bool hasImguiCtx();

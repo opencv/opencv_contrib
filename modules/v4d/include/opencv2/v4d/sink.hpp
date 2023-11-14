@@ -20,7 +20,6 @@ namespace v4d {
  */
 class CV_EXPORTS Sink {
     std::mutex mtx_;
-    bool threadSafe_ = false;
     bool open_ = true;
     uint64_t nextSeq_ = 0;
     std::map<uint64_t, cv::UMat> buffer_;
@@ -49,8 +48,6 @@ public:
      * @return true if the sink is open.
      */
     CV_EXPORTS bool isOpen();
-    CV_EXPORTS bool isThreadSafe();
-    CV_EXPORTS void setThreadSafe(bool ts);
     /*!
      * The sink operator. It accepts a UMat frame to pass to the consumer
      * @param frame The frame to pass to the consumer. (e.g. VideoWriter)

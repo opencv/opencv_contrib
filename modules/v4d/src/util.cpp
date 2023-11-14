@@ -80,17 +80,19 @@ void gl_check_error(const std::filesystem::path& file, unsigned int line, const 
     }
 }
 
-unsigned int initShader(const char* vShader, const char* fShader, const char* outputAttributeName) {
+void initShader(unsigned int handles[3], const char* vShader, const char* fShader, const char* outputAttributeName) {
     struct Shader {
         GLenum type;
         const char* source;
     } shaders[2] = { { GL_VERTEX_SHADER, vShader }, { GL_FRAGMENT_SHADER, fShader } };
 
     GLuint program = glCreateProgram();
+    handles[0] = program;
 
     for (int i = 0; i < 2; ++i) {
         Shader& s = shaders[i];
         GLuint shader = glCreateShader(s.type);
+        handles[i + 1] = shader;
         glShaderSource(shader, 1, (const GLchar**) &s.source, NULL);
         glCompileShader(shader);
 
@@ -133,7 +135,6 @@ unsigned int initShader(const char* vShader, const char* fShader, const char* ou
         exit (EXIT_FAILURE);
     }
 
-    return program;
 }
 
 std::string getGlVendor()  {
@@ -151,6 +152,7 @@ std::string getGlInfo() {
 
 std::string getClInfo() {
     std::stringstream ss;
+#ifdef HAVE_OPENCL
     std::vector<cv::ocl::PlatformInfo> plt_info;
     cv::ocl::getPlatfomsInfo(plt_info);
     const cv::ocl::Device& defaultDevice = cv::ocl::Device::getDefault();
@@ -173,11 +175,13 @@ std::string getClInfo() {
                             "true" : "false") << endl;
         }
     }
+#endif
     return ss.str();
 }
 
 bool isIntelVaSupported() {
-    try {
+#ifdef HAVE_OPENCL
+	try {
         std::vector<cv::ocl::PlatformInfo> plt_info;
         cv::ocl::getPlatfomsInfo(plt_info);
         cv::ocl::Device current;
@@ -192,12 +196,13 @@ bool isIntelVaSupported() {
     } catch (...) {
         cerr << "Intel VAAPI query failed" << endl;
     }
-
+#endif
     return false;
 }
 
 bool isClGlSharingSupported() {
-    try {
+#ifdef HAVE_OPENCL
+	try {
         if(!cv::ocl::useOpenCL())
             return false;
         std::vector<cv::ocl::PlatformInfo> plt_info;
@@ -214,10 +219,10 @@ bool isClGlSharingSupported() {
     } catch (...) {
         cerr << "CL-GL sharing query failed with unknown error." << endl;
     }
-
+#endif
     return false;
 }
-
+static std::mutex finish_mtx;
 /*!
  * Internal variable that signals that finishing all operation is requested
  */
@@ -232,6 +237,7 @@ static bool signal_handlers_installed = false;
  * @param ignore We ignore the signal number
  */
 static void request_finish(int ignore) {
+	std::lock_guard guard(finish_mtx);
     CV_UNUSED(ignore);
     finish_requested = true;
 }
@@ -245,6 +251,7 @@ static void install_signal_handlers() {
 }
 
 bool keepRunning() {
+	std::lock_guard guard(finish_mtx);
     if (!signal_handlers_installed) {
         install_signal_handlers();
     }

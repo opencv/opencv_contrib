@@ -47,57 +47,117 @@ public:
 };
 
 class CV_EXPORTS Global {
-	inline static std::mutex mtx_;
+	inline static std::mutex global_mtx_;
+
+	inline static std::mutex frame_cnt_mtx_;
 	inline static uint64_t frame_cnt_ = 0;
-	inline static uint64_t run_cnt_ = 0;
+
+	inline static std::mutex start_time_mtx_;
 	inline static uint64_t start_time_ = get_epoch_nanos();
-	inline static bool first_run_ = true;
+
+	inline static std::mutex fps_mtx_;
 	inline static double fps_ = 0;
+
+	inline static std::mutex thread_id_mtx_;
 	inline static const std::thread::id default_thread_id_;
 	inline static std::thread::id main_thread_id_;
 	inline static thread_local bool is_main_;
+
+	inline static uint64_t run_cnt_ = 0;
+	inline static bool first_run_ = true;
+
 	inline static size_t workers_ready_ = 0;
     inline static size_t workers_started_ = 0;
     inline static size_t next_worker_idx_ = 0;
+	inline static std::mutex sharedMtx_;
+	inline static std::map<size_t, std::mutex*> shared_;
+	typedef typename std::map<size_t, std::mutex*>::iterator Iterator;
 public:
+	template <typename T>
+	struct Scope {
+		const T& t_;
+		Scope(const T& t) : t_(t) {
+			lock(t_);
+		}
+
+		~Scope() {
+			unlock(t_);
+		}
+
+	};
+
 	CV_EXPORTS static std::mutex& mutex() {
-    	return mtx_;
+    	return global_mtx_;
     }
 
-	CV_EXPORTS static uint64_t& frame_cnt() {
+	CV_EXPORTS static uint64_t next_frame_cnt() {
+	    std::unique_lock<std::mutex> lock(frame_cnt_mtx_);
+    	return frame_cnt_++;
+    }
+
+	CV_EXPORTS static uint64_t frame_cnt() {
+	    std::unique_lock<std::mutex> lock(frame_cnt_mtx_);
     	return frame_cnt_;
     }
 
-	CV_EXPORTS static uint64_t& run_cnt() {
-    	return run_cnt_;
+	CV_EXPORTS static void mul_frame_cnt(const double& factor) {
+	    std::unique_lock<std::mutex> lock(frame_cnt_mtx_);
+    	frame_cnt_ *= factor;
     }
 
-	CV_EXPORTS static uint64_t& start_time() {
+	CV_EXPORTS static void add_to_start_time(const size_t& st) {
+		std::unique_lock<std::mutex> lock(start_time_mtx_);
+		start_time_ += st;
+    }
+
+	CV_EXPORTS static uint64_t start_time() {
+		std::unique_lock<std::mutex> lock(start_time_mtx_);
         return start_time_;
     }
 
-	CV_EXPORTS static bool& first_run() {
-    	return first_run_;
-    }
-
-	CV_EXPORTS static double& fps() {
+	CV_EXPORTS static double fps() {
+		std::unique_lock<std::mutex> lock(fps_mtx_);
     	return fps_;
     }
 
-	CV_EXPORTS static const std::thread::id& default_id() {
-    	return default_thread_id_;
+	CV_EXPORTS static void set_fps(const double& f) {
+		std::unique_lock<std::mutex> lock(fps_mtx_);
+    	fps_ = f;
     }
 
-	CV_EXPORTS static std::thread::id& main_id() {
-    	return main_thread_id_;
+	CV_EXPORTS static void set_main_id(const std::thread::id& id) {
+		std::unique_lock<std::mutex> lock(thread_id_mtx_);
+		main_thread_id_ = id;
     }
 
-	CV_EXPORTS static const bool& is_main() {
-		is_main_ = (main_thread_id_ == default_thread_id_ || main_thread_id_ == std::this_thread::get_id());
-		return is_main_;
+	CV_EXPORTS static const bool is_main() {
+		std::unique_lock<std::mutex> lock(start_time_mtx_);
+		return (main_thread_id_ == default_thread_id_ || main_thread_id_ == std::this_thread::get_id());
 	}
 
-	CV_EXPORTS static size_t& workers_started() {
+	CV_EXPORTS static bool is_first_run() {
+		static std::mutex mtx;
+		std::unique_lock<std::mutex> lock(mtx);
+    	bool f = first_run_;
+    	first_run_ = false;
+		return f;
+    }
+
+	CV_EXPORTS static uint64_t next_run_cnt() {
+	    static std::mutex mtx;
+	    std::unique_lock<std::mutex> lock(mtx);
+    	return run_cnt_++;
+    }
+
+	CV_EXPORTS static void set_workers_started(const size_t& ws) {
+	    static std::mutex mtx;
+	    std::unique_lock<std::mutex> lock(mtx);
+		workers_started_ = ws;
+	}
+
+	CV_EXPORTS static size_t workers_started() {
+	    static std::mutex mtx;
+	    std::unique_lock<std::mutex> lock(mtx);
 		return workers_started_;
 	}
 
@@ -111,6 +171,93 @@ public:
 	    static std::mutex mtx;
 	    std::unique_lock<std::mutex> lock(mtx);
 		return next_worker_idx_++;
+	}
+
+	template<typename T>
+	static bool isShared(const T& shared) {
+		std::lock_guard<std::mutex> guard(sharedMtx_);
+		std::cerr << "shared:" << reinterpret_cast<size_t>(&shared) << std::endl;
+		return shared_.find(reinterpret_cast<size_t>(&shared)) != shared_.end();
+	}
+
+	template<typename T>
+	static void registerShared(const T& shared) {
+		std::lock_guard<std::mutex> guard(sharedMtx_);
+		std::cerr << "register:" << reinterpret_cast<size_t>(&shared) << std::endl;
+		shared_.insert(std::make_pair(reinterpret_cast<size_t>(&shared), new std::mutex()));
+	}
+
+	template<typename T>
+	static void lock(const T& shared) {
+		Iterator it, end;
+		std::mutex* mtx = nullptr;
+		{
+			std::lock_guard<std::mutex> guard(sharedMtx_);
+			it = shared_.find(reinterpret_cast<size_t>(&shared));
+			end = shared_.end();
+			if(it != end) {
+				mtx = (*it).second;
+			}
+		}
+
+		if(mtx != nullptr) {
+			mtx->lock();
+			return;
+		}
+		CV_Assert(!"You are trying to lock a non-shared variable");
+	}
+
+	template<typename T>
+	static void unlock(const T& shared) {
+		Iterator it, end;
+		std::mutex* mtx = nullptr;
+		{
+			std::lock_guard<std::mutex> guard(sharedMtx_);
+			it = shared_.find(reinterpret_cast<size_t>(&shared));
+			end = shared_.end();
+			if(it != end) {
+				mtx = (*it).second;
+			}
+		}
+
+		if(mtx != nullptr) {
+			mtx->unlock();
+			return;
+		}
+
+		CV_Assert(!"You are trying to unlock a non-shared variable");
+	}
+
+	template<typename T>
+	static T safe_copy(const T& shared) {
+		std::lock_guard<std::mutex> guard(sharedMtx_);
+		auto it = shared_.find(reinterpret_cast<size_t>(&shared));
+
+		if(it != shared_.end()) {
+			std::lock_guard<std::mutex> guard(*(*it).second);
+			return shared;
+		} else {
+			CV_Assert(!"You are unnecessarily safe copying a variable");
+			//unreachable
+			return shared;
+		}
+	}
+
+	static cv::UMat safe_copy(const cv::UMat& shared) {
+		std::lock_guard<std::mutex> guard(sharedMtx_);
+		cv::UMat copy;
+		auto it = shared_.find(reinterpret_cast<size_t>(&shared));
+		if(it != shared_.end()) {
+			std::lock_guard<std::mutex> guard(*(*it).second);
+			//workaround for context conflicts
+			shared.getMat(cv::ACCESS_READ).copyTo(copy);
+			return copy;
+		} else {
+			CV_Assert(!"You are unnecessarily safe copying a variable");
+			//unreachable
+			shared.getMat(cv::ACCESS_READ).copyTo(copy);
+			return copy;
+		}
 	}
 };
 
@@ -254,7 +401,7 @@ CV_EXPORTS void gl_check_error(const std::filesystem::path& file, unsigned int l
 #define GL_CHECK(expr)                            \
     expr;
 #endif
-CV_EXPORTS unsigned int initShader(const char* vShader, const char* fShader, const char* outputAttributeName);
+CV_EXPORTS void initShader(unsigned int handles[3], const char* vShader, const char* fShader, const char* outputAttributeName);
 
 /*!
  * Returns the OpenGL vendor string

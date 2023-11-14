@@ -24,6 +24,7 @@ namespace v4d {
 class V4D;
 
 namespace detail {
+#ifdef HAVE_OPENCL
 typedef cv::ocl::OpenCLExecutionContext CLExecContext_t;
 class CLExecScope_t
 {
@@ -45,6 +46,28 @@ public:
         }
     }
 };
+#else
+struct CLExecContext_t {
+	bool empty() {
+		return true;
+	}
+	static CLExecContext_t getCurrent() {
+		return CLExecContext_t();
+	}
+};
+class CLExecScope_t
+{
+    CLExecContext_t ctx_;
+public:
+    inline CLExecScope_t(const CLExecContext_t& ctx)
+    {
+    }
+
+    inline ~CLExecScope_t()
+    {
+    }
+};
+#endif
 /*!
  * The FrameBufferContext acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
  */
@@ -119,7 +142,9 @@ public:
     class CV_EXPORTS FrameBufferScope {
     	cv::Ptr<FrameBufferContext> ctx_;
         cv::UMat& m_;
-        std::shared_ptr<ocl::OpenCLExecutionContext> pExecCtx;
+#ifdef HAVE_OPENCL
+        std::shared_ptr<CLExecContext_t> pExecCtx;
+#endif
     public:
         /*!
          * Aquires the framebuffer via cl-gl sharing.
@@ -128,27 +153,37 @@ public:
          */
         CV_EXPORTS FrameBufferScope(cv::Ptr<FrameBufferContext> ctx, cv::UMat& m) :
                 ctx_(ctx), m_(m)
-        , pExecCtx(std::static_pointer_cast<ocl::OpenCLExecutionContext>(m.u->allocatorContext))
+#ifdef HAVE_OPENCL
+        , pExecCtx(std::static_pointer_cast<CLExecContext_t>(m.u->allocatorContext))
+#endif
         {
             CV_Assert(!m.empty());
+#ifdef HAVE_OPENCL
             if(pExecCtx) {
                 CLExecScope_t execScope(*pExecCtx.get());
                 ctx_->acquireFromGL(m_);
             } else {
+#endif
                 ctx_->acquireFromGL(m_);
+#ifdef HAVE_OPENCL
             }
+#endif
         }
         /*!
          * Releases the framebuffer via cl-gl sharing.
          */
         CV_EXPORTS virtual ~FrameBufferScope() {
+#ifdef HAVE_OPENCL
             if (pExecCtx) {
                 CLExecScope_t execScope(*pExecCtx.get());
                 ctx_->releaseToGL(m_);
             }
             else {
+#endif
                 ctx_->releaseToGL(m_);
+#ifdef HAVE_OPENCL
             }
+#endif
         }
     };
 

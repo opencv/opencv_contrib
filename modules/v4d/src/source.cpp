@@ -20,23 +20,8 @@ Source::~Source() {
 }
 
 bool Source::isOpen() {
+	std::lock_guard<std::mutex> guard(mtx_);
     return generator_ && open_;
-}
-
-bool Source::isAsync() {
-    return async_;
-}
-
-void Source::setAsync(bool as) {
-    async_ = as;
-}
-
-bool Source::isThreadSafe() {
-    return threadSafe_;
-}
-
-void Source::setThreadSafe(bool ts) {
-    threadSafe_ = ts;
 }
 
 float Source::fps() {
@@ -44,8 +29,10 @@ float Source::fps() {
 }
 
 std::pair<uint64_t, cv::UMat> Source::operator()() {
-    static thread_local cv::UMat frame;
+	std::lock_guard<std::mutex> guard(mtx_);
+	static thread_local cv::UMat frame;
     if(threadSafe_) {
+        static std::mutex mtx_;
         std::unique_lock<std::mutex> lock(mtx_);
         open_ = generator_(frame);
         return {count_++, frame};

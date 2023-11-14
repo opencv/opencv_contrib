@@ -11,7 +11,7 @@ public:
 	}
 
 	void setup(Ptr<V4D> win) override {
-		win->parallel([](cv::UMat& image){
+		win->plain([](cv::UMat& image){
 			image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
 		}, image_);
 	}

@@ -19,13 +19,12 @@ namespace v4d {
  * a generator functor.
  */
 class CV_EXPORTS Source {
-    std::mutex mtx_;
     bool open_ = true;
     std::function<bool(cv::UMat&)> generator_;
     uint64_t count_ = 0;
     float fps_;
-    bool async_ = true;
     bool threadSafe_ = false;
+    std::mutex mtx_;
 public:
     /*!
      * Constructs the Source object from a generator functor.
@@ -47,8 +46,6 @@ public:
      * @return true if the source is ready.
      */
     CV_EXPORTS bool isReady();
-    CV_EXPORTS bool isAsync();
-    CV_EXPORTS void setAsync(bool as);
     CV_EXPORTS bool isThreadSafe();
     CV_EXPORTS void setThreadSafe(bool ts);
 

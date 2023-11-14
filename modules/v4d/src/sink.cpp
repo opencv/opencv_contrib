@@ -20,6 +20,7 @@ Sink::~Sink() {
 }
 
 bool Sink::isReady() {
+	std::lock_guard<std::mutex> lock(mtx_);
     if (consumer_)
         return true;
     else
@@ -27,43 +28,32 @@ bool Sink::isReady() {
 }
 
 bool Sink::isOpen() {
+	std::lock_guard<std::mutex> lock(mtx_);
     return open_;
 }
 
-bool Sink::isThreadSafe() {
-    return threadSafe_;
-}
-
-void Sink::setThreadSafe(bool ts) {
-    threadSafe_ = ts;
-}
-
 void Sink::operator()(const uint64_t& seq, const cv::UMat& frame) {
-	if(isThreadSafe()) {
-		std::unique_lock<std::mutex> lock(mtx_);
-		if(seq == nextSeq_) {
-			uint64_t currentSeq = seq;
-			cv::UMat currentFrame = frame;
-			buffer_[seq] = frame;
-			do {
-				open_ = consumer_(currentSeq, currentFrame.clone());
-				++nextSeq_;
-				buffer_.erase(buffer_.begin());
-				if(buffer_.empty())
-					break;
-				auto pair = (*buffer_.begin());
-				currentSeq = pair.first;
-				currentFrame = pair.second;
-			} while(currentSeq == nextSeq_);
-		} else {
-			buffer_[seq] = frame;
-		}
-		if(buffer_.size() > 240) {
-			CV_LOG_WARNING(nullptr, "Buffer overrun in sink.");
-			buffer_.clear();
-		}
+	std::lock_guard<std::mutex> lock(mtx_);
+	if(seq == nextSeq_) {
+		uint64_t currentSeq = seq;
+		cv::UMat currentFrame = frame;
+		buffer_[seq] = frame;
+		do {
+			open_ = consumer_(currentSeq, currentFrame.clone());
+			++nextSeq_;
+			buffer_.erase(buffer_.begin());
+			if(buffer_.empty())
+				break;
+			auto pair = (*buffer_.begin());
+			currentSeq = pair.first;
+			currentFrame = pair.second;
+		} while(currentSeq == nextSeq_);
 	} else {
-		open_ = consumer_(seq, frame);
+		buffer_[seq] = frame;
+	}
+	if(buffer_.size() > 240) {
+		CV_LOG_WARNING(nullptr, "Buffer overrun in sink.");
+		buffer_.clear();
 	}
 }
 } /* namespace v4d */

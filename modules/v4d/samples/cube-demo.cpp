@@ -103,7 +103,9 @@ private:
 	)";
 
 	    //Initialize the shaders and returns the program
-	    return cv::v4d::initShader(vert.c_str(), frag.c_str(), "fragColor");
+        unsigned int handles[3];
+        cv::v4d::initShader(handles, vert.c_str(), frag.c_str(), "fragColor");
+        return handles[0];
 	}
 
 	//Initializes objects, buffers, shaders and uniforms
