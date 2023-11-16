@@ -67,7 +67,7 @@ public:
     FreeType2Impl();
     ~FreeType2Impl();
     void loadFontData(String fontFileName, int idx) CV_OVERRIDE;
-    void loadFontData(uchar* pBuf, size_t bufSize, int idx) CV_OVERRIDE;
+    void loadFontData(char* pBuf, size_t bufSize, int idx) CV_OVERRIDE;
     void setSplitNumber( int num ) CV_OVERRIDE;
     void putText(
         InputOutputArray img, const String& text, Point org,
@@ -87,6 +87,8 @@ private:
     bool             mIsFaceAvailable;
     int              mCtoL;
     hb_font_t        *mHb_font;
+
+    void loadFontData(FT_Open_Args &args, int idx);
 
     void putTextBitmapMono(
         InputOutputArray img, const String& text, Point org,
@@ -181,27 +183,41 @@ FreeType2Impl::~FreeType2Impl()
 
 void FreeType2Impl::loadFontData(String fontFileName, int idx)
 {
-    CV_Assert( idx >= 0 );
-    if ( mIsFaceAvailable  == true )
+    FT_Open_Args args
     {
-        hb_font_destroy(mHb_font);
-        CV_Assert(!FT_Done_Face(mFace));
-    }
+        FT_OPEN_PATHNAME,
+        nullptr, // memory_base
+        0,       // memory_size
+        const_cast<FT_String*>(fontFileName.c_str()),
+        nullptr, // stream
+        nullptr, // driver
+        0,       // num_params
+        nullptr  // params
+    };
 
-    mIsFaceAvailable = false;
-    CV_Assert( !FT_New_Face( mLibrary, fontFileName.c_str(), static_cast<FT_Long>(idx), &mFace ) );
-
-    mHb_font = hb_ft_font_create(mFace, NULL);
-    if ( mHb_font == NULL )
-    {
-        CV_Assert(!FT_Done_Face(mFace));
-        return;
-    }
-    CV_Assert( mHb_font != NULL );
-    mIsFaceAvailable = true;
+    this->loadFontData(args, idx);
 }
 
-void FreeType2Impl::loadFontData(uchar* pBuf, size_t bufSize, int idx)
+void FreeType2Impl::loadFontData(char* pBuf, size_t bufSize, int idx)
+{
+    CV_Assert( pBuf != nullptr );
+
+    FT_Open_Args args
+    {
+        FT_OPEN_MEMORY,
+        reinterpret_cast<FT_Byte*>(pBuf),
+        static_cast<FT_Long>(bufSize),
+        nullptr, // pathname
+        nullptr, // stream
+        nullptr, // driver
+        0,       // num_params
+        nullptr  // params
+    };
+
+    this->loadFontData(args, idx);
+}
+
+void FreeType2Impl::loadFontData(FT_Open_Args &args, int idx)
 {
     CV_Assert( idx >= 0 );
     if ( mIsFaceAvailable  == true )
@@ -211,7 +227,6 @@ void FreeType2Impl::loadFontData(uchar* pBuf, size_t bufSize, int idx)
     }
 
     mIsFaceAvailable = false;
-    FT_Open_Args args{ FT_OPEN_MEMORY, (FT_Byte*)pBuf, static_cast<FT_Long>(bufSize), nullptr, nullptr, nullptr, 0, nullptr };
     CV_Assert( !FT_Open_Face(mLibrary, &args, idx, &mFace) );
 
     mHb_font = hb_ft_font_create(mFace, NULL);

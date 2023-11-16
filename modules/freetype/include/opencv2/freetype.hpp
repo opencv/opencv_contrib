@@ -76,7 +76,7 @@ class CV_EXPORTS_W FreeType2 : public Algorithm
 public:
 /** @brief Load font data.
 
-The function loadFontData loads font data.
+The function loadFontData loads font data from file.
 
 @param fontFileName FontFile Name
 @param idx face_index to select a font faces in a single file.
@@ -86,7 +86,7 @@ The function loadFontData loads font data.
 
 /** @brief Load font data.
 
-The function loadFontData loads font data.
+The function loadFontData loads font data from memory.
 The data is not copied, the user needs to make sure the data lives at least as long as FreeType2.
 After the FreeType2 object is destroyed, the buffer can be safely deallocated.
 
@@ -95,7 +95,7 @@ After the FreeType2 object is destroyed, the buffer can be safely deallocated.
 @param idx face_index to select a font faces in a single file.
 */
 
-    CV_WRAP virtual void loadFontData(uchar* pBuf, size_t bufSize, int idx) = 0;
+    CV_WRAP virtual void loadFontData(char* pBuf, size_t bufSize, int idx) = 0;
 
 /** @brief Set Split Number from Bezier-curve to line
 
