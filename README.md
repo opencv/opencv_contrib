@@ -22,10 +22,10 @@ The V4D OpenCV module also provides some helper functions and classes that simpl
 
 ## Requirements
 
-- *C++20*: The V4D OpenCV module requires C++20 as the minimum standard for compiling and running the graphical applications.
-- *OpenGL 3.2 Core (optionally Compat)/OpenGL ES 3.0*: The V4D OpenCV module requires OpenGL 3.2 Core or OpenGL ES 3.0 as the minimum version for rendering the video frames. Optionally, the V4D OpenCV module can also use OpenGL 3.2 Compat, which provides some backward compatibility with older OpenGL versions.
-- *OpenCL 1.2 (optional)*: The V4D OpenCV module can optionally use OpenCL 1.2 as the minimum version for performing OpenCV algorithms on the video frames using the GPU.
-- *cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions (optional)*: The V4D OpenCV module can optionally use some OpenCL extensions that enable interoperability with OpenGL and VAAPI. The cl_khr_gl_sharing extension allows sharing of OpenGL objects, such as textures and buffers, with OpenCL. The cl_intel_va_api_media_sharing extension allows sharing of VAAPI objects, such as surfaces and contexts, with OpenCL. These extensions are not required, but they can improve the performance and efficiency of the graphical applications.
+- **C++20**: The V4D OpenCV module requires C++20 as the minimum standard for compiling and running the graphical applications.
+- **OpenGL 3.2 Core (optionally Compat)/OpenGL ES 3.0**: The V4D OpenCV module requires OpenGL 3.2 Core or OpenGL ES 3.0 as the minimum version for rendering the video frames. Optionally, the V4D OpenCV module can also use OpenGL 3.2 Compat, which provides some backward compatibility with older OpenGL versions.
+- **OpenCL 1.2 (optional)**: The V4D OpenCV module can optionally use OpenCL 1.2 as the minimum version for performing OpenCV algorithms on the video frames using the GPU.
+- **cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions (optional)**: The V4D OpenCV module can optionally use some OpenCL extensions that enable interoperability with OpenGL and VAAPI. The cl_khr_gl_sharing extension allows sharing of OpenGL objects, such as textures and buffers, with OpenCL. The cl_intel_va_api_media_sharing extension allows sharing of VAAPI objects, such as surfaces and contexts, with OpenCL. These extensions are not required, but they can improve the performance and efficiency of the graphical applications.
 
 ## Dependencies
 
