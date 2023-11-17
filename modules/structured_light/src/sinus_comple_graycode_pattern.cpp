@@ -122,7 +122,7 @@ void SinusCompleGrayCodePattern_Impl::computeConfidenceMap(
 
     Mat &confidence = *static_cast<Mat *>(confidenceMap.getObj());
 
-    CV_Assert(imgs.size() >= params.shiftTime);
+    CV_Assert(imgs.size() >= static_cast<size_t>(params.shiftTime));
 
     confidence = Mat::zeros(imgs[0].size(), CV_32FC1);
 
@@ -139,7 +139,7 @@ void SinusCompleGrayCodePattern_Impl::computePhaseMap(
         *static_cast<const std::vector<Mat> *>(patternImages.getObj());
     Mat &wrappedPhase = *static_cast<Mat *>(wrappedPhaseMap.getObj());
 
-    CV_Assert(imgs.size() >= params.shiftTime);
+    CV_Assert(imgs.size() >= static_cast<size_t>(params.shiftTime));
 
     const int height = imgs[0].rows;
     const int width = imgs[0].cols;
@@ -184,7 +184,7 @@ void SinusCompleGrayCodePattern_Impl::computeFloorMap(
     const int width = imgs[0].cols;
     floor = Mat::zeros(height, width, CV_16UC1);
 
-    const int grayCodeImgsCount = imgs.size() - params.shiftTime;
+    const int grayCodeImgsCount = static_cast<const int>(imgs.size() - params.shiftTime);
     std::vector<const uchar *> imgsPtrs(grayCodeImgsCount);
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < grayCodeImgsCount; ++j) {
@@ -203,7 +203,7 @@ void SinusCompleGrayCodePattern_Impl::computeFloorMap(
                 K2 += tempVal ? std::pow(2, grayCodeImgsCount - 1 - k) : 0;
             }
 
-            K2 = std::floorf((K2 + 1) / 2);
+            K2 = (K2 + 1) / 2;
             if (wrappedPhasePtr[j] <= -CV_PI / 2) {
                 floorPtr[j] = K2;
             } else if (wrappedPhasePtr[j] >= CV_PI / 2) {
@@ -283,17 +283,17 @@ bool SinusCompleGrayCodePattern_Impl::generate(OutputArrayOfArrays pattern) {
         imgs.push_back(intensityMap);
     }
     // generate complementary graycode imgs.
-    const int grayCodeImgsCount = std::log2f(params.nbrOfPeriods) + 1;
+    const int grayCodeImgsCount = std::log2(params.nbrOfPeriods) + 1;
     std::vector<uchar> encodeSequential = {0, 255};
     for (int i = 0; i < grayCodeImgsCount; ++i) {
         Mat intensityMap = Mat::zeros(height, width, CV_8UC1);
-        const int pixelsPerBlock = width / encodeSequential.size();
-        for (int j = 0; j < encodeSequential.size(); ++j) {
+        const int pixelsPerBlock = static_cast<const int>(width / encodeSequential.size());
+        for (size_t j = 0; j < encodeSequential.size(); ++j) {
             intensityMap(Rect(j * pixelsPerBlock, 0, pixelsPerBlock, height)) =
                 encodeSequential[j];
         }
 
-        const int lastSequentialSize = encodeSequential.size();
+        const int lastSequentialSize = static_cast<const int>(encodeSequential.size());
         for (int j = lastSequentialSize - 1; j >= 0; --j) {
             encodeSequential.push_back(encodeSequential[j]);
         }
