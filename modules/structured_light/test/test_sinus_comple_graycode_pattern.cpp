@@ -90,7 +90,7 @@ TEST_F(SinusoidalComplementaryGrayCodeFixSuit, test_generate) {
     std::vector<cv::Mat> imgs;
     pattern->generate(imgs);
 
-    EXPECT_EQ(imgs.size(), 10);
+    EXPECT_EQ(static_cast<int>(imgs.size()), 10);
 
     for (int i = 0; i < 10; ++i) {
         cv::Mat groundTruth = cv::imread(cvtest::TS::ptr()->get_data_path() +
@@ -129,7 +129,7 @@ TEST_F(SinusoidalComplementaryGrayCodeFixSuit, test_unwrapPhaseMap) {
     double error =
         cv::norm(groundTruth, unwrappedPhaseMap, cv::NormTypes::NORM_L1) /
         (params.width * params.height);
-    EXPECT_LE(error, 0.1f);
+    EXPECT_LE(error, 0.1);
 }
 
 TEST_F(SinusoidalComplementaryGrayCodeFixSuit, test_decode) {

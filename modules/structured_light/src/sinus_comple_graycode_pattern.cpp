@@ -65,7 +65,7 @@ class CV_EXPORTS_W SinusCompleGrayCodePattern_Impl CV_FINAL
     // Generate sinusoidal and complementary graycode patterns
     bool generate(OutputArrayOfArrays patternImages) CV_OVERRIDE;
 
-    // decode patterns and compute disparitymap.
+    // decode patterns and compute disparity map.
     bool decode(const std::vector<std::vector<Mat>> &patternImages,
                 OutputArray disparityMap,
                 InputArrayOfArrays blackImages = noArray(),
@@ -147,23 +147,26 @@ void SinusCompleGrayCodePattern_Impl::computePhaseMap(
 
     std::vector<const uchar *> imgsPtrs(params.shiftTime);
     const double shiftVal = CV_2PI / params.shiftTime;
-    for (int i = 0; i < height; ++i) {
-        auto wrappedPhasePtr = wrappedPhase.ptr<float>(i);
 
-        for (int j = 0; j < params.shiftTime; ++j) {
-            imgsPtrs[j] = imgs[j].ptr<uchar>(i);
-        }
+    parallel_for_(Range(0, height), [&](const Range &range) {
+        for (int i = range.start; i < range.end; ++i) {
+            auto wrappedPhasePtr = wrappedPhase.ptr<float>(i);
 
-        for (int j = 0; j < width; ++j) {
-            double molecules = 0.f, denominator = 0.f;
-            for (int k = 0; k < params.shiftTime; ++k) {
-                molecules += imgsPtrs[k][j] * sin(k * shiftVal);
-                denominator += imgsPtrs[k][j] * cos(k * shiftVal);
+            for (int j = 0; j < params.shiftTime; ++j) {
+                imgsPtrs[j] = imgs[j].ptr<uchar>(i);
             }
 
-            wrappedPhasePtr[j] = -atan2(molecules, denominator);
+            for (int j = 0; j < width; ++j) {
+                double molecules = 0.f, denominator = 0.f;
+                for (int k = 0; k < params.shiftTime; ++k) {
+                    molecules += imgsPtrs[k][j] * sin(k * shiftVal);
+                    denominator += imgsPtrs[k][j] * cos(k * shiftVal);
+                }
+
+                wrappedPhasePtr[j] = -atan2(molecules, denominator);
+            }
         }
-    }
+    });
 }
 
 void SinusCompleGrayCodePattern_Impl::computeFloorMap(
@@ -184,35 +187,39 @@ void SinusCompleGrayCodePattern_Impl::computeFloorMap(
     const int width = imgs[0].cols;
     floor = Mat::zeros(height, width, CV_16UC1);
 
-    const int grayCodeImgsCount = static_cast<const int>(imgs.size() - params.shiftTime);
+    const int grayCodeImgsCount =
+        static_cast<int>(imgs.size() - params.shiftTime);
     std::vector<const uchar *> imgsPtrs(grayCodeImgsCount);
-    for (int i = 0; i < height; ++i) {
-        for (int j = 0; j < grayCodeImgsCount; ++j) {
-            imgsPtrs[j] = imgs[params.shiftTime + j].ptr<uchar>(i);
-        }
-        auto confidencePtr = confidence.ptr<float>(i);
-        auto wrappedPhasePtr = wrappedPhase.ptr<float>(i);
-        auto floorPtr = floor.ptr<uint16_t>(i);
-        for (int j = 0; j < width; ++j) {
-            int K1 = 0, K2 = 0, tempVal = 0;
-            for (int k = 0; k < grayCodeImgsCount; ++k) {
-                tempVal ^= imgsPtrs[k][j] > confidencePtr[j];
-                K1 += (tempVal && k != grayCodeImgsCount - 1)
-                          ? std::pow(2, grayCodeImgsCount - 2 - k)
-                          : 0;
-                K2 += tempVal ? std::pow(2, grayCodeImgsCount - 1 - k) : 0;
-            }
 
-            K2 = (K2 + 1) / 2;
-            if (wrappedPhasePtr[j] <= -CV_PI / 2) {
-                floorPtr[j] = K2;
-            } else if (wrappedPhasePtr[j] >= CV_PI / 2) {
-                floorPtr[j] = K2 - 1;
-            } else {
-                floorPtr[j] = K1;
+    parallel_for_(Range(0, height), [&](const Range &range) {
+        for (int i = range.start; i < range.end; ++i) {
+            for (int j = 0; j < grayCodeImgsCount; ++j) {
+                imgsPtrs[j] = imgs[params.shiftTime + j].ptr<uchar>(i);
+            }
+            auto confidencePtr = confidence.ptr<float>(i);
+            auto wrappedPhasePtr = wrappedPhase.ptr<float>(i);
+            auto floorPtr = floor.ptr<uint16_t>(i);
+            for (int j = 0; j < width; ++j) {
+                int K1 = 0, K2 = 0, tempVal = 0;
+                for (int k = 0; k < grayCodeImgsCount; ++k) {
+                    tempVal ^= imgsPtrs[k][j] > confidencePtr[j];
+                    K1 += (tempVal && k != grayCodeImgsCount - 1)
+                              ? std::pow(2, grayCodeImgsCount - 2 - k)
+                              : 0;
+                    K2 += tempVal ? std::pow(2, grayCodeImgsCount - 1 - k) : 0;
+                }
+
+                K2 = (K2 + 1) / 2;
+                if (wrappedPhasePtr[j] <= -CV_PI / 2) {
+                    floorPtr[j] = K2;
+                } else if (wrappedPhasePtr[j] >= CV_PI / 2) {
+                    floorPtr[j] = K2 - 1;
+                } else {
+                    floorPtr[j] = K1;
+                }
             }
         }
-    }
+    });
 }
 
 void SinusCompleGrayCodePattern_Impl::unwrapPhaseMap(
@@ -234,24 +241,26 @@ void SinusCompleGrayCodePattern_Impl::unwrapPhaseMap(
         shadow = *static_cast<Mat *>(shadowMask.getObj());
     }
 
-    for (int i = 0; i < height; ++i) {
-        auto wrappedPhasePtr = wrappedPhase.ptr<float>(i);
-        auto floorPtr = floor.ptr<uint16_t>(i);
-        auto unwrappedPhasePtr = unwrappedPhase.ptr<float>(i);
-        const uchar *shadowPtr =
-            shadow.empty() ? nullptr : shadow.ptr<uchar>(i);
-        for (int j = 0; j < width; ++j) {
-            // we add CV_PI to make wrap map to begin with 0.
-            if (shadowPtr) {
-                if (shadowPtr[j]) {
-                    unwrappedPhasePtr[j] =
-                        wrappedPhasePtr[j] + CV_2PI * floorPtr[j] + CV_PI;
-                } else {
-                    unwrappedPhasePtr[j] = 0.f;
+    parallel_for_(Range(0, height), [&](const Range &range) {
+        for (int i = range.start; i < range.end; ++i) {
+            auto wrappedPhasePtr = wrappedPhase.ptr<float>(i);
+            auto floorPtr = floor.ptr<uint16_t>(i);
+            auto unwrappedPhasePtr = unwrappedPhase.ptr<float>(i);
+            const uchar *shadowPtr =
+                shadow.empty() ? nullptr : shadow.ptr<uchar>(i);
+            for (int j = 0; j < width; ++j) {
+                // we add CV_PI to make wrap map to begin with 0.
+                if (shadowPtr) {
+                    if (shadowPtr[j]) {
+                        unwrappedPhasePtr[j] =
+                            wrappedPhasePtr[j] + CV_2PI * floorPtr[j] + CV_PI;
+                    } else {
+                        unwrappedPhasePtr[j] = 0.f;
+                    }
                 }
             }
         }
-    }
+    });
 }
 
 bool SinusCompleGrayCodePattern_Impl::generate(OutputArrayOfArrays pattern) {
@@ -287,13 +296,15 @@ bool SinusCompleGrayCodePattern_Impl::generate(OutputArrayOfArrays pattern) {
     std::vector<uchar> encodeSequential = {0, 255};
     for (int i = 0; i < grayCodeImgsCount; ++i) {
         Mat intensityMap = Mat::zeros(height, width, CV_8UC1);
-        const int pixelsPerBlock = static_cast<const int>(width / encodeSequential.size());
+        const int pixelsPerBlock =
+            static_cast<int>(width / encodeSequential.size());
         for (size_t j = 0; j < encodeSequential.size(); ++j) {
-            intensityMap(Rect(j * pixelsPerBlock, 0, pixelsPerBlock, height)) =
-                encodeSequential[j];
+            intensityMap(Rect(static_cast<int>(j) * pixelsPerBlock, 0,
+                              pixelsPerBlock, height)) = encodeSequential[j];
         }
 
-        const int lastSequentialSize = static_cast<const int>(encodeSequential.size());
+        const int lastSequentialSize =
+            static_cast<int>(encodeSequential.size());
         for (int j = lastSequentialSize - 1; j >= 0; --j) {
             encodeSequential.push_back(encodeSequential[j]);
         }
@@ -318,54 +329,61 @@ void SinusCompleGrayCodePattern_Impl::computeDisparity(
     const int width = leftUnwrap.cols;
     disparity = cv::Mat::zeros(height, width, CV_32FC1);
 
-    for (int i = 0; i < height; ++i) {
-        auto leftUnwrapPtr = leftUnwrap.ptr<float>(i);
-        auto rightUnwrapPtr = rightUnwrap.ptr<float>(i);
-        auto disparityPtr = disparity.ptr<float>(i);
+    parallel_for_(Range(0, height), [&](const Range &range) {
+        for (int i = range.start; i < range.end; ++i) {
+            auto leftUnwrapPtr = leftUnwrap.ptr<float>(i);
+            auto rightUnwrapPtr = rightUnwrap.ptr<float>(i);
+            auto disparityPtr = disparity.ptr<float>(i);
 
-        for (int j = 0; j < width; ++j) {
-            auto leftVal = leftUnwrapPtr[j];
+            for (int j = 0; j < width; ++j) {
+                auto leftVal = leftUnwrapPtr[j];
 
-            if (std::abs(leftVal) < 0.001f) {
-                continue;
-            }
-
-            float minCost = FLT_MAX, bestDisp = 0.f;
-
-            for (int d = params.minDisparity; d < params.maxDisparity; ++d) {
-                if (j - d < 0 || j - d > width - 1) {
+                if (std::abs(leftVal) < 0.001f) {
                     continue;
                 }
 
-                const float curCost = std::abs(leftVal - rightUnwrapPtr[j - d]);
+                float minCost = FLT_MAX, bestDisp = 0.f;
 
-                if (curCost < minCost) {
-                    minCost = curCost;
-                    bestDisp = d;
-                }
-
-                if (minCost < params.maxCost) {
-                    if (bestDisp == params.minDisparity ||
-                        bestDisp == params.maxDisparity) {
-                        disparityPtr[j] = bestDisp;
+                for (int d = params.minDisparity; d < params.maxDisparity;
+                     ++d) {
+                    if (j - d < 0 || j - d > width - 1) {
                         continue;
                     }
 
-                    const float preCost = std::abs(
-                        leftVal -
-                        rightUnwrapPtr[j - (static_cast<int>(bestDisp) - 1)]);
-                    const float nextCost = std::abs(
-                        leftVal -
-                        rightUnwrapPtr[j - (static_cast<int>(bestDisp) + 1)]);
-                    const float denom =
-                        std::max(1.f, preCost + nextCost - 2 * minCost);
+                    const float curCost =
+                        std::abs(leftVal - rightUnwrapPtr[j - d]);
 
-                    disparityPtr[j] =
-                        bestDisp + (preCost - nextCost) / (denom * 2.f);
+                    if (curCost < minCost) {
+                        minCost = curCost;
+                        bestDisp = d;
+                    }
+
+                    if (minCost < params.maxCost) {
+                        if ((std::abs(bestDisp - params.minDisparity) < 0.001 ||
+                             std::abs(bestDisp - params.maxDisparity) <
+                                 0.001)) {
+                            disparityPtr[j] = bestDisp;
+                            continue;
+                        }
+
+                        const float preCost = std::abs(
+                            leftVal -
+                            rightUnwrapPtr[j -
+                                           (static_cast<int>(bestDisp) - 1)]);
+                        const float nextCost = std::abs(
+                            leftVal -
+                            rightUnwrapPtr[j -
+                                           (static_cast<int>(bestDisp) + 1)]);
+                        const float denom =
+                            std::max(1.f, preCost + nextCost - 2 * minCost);
+
+                        disparityPtr[j] =
+                            bestDisp + (preCost - nextCost) / (denom * 2.f);
+                    }
                 }
             }
         }
-    }
+    });
 }
 
 bool SinusCompleGrayCodePattern_Impl::decode(
@@ -380,28 +398,26 @@ bool SinusCompleGrayCodePattern_Impl::decode(
     Mat &disparity = *static_cast<Mat *>(disparityMap.getObj());
 
     if (flags == SINUSOIDAL_COMPLEMENTARY_GRAY_CODE) {
-        cv::Mat leftConfidenceMap, rightConfidenceMap;
-        cv::Mat leftWrappedMap, rightWrappedMap;
-        cv::Mat leftFloorMap, rightFloorMap;
-        cv::Mat leftUnwrapMap, rightUnwrapMap;
-        // caculate confidence map
-        computeConfidenceMap(patternImages[0], leftConfidenceMap);
-        computeConfidenceMap(patternImages[1], rightConfidenceMap);
-        // caculate wrapped phase map
-        computePhaseMap(patternImages[0], leftWrappedMap);
-        computePhaseMap(patternImages[1], rightWrappedMap);
-        // caculate floor map
-        computeFloorMap(patternImages[0], leftConfidenceMap, leftWrappedMap,
-                        leftFloorMap);
-        computeFloorMap(patternImages[1], rightConfidenceMap, rightWrappedMap,
-                        rightFloorMap);
-        // caculate unwrapped map
-        unwrapPhaseMap(leftWrappedMap, leftFloorMap, leftUnwrapMap,
-                       leftConfidenceMap > params.confidenceThreshold);
-        unwrapPhaseMap(rightWrappedMap, rightFloorMap, rightUnwrapMap,
-                       rightConfidenceMap > params.confidenceThreshold);
-        // caculate disparity map
-        computeDisparity(leftUnwrapMap, rightUnwrapMap, disparity);
+        std::vector<cv::Mat> confidenceMap(2);
+        std::vector<cv::Mat> wrappedMap(2);
+        std::vector<cv::Mat> floorMap(2);
+        std::vector<cv::Mat> unwrapMap(2);
+
+        parallel_for_(Range(0, 2), [&](const Range& range) {
+            // calculate confidence map
+            computeConfidenceMap(patternImages[range.start], confidenceMap[range.start]);
+            // calculate wrapped phase map
+            computePhaseMap(patternImages[range.start], wrappedMap[range.start]);
+            // calculate floor map
+            computeFloorMap(patternImages[range.start], confidenceMap[range.start], wrappedMap[range.start],
+                        floorMap[range.start]);
+            // calculate unwrapped map
+            unwrapPhaseMap(wrappedMap[range.start], floorMap[range.start], unwrapMap[range.start],
+                       confidenceMap[range.start] > params.confidenceThreshold);
+        });
+
+        // calculate disparity map
+        computeDisparity(unwrapMap[0], unwrapMap[1], disparity);
     }
 
     return true;
