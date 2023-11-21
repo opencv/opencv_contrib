@@ -74,16 +74,57 @@ class CV_EXPORTS Global {
 	typedef typename std::map<size_t, std::mutex*>::iterator Iterator;
 public:
 	template <typename T>
-	struct Scope {
+	class Scope {
+	private:
 		const T& t_;
+
+//		ocl::OpenCLExecutionContext* pSavedExecCtx_ = nullptr;
+//		ocl::OpenCLExecutionContext* pExecCtx_ = nullptr;
+//
+//		template<typename Tunused> void bind(const Tunused& t) {
+//			//do nothing for all other types the UMat
+//			CV_UNUSED(t);
+//		}
+//
+//		void bind(const cv::UMat& t) {
+//#ifdef HAVE_OPENCL
+//			if(ocl::useOpenCL()) {
+//				pExecCtx_ = (t.u && t.u->allocatorContext) ? static_cast<ocl::OpenCLExecutionContext*>(t.u->allocatorContext.get()) : nullptr;
+//				if(pExecCtx_ && !pExecCtx_->empty()) {
+//					pSavedExecCtx_ = &ocl::OpenCLExecutionContext::getCurrentRef();
+//					pExecCtx_->bind();
+//				} else {
+//					pSavedExecCtx_ = nullptr;
+//				}
+//			}
+//#endif
+//		}
+//
+//		template<typename Tunused> void unbind(const Tunused& t) {
+//			//do nothing for all other types the UMat
+//			CV_UNUSED(t);
+//		}
+//
+//		void unbind(const cv::UMat& t) {
+//			CV_UNUSED(t);
+//#ifdef HAVE_OPENCL
+//	        if(ocl::useOpenCL() && pSavedExecCtx_ && !pSavedExecCtx_->empty()) {
+//	        	pSavedExecCtx_->bind();
+//	        }
+//#endif
+//		}
+
+public:
+
 		Scope(const T& t) : t_(t) {
 			lock(t_);
+//			bind(t_);
 		}
 
 		~Scope() {
 			unlock(t_);
+//			unbind(t_);
 		}
-
 	};
 
 	CV_EXPORTS static std::mutex& mutex() {
@@ -374,6 +415,10 @@ CV_EXPORTS size_t cnz(const cv::UMat& m);
 }
 using std::string;
 class V4D;
+
+
+
+CV_EXPORTS void copy_shared(const cv::UMat& src, cv::UMat& dst);
 
 /*!
  * Convenience function to color convert from Scalar to Scalar

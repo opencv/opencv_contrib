@@ -64,6 +64,8 @@ public:
 	FontDemoPlan(const cv::Size& sz) : FontDemoPlan(cv::Rect(0, 0, sz.width, sz.height)) {
 		Global::registerShared(params_);
 		Global::registerShared(textVars_);
+		Global::registerShared(tm_);
+		Global::registerShared(stars_);
 	}
 
 	FontDemoPlan(const cv::Rect& vp) : Plan(vp) {

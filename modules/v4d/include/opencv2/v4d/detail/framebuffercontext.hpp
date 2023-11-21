@@ -14,8 +14,8 @@
 #include <iostream>
 #include <map>
 #include <vector>
-
-struct GLFWwindow;
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
 typedef unsigned int GLenum;
 #define GL_FRAMEBUFFER 0x8D40
 

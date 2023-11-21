@@ -5,7 +5,6 @@
 
 #include "opencv2/v4d/detail/nanovgcontext.hpp"
 #include "opencv2/v4d/nvg.hpp"
-#include "opencv2/v4d/detail/gl.hpp"
 #include "nanovg_gl.h"
 
 namespace cv {

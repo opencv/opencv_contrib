@@ -10,8 +10,8 @@
 #include "sink.hpp"
 #include "util.hpp"
 #include "nvg.hpp"
+#include "threadsafemap.hpp"
 #include "detail/transaction.hpp"
-#include "detail/gl.hpp"
 #include "detail/framebuffercontext.hpp"
 #include "detail/nanovgcontext.hpp"
 #include "detail/imguicontext.hpp"
@@ -20,6 +20,7 @@
 #include "detail/sourcecontext.hpp"
 #include "detail/sinkcontext.hpp"
 #include "detail/resequence.hpp"
+#include "events.hpp"
 
 #include <type_traits>
 #include <shared_mutex>
@@ -45,8 +46,6 @@ using std::cerr;
 using std::endl;
 using std::string;
 using namespace std::chrono_literals;
-
-struct GLFWwindow;
 
 
 /*!
@@ -141,16 +140,6 @@ const string make_id(const string& name, Tfn&& fn, Args&& ... args) {
 	ss << name << "(" << index(std::this_thread::get_id()) << "-" << detail::lambda_ptr_hex(std::forward<Tfn>(fn)) << ")";
 	((ss << ',' << int_to_hex((long)&args)), ...);
 	return ss.str();
-}
-
-template <typename Tfn>
-void check_function(Tfn fn) {
-	static_assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value, "All passed functors must be stateless lambdas");
-}
-
-template <typename ... Args>
-void check_args(Args&& ... args) {
-	static_assert(std::conjunction<std::is_lvalue_reference<Args>...>::value, "All arguments must be l-value references");
 }
 
 }
@@ -329,10 +318,17 @@ public:
     }
 
     template <typename Tfn, typename ... Args>
+    void init_context_call(Tfn fn, Args&& ... args) {
+    	static_assert(detail::is_stateless_lambda<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value, "All passed functors must be stateless lambdas");
+    	static_assert(std::conjunction<std::is_lvalue_reference<Args>...>::value, "All arguments must be l-value references");
+    	cv::v4d::event::set_current_glfw_window(getGLFWWindow());
+    }
+
+
+    template <typename Tfn, typename ... Args>
     typename std::enable_if<std::is_invocable_v<Tfn, Args...>, void>::type
     gl(Tfn fn, Args&& ... args) {
-        check_function(fn);
-        check_args(args...);
+    	init_context_call(fn, args...);
         const string id = make_id("gl-1", fn, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -343,8 +339,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void gl(int32_t idx, Tfn fn, Args&& ... args) {
-        check_function(fn);
-        check_args(args...);
+        init_context_call(fn, args...);
+
         const string id = make_id("gl" + std::to_string(idx), fn, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -355,7 +351,7 @@ public:
 
     template <typename Tfn>
     void branch(Tfn fn) {
-        check_function(fn);
+        init_context_call(fn);
         const string id = make_id("branch", fn);
 		std::function functor = fn;
 		emit_access<std::true_type, decltype(fn)>(id, true, &fn);
@@ -364,8 +360,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void branch(Tfn fn, Args&& ... args) {
-        check_function(fn);
-        check_args(args...);
+        init_context_call(fn, args...);
+
         const string id = make_id("branch", fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -375,8 +371,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void branch(int workerIdx, Tfn fn, Args&& ... args) {
-        check_function(fn);
-        check_args(args...);
+        init_context_call(fn, args...);
+
         const string id = make_id("branch-pin" + std::to_string(workerIdx), fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -389,7 +385,7 @@ public:
 
     template <typename Tfn>
     void endbranch(Tfn fn) {
-        check_function(fn);
+        init_context_call(fn);
         const string id = make_id("endbranch", fn);
 
 		std::function functor = fn;
@@ -399,8 +395,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void endbranch(Tfn fn, Args&& ... args) {
-        check_function(fn);
-        check_args(args...);
+        init_context_call(fn, args...);
+
         const string id = make_id("endbranch", fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -412,8 +408,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void endbranch(int workerIdx, Tfn fn, Args&& ... args) {
-        check_function(fn);
-        check_args(args...);
+        init_context_call(fn, args...);
+
         const string id = make_id("endbranch-pin" + std::to_string(workerIdx), fn, args...);
 
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -425,8 +421,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void fb(Tfn fn, Args&& ... args) {
-        check_function(fn);
-        check_args(args...);
+        init_context_call(fn, args...);
+
         const string id = make_id("fb", fn, args...);
 		using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 		using Tfbbase = typename std::remove_cv<Tfb>::type;
@@ -455,8 +451,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void capture(Tfn fn, Args&& ... args) {
-        check_function(fn);
-        check_args(args...);
+        init_context_call(fn, args...);
+
 
     	if(disableIO_)
     		return;
@@ -485,8 +481,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void write(Tfn fn, Args&& ... args) {
-        check_function(fn);
-        check_args(args...);
+        init_context_call(fn, args...);
+
 
     	if(disableIO_)
     		return;
@@ -503,8 +499,8 @@ public:
 
     template <typename Tfn, typename ... Args>
     void nvg(Tfn fn, Args&&... args) {
-        check_function(fn);
-        check_args(args...);
+        init_context_call(fn, args...);
+
         const string id = make_id("nvg", fn, args...);
 		emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -524,18 +520,17 @@ public:
 
     template <typename Tfn, typename ... Args>
     void plain(Tfn fn, Args&&... args) {
-        check_function(fn);
-        check_args(args...);
+        init_context_call(fn, args...);
+
         const string id = make_id("plain", fn, args...);
 		(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
 		std::function functor(fn);
-		add_transaction<decltype(functor)>(false, plainCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
+		add_transaction<decltype(functor)>(false, fbCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
     }
 
     template<typename Tfn, typename ... Args>
     void imgui(Tfn fn, Args&& ... args) {
-    	check_function(fn);
-        check_args(args...);
+    	init_context_call(fn, args...);
 
         if(!hasImguiCtx())
         	return;
@@ -653,8 +648,7 @@ public:
 		try {
 			if(Global::is_main()) {
 				do {
-					//display with 120hz
-					std::this_thread::sleep_for(8.33333334ms);
+					//refresh-rate depends on swap interval (1) for sync
 				} while(keepRunning() && this->display());
 				requestFinish();
 				reseq.finish();

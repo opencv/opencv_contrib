@@ -7,7 +7,7 @@
 #define SRC_OPENCV_GLCONTEXT_HPP_
 
 #include "opencv2/v4d/detail/framebuffercontext.hpp"
-
+#include "opencv2/v4d/detail/gl.hpp"
 struct NVGcontext;
 namespace cv {
 namespace v4d {

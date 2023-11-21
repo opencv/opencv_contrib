@@ -58,6 +58,12 @@ size_t cnz(const cv::UMat& m) {
 }
 }
 
+CV_EXPORTS void copy_shared(const cv::UMat& src, cv::UMat& dst) {
+	if(dst.empty())
+		dst.create(src.size(), src.type());
+	src.copyTo(dst.getMat(cv::ACCESS_READ));
+}
+
 cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     cv::Mat tmpIn(1, 1, CV_8UC3);
     cv::Mat tmpOut(1, 1, CV_8UC3);
@@ -153,27 +159,29 @@ std::string getGlInfo() {
 std::string getClInfo() {
     std::stringstream ss;
 #ifdef HAVE_OPENCL
-    std::vector<cv::ocl::PlatformInfo> plt_info;
-    cv::ocl::getPlatfomsInfo(plt_info);
-    const cv::ocl::Device& defaultDevice = cv::ocl::Device::getDefault();
-    cv::ocl::Device current;
-    ss << endl;
-    for (const auto& info : plt_info) {
-        for (int i = 0; i < info.deviceNumber(); ++i) {
-            ss << "\t";
-            info.getDevice(current, i);
-            if (defaultDevice.name() == current.name())
-                ss << "* ";
-            else
-                ss << "  ";
-            ss << info.version() << " = " << info.name() << endl;
-            ss << "\t\t  GL sharing: "
-                    << (current.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false")
-                    << endl;
-            ss << "\t\t  VAAPI media sharing: "
-                    << (current.isExtensionSupported("cl_intel_va_api_media_sharing") ?
-                            "true" : "false") << endl;
-        }
+    if(cv::ocl::useOpenCL()) {
+		std::vector<cv::ocl::PlatformInfo> plt_info;
+		cv::ocl::getPlatfomsInfo(plt_info);
+		const cv::ocl::Device& defaultDevice = cv::ocl::Device::getDefault();
+		cv::ocl::Device current;
+		ss << endl;
+		for (const auto& info : plt_info) {
+			for (int i = 0; i < info.deviceNumber(); ++i) {
+				ss << "\t";
+				info.getDevice(current, i);
+				if (defaultDevice.name() == current.name())
+					ss << "* ";
+				else
+					ss << "  ";
+				ss << info.version() << " = " << info.name() << endl;
+				ss << "\t\t  GL sharing: "
+						<< (current.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false")
+						<< endl;
+				ss << "\t\t  VAAPI media sharing: "
+						<< (current.isExtensionSupported("cl_intel_va_api_media_sharing") ?
+								"true" : "false") << endl;
+			}
+		}
     }
 #endif
     return ss.str();
@@ -181,44 +189,48 @@ std::string getClInfo() {
 
 bool isIntelVaSupported() {
 #ifdef HAVE_OPENCL
-	try {
-        std::vector<cv::ocl::PlatformInfo> plt_info;
-        cv::ocl::getPlatfomsInfo(plt_info);
-        cv::ocl::Device current;
-        for (const auto& info : plt_info) {
-            for (int i = 0; i < info.deviceNumber(); ++i) {
-                info.getDevice(current, i);
-                return current.isExtensionSupported("cl_intel_va_api_media_sharing");
-            }
-        }
-    } catch (std::exception& ex) {
-        cerr << "Intel VAAPI query failed: " << ex.what() << endl;
-    } catch (...) {
-        cerr << "Intel VAAPI query failed" << endl;
-    }
+	if(cv::ocl::useOpenCL()) {
+		try {
+			std::vector<cv::ocl::PlatformInfo> plt_info;
+			cv::ocl::getPlatfomsInfo(plt_info);
+			cv::ocl::Device current;
+			for (const auto& info : plt_info) {
+				for (int i = 0; i < info.deviceNumber(); ++i) {
+					info.getDevice(current, i);
+					return current.isExtensionSupported("cl_intel_va_api_media_sharing");
+				}
+			}
+		} catch (std::exception& ex) {
+			cerr << "Intel VAAPI query failed: " << ex.what() << endl;
+		} catch (...) {
+			cerr << "Intel VAAPI query failed" << endl;
+		}
+	}
 #endif
     return false;
 }
 
 bool isClGlSharingSupported() {
 #ifdef HAVE_OPENCL
-	try {
-        if(!cv::ocl::useOpenCL())
-            return false;
-        std::vector<cv::ocl::PlatformInfo> plt_info;
-        cv::ocl::getPlatfomsInfo(plt_info);
-        cv::ocl::Device current;
-        for (const auto& info : plt_info) {
-            for (int i = 0; i < info.deviceNumber(); ++i) {
-                info.getDevice(current, i);
-                return current.isExtensionSupported("cl_khr_gl_sharing");
-            }
-        }
-    } catch (std::exception& ex) {
-        cerr << "CL-GL sharing query failed: " << ex.what() << endl;
-    } catch (...) {
-        cerr << "CL-GL sharing query failed with unknown error." << endl;
-    }
+	if(cv::ocl::useOpenCL()) {
+		try {
+			if(!cv::ocl::useOpenCL())
+				return false;
+			std::vector<cv::ocl::PlatformInfo> plt_info;
+			cv::ocl::getPlatfomsInfo(plt_info);
+			cv::ocl::Device current;
+			for (const auto& info : plt_info) {
+				for (int i = 0; i < info.deviceNumber(); ++i) {
+					info.getDevice(current, i);
+					return current.isExtensionSupported("cl_khr_gl_sharing");
+				}
+			}
+		} catch (std::exception& ex) {
+			cerr << "CL-GL sharing query failed: " << ex.what() << endl;
+		} catch (...) {
+			cerr << "CL-GL sharing query failed with unknown error." << endl;
+		}
+	}
 #endif
     return false;
 }
@@ -314,7 +326,9 @@ static cv::Ptr<Sink> makeAnyHWSink(const string& outputFilename, const int fourc
         return new Sink([=](const uint64_t& seq, const cv::UMat& frame) {
         	CV_UNUSED(seq);
             cv::UMat converted;
-            cv::resize(frame, converted, frameSize);
+            cv::UMat context_corrected;
+            frame.copyTo(context_corrected);
+            cv::resize(context_corrected, converted, frameSize);
             cvtColor(converted, converted, cv::COLOR_BGRA2RGB);
             (*writer) << converted;
             return writer->isOpened();

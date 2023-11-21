@@ -2,15 +2,23 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
-#include "opencv2/v4d/v4d.hpp"
+
 #include "opencv2/v4d/detail/framebuffercontext.hpp"
+#include "opencv2/v4d/v4d.hpp"
 #include "opencv2/v4d/util.hpp"
 #include "opencv2/core/ocl.hpp"
+#include "opencv2/v4d/detail/gl.hpp"
+
 #include "opencv2/core/opengl.hpp"
+#include <opencv2/core/utils/logger.hpp>
 #include <exception>
 #include <iostream>
-
 #include "imgui_impl_glfw.h"
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+using std::cerr;
+using std::cout;
+using std::endl;
 
 namespace cv {
 namespace v4d {
@@ -173,8 +181,7 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_VISIBLE, offscreen_ ? GLFW_FALSE : GLFW_TRUE );
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
 
-    glfwWindow_ = glfwCreateWindow(framebufferSize_.width, framebufferSize_.height, title_.c_str(), nullptr,
-    		rootWindow_);
+    glfwWindow_ = glfwCreateWindow(framebufferSize_.width, framebufferSize_.height, title_.c_str(), nullptr, rootWindow_);
 
 
     if (glfwWindow_ == nullptr) {
@@ -188,13 +195,14 @@ void FrameBufferContext::init() {
         }
     }
 
-
-
-    if(isRoot())
-    	rootWindow_ = glfwWindow_;
-
     this->makeCurrent();
-    glfwSwapInterval(0);
+
+    if(isRoot()) {
+    	rootWindow_ = glfwWindow_;
+        glfwSwapInterval(1);
+    } else {
+        glfwSwapInterval(0);
+    }
 
 #if !defined(OPENCV_V4D_USE_ES3)
     if (!parent_) {
@@ -210,7 +218,7 @@ void FrameBufferContext::init() {
         else
             clglSharing_ = false;
     } catch (std::exception& ex) {
-        CV_LOG_WARNING(nullptr, "CL-GL sharing failed: " << ex.what());
+        CV_LOG_WARNING(nullptr, "CL-GL sharing failed: %s" << ex.what());
         clglSharing_ = false;
     } catch (...) {
     	CV_LOG_WARNING(nullptr, "CL-GL sharing failed with unknown error");
@@ -223,6 +231,7 @@ void FrameBufferContext::init() {
     context_ = CLExecContext_t::getCurrent();
 
     setup();
+    if(isRoot()) {
     glfwSetWindowUserPointer(getGLFWWindow(), getV4D().get());
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
@@ -267,16 +276,16 @@ void FrameBufferContext::init() {
             ImGui_ImplGlfw_CharCallback(glfwWin, codepoint);
         }
     });
-//    glfwSetDropCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int count, const char** filenames) {
+////    glfwSetDropCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int count, const char** filenames) {
+////        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+////    });
+//
+//    glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
 //        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+//        if (v4d->hasImguiCtx()) {
+//            ImGui_ImplGlfw_ScrollCallback(glfwWin, x, y);
+//        }
 //    });
-
-    glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
-        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        if (v4d->hasImguiCtx()) {
-            ImGui_ImplGlfw_ScrollCallback(glfwWin, x, y);
-        }
-    });
 //
 //    glfwSetWindowSizeCallback(getGLFWWindow(),
 //            [](GLFWwindow* glfwWin, int width, int height) {
@@ -323,6 +332,7 @@ void FrameBufferContext::init() {
                 v4d->setFocused(i == 1);
             }
     });
+    }
 }
 
 cv::Ptr<V4D> FrameBufferContext::getV4D() {
@@ -386,7 +396,7 @@ void FrameBufferContext::teardown() {
     using namespace cv::ocl;
     this->makeCurrent();
 #ifdef HAVE_OPENCL
-    if(clImage_ != nullptr && !getCLExecContext().empty()) {
+    if(cv::ocl::useOpenCL() && clImage_ != nullptr && !getCLExecContext().empty()) {
         CLExecScope_t clExecScope(getCLExecContext());
 
         cl_int status = 0;
@@ -608,14 +618,15 @@ void FrameBufferContext::upload(const cv::UMat& m) {
 
 void FrameBufferContext::acquireFromGL(cv::UMat& m) {
 #ifdef HAVE_OPENCL
-    if (clglSharing_) {
+	if (cv::ocl::useOpenCL() && clglSharing_) {
         try {
             GL_CHECK(fromGLTexture2D(getTexture2D(), m));
         } catch(...) {
             clglSharing_ = false;
             download(m);
         }
-    } else
+        return;
+	}
 #endif
     {
         download(m);
@@ -628,14 +639,15 @@ void FrameBufferContext::releaseToGL(cv::UMat& m) {
     //FIXME
     cv::flip(m, m, 0);
 #ifdef HAVE_OPENCL
-    if (clglSharing_) {
+    if (cv::ocl::useOpenCL() && clglSharing_) {
         try {
             GL_CHECK(toGLTexture2D(m, getTexture2D()));
         } catch(...) {
             clglSharing_ = false;
             upload(m);
         }
-    } else
+        return;
+    }
 #endif
     {
         upload(m);

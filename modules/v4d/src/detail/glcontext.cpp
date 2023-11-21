@@ -4,7 +4,6 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "opencv2/v4d/detail/glcontext.hpp"
-#include "opencv2/v4d/detail/gl.hpp"
 
 namespace cv {
 namespace v4d {

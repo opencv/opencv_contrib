@@ -390,12 +390,13 @@ bool V4D::display() {
 
 		if(hasImguiCtx())
 			imguiCtx()->render(getShowFPS());
+
+		glfwSwapBuffers(fbCtx()->getGLFWWindow());
+		glfwPollEvents();
 	} else {
 		fbCtx()->copyToRootWindow();
 	}
 
-	glfwSwapBuffers(fbCtx()->getGLFWWindow());
-	glfwPollEvents();
 	result = !glfwWindowShouldClose(getGLFWWindow());
 
 //FIXME doesn't have any effect
@@ -434,7 +435,8 @@ GLFWwindow* V4D::getGLFWWindow() const {
 void V4D::printSystemInfo() {
 	cerr << "OpenGL: " << getGlInfo() << endl;
 #ifdef HAVE_OPENCL
-    cerr << "OpenCL Platforms: " << getClInfo() << endl;
+	if(cv::ocl::useOpenCL())
+		cerr << "OpenCL Platforms: " << getClInfo() << endl;
 #endif
 }
 

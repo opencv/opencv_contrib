@@ -39,7 +39,7 @@ void Sink::operator()(const uint64_t& seq, const cv::UMat& frame) {
 		cv::UMat currentFrame = frame;
 		buffer_[seq] = frame;
 		do {
-			open_ = consumer_(currentSeq, currentFrame.clone());
+			open_ = consumer_(currentSeq, currentFrame);
 			++nextSeq_;
 			buffer_.erase(buffer_.begin());
 			if(buffer_.empty())

@@ -416,7 +416,7 @@ public:
 		}, down_, downNextGrey_, downMotionMaskGrey_, detectedPoints_, bg_subtractor_, detector_, cache_);
 
 		window->nvg([](const cv::UMat& dmmg, const cv::UMat& dpg, const cv::UMat& dng, const std::vector<cv::Point2f>& dp, const Params& params, Cache& cache) {
-			Params p = Global::safe_copy(params);
+			const Params p = Global::safe_copy(params);
 			cv::v4d::nvg::clear();
 			if (!dpg.empty()) {
 				//We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
@@ -438,9 +438,9 @@ public:
         window->plain([](cv::UMat& frame, cv::UMat& background, cv::UMat& foreground, const Params& params, Cache& cache) {
             //Put it all together (OpenCL)
             Global::Scope scope(foreground);
-            foreground.getMat(cv::ACCESS_READ).copyTo(cache.localFg_);
+            copy_shared(foreground, cache.localFg_);
             composite_layers(background, cache.localFg_, frame, frame, params, cache);
-            cache.localFg_.copyTo(foreground.getMat(cv::ACCESS_READ));
+            copy_shared(cache.localFg_, foreground);
         }, frame_, background_, foreground_, params_, cache_);
 
         window->fb([](cv::UMat& framebuffer, const cv::Rect& viewport, const cv::UMat& frame) {
