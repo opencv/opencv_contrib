@@ -29,3 +29,7 @@ jobs:
 
   Linux-RISC-V-Clang:
     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-RISCV.yaml@main
+
+  openEuler2203-x64:
+    if: "${{ contains(github.event.pull_request.labels.*.name, 'category: cann') }}"
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-O22-CANN.yaml@main
