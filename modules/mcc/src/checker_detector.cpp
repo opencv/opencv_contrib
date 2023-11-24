@@ -34,7 +34,7 @@
 #include "wiener_filter.hpp"
 #include "checker_model.hpp"
 #include "debug.hpp"
-
+#include <iostream>
 namespace cv
 {
 namespace mcc
@@ -232,11 +232,17 @@ bool CCheckerDetectorImpl::
                     }
                     showAndSave("checker_analysis", image_checker, pathOut);
 #endif
-                    for (Ptr<CChecker> checker : checkers)
+               
+                    for (Ptr<CChecker>& checker : checkers)
                     {
-                        for (cv::Point2f &corner : checker->getBox())
+                        //std::cout << "===1,get-checkers-box= " << checker->getBox() << std::endl;
+                        std::vector<cv::Point2f> restore_box;
+                        for (cv::Point2f& corner : checker->getBox()) {
                             corner += static_cast<cv::Point2f>(region.tl());
-
+                            restore_box.emplace_back(corner);
+                        }
+                        checker->setBox(restore_box);
+                        //std::cout << "===1,get-checkers-box= " << checker->getBox() << std::endl;
                         mtx.lock(); // push_back is not thread safe
                         m_checkers.push_back(checker);
                         mtx.unlock();
@@ -260,33 +266,29 @@ bool CCheckerDetectorImpl::
             const int nc /*= 1*/, bool useNet /*=false*/, const Ptr<DetectorParameters> &params)
 {
     m_checkers.clear();
-
+    
     if (this->net.empty() || !useNet)
     {
         return _no_net_process(image, chartType, nc, params, regionsOfInterest);
     }
     this->net_used = true;
-
+    
     cv::Mat img = image.getMat();
-
-    cv::Mat img_rgb_org, img_ycbcr_org;
-    std::vector<cv::Mat> rgb_planes(3), ycbcr_planes(3);
-
-    // Convert to RGB and YCbCr space
-    cv::cvtColor(img, img_rgb_org, COLOR_BGR2RGB);
-    cv::cvtColor(img, img_ycbcr_org, COLOR_BGR2YCrCb);
-
-    // Get chanels
-    split(img_rgb_org, rgb_planes);
-    split(img_ycbcr_org, ycbcr_planes);
 
     for (const cv::Rect &region : regionsOfInterest)
     {
+        cv::Mat croppedImage = img(region);
+
+        cv::Mat img_rgb_org, img_ycbcr_org;
+
+        // Convert to RGB and YCbCr space
+        cv::cvtColor(croppedImage, img_rgb_org, COLOR_BGR2RGB);
+        cv::cvtColor(croppedImage, img_ycbcr_org, COLOR_BGR2YCrCb);
+
         //-------------------------------------------------------------------
         // Run the model to find good regions
         //-------------------------------------------------------------------
 
-        cv::Mat croppedImage = img(region);
 
         int rows = croppedImage.size[0];
         int cols = croppedImage.size[1];
@@ -436,15 +438,24 @@ bool CCheckerDetectorImpl::
                             }
                             showAndSave("checker_recognition", image_box, pathOut);
 #endif
+                         
+                            cv::Mat img_rgb_org_roi = img_rgb_org(innerRegion);
+                            cv::Mat img_ycbcr_org_roi = img_ycbcr_org(innerRegion);
+                            // Get chanels
+                            std::vector<cv::Mat> rgb_planes(3), ycbcr_planes(3);
+                            split(img_rgb_org_roi, rgb_planes);
+                            split(img_ycbcr_org_roi, ycbcr_planes);
+
                             //-------------------------------------------------------------------
                             // checker color analysis
                             //-------------------------------------------------------------------
                             std::vector<Ptr<CChecker>> checkers;
                             checkerAnalysis(img_rgb_f, chartType, nc, colorCharts, checkers, asp, params,
-                                            img_rgb_org, img_ycbcr_org, rgb_planes, ycbcr_planes);
+                                            img_rgb_org_roi, img_ycbcr_org_roi, rgb_planes, ycbcr_planes);
 #ifdef MCC_DEBUG
                             cv::Mat image_checker;
                             innerCroppedImage.copyTo(image_checker);
+                            
                             for (size_t ck = 0; ck < checkers.size(); ck++)
                             {
                                 Ptr<CCheckerDraw> cdraw = CCheckerDraw::create((checkers[ck]));
@@ -452,10 +463,16 @@ bool CCheckerDetectorImpl::
                             }
                             showAndSave("checker_analysis", image_checker, pathOut);
 #endif
-                            for (Ptr<CChecker> checker : checkers)
+                            for (Ptr<CChecker>& checker : checkers)
                             {
-                                for (cv::Point2f &corner : checker->getBox())
+                                //std::cout<<"===1,get-checkers-box= "<<checker->getBox()<<std::endl;
+                                std::vector<cv::Point2f> restore_box;
+                                for (cv::Point2f& corner : checker->getBox()) {
                                     corner += static_cast<cv::Point2f>(region.tl() + innerRegion.tl());
+                                    restore_box.emplace_back(corner);
+                                }
+                                checker->setBox(restore_box);
+                                //std::cout<<"===2,get-checkers-box= "<<checker->getBox()<<std::endl;
                                 mtx.lock(); // push_back is not thread safe
                                 m_checkers.push_back(checker);
                                 mtx.unlock();
