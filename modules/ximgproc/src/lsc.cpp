@@ -821,7 +821,7 @@ inline void SuperpixelLSCImpl::PostEnforceLabelConnectivity( int threshold )
 
           (*Stmp).Neighbor.insert( (*Stmp).Neighbor.end(), (*S).Neighbor.begin(), (*S).Neighbor.end() );
 
-          sort( (*Stmp).Neighbor.begin(), (*Stmp).Neighbor.end() );
+          std::sort( (*Stmp).Neighbor.begin(), (*Stmp).Neighbor.end() );
 
           I = unique( (*Stmp).Neighbor.begin(), (*Stmp).Neighbor.end() );
           (*Stmp).Neighbor.erase( I, (*Stmp).Neighbor.end() );

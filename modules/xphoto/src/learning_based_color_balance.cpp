@@ -192,7 +192,7 @@ void LearningBasedWBImpl::preprocessing(Mat &src)
             v_load_deinterleave(src_ptr + 3 * i, v_inB, v_inG, v_inR);
             v_local_max = v_max(v_inB, v_max(v_inG, v_inR));
             v_global_max = v_max(v_local_max, v_global_max);
-            v_mask = (v_local_max < v_thresh);
+            v_mask = (v_lt(v_local_max, v_thresh));
             v_store(mask_ptr + i, v_mask);
         }
         uchar global_max[16];
@@ -225,7 +225,7 @@ void LearningBasedWBImpl::preprocessing(Mat &src)
             v_load_deinterleave(src_ptr + 3 * i, v_inB, v_inG, v_inR);
             v_local_max = v_max(v_inB, v_max(v_inG, v_inR));
             v_global_max = v_max(v_local_max, v_global_max);
-            v_mask = (v_local_max < v_thresh);
+            v_mask = (v_lt(v_local_max, v_thresh));
             v_pack_store(mask_ptr + i, v_mask);
         }
         ushort global_max[8];
@@ -270,9 +270,9 @@ void LearningBasedWBImpl::getAverageAndBrightestColorChromaticity(Vec2f &average
             v_load_deinterleave(src_ptr + 3 * i, v_inB, v_inG, v_inR);
             v_uint8x16 v_mask = v_load(mask_ptr + i);
 
-            v_inB &= v_mask;
-            v_inG &= v_mask;
-            v_inR &= v_mask;
+            v_inB = v_and(v_inB, v_mask);
+            v_inG = v_and(v_inG, v_mask);
+            v_inR = v_and(v_inR, v_mask);
 
             v_uint16x8 v_sR1, v_sR2, v_sG1, v_sG2, v_sB1, v_sB2;
             v_expand(v_inB, v_sB1, v_sB2);
@@ -280,33 +280,33 @@ void LearningBasedWBImpl::getAverageAndBrightestColorChromaticity(Vec2f &average
             v_expand(v_inR, v_sR1, v_sR2);
 
             // update the brightest (R,G,B) tuple (process left half):
-            v_uint16x8 v_sum = v_sB1 + v_sG1 + v_sR1;
-            v_uint16x8 v_max_mask = (v_sum > v_max_sum);
+            v_uint16x8 v_sum = v_add(v_add(v_sB1, v_sG1), v_sR1);
+            v_uint16x8 v_max_mask = (v_gt(v_sum, v_max_sum));
             v_max_sum = v_max(v_sum, v_max_sum);
-            v_brightestB = (v_sB1 & v_max_mask) + (v_brightestB & (~v_max_mask));
-            v_brightestG = (v_sG1 & v_max_mask) + (v_brightestG & (~v_max_mask));
-            v_brightestR = (v_sR1 & v_max_mask) + (v_brightestR & (~v_max_mask));
+            v_brightestB = v_add(v_and(v_sB1, v_max_mask), v_and(v_brightestB, v_not(v_max_mask)));
+            v_brightestG = v_add(v_and(v_sG1, v_max_mask), v_and(v_brightestG, v_not(v_max_mask)));
+            v_brightestR = v_add(v_and(v_sR1, v_max_mask), v_and(v_brightestR, v_not(v_max_mask)));
 
             // update the brightest (R,G,B) tuple (process right half):
-            v_sum = v_sB2 + v_sG2 + v_sR2;
-            v_max_mask = (v_sum > v_max_sum);
+            v_sum = v_add(v_add(v_sB2, v_sG2), v_sR2);
+            v_max_mask = (v_gt(v_sum, v_max_sum));
             v_max_sum = v_max(v_sum, v_max_sum);
-            v_brightestB = (v_sB2 & v_max_mask) + (v_brightestB & (~v_max_mask));
-            v_brightestG = (v_sG2 & v_max_mask) + (v_brightestG & (~v_max_mask));
-            v_brightestR = (v_sR2 & v_max_mask) + (v_brightestR & (~v_max_mask));
+            v_brightestB = v_add(v_and(v_sB2, v_max_mask), v_and(v_brightestB, v_not(v_max_mask)));
+            v_brightestG = v_add(v_and(v_sG2, v_max_mask), v_and(v_brightestG, v_not(v_max_mask)));
+            v_brightestR = v_add(v_and(v_sR2, v_max_mask), v_and(v_brightestR, v_not(v_max_mask)));
 
             // update sums:
-            v_sB1 = v_sB1 + v_sB2;
-            v_sG1 = v_sG1 + v_sG2;
-            v_sR1 = v_sR1 + v_sR2;
+            v_sB1 = v_add(v_sB1, v_sB2);
+            v_sG1 = v_add(v_sG1, v_sG2);
+            v_sR1 = v_add(v_sR1, v_sR2);
 
             v_uint32x4 v_uint1, v_uint2;
             v_expand(v_sB1, v_uint1, v_uint2);
-            v_SB += v_uint1 + v_uint2;
+            v_SB = v_add(v_SB, v_add(v_uint1, v_uint2));
             v_expand(v_sG1, v_uint1, v_uint2);
-            v_SG += v_uint1 + v_uint2;
+            v_SG = v_add(v_SG, v_add(v_uint1, v_uint2));
             v_expand(v_sR1, v_uint1, v_uint2);
-            v_SR += v_uint1 + v_uint2;
+            v_SR = v_add(v_SR, v_add(v_uint1, v_uint2));
         }
         sumB = v_reduce_sum(v_SB);
         sumG = v_reduce_sum(v_SG);
@@ -361,11 +361,11 @@ void LearningBasedWBImpl::getAverageAndBrightestColorChromaticity(Vec2f &average
             v_uint16x8 v_inB, v_inG, v_inR;
             v_load_deinterleave(src_ptr + 3 * i, v_inB, v_inG, v_inR);
             v_uint16x8 v_mask = v_load_expand(mask_ptr + i);
-            v_mask = v_mask | ((v_mask & v_mask_lower) << 8);
+            v_mask = v_or(v_mask, v_shl<8>(v_and(v_mask, v_mask_lower)));
 
-            v_inB &= v_mask;
-            v_inG &= v_mask;
-            v_inR &= v_mask;
+            v_inB = v_and(v_inB, v_mask);
+            v_inG = v_and(v_inG, v_mask);
+            v_inR = v_and(v_inR, v_mask);
 
             v_uint32x4 v_iR1, v_iR2, v_iG1, v_iG2, v_iB1, v_iB2;
             v_expand(v_inB, v_iB1, v_iB2);
@@ -373,32 +373,32 @@ void LearningBasedWBImpl::getAverageAndBrightestColorChromaticity(Vec2f &average
             v_expand(v_inR, v_iR1, v_iR2);
 
             // update the brightest (R,G,B) tuple (process left half):
-            v_uint32x4 v_sum = v_iB1 + v_iG1 + v_iR1;
-            v_uint32x4 v_max_mask = (v_sum > v_max_sum);
+            v_uint32x4 v_sum = v_add(v_add(v_iB1, v_iG1), v_iR1);
+            v_uint32x4 v_max_mask = (v_gt(v_sum, v_max_sum));
             v_max_sum = v_max(v_sum, v_max_sum);
-            v_brightestB = (v_iB1 & v_max_mask) + (v_brightestB & (~v_max_mask));
-            v_brightestG = (v_iG1 & v_max_mask) + (v_brightestG & (~v_max_mask));
-            v_brightestR = (v_iR1 & v_max_mask) + (v_brightestR & (~v_max_mask));
+            v_brightestB = v_add(v_and(v_iB1, v_max_mask), v_and(v_brightestB, v_not(v_max_mask)));
+            v_brightestG = v_add(v_and(v_iG1, v_max_mask), v_and(v_brightestG, v_not(v_max_mask)));
+            v_brightestR = v_add(v_and(v_iR1, v_max_mask), v_and(v_brightestR, v_not(v_max_mask)));
 
             // update the brightest (R,G,B) tuple (process right half):
-            v_sum = v_iB2 + v_iG2 + v_iR2;
-            v_max_mask = (v_sum > v_max_sum);
+            v_sum = v_add(v_add(v_iB2, v_iG2), v_iR2);
+            v_max_mask = (v_gt(v_sum, v_max_sum));
             v_max_sum = v_max(v_sum, v_max_sum);
-            v_brightestB = (v_iB2 & v_max_mask) + (v_brightestB & (~v_max_mask));
-            v_brightestG = (v_iG2 & v_max_mask) + (v_brightestG & (~v_max_mask));
-            v_brightestR = (v_iR2 & v_max_mask) + (v_brightestR & (~v_max_mask));
+            v_brightestB = v_add(v_and(v_iB2, v_max_mask), v_and(v_brightestB, v_not(v_max_mask)));
+            v_brightestG = v_add(v_and(v_iG2, v_max_mask), v_and(v_brightestG, v_not(v_max_mask)));
+            v_brightestR = v_add(v_and(v_iR2, v_max_mask), v_and(v_brightestR, v_not(v_max_mask)));
 
             // update sums:
-            v_iB1 = v_iB1 + v_iB2;
-            v_iG1 = v_iG1 + v_iG2;
-            v_iR1 = v_iR1 + v_iR2;
+            v_iB1 = v_add(v_iB1, v_iB2);
+            v_iG1 = v_add(v_iG1, v_iG2);
+            v_iR1 = v_add(v_iR1, v_iR2);
             v_uint64x2 v_uint64_1, v_uint64_2;
             v_expand(v_iB1, v_uint64_1, v_uint64_2);
-            v_SB += v_uint64_1 + v_uint64_2;
+            v_SB = v_add(v_SB, v_add(v_uint64_1, v_uint64_2));
             v_expand(v_iG1, v_uint64_1, v_uint64_2);
-            v_SG += v_uint64_1 + v_uint64_2;
+            v_SG = v_add(v_SG, v_add(v_uint64_1, v_uint64_2));
             v_expand(v_iR1, v_uint64_1, v_uint64_2);
-            v_SR += v_uint64_1 + v_uint64_2;
+            v_SR = v_add(v_SR, v_add(v_uint64_1, v_uint64_2));
         }
         uint64 sum_arr[2];
         v_store(sum_arr, v_SB);

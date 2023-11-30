@@ -184,18 +184,18 @@ struct CV_EXPORTS_W_SIMPLE EncoderParams
 public:
     CV_WRAP EncoderParams() : nvPreset(ENC_PRESET_P3), tuningInfo(ENC_TUNING_INFO_HIGH_QUALITY), encodingProfile(ENC_CODEC_PROFILE_AUTOSELECT),
         rateControlMode(ENC_PARAMS_RC_VBR), multiPassEncoding(ENC_MULTI_PASS_DISABLED), constQp({ 0,0,0 }), averageBitRate(0), maxBitRate(0),
-        targetQuality(30), gopLength(0) {};
-
+        targetQuality(30), gopLength(250), idrPeriod(250) {};
     CV_PROP_RW EncodePreset nvPreset;
     CV_PROP_RW EncodeTuningInfo tuningInfo;
     CV_PROP_RW EncodeProfile encodingProfile;
     CV_PROP_RW EncodeParamsRcMode rateControlMode;
     CV_PROP_RW EncodeMultiPass multiPassEncoding;
-    CV_PROP_RW EncodeQp constQp; //!< QP's for ENC_PARAMS_RC_CONSTQP.
-    CV_PROP_RW int averageBitRate; //!< target bitrate for ENC_PARAMS_RC_VBR and ENC_PARAMS_RC_CBR.
-    CV_PROP_RW int maxBitRate; //!< upper bound on bitrate for ENC_PARAMS_RC_VBR and ENC_PARAMS_RC_CONSTQP.
-    CV_PROP_RW uint8_t targetQuality; //!< value 0 - 51 where video quality decreases as targetQuality increases, used with ENC_PARAMS_RC_VBR.
-    CV_PROP_RW int gopLength;
+    CV_PROP_RW EncodeQp constQp; //!< QP's for \ref ENC_PARAMS_RC_CONSTQP.
+    CV_PROP_RW int averageBitRate; //!< target bitrate for \ref ENC_PARAMS_RC_VBR and \ref ENC_PARAMS_RC_CBR.
+    CV_PROP_RW int maxBitRate; //!< upper bound on bitrate for \ref ENC_PARAMS_RC_VBR and \ref ENC_PARAMS_RC_CONSTQP.
+    CV_PROP_RW uint8_t targetQuality; //!< value 0 - 51 where video quality decreases as targetQuality increases, used with \ref ENC_PARAMS_RC_VBR.
+    CV_PROP_RW int gopLength; //!< the number of pictures in one GOP, ensuring \ref idrPeriod >= \ref gopLength.
+    CV_PROP_RW int idrPeriod; //!< IDR interval, ensuring \ref idrPeriod >= \ref gopLength.
 };
 CV_EXPORTS bool operator==(const EncoderParams& lhs, const EncoderParams& rhs);
 
@@ -209,7 +209,7 @@ public:
 
     @param vPacket The raw bitstream for one or more frames.
     */
-    virtual void onEncoded(std::vector<std::vector<uint8_t>> vPacket) = 0;
+    virtual void onEncoded(const std::vector<std::vector<uint8_t>>& vPacket) = 0;
 
     /** @brief Callback function to that the encoding has finished.
     * */
@@ -218,14 +218,14 @@ public:
     virtual ~EncoderCallback() {}
 };
 
-/** @brief Video writer interface.
+/** @brief Video writer interface, see createVideoWriter().
 
-Available when built with WITH_NVCUVENC=ON while Nvidia's Video Codec SDK is installed.
+Available if Nvidia's Video Codec SDK is installed.
 
-Encoding support is dependent on the GPU, refer to the Nvidia Video Codec SDK Video Encode and Decode GPU Support Matrix for details.
+Only Codec::H264 and Codec::HEVC are supported with encoding support dependent on the GPU, refer to the Nvidia Video Codec SDK Video Encode and Decode GPU Support Matrix for details.
 
 @note
-   -   An example on how to use the videoWriter class can be found at
+   -   An example on how to use the VideoWriter class can be found at
         opencv_source_code/samples/gpu/video_writer.cpp
 */
 class CV_EXPORTS_W VideoWriter
@@ -253,9 +253,9 @@ public:
 
 /** @brief Creates video writer.
 
-@param fileName Name of the output video file. Only raw h264 or hevc files are supported.
+@param fileName Name of the output video file.
 @param frameSize Size of the input video frames.
-@param codec Codec.
+@param codec Supports Codec::H264 and Codec::HEVC.
 @param fps Framerate of the created video stream.
 @param colorFormat OpenCv color format of the frames to be encoded.
 @param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback. Required for working with the encoded video stream.
@@ -266,9 +266,9 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileNam
 
 /** @brief Creates video writer.
 
-@param fileName Name of the output video file. Only raw h264 or hevc files are supported.
+@param fileName Name of the output video file.
 @param frameSize Size of the input video frames.
-@param codec Codec.
+@param codec Supports Codec::H264 and Codec::HEVC.
 @param fps Framerate of the created video stream.
 @param colorFormat OpenCv color format of the frames to be encoded.
 @param params Additional encoding parameters.
@@ -361,14 +361,14 @@ enum class VideoReaderProps {
 #endif
 };
 
-/** @brief Video reader interface.
+/** @brief Video reader interface, see createVideoReader().
 
-Available when built with WITH_NVCUVID=ON while Nvidia's Video Codec SDK is installed.
+Available if Nvidia's Video Codec SDK is installed.
 
 Decoding support is dependent on the GPU, refer to the Nvidia Video Codec SDK Video Encode and Decode GPU Support Matrix for details.
 
 @note
-   -   An example on how to use the videoReader class can be found at
+   -   An example on how to use the VideoReader interface can be found at
         opencv_source_code/samples/gpu/video_reader.cpp
  */
 class CV_EXPORTS_W VideoReader
@@ -544,6 +544,14 @@ public:
     @return `true` unless the property is unset set or not supported.
      */
     virtual bool get(const int propertyId, double& propertyVal) const = 0;
+
+    /** @brief Retrieve the index of the first frame that will returned after construction.
+
+    @return index of the index of the first frame that will returned after construction.
+
+    @note To reduce the decoding overhead when initializing VideoReader to start its decoding from frame N, RawVideoSource should seek to the first valid key frame less than or equal to N and return that index here.
+     */
+    virtual int getFirstFrameIdx() const = 0;
 };
 
 /** @brief VideoReader initialization parameters
@@ -561,9 +569,10 @@ but it cannot go below the number determined by NVDEC.
 @param targetRoi Region of interest (x/width should be multiples of 4 and y/height multiples of 2) within the output frame to copy and resize the decoded frame to,
 defaults to the full frame.
 @param enableHistogram Request output of decoded luma histogram \a hist from VideoReader::nextFrame(GpuMat& frame, GpuMat& hist, Stream& stream), if hardware supported.
+@param firstFrameIdx Index of the first frame to seek to on initialization of the VideoReader.
 */
 struct CV_EXPORTS_W_SIMPLE VideoReaderInitParams {
-    CV_WRAP VideoReaderInitParams() : udpSource(false), allowFrameDrop(false), minNumDecodeSurfaces(0), rawMode(0), enableHistogram(false){};
+    CV_WRAP VideoReaderInitParams() : udpSource(false), allowFrameDrop(false), minNumDecodeSurfaces(0), rawMode(0), enableHistogram(false), firstFrameIdx(0){};
     CV_PROP_RW bool udpSource;
     CV_PROP_RW bool allowFrameDrop;
     CV_PROP_RW int minNumDecodeSurfaces;
@@ -572,6 +581,7 @@ struct CV_EXPORTS_W_SIMPLE VideoReaderInitParams {
     CV_PROP_RW cv::Rect srcRoi;
     CV_PROP_RW cv::Rect targetRoi;
     CV_PROP_RW bool enableHistogram;
+    CV_PROP_RW int firstFrameIdx;
 };
 
 /** @brief Creates video reader.

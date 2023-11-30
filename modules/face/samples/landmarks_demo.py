@@ -18,7 +18,11 @@ if cascade.empty() :
     print("cascade not found")
     exit()
 faces = cascade.detectMultiScale(frame, 1.05,  3, cv.CASCADE_SCALE_IMAGE, (30, 30))
-ok, landmarks = facemark.fit(frame, faces=faces)
+if len(faces) == 0:
+    print('no faces detected')
+    landmarks = []
+else:
+    ok, landmarks = facemark.fit(frame, faces=faces)
 cv.imshow("Image", frame)
 for marks in landmarks:
     couleur = (random.randint(0,255),

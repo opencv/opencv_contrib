@@ -71,15 +71,15 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
 
         for (; x <= winSize.width*cn; x += 8, dsrc += 8 * 2, dsrc1 += 8 * 2, dIptr += 8 * 2)
         {
-            v_int32x4 vmask0 = v_reinterpret_as_s32(v_load_expand_q(maskPtr + x)) * vmax_val_32;
-            v_int32x4 vmask1 = v_reinterpret_as_s32(v_load_expand_q(maskPtr + x + 4)) * vmax_val_32;
+            v_int32x4 vmask0 = v_mul(v_reinterpret_as_s32(v_load_expand_q(maskPtr + x)), vmax_val_32);
+            v_int32x4 vmask1 = v_mul(v_reinterpret_as_s32(v_load_expand_q(maskPtr + x + 4)), vmax_val_32);
             if (x + 4 > winSize.width)
             {
-                vmask0 = vmask0 & vmask_border_0;
+                vmask0 = v_and(vmask0, vmask_border_0);
             }
             if (x + 8 > winSize.width)
             {
-                vmask1 = vmask1 & vmask_border_1;
+                vmask1 = v_and(vmask1, vmask_border_1);
             }
 
             v_int32x4 t0, t1;
@@ -91,10 +91,10 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
 
             v_zip(v00, v01, t00, t01);
             v_zip(v10, v11, t10, t11);
-            t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
-            t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
-            t0 = t0 >> (W_BITS - 5)  & vmask0;
-            t1 = t1 >> (W_BITS - 5)  & vmask1;
+            t0 = v_add(v_dotprod(t00, vqw0, vdelta), v_dotprod(t10, vqw1));
+            t1 = v_add(v_dotprod(t01, vqw0, vdelta), v_dotprod(t11, vqw1));
+            t0 = v_and(v_shr(t0, W_BITS - 5), vmask0);
+            t1 = v_and(v_shr(t1, W_BITS - 5), vmask1);
             v_store(Iptr + x, v_pack(t0, t1));
 
             v00 = v_reinterpret_as_s16(v_load(dsrc));
@@ -105,12 +105,12 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
             v_zip(v00, v01, t00, t01);
             v_zip(v10, v11, t10, t11);
 
-            t0 = v_dotprod(t00, vqw0, vdelta_d) + v_dotprod(t10, vqw1);
-            t1 = v_dotprod(t01, vqw0, vdelta_d) + v_dotprod(t11, vqw1);
-            t0 = t0 >> W_BITS;
-            t1 = t1 >> W_BITS;
+            t0 = v_add(v_dotprod(t00, vqw0, vdelta_d), v_dotprod(t10, vqw1));
+            t1 = v_add(v_dotprod(t01, vqw0, vdelta_d), v_dotprod(t11, vqw1));
+            t0 = v_shr(t0, W_BITS);
+            t1 = v_shr(t1, W_BITS);
             v00 = v_pack(t0, t1); // Ix0 Iy0 Ix1 Iy1 ...
-            v00 = v00 & v_reinterpret_as_s16(vmask0);
+            v00 = v_and(v00, v_reinterpret_as_s16(vmask0));
             v_store(dIptr, v00);
 
             v00 = v_reinterpret_as_s16(v_load(dsrc + 4 * 2));
@@ -121,12 +121,12 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
             v_zip(v00, v01, t00, t01);
             v_zip(v10, v11, t10, t11);
 
-            t0 = v_dotprod(t00, vqw0, vdelta_d) + v_dotprod(t10, vqw1);
-            t1 = v_dotprod(t01, vqw0, vdelta_d) + v_dotprod(t11, vqw1);
-            t0 = t0 >> W_BITS;
-            t1 = t1 >> W_BITS;
+            t0 = v_add(v_dotprod(t00, vqw0, vdelta_d), v_dotprod(t10, vqw1));
+            t1 = v_add(v_dotprod(t01, vqw0, vdelta_d), v_dotprod(t11, vqw1));
+            t0 = v_shr(t0, W_BITS);
+            t1 = v_shr(t1, W_BITS);
             v00 = v_pack(t0, t1); // Ix0 Iy0 Ix1 Iy1 ...
-            v00 = v00 & v_reinterpret_as_s16(vmask1);
+            v00 = v_and(v00, v_reinterpret_as_s16(vmask1));
             v_store(dIptr + 4 * 2, v00);
         }
 #else
@@ -187,15 +187,15 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
 #if CV_SIMD128
         for (int x = 0; x <= winSize.width*cn; x += 8, dsrc += 8 * 2, dsrc1 += 8 * 2, dIptr += 8 * 2)
         {
-            v_int32x4 vmask0 = v_reinterpret_as_s32(v_load_expand_q(maskPtr + x)) * vmax_val_32;
-            v_int32x4 vmask1 = v_reinterpret_as_s32(v_load_expand_q(maskPtr + x + 4)) * vmax_val_32;
+            v_int32x4 vmask0 = v_mul(v_reinterpret_as_s32(v_load_expand_q(maskPtr + x)), vmax_val_32);
+            v_int32x4 vmask1 = v_mul(v_reinterpret_as_s32(v_load_expand_q(maskPtr + x + 4)), vmax_val_32);
             if (x + 4 > winSize.width)
             {
-                vmask0 = vmask0 & vmask_border0;
+                vmask0 = v_and(vmask0, vmask_border0);
             }
             if (x + 8 > winSize.width)
             {
-                vmask1 = vmask1 & vmask_border1;
+                vmask1 = v_and(vmask1, vmask_border1);
             }
 
             v_int32x4 t0, t1;
@@ -207,12 +207,12 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
 
             v_zip(v00, v01, t00, t01);
             v_zip(v10, v11, t10, t11);
-            t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
-            t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
-            t0 = t0 >> (W_BITS - 5);
-            t1 = t1 >> (W_BITS - 5);
-            t0 = t0 & vmask0;
-            t1 = t1 & vmask1;
+            t0 = v_add(v_dotprod(t00, vqw0, vdelta), v_dotprod(t10, vqw1));
+            t1 = v_add(v_dotprod(t01, vqw0, vdelta), v_dotprod(t11, vqw1));
+            t0 = v_shr(t0, W_BITS - 5);
+            t1 = v_shr(t1, W_BITS - 5);
+            t0 = v_and(t0, vmask0);
+            t1 = v_and(t1, vmask1);
             v_store(Iptr + x, v_pack(t0, t1));
 
             v00 = v_reinterpret_as_s16(v_load(dsrc));
@@ -223,12 +223,12 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
             v_zip(v00, v01, t00, t01);
             v_zip(v10, v11, t10, t11);
 
-            t0 = v_dotprod(t00, vqw0, vdelta_d) + v_dotprod(t10, vqw1);
-            t1 = v_dotprod(t01, vqw0, vdelta_d) + v_dotprod(t11, vqw1);
-            t0 = t0 >> W_BITS;
-            t1 = t1 >> W_BITS;
+            t0 = v_add(v_dotprod(t00, vqw0, vdelta_d), v_dotprod(t10, vqw1));
+            t1 = v_add(v_dotprod(t01, vqw0, vdelta_d), v_dotprod(t11, vqw1));
+            t0 = v_shr(t0, W_BITS);
+            t1 = v_shr(t1, W_BITS);
             v00 = v_pack(t0, t1); // Ix0 Iy0 Ix1 Iy1 ...
-            v00 = v00 & v_reinterpret_as_s16(vmask0);
+            v00 = v_and(v00, v_reinterpret_as_s16(vmask0));
             v_store(dIptr, v00);
 
             v00 = v_reinterpret_as_s16(v_interleave_pairs(v_reinterpret_as_s32(v_interleave_pairs(v00))));
@@ -249,12 +249,12 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
             v_zip(v00, v01, t00, t01);
             v_zip(v10, v11, t10, t11);
 
-            t0 = v_dotprod(t00, vqw0, vdelta_d) + v_dotprod(t10, vqw1);
-            t1 = v_dotprod(t01, vqw0, vdelta_d) + v_dotprod(t11, vqw1);
-            t0 = t0 >> W_BITS;
-            t1 = t1 >> W_BITS;
+            t0 = v_add(v_dotprod(t00, vqw0, vdelta_d), v_dotprod(t10, vqw1));
+            t1 = v_add(v_dotprod(t01, vqw0, vdelta_d), v_dotprod(t11, vqw1));
+            t0 = v_shr(t0, W_BITS);
+            t1 = v_shr(t1, W_BITS);
             v00 = v_pack(t0, t1); // Ix0 Iy0 Ix1 Iy1 ...
-            v00 = v00 & v_reinterpret_as_s16(vmask1);
+            v00 = v_and(v00, v_reinterpret_as_s16(vmask1));
             v_store(dIptr + 4 * 2, v00);
 
             v00 = v_reinterpret_as_s16(v_interleave_pairs(v_reinterpret_as_s32(v_interleave_pairs(v00))));

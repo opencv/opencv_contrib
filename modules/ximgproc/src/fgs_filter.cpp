@@ -303,15 +303,15 @@ void FastGlobalSmootherFilterImpl::process_4row_block(Mat* cur,int i)
         v_float32x4 aux0,aux1,aux2,aux3;
 
 #define PROC4(Chor_in,cur_in,coef_prev_in,interD_prev_in,cur_prev_in,interD_out,cur_out,coef_cur_out)\
-        coef_cur_out = lambda_reg*Chor_in;\
-        aux0 = interD_prev_in*coef_prev_in;\
-        aux1 = coef_cur_out+coef_prev_in;\
-        aux1 = one_reg-aux1;\
-        aux0 = aux1-aux0;\
-        interD_out = coef_cur_out/aux0;\
-        aux1 = cur_prev_in*coef_prev_in;\
-        aux1 = cur_in - aux1;\
-        cur_out = aux1/aux0;
+        coef_cur_out = v_mul(lambda_reg, Chor_in);\
+        aux0 = v_mul(interD_prev_in, coef_prev_in);\
+        aux1 = v_add(coef_cur_out, coef_prev_in);\
+        aux1 = v_sub(one_reg, aux1);\
+        aux0 = v_sub(aux1, aux0);\
+        interD_out = v_div(coef_cur_out, aux0);\
+        aux1 = v_mul(cur_prev_in, coef_prev_in);\
+        aux1 = v_sub(cur_in, aux1);\
+        cur_out = v_div(aux1, aux0);
 
         for(;j<w-3;j+=4)
         {
@@ -406,14 +406,14 @@ void FastGlobalSmootherFilterImpl::process_4row_block(Mat* cur,int i)
             aux3 = v_load(cur_row_next3+j);
             v_transpose4x4(aux0,aux1,aux2,aux3,b0,b1,b2,b3);
 
-            aux0 = a3*cur_next_reg;
-            b3 = b3-aux0;
-            aux0 = a2*b3;
-            b2 = b2-aux0;
-            aux0 = a1*b2;
-            b1 = b1-aux0;
-            aux0 = a0*b1;
-            b0 = b0-aux0;
+            aux0 = v_mul(a3, cur_next_reg);
+            b3 = v_sub(b3, aux0);
+            aux0 = v_mul(a2, b3);
+            b2 = v_sub(b2, aux0);
+            aux0 = v_mul(a1, b2);
+            b1 = v_sub(b1, aux0);
+            aux0 = v_mul(a0, b1);
+            b0 = v_sub(b0, aux0);
 
             cur_next_reg = b0;
 
@@ -522,24 +522,24 @@ void FastGlobalSmootherFilterImpl::VerticalPass_ParBody::operator()(const Range&
         {
             a = v_load(Cvert_row_prev+j);
             b = v_load(Cvert_row+j);
-            coef_prev_reg = lambda_reg*a;
-            coef_cur_reg =  lambda_reg*b;
+            coef_prev_reg = v_mul(lambda_reg, a);
+            coef_cur_reg =  v_mul(lambda_reg, b);
 
             a = v_load(interD_row_prev+j);
-            a = a*coef_prev_reg;
+            a = v_mul(a, coef_prev_reg);
 
-            b = coef_prev_reg+coef_cur_reg;
-            b = b+a;
-            a = one_reg-b; //computed denom
+            b = v_add(coef_prev_reg, coef_cur_reg);
+            b = v_add(b, a);
+            a = v_sub(one_reg, b); //computed denom
 
-            b =  coef_cur_reg/a; //computed interD_row
+            b =  v_div(coef_cur_reg, a); //computed interD_row
 
             c = v_load(cur_row_prev+j);
-            c = c*coef_prev_reg;
+            c = v_mul(c, coef_prev_reg);
 
             d = v_load(cur_row+j);
-            d = d-c;
-            d = d/a; //computed cur_row
+            d = v_sub(d, c);
+            d = v_div(d, a); //computed cur_row
 
             v_store(interD_row+j,b);
             v_store(cur_row+j,d);
@@ -570,10 +570,10 @@ void FastGlobalSmootherFilterImpl::VerticalPass_ParBody::operator()(const Range&
         {
             a = v_load(interD_row+j);
             b = v_load(cur_row_next+j);
-            b = a*b;
+            b = v_mul(a, b);
 
             a = v_load(cur_row+j);
-            b = a-b;
+            b = v_sub(a, b);
             v_store(cur_row+j,b);
         }
 #endif

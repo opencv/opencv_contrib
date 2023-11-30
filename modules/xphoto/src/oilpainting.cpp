@@ -58,7 +58,7 @@ private:
     int dynRatio;
 
 public:
-    ParallelOilPainting<Type>(Mat& img, Mat &d, Mat &iLuminance, int r,int k) :
+    ParallelOilPainting(Mat& img, Mat &d, Mat &iLuminance, int r,int k) :
         imgSrc(img),
         dst(d),
         imgLuminance(iLuminance),

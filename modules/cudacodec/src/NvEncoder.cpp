@@ -7,16 +7,6 @@
 #include "NvEncoder.h"
 
 namespace cv { namespace cudacodec {
-#ifndef _WIN32
-#include <cstring>
-static inline bool operator==(const GUID& guid1, const GUID& guid2) {
-    return !memcmp(&guid1, &guid2, sizeof(GUID));
-}
-
-static inline bool operator!=(const GUID& guid1, const GUID& guid2) {
-    return !(guid1 == guid2);
-}
-#endif
 
 NvEncoder::NvEncoder(NV_ENC_DEVICE_TYPE eDeviceType, void* pDevice, uint32_t nWidth, uint32_t nHeight, NV_ENC_BUFFER_FORMAT eBufferFormat,
     uint32_t nExtraOutputDelay) :

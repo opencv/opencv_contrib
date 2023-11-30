@@ -198,7 +198,7 @@ void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray fr
         matches_vector[i] = SparseMatch(from_mat.at<Point2f>(i), to_mat.at<Point2f>(i));
 
 
-    sort(matches_vector.begin(),matches_vector.end());
+    std::sort(matches_vector.begin(),matches_vector.end());
 
     match_num = (int)matches_vector.size();
     CV_Assert(match_num<SHRT_MAX);

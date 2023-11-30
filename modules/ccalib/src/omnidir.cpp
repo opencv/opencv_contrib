@@ -2138,7 +2138,7 @@ void cv::omnidir::internal::flags2idxStereo(int flags, std::vector<int>& idx, in
     }
 }
 
-// fill in zerso for fixed parameters
+// fill in zeros for fixed parameters
 void cv::omnidir::internal::fillFixed(Mat&G, int flags, int n)
 {
     Mat tmp = G.clone();

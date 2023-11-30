@@ -148,8 +148,9 @@ static cv::Mat rgb2luv(const cv::Mat &src)
 
         lTable[i] = l*maxi;
     }
-    for (int i = 0; i < 40; ++i)
-        lTable.push_back(*--lTable.end());
+    for (int i = 0; i < 40; ++i) {
+        lTable.push_back(*lTable.rbegin());
+    }
 
     const int nchannels = 3;
 

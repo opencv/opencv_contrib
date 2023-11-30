@@ -91,7 +91,7 @@ CUDA_TEST_P(AsyncEvent, Timing)
             const double elTimeMs = Event::elapsedTime(startEvent, stopEvent);
             ASSERT_GT(elTimeMs, 0);
         }
-        catch (cv::Exception ex) {
+        catch (const cv::Exception& ex) {
             failed = true;
         }
         ASSERT_EQ(failed, shouldFail.at(i));
