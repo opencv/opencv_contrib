@@ -146,7 +146,7 @@ void SinusCompleGrayCodePattern_Impl::computePhaseMap(
     wrappedPhase = Mat::zeros(height, width, CV_32FC1);
 
     std::vector<const uchar *> imgsPtrs(params.shiftTime);
-    const double shiftVal = CV_2PI / params.shiftTime;
+    const float shiftVal = static_cast<float>(CV_2PI) / params.shiftTime;
 
     parallel_for_(Range(0, height), [&](const Range &range) {
         for (int i = range.start; i < range.end; ++i) {
@@ -157,7 +157,7 @@ void SinusCompleGrayCodePattern_Impl::computePhaseMap(
             }
 
             for (int j = 0; j < width; ++j) {
-                double molecules = 0.f, denominator = 0.f;
+                float molecules = 0.f, denominator = 0.f;
                 for (int k = 0; k < params.shiftTime; ++k) {
                     molecules += imgsPtrs[k][j] * sin(k * shiftVal);
                     denominator += imgsPtrs[k][j] * cos(k * shiftVal);
@@ -200,16 +200,14 @@ void SinusCompleGrayCodePattern_Impl::computeFloorMap(
             auto wrappedPhasePtr = wrappedPhase.ptr<float>(i);
             auto floorPtr = floor.ptr<uint16_t>(i);
             for (int j = 0; j < width; ++j) {
-                int K1 = 0, K2 = 0, tempVal = 0;
-                for (int k = 0; k < grayCodeImgsCount; ++k) {
+                uint16_t K1 = 0, tempVal = 0;
+                for (int k = 0; k < grayCodeImgsCount - 1; ++k) {
                     tempVal ^= imgsPtrs[k][j] > confidencePtr[j];
-                    K1 += (tempVal && k != grayCodeImgsCount - 1)
-                              ? std::pow(2, grayCodeImgsCount - 2 - k)
-                              : 0;
-                    K2 += tempVal ? std::pow(2, grayCodeImgsCount - 1 - k) : 0;
+                    K1 = (K1 << 1) + tempVal;
                 }
 
-                K2 = (K2 + 1) / 2;
+                tempVal ^= imgsPtrs[grayCodeImgsCount - 1][j] > confidencePtr[j];
+                const uint16_t K2 = ((K1 << 1) + tempVal + 1) / 2;
                 if (wrappedPhasePtr[j] <= -CV_PI / 2) {
                     floorPtr[j] = K2;
                 } else if (wrappedPhasePtr[j] >= CV_PI / 2) {
@@ -253,7 +251,7 @@ void SinusCompleGrayCodePattern_Impl::unwrapPhaseMap(
                 if (shadowPtr) {
                     if (shadowPtr[j]) {
                         unwrappedPhasePtr[j] =
-                            wrappedPhasePtr[j] + CV_2PI * floorPtr[j] + CV_PI;
+                            wrappedPhasePtr[j] + static_cast<float>(CV_2PI) * floorPtr[j] + static_cast<float>(CV_PI);
                     } else {
                         unwrappedPhasePtr[j] = 0.f;
                     }
@@ -272,7 +270,7 @@ bool SinusCompleGrayCodePattern_Impl::generate(OutputArrayOfArrays pattern) {
     // generate phase-shift imgs.
     for (int i = 0; i < params.shiftTime; ++i) {
         Mat intensityMap = Mat::zeros(height, width, CV_8UC1);
-        const float shiftVal = CV_2PI / params.shiftTime * i;
+        const float shiftVal = static_cast<float>(CV_2PI) / params.shiftTime * i;
 
         for (int j = 0; j < height; ++j) {
             auto intensityMapPtr = intensityMap.ptr<uchar>(j);
@@ -281,10 +279,10 @@ bool SinusCompleGrayCodePattern_Impl::generate(OutputArrayOfArrays pattern) {
                 // to the complementary graycode interval.
                 const float wrappedPhaseVal =
                     (k % pixelsPerPeriod) /
-                        static_cast<float>(pixelsPerPeriod) * CV_2PI -
-                    CV_PI;
+                        static_cast<float>(pixelsPerPeriod) * static_cast<float>(CV_2PI) -
+                    static_cast<float>(CV_PI);
                 intensityMapPtr[k] =
-                    127.5 + 127.5 * cos(wrappedPhaseVal + shiftVal);
+                    static_cast<uchar>(127.5 + 127.5 * cos(wrappedPhaseVal + shiftVal));
             }
         }
 
@@ -292,7 +290,7 @@ bool SinusCompleGrayCodePattern_Impl::generate(OutputArrayOfArrays pattern) {
         imgs.push_back(intensityMap);
     }
     // generate complementary graycode imgs.
-    const int grayCodeImgsCount = std::log2(params.nbrOfPeriods) + 1;
+    const int grayCodeImgsCount = static_cast<int>(std::log2(params.nbrOfPeriods)) + 1;
     std::vector<uchar> encodeSequential = {0, 255};
     for (int i = 0; i < grayCodeImgsCount; ++i) {
         Mat intensityMap = Mat::zeros(height, width, CV_8UC1);
@@ -342,7 +340,8 @@ void SinusCompleGrayCodePattern_Impl::computeDisparity(
                     continue;
                 }
 
-                float minCost = FLT_MAX, bestDisp = 0.f;
+                float minCost = FLT_MAX;
+                int bestDisp = 0;
 
                 for (int d = params.minDisparity; d < params.maxDisparity;
                      ++d) {
@@ -359,9 +358,8 @@ void SinusCompleGrayCodePattern_Impl::computeDisparity(
                     }
 
                     if (minCost < params.maxCost) {
-                        if ((std::abs(bestDisp - params.minDisparity) < 0.001 ||
-                             std::abs(bestDisp - params.maxDisparity) <
-                                 0.001)) {
+                        if (bestDisp == params.minDisparity ||
+                             bestDisp == params.maxDisparity) {
                             disparityPtr[j] = bestDisp;
                             continue;
                         }
@@ -369,11 +367,11 @@ void SinusCompleGrayCodePattern_Impl::computeDisparity(
                         const float preCost = std::abs(
                             leftVal -
                             rightUnwrapPtr[j -
-                                           (static_cast<int>(bestDisp) - 1)]);
+                                           (bestDisp - 1)]);
                         const float nextCost = std::abs(
                             leftVal -
                             rightUnwrapPtr[j -
-                                           (static_cast<int>(bestDisp) + 1)]);
+                                           (bestDisp + 1)]);
                         const float denom =
                             std::max(1.f, preCost + nextCost - 2 * minCost);
 

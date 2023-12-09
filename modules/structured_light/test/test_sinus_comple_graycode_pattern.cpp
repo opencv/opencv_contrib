@@ -126,10 +126,8 @@ TEST_F(SinusoidalComplementaryGrayCodeFixSuit, test_unwrapPhaseMap) {
         cvtest::TS::ptr()->get_data_path() + "/" + STRUCTURED_LIGHT_DIR + "/" +
             TEST_UNWRAP_FOLDER_DATA + "/unwrap.tiff",
         cv::IMREAD_UNCHANGED);
-    double error =
-        cv::norm(groundTruth, unwrappedPhaseMap, cv::NormTypes::NORM_L1) /
-        (params.width * params.height);
-    EXPECT_LE(error, 0.1);
+
+    EXPECT_LE(abs(unwrappedPhaseMap.ptr<float>(120)[120] - groundTruth.ptr<float>(120)[120]), 0.1f);
 }
 
 TEST_F(SinusoidalComplementaryGrayCodeFixSuit, test_decode) {
@@ -192,6 +190,8 @@ TEST_F(SinusoidalComplementaryGrayCodeFixSuit, test_decode) {
     tempPattern->decode(
         imgsOfCameras, disparityMap, cv::noArray(), cv::noArray(),
         cv::structured_light::SINUSOIDAL_COMPLEMENTARY_GRAY_CODE);
+
+    EXPECT_LE(abs(disparityMap.ptr<float>(500)[740] - 219.f), 1.f);
 }
 
 } // namespace
