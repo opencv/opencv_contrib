@@ -116,6 +116,25 @@ void cv::cuda::phase(InputArray _x, InputArray _y, OutputArray _dst, bool angleI
     syncOutput(dst, _dst, stream);
 }
 
+void cv::cuda::phase(InputArray _xy, OutputArray _dst, bool angleInDegrees, Stream& stream)
+{
+    GpuMat xy = getInputMat(_xy, stream);
+
+    CV_Assert( xy.type() == CV_32FC2 );
+
+    GpuMat dst = getOutputMat(_dst, xy.size(), CV_32FC1, stream);
+
+    GpuMat_<float2> xyc(xy.reshape(2));
+    GpuMat_<float> anglec(dst.reshape(1));
+
+    if (angleInDegrees)
+        gridTransformUnary(xyc, anglec, direction_interleaved_func<float2, true>(), stream);
+    else
+        gridTransformUnary(xyc, anglec, direction_interleaved_func<float2, false>(), stream);
+
+    syncOutput(dst, _dst, stream);
+}
+
 void cv::cuda::cartToPolar(InputArray _x, InputArray _y, OutputArray _mag, OutputArray _angle, bool angleInDegrees, Stream& stream)
 {
     GpuMat x = getInputMat(_x, stream);
@@ -155,6 +174,71 @@ void cv::cuda::cartToPolar(InputArray _x, InputArray _y, OutputArray _mag, Outpu
     syncOutput(angle, _angle, stream);
 }
 
+void cv::cuda::cartToPolar(InputArray _xy, OutputArray _mag, OutputArray _angle, bool angleInDegrees, Stream& stream)
+{
+    GpuMat xy = getInputMat(_xy, stream);
+
+    CV_Assert( xy.type() == CV_32FC2 );
+
+    GpuMat mag = getOutputMat(_mag, xy.size(), CV_32FC1, stream);
+    GpuMat angle = getOutputMat(_angle, xy.size(), CV_32FC1, stream);
+
+    GpuMat_<float2> xyc(xy.reshape(2));
+    GpuMat_<float> magc(mag.reshape(1));
+    GpuMat_<float> anglec(angle.reshape(1));
+
+    if (angleInDegrees)
+    {
+        gridTransformTuple(xyc,
+                           tie(magc, anglec),
+                           make_tuple(
+                               magnitude_interleaved_func<float2>(),
+                               direction_interleaved_func<float2, true>()),
+                           stream);
+    }
+    else
+    {
+        gridTransformTuple(xyc,
+                           tie(magc, anglec),
+                           make_tuple(
+                               magnitude_interleaved_func<float2>(),
+                               direction_interleaved_func<float2, false>()),
+                           stream);
+    }
+
+    syncOutput(mag, _mag, stream);
+    syncOutput(angle, _angle, stream);
+}
+
+void cv::cuda::cartToPolar(InputArray _xy, OutputArray _magAngle, bool angleInDegrees, Stream& stream)
+{
+    GpuMat xy = getInputMat(_xy, stream);
+
+    CV_Assert( xy.type() == CV_32FC2 );
+
+    GpuMat magAngle = getOutputMat(_magAngle, xy.size(), CV_32FC2, stream);
+
+    GpuMat_<float2> xyc(xy.reshape(2));
+    GpuMat_<float2> magAnglec(magAngle.reshape(2));
+
+    if (angleInDegrees)
+    {
+        gridTransformUnary(xyc,
+            magAnglec,
+            magnitude_direction_interleaved_func<float2, true>(),
+            stream);
+    }
+    else
+    {
+        gridTransformUnary(xyc,
+            magAnglec,
+            magnitude_direction_interleaved_func<float2, false>(),
+            stream);
+    }
+
+    syncOutput(magAngle, _magAngle, stream);
+}
+
 namespace
 {
     template <typename T> struct sincos_op
@@ -192,6 +276,49 @@ namespace
         ymat(y, x) = mag_val * sin_a;
     }
 
+    template <typename T, bool useMag>
+    __global__ void polarToCartDstInterleavedImpl_(const GlobPtr<T> mag, const GlobPtr<T> angle, GlobPtr<typename MakeVec<T, 2>::type > xymat, const T scale, const int rows, const int cols)
+    {
+        typedef typename MakeVec<T, 2>::type T2;
+        const int x = blockDim.x * blockIdx.x + threadIdx.x;
+        const int y = blockDim.y * blockIdx.y + threadIdx.y;
+
+        if (x >= cols || y >= rows)
+            return;
+
+        const T mag_val = useMag ? mag(y, x) : static_cast<T>(1.0);
+        const T angle_val = angle(y, x);
+
+        T sin_a, cos_a;
+        sincos_op<T> op;
+        op(scale * angle_val, &sin_a, &cos_a);
+
+        const T2 xy = {mag_val * cos_a, mag_val * sin_a};
+        xymat(y, x) = xy;
+    }
+
+    template <typename T, bool useMag>
+    __global__ void polarToCartInterleavedImpl_(const GlobPtr<typename MakeVec<T, 2>::type > magAngle, GlobPtr<typename MakeVec<T, 2>::type > xymat, const T scale, const int rows, const int cols)
+    {
+        typedef typename MakeVec<T, 2>::type T2;
+        const int x = blockDim.x * blockIdx.x + threadIdx.x;
+        const int y = blockDim.y * blockIdx.y + threadIdx.y;
+
+        if (x >= cols || y >= rows)
+            return;
+
+        const T2 magAngle_val = magAngle(y, x);
+        const T mag_val = useMag ? magAngle_val.x : static_cast<T>(1.0);
+        const T angle_val = magAngle_val.y;
+
+        T sin_a, cos_a;
+        sincos_op<T> op;
+        op(scale * angle_val, &sin_a, &cos_a);
+
+        const T2 xy = {mag_val * cos_a, mag_val * sin_a};
+        xymat(y, x) = xy;
+    }
+
     template <typename T>
     void polarToCartImpl(const GpuMat& mag, const GpuMat& angle, GpuMat& x, GpuMat& y, bool angleInDegrees, cudaStream_t& stream)
     {
@@ -209,6 +336,43 @@ namespace
             polarToCartImpl_<T, false> << <grid, block, 0, stream >> >(shrinkPtr(magc), shrinkPtr(anglec), shrinkPtr(xc), shrinkPtr(yc), scale, anglec.rows, anglec.cols);
         else
             polarToCartImpl_<T, true> << <grid, block, 0, stream >> >(shrinkPtr(magc), shrinkPtr(anglec), shrinkPtr(xc), shrinkPtr(yc), scale, anglec.rows, anglec.cols);
+    }
+
+    template <typename T>
+    void polarToCartDstInterleavedImpl(const GpuMat& mag, const GpuMat& angle, GpuMat& xy, bool angleInDegrees, cudaStream_t& stream)
+    {
+        typedef typename MakeVec<T, 2>::type T2;
+        GpuMat_<T2> xyc(xy.reshape(2));
+        GpuMat_<T> magc(mag.reshape(1));
+        GpuMat_<T> anglec(angle.reshape(1));
+
+        const dim3 block(32, 8);
+        const dim3 grid(divUp(anglec.cols, block.x), divUp(anglec.rows, block.y));
+
+        const T scale = angleInDegrees ? static_cast<T>(CV_PI / 180.0) : static_cast<T>(1.0);
+
+        if (magc.empty())
+            polarToCartDstInterleavedImpl_<T, false> << <grid, block, 0, stream >> >(shrinkPtr(magc), shrinkPtr(anglec), shrinkPtr(xyc), scale, anglec.rows, anglec.cols);
+        else
+            polarToCartDstInterleavedImpl_<T, true> << <grid, block, 0, stream >> >(shrinkPtr(magc), shrinkPtr(anglec), shrinkPtr(xyc), scale, anglec.rows, anglec.cols);
+    }
+
+    template <typename T>
+    void polarToCartInterleavedImpl(const GpuMat& magAngle, GpuMat& xy, bool angleInDegrees, cudaStream_t& stream)
+    {
+        typedef typename MakeVec<T, 2>::type T2;
+        GpuMat_<T2> xyc(xy.reshape(2));
+        GpuMat_<T2> magAnglec(magAngle.reshape(2));
+
+        const dim3 block(32, 8);
+        const dim3 grid(divUp(magAnglec.cols, block.x), divUp(magAnglec.rows, block.y));
+
+        const T scale = angleInDegrees ? static_cast<T>(CV_PI / 180.0) : static_cast<T>(1.0);
+
+        if (magAnglec.empty())
+            polarToCartInterleavedImpl_<T, false> << <grid, block, 0, stream >> >(shrinkPtr(magAnglec), shrinkPtr(xyc), scale, magAnglec.rows, magAnglec.cols);
+        else
+            polarToCartInterleavedImpl_<T, true> << <grid, block, 0, stream >> >(shrinkPtr(magAnglec), shrinkPtr(xyc), scale, magAnglec.rows, magAnglec.cols);
     }
 }
 
@@ -232,6 +396,50 @@ void cv::cuda::polarToCart(InputArray _mag, InputArray _angle, OutputArray _x, O
 
     syncOutput(x, _x, _stream);
     syncOutput(y, _y, _stream);
+
+    if (stream == 0)
+        CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
+}
+
+void cv::cuda::polarToCart(InputArray _mag, InputArray _angle, OutputArray _xy, bool angleInDegrees, Stream& _stream)
+{
+    typedef void(*func_t)(const GpuMat& mag, const GpuMat& angle, GpuMat& xy, bool angleInDegrees, cudaStream_t& stream);
+    static const func_t funcs[7] = { 0, 0, 0, 0, 0, polarToCartDstInterleavedImpl<float>, polarToCartDstInterleavedImpl<double> };
+
+    GpuMat mag = getInputMat(_mag, _stream);
+    GpuMat angle = getInputMat(_angle, _stream);
+
+    CV_Assert(angle.depth() == CV_32F || angle.depth() == CV_64F);
+    CV_Assert( mag.empty() || (mag.type() == angle.type() && mag.size() == angle.size()) );
+
+    GpuMat xy = getOutputMat(_xy, angle.size(), CV_MAKETYPE(angle.depth(), 2), _stream);
+
+    cudaStream_t stream = StreamAccessor::getStream(_stream);
+    funcs[angle.depth()](mag, angle, xy, angleInDegrees, stream);
+    CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+
+    syncOutput(xy, _xy, _stream);
+
+    if (stream == 0)
+        CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
+}
+
+void cv::cuda::polarToCart(InputArray _magAngle, OutputArray _xy, bool angleInDegrees, Stream& _stream)
+{
+    typedef void(*func_t)(const GpuMat& magAngle, GpuMat& xy, bool angleInDegrees, cudaStream_t& stream);
+    static const func_t funcs[7] = { 0, 0, 0, 0, 0, polarToCartInterleavedImpl<float>, polarToCartInterleavedImpl<double> };
+
+    GpuMat magAngle = getInputMat(_magAngle, _stream);
+
+    CV_Assert(magAngle.type() == CV_32FC2 || magAngle.type() == CV_64FC2);
+
+    GpuMat xy = getOutputMat(_xy, magAngle.size(), magAngle.type(), _stream);
+
+    cudaStream_t stream = StreamAccessor::getStream(_stream);
+    funcs[magAngle.depth()](magAngle, xy, angleInDegrees, stream);
+    CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+
+    syncOutput(xy, _xy, _stream);
 
     if (stream == 0)
         CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
