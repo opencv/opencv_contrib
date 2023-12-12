@@ -355,6 +355,66 @@ INSTANTIATE_TEST_CASE_P(CUDA_OptFlow, FarnebackOpticalFlow, testing::Combine(
     testing::Values(FarnebackOptFlowFlags(0), FarnebackOptFlowFlags(cv::OPTFLOW_FARNEBACK_GAUSSIAN)),
     testing::Values(UseInitFlow(false), UseInitFlow(true))));
 
+
+PARAM_TEST_CASE(FarnebackOpticalFlowAsync, cv::cuda::DeviceInfo, PyrScale, PolyN, FarnebackOptFlowFlags)
+{
+    cv::cuda::DeviceInfo devInfo;
+    double pyrScale;
+    int polyN;
+    int flags;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        pyrScale = GET_PARAM(1);
+        polyN = GET_PARAM(2);
+        flags = GET_PARAM(3);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(FarnebackOpticalFlowAsync, Accuracy)
+{
+    cv::Mat frame0Mat = readImage("opticalflow/rubberwhale1.png", cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(frame0Mat.empty());
+
+    cv::Mat frame1Mat = readImage("opticalflow/rubberwhale2.png", cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(frame1Mat.empty());
+
+    cv::Ptr<cv::cuda::FarnebackOpticalFlow> farn = cv::cuda::FarnebackOpticalFlow::create();
+    farn->setPyrScale(pyrScale);
+    farn->setPolyN(polyN);
+    farn->setPolySigma(1.1);
+    farn->setFlags(flags);
+
+    Stream sourceStream;
+    HostMem dummyHost(4000, 4000, CV_8UC3), frame0(frame0Mat), frame1(frame1Mat);
+    GpuMat d_flow, dummyDevice(dummyHost.size(), dummyHost.type()), frame0Device(frame0.size(), frame0.type()), frame1Device(frame1.size(), frame1.type());
+
+    // initialize and warm up CUDA kernels to ensure this doesn't occur during the test
+    farn->calc(loadMat(frame0Mat), loadMat(frame1Mat), d_flow);
+    d_flow.setTo(0);
+
+    frame0Device.upload(frame0, sourceStream);
+    // place extra work in sourceStream to test internal stream synchronization by delaying the upload of frame1 that stream, see https://github.com/opencv/opencv/issues/24540
+    dummyDevice.upload(dummyHost, sourceStream);
+    frame1Device.upload(frame1, sourceStream);
+    farn->calc(frame0Device, frame1Device, d_flow, sourceStream);
+
+    Mat flow;
+    cv::calcOpticalFlowFarneback(
+        frame0, frame1, flow, farn->getPyrScale(), farn->getNumLevels(), farn->getWinSize(),
+        farn->getNumIters(), farn->getPolyN(), farn->getPolySigma(), farn->getFlags());
+        EXPECT_MAT_SIMILAR(flow, d_flow, 1e-4);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_OptFlow, FarnebackOpticalFlowAsync, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(PyrScale(0.3)),
+    testing::Values(PolyN(5)),
+    testing::Values(FarnebackOptFlowFlags(0))));
+
 //////////////////////////////////////////////////////
 // OpticalFlowDual_TVL1
 

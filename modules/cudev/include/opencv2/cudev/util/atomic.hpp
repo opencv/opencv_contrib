@@ -83,7 +83,7 @@ __device__ __forceinline__ float atomicAdd(float* address, float val)
 
 __device__ static double atomicAdd(double* address, double val)
 {
-#if CV_CUDEV_ARCH >= 130
+#if CV_CUDEV_ARCH < 600
     unsigned long long int* address_as_ull = (unsigned long long int*) address;
     unsigned long long int old = *address_as_ull, assumed;
     do {
@@ -93,9 +93,7 @@ __device__ static double atomicAdd(double* address, double val)
     } while (assumed != old);
     return __longlong_as_double(old);
 #else
-    CV_UNUSED(address);
-    CV_UNUSED(val);
-    return 0.0;
+    return ::atomicAdd(address, val);
 #endif
 }
 
