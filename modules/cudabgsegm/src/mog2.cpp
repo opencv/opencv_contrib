@@ -113,9 +113,9 @@ public:
         }
     }
     double getVarMax() const CV_OVERRIDE { return constantsHost_.varMax_; }
-    void setVarMax(double varMax) CV_OVERRIDE { 
+    void setVarMax(double varMax) CV_OVERRIDE {
         if (nframes_ == 0) {
-            constantsHost_.varMax_ = (float)varMax;     
+            constantsHost_.varMax_ = (float)varMax;
         } else {
             constantsHost_.varMax_ = ::fmaxf(constantsHost_.varMin_, (float)varMax);
         }
