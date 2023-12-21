@@ -10,5 +10,6 @@
 #include "opencv2/cann_call.hpp"
 #include "opencv2/cann_interface.hpp"
 #include "opencv2/cann_private.hpp"
+#include "opencv2/ascendc_kernels.hpp"
 
 #endif /* __OPENCV_PRECOMP_H__ */
