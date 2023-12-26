@@ -7,5 +7,7 @@ if(NOT HAVE_EIGEN)
 endif()
 
 if(HAVE_OPENGL)
+  find_package(GLEW)
+  
   ocv_target_link_libraries(${the_module} PRIVATE "${OPENGL_LIBRARIES}")
 endif()
