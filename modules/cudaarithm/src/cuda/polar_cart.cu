@@ -66,11 +66,7 @@ void cv::cuda::magnitude(InputArray _x, InputArray _y, OutputArray _dst, Stream&
 
     GpuMat dst = getOutputMat(_dst, x.size(), CV_32FC1, stream);
 
-    GpuMat_<float> xc(x.reshape(1));
-    GpuMat_<float> yc(y.reshape(1));
-    GpuMat_<float> magc(dst.reshape(1));
-
-    gridTransformBinary(xc, yc, magc, magnitude_func<float>(), stream);
+    gridTransformBinary(globPtr<float>(x), globPtr<float>(y), globPtr<float>(dst), magnitude_func<float>(), stream);
 
     syncOutput(dst, _dst, stream);
 }
@@ -85,11 +81,7 @@ void cv::cuda::magnitudeSqr(InputArray _x, InputArray _y, OutputArray _dst, Stre
 
     GpuMat dst = getOutputMat(_dst, x.size(), CV_32FC1, stream);
 
-    GpuMat_<float> xc(x.reshape(1));
-    GpuMat_<float> yc(y.reshape(1));
-    GpuMat_<float> magc(dst.reshape(1));
-
-    gridTransformBinary(xc, yc, magc, magnitude_sqr_func<float>(), stream);
+    gridTransformBinary(globPtr<float>(x), globPtr<float>(y), globPtr<float>(dst), magnitude_sqr_func<float>(), stream);
 
     syncOutput(dst, _dst, stream);
 }
@@ -104,14 +96,10 @@ void cv::cuda::phase(InputArray _x, InputArray _y, OutputArray _dst, bool angleI
 
     GpuMat dst = getOutputMat(_dst, x.size(), CV_32FC1, stream);
 
-    GpuMat_<float> xc(x.reshape(1));
-    GpuMat_<float> yc(y.reshape(1));
-    GpuMat_<float> anglec(dst.reshape(1));
-
     if (angleInDegrees)
-        gridTransformBinary(xc, yc, anglec, direction_func<float, true>(), stream);
+        gridTransformBinary(globPtr<float>(x), globPtr<float>(y), globPtr<float>(dst), direction_func<float, true>(), stream);
     else
-        gridTransformBinary(xc, yc, anglec, direction_func<float, false>(), stream);
+        gridTransformBinary(globPtr<float>(x), globPtr<float>(y), globPtr<float>(dst), direction_func<float, false>(), stream);
 
     syncOutput(dst, _dst, stream);
 }
@@ -124,13 +112,10 @@ void cv::cuda::phase(InputArray _xy, OutputArray _dst, bool angleInDegrees, Stre
 
     GpuMat dst = getOutputMat(_dst, xy.size(), CV_32FC1, stream);
 
-    GpuMat_<float2> xyc(xy.reshape(2));
-    GpuMat_<float> anglec(dst.reshape(1));
-
     if (angleInDegrees)
-        gridTransformUnary(xyc, anglec, direction_interleaved_func<float2, true>(), stream);
+        gridTransformUnary(globPtr<float2>(xy), globPtr<float>(dst), direction_interleaved_func<float2, true>(), stream);
     else
-        gridTransformUnary(xyc, anglec, direction_interleaved_func<float2, false>(), stream);
+        gridTransformUnary(globPtr<float2>(xy), globPtr<float>(dst), direction_interleaved_func<float2, false>(), stream);
 
     syncOutput(dst, _dst, stream);
 }
@@ -183,13 +168,12 @@ void cv::cuda::cartToPolar(InputArray _xy, OutputArray _mag, OutputArray _angle,
     GpuMat mag = getOutputMat(_mag, xy.size(), CV_32FC1, stream);
     GpuMat angle = getOutputMat(_angle, xy.size(), CV_32FC1, stream);
 
-    GpuMat_<float2> xyc(xy.reshape(2));
     GpuMat_<float> magc(mag.reshape(1));
     GpuMat_<float> anglec(angle.reshape(1));
 
     if (angleInDegrees)
     {
-        gridTransformTuple(xyc,
+        gridTransformTuple(globPtr<float2>(xy),
                            tie(magc, anglec),
                            make_tuple(
                                magnitude_interleaved_func<float2>(),
@@ -198,7 +182,7 @@ void cv::cuda::cartToPolar(InputArray _xy, OutputArray _mag, OutputArray _angle,
     }
     else
     {
-        gridTransformTuple(xyc,
+        gridTransformTuple(globPtr<float2>(xy),
                            tie(magc, anglec),
                            make_tuple(
                                magnitude_interleaved_func<float2>(),
@@ -217,21 +201,18 @@ void cv::cuda::cartToPolar(InputArray _xy, OutputArray _magAngle, bool angleInDe
     CV_Assert( xy.type() == CV_32FC2 );
 
     GpuMat magAngle = getOutputMat(_magAngle, xy.size(), CV_32FC2, stream);
-
-    GpuMat_<float2> xyc(xy.reshape(2));
-    GpuMat_<float2> magAnglec(magAngle.reshape(2));
-
+    
     if (angleInDegrees)
     {
-        gridTransformUnary(xyc,
-            magAnglec,
+        gridTransformUnary(globPtr<float2>(xy),
+            globPtr<float2>(magAngle),
             magnitude_direction_interleaved_func<float2, true>(),
             stream);
     }
     else
     {
-        gridTransformUnary(xyc,
-            magAnglec,
+        gridTransformUnary(globPtr<float2>(xy),
+            globPtr<float2>(magAngle),
             magnitude_direction_interleaved_func<float2, false>(),
             stream);
     }
@@ -257,7 +238,7 @@ namespace
     };
 
     template <typename T, bool useMag>
-    __global__ void polarToCartImpl_(const GlobPtr<T> mag, const GlobPtr<T> angle, GlobPtr<T> xmat, GlobPtr<T> ymat, const T scale, const int rows, const int cols)
+    __global__ void polarToCartImpl_(const PtrStepSz<T> mag, const PtrStepSz<T> angle, PtrStepSz<T> xmat, PtrStepSz<T> ymat, const T scale, const int rows, const int cols)
     {
         const int x = blockDim.x * blockIdx.x + threadIdx.x;
         const int y = blockDim.y * blockIdx.y + threadIdx.y;
@@ -277,7 +258,7 @@ namespace
     }
 
     template <typename T, bool useMag>
-    __global__ void polarToCartDstInterleavedImpl_(const GlobPtr<T> mag, const GlobPtr<T> angle, GlobPtr<typename MakeVec<T, 2>::type > xymat, const T scale, const int rows, const int cols)
+    __global__ void polarToCartDstInterleavedImpl_(const PtrStepSz<T> mag, const PtrStepSz<T> angle, PtrStepSz<typename MakeVec<T, 2>::type > xymat, const T scale, const int rows, const int cols)
     {
         typedef typename MakeVec<T, 2>::type T2;
         const int x = blockDim.x * blockIdx.x + threadIdx.x;
@@ -298,7 +279,7 @@ namespace
     }
 
     template <typename T, bool useMag>
-    __global__ void polarToCartInterleavedImpl_(const GlobPtr<typename MakeVec<T, 2>::type > magAngle, GlobPtr<typename MakeVec<T, 2>::type > xymat, const T scale, const int rows, const int cols)
+    __global__ void polarToCartInterleavedImpl_(const PtrStepSz<typename MakeVec<T, 2>::type > magAngle, PtrStepSz<typename MakeVec<T, 2>::type > xymat, const T scale, const int rows, const int cols)
     {
         typedef typename MakeVec<T, 2>::type T2;
         const int x = blockDim.x * blockIdx.x + threadIdx.x;
@@ -322,57 +303,47 @@ namespace
     template <typename T>
     void polarToCartImpl(const GpuMat& mag, const GpuMat& angle, GpuMat& x, GpuMat& y, bool angleInDegrees, cudaStream_t& stream)
     {
-        GpuMat_<T> xc(x.reshape(1));
-        GpuMat_<T> yc(y.reshape(1));
-        GpuMat_<T> magc(mag.reshape(1));
-        GpuMat_<T> anglec(angle.reshape(1));
-
         const dim3 block(32, 8);
-        const dim3 grid(divUp(anglec.cols, block.x), divUp(anglec.rows, block.y));
+        const dim3 grid(divUp(angle.cols, block.x), divUp(angle.rows, block.y));
 
         const T scale = angleInDegrees ? static_cast<T>(CV_PI / 180.0) : static_cast<T>(1.0);
 
-        if (magc.empty())
-            polarToCartImpl_<T, false> << <grid, block, 0, stream >> >(shrinkPtr(magc), shrinkPtr(anglec), shrinkPtr(xc), shrinkPtr(yc), scale, anglec.rows, anglec.cols);
+        if (mag.empty())
+            polarToCartImpl_<T, false> << <grid, block, 0, stream >> >(mag, angle, x, y, scale, angle.rows, angle.cols);
         else
-            polarToCartImpl_<T, true> << <grid, block, 0, stream >> >(shrinkPtr(magc), shrinkPtr(anglec), shrinkPtr(xc), shrinkPtr(yc), scale, anglec.rows, anglec.cols);
+            polarToCartImpl_<T, true> << <grid, block, 0, stream >> >(mag, angle, x, y, scale, angle.rows, angle.cols);
     }
 
     template <typename T>
     void polarToCartDstInterleavedImpl(const GpuMat& mag, const GpuMat& angle, GpuMat& xy, bool angleInDegrees, cudaStream_t& stream)
     {
         typedef typename MakeVec<T, 2>::type T2;
-        GpuMat_<T2> xyc(xy.reshape(2));
-        GpuMat_<T> magc(mag.reshape(1));
-        GpuMat_<T> anglec(angle.reshape(1));
 
         const dim3 block(32, 8);
-        const dim3 grid(divUp(anglec.cols, block.x), divUp(anglec.rows, block.y));
+        const dim3 grid(divUp(angle.cols, block.x), divUp(angle.rows, block.y));
 
         const T scale = angleInDegrees ? static_cast<T>(CV_PI / 180.0) : static_cast<T>(1.0);
 
-        if (magc.empty())
-            polarToCartDstInterleavedImpl_<T, false> << <grid, block, 0, stream >> >(shrinkPtr(magc), shrinkPtr(anglec), shrinkPtr(xyc), scale, anglec.rows, anglec.cols);
+        if (mag.empty())
+            polarToCartDstInterleavedImpl_<T, false> << <grid, block, 0, stream >> >(mag, angle, xy, scale, angle.rows, angle.cols);
         else
-            polarToCartDstInterleavedImpl_<T, true> << <grid, block, 0, stream >> >(shrinkPtr(magc), shrinkPtr(anglec), shrinkPtr(xyc), scale, anglec.rows, anglec.cols);
+            polarToCartDstInterleavedImpl_<T, true> << <grid, block, 0, stream >> >(mag, angle, xy, scale, angle.rows, angle.cols);
     }
 
     template <typename T>
     void polarToCartInterleavedImpl(const GpuMat& magAngle, GpuMat& xy, bool angleInDegrees, cudaStream_t& stream)
     {
         typedef typename MakeVec<T, 2>::type T2;
-        GpuMat_<T2> xyc(xy.reshape(2));
-        GpuMat_<T2> magAnglec(magAngle.reshape(2));
 
         const dim3 block(32, 8);
-        const dim3 grid(divUp(magAnglec.cols, block.x), divUp(magAnglec.rows, block.y));
+        const dim3 grid(divUp(magAngle.cols, block.x), divUp(magAngle.rows, block.y));
 
         const T scale = angleInDegrees ? static_cast<T>(CV_PI / 180.0) : static_cast<T>(1.0);
 
-        if (magAnglec.empty())
-            polarToCartInterleavedImpl_<T, false> << <grid, block, 0, stream >> >(shrinkPtr(magAnglec), shrinkPtr(xyc), scale, magAnglec.rows, magAnglec.cols);
+        if (magAngle.empty())
+            polarToCartInterleavedImpl_<T, false> << <grid, block, 0, stream >> >(magAngle, xy, scale, magAngle.rows, magAngle.cols);
         else
-            polarToCartInterleavedImpl_<T, true> << <grid, block, 0, stream >> >(shrinkPtr(magAnglec), shrinkPtr(xyc), scale, magAnglec.rows, magAnglec.cols);
+            polarToCartInterleavedImpl_<T, true> << <grid, block, 0, stream >> >(magAngle, xy, scale, magAngle.rows, magAngle.cols);
     }
 }
 
