@@ -238,12 +238,12 @@ namespace
     };
 
     template <typename T, bool useMag>
-    __global__ void polarToCartImpl_(const PtrStepSz<T> mag, const PtrStepSz<T> angle, PtrStepSz<T> xmat, PtrStepSz<T> ymat, const T scale, const int rows, const int cols)
+    __global__ void polarToCartImpl_(const PtrStepSz<T> mag, const PtrStepSz<T> angle, PtrStepSz<T> xmat, PtrStepSz<T> ymat, const T scale)
     {
         const int x = blockDim.x * blockIdx.x + threadIdx.x;
         const int y = blockDim.y * blockIdx.y + threadIdx.y;
 
-        if (x >= cols || y >= rows)
+        if (x >= mag.cols || y >= mag.rows)
             return;
 
         const T mag_val = useMag ? mag(y, x) : static_cast<T>(1.0);
@@ -258,13 +258,13 @@ namespace
     }
 
     template <typename T, bool useMag>
-    __global__ void polarToCartDstInterleavedImpl_(const PtrStepSz<T> mag, const PtrStepSz<T> angle, PtrStepSz<typename MakeVec<T, 2>::type > xymat, const T scale, const int rows, const int cols)
+    __global__ void polarToCartDstInterleavedImpl_(const PtrStepSz<T> mag, const PtrStepSz<T> angle, PtrStepSz<typename MakeVec<T, 2>::type > xymat, const T scale)
     {
         typedef typename MakeVec<T, 2>::type T2;
         const int x = blockDim.x * blockIdx.x + threadIdx.x;
         const int y = blockDim.y * blockIdx.y + threadIdx.y;
 
-        if (x >= cols || y >= rows)
+        if (x >= xymat.cols || y >= xymat.rows)
             return;
 
         const T mag_val = useMag ? mag(y, x) : static_cast<T>(1.0);
@@ -279,13 +279,13 @@ namespace
     }
 
     template <typename T, bool useMag>
-    __global__ void polarToCartInterleavedImpl_(const PtrStepSz<typename MakeVec<T, 2>::type > magAngle, PtrStepSz<typename MakeVec<T, 2>::type > xymat, const T scale, const int rows, const int cols)
+    __global__ void polarToCartInterleavedImpl_(const PtrStepSz<typename MakeVec<T, 2>::type > magAngle, PtrStepSz<typename MakeVec<T, 2>::type > xymat, const T scale)
     {
         typedef typename MakeVec<T, 2>::type T2;
         const int x = blockDim.x * blockIdx.x + threadIdx.x;
         const int y = blockDim.y * blockIdx.y + threadIdx.y;
 
-        if (x >= cols || y >= rows)
+        if (x >= magAngle.cols || y >= magAngle.rows)
             return;
 
         const T2 magAngle_val = magAngle(y, x);
@@ -309,9 +309,9 @@ namespace
         const T scale = angleInDegrees ? static_cast<T>(CV_PI / 180.0) : static_cast<T>(1.0);
 
         if (mag.empty())
-            polarToCartImpl_<T, false> << <grid, block, 0, stream >> >(mag, angle, x, y, scale, angle.rows, angle.cols);
+            polarToCartImpl_<T, false> << <grid, block, 0, stream >> >(mag, angle, x, y, scale);
         else
-            polarToCartImpl_<T, true> << <grid, block, 0, stream >> >(mag, angle, x, y, scale, angle.rows, angle.cols);
+            polarToCartImpl_<T, true> << <grid, block, 0, stream >> >(mag, angle, x, y, scale);
     }
 
     template <typename T>
@@ -325,9 +325,9 @@ namespace
         const T scale = angleInDegrees ? static_cast<T>(CV_PI / 180.0) : static_cast<T>(1.0);
 
         if (mag.empty())
-            polarToCartDstInterleavedImpl_<T, false> << <grid, block, 0, stream >> >(mag, angle, xy, scale, angle.rows, angle.cols);
+            polarToCartDstInterleavedImpl_<T, false> << <grid, block, 0, stream >> >(mag, angle, xy, scale);
         else
-            polarToCartDstInterleavedImpl_<T, true> << <grid, block, 0, stream >> >(mag, angle, xy, scale, angle.rows, angle.cols);
+            polarToCartDstInterleavedImpl_<T, true> << <grid, block, 0, stream >> >(mag, angle, xy, scale);
     }
 
     template <typename T>
@@ -341,9 +341,9 @@ namespace
         const T scale = angleInDegrees ? static_cast<T>(CV_PI / 180.0) : static_cast<T>(1.0);
 
         if (magAngle.empty())
-            polarToCartInterleavedImpl_<T, false> << <grid, block, 0, stream >> >(magAngle, xy, scale, magAngle.rows, magAngle.cols);
+            polarToCartInterleavedImpl_<T, false> << <grid, block, 0, stream >> >(magAngle, xy, scale);
         else
-            polarToCartInterleavedImpl_<T, true> << <grid, block, 0, stream >> >(magAngle, xy, scale, magAngle.rows, magAngle.cols);
+            polarToCartInterleavedImpl_<T, true> << <grid, block, 0, stream >> >(magAngle, xy, scale);
     }
 }
 
