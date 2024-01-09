@@ -131,10 +131,10 @@ void cv::cuda::cartToPolar(InputArray _x, InputArray _y, OutputArray _mag, Outpu
     GpuMat mag = getOutputMat(_mag, x.size(), CV_32FC1, stream);
     GpuMat angle = getOutputMat(_angle, x.size(), CV_32FC1, stream);
 
-    GpuMat_<float> xc(x.reshape(1));
-    GpuMat_<float> yc(y.reshape(1));
-    GpuMat_<float> magc(mag.reshape(1));
-    GpuMat_<float> anglec(angle.reshape(1));
+    GpuMat_<float> xc(x);
+    GpuMat_<float> yc(y);
+    GpuMat_<float> magc(mag);
+    GpuMat_<float> anglec(angle);
 
     if (angleInDegrees)
     {
@@ -168,8 +168,8 @@ void cv::cuda::cartToPolar(InputArray _xy, OutputArray _mag, OutputArray _angle,
     GpuMat mag = getOutputMat(_mag, xy.size(), CV_32FC1, stream);
     GpuMat angle = getOutputMat(_angle, xy.size(), CV_32FC1, stream);
 
-    GpuMat_<float> magc(mag.reshape(1));
-    GpuMat_<float> anglec(angle.reshape(1));
+    GpuMat_<float> magc(mag);
+    GpuMat_<float> anglec(angle);
 
     if (angleInDegrees)
     {
@@ -238,7 +238,7 @@ namespace
     };
 
     template <typename T, bool useMag>
-    __global__ void polarToCartImpl_(const PtrStepSz<T> mag, const PtrStepSz<T> angle, PtrStepSz<T> xmat, PtrStepSz<T> ymat, const T scale)
+    __global__ void polarToCartImpl_(const PtrStep<T> mag, const PtrStepSz<T> angle, PtrStep<T> xmat, PtrStep<T> ymat, const T scale)
     {
         const int x = blockDim.x * blockIdx.x + threadIdx.x;
         const int y = blockDim.y * blockIdx.y + threadIdx.y;
@@ -258,13 +258,13 @@ namespace
     }
 
     template <typename T, bool useMag>
-    __global__ void polarToCartDstInterleavedImpl_(const PtrStepSz<T> mag, const PtrStepSz<T> angle, PtrStepSz<typename MakeVec<T, 2>::type > xymat, const T scale)
+    __global__ void polarToCartDstInterleavedImpl_(const PtrStep<T> mag, const PtrStepSz<T> angle, PtrStep<typename MakeVec<T, 2>::type > xymat, const T scale)
     {
         typedef typename MakeVec<T, 2>::type T2;
         const int x = blockDim.x * blockIdx.x + threadIdx.x;
         const int y = blockDim.y * blockIdx.y + threadIdx.y;
 
-        if (x >= xymat.cols || y >= xymat.rows)
+        if (x >= angle.cols || y >= angle.rows)
             return;
 
         const T mag_val = useMag ? mag(y, x) : static_cast<T>(1.0);
@@ -279,7 +279,7 @@ namespace
     }
 
     template <typename T>
-    __global__ void polarToCartInterleavedImpl_(const PtrStepSz<typename MakeVec<T, 2>::type > magAngle, PtrStepSz<typename MakeVec<T, 2>::type > xymat, const T scale)
+    __global__ void polarToCartInterleavedImpl_(const PtrStepSz<typename MakeVec<T, 2>::type > magAngle, PtrStep<typename MakeVec<T, 2>::type > xymat, const T scale)
     {
         typedef typename MakeVec<T, 2>::type T2;
         const int x = blockDim.x * blockIdx.x + threadIdx.x;

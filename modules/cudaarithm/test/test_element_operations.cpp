@@ -2850,7 +2850,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, CartToPolar, testing::Combine(
     testing::Values(AngleInDegrees(false), AngleInDegrees(true)),
     WHOLE_SUBMAT));
 
-PARAM_TEST_CASE(CartToPolarInterleaved1, cv::cuda::DeviceInfo, cv::Size, AngleInDegrees, UseRoi)
+PARAM_TEST_CASE(CartToPolarInterleavedXY, cv::cuda::DeviceInfo, cv::Size, AngleInDegrees, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
@@ -2868,7 +2868,7 @@ PARAM_TEST_CASE(CartToPolarInterleaved1, cv::cuda::DeviceInfo, cv::Size, AngleIn
     }
 };
 
-CUDA_TEST_P(CartToPolarInterleaved1, Accuracy)
+CUDA_TEST_P(CartToPolarInterleavedXY, Accuracy)
 {
     cv::Mat x = randomMat(size, CV_32FC1);
     cv::Mat y = randomMat(size, CV_32FC1);
@@ -2888,13 +2888,13 @@ CUDA_TEST_P(CartToPolarInterleaved1, Accuracy)
     EXPECT_MAT_NEAR(angle_gold, angle, angleInDegrees ? 1e-2 : 1e-3);
 }
 
-INSTANTIATE_TEST_CASE_P(CUDA_Arithm, CartToPolarInterleaved1, testing::Combine(
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, CartToPolarInterleavedXY, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     testing::Values(AngleInDegrees(false), AngleInDegrees(true)),
     WHOLE_SUBMAT));
 
-PARAM_TEST_CASE(CartToPolarInterleaved2, cv::cuda::DeviceInfo, cv::Size, AngleInDegrees, UseRoi)
+PARAM_TEST_CASE(CartToPolarInterleavedXYMagAngle, cv::cuda::DeviceInfo, cv::Size, AngleInDegrees, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
@@ -2912,7 +2912,7 @@ PARAM_TEST_CASE(CartToPolarInterleaved2, cv::cuda::DeviceInfo, cv::Size, AngleIn
     }
 };
 
-CUDA_TEST_P(CartToPolarInterleaved2, Accuracy)
+CUDA_TEST_P(CartToPolarInterleavedXYMagAngle, Accuracy)
 {
     cv::Mat x = randomMat(size, CV_32FC1);
     cv::Mat y = randomMat(size, CV_32FC1);
@@ -2935,7 +2935,7 @@ CUDA_TEST_P(CartToPolarInterleaved2, Accuracy)
     EXPECT_MAT_NEAR(angle_gold, angle, angleInDegrees ? 1e-2 : 1e-3);
 }
 
-INSTANTIATE_TEST_CASE_P(CUDA_Arithm, CartToPolarInterleaved2, testing::Combine(
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, CartToPolarInterleavedXYMagAngle, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     testing::Values(AngleInDegrees(false), AngleInDegrees(true)),
@@ -2989,7 +2989,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, PolarToCart, testing::Combine(
     testing::Values(AngleInDegrees(false), AngleInDegrees(true)),
     WHOLE_SUBMAT));
 
-PARAM_TEST_CASE(PolarToCartInterleave1, cv::cuda::DeviceInfo, cv::Size, MatType, AngleInDegrees, UseRoi)
+PARAM_TEST_CASE(PolarToCartInterleaveXY, cv::cuda::DeviceInfo, cv::Size, MatType, AngleInDegrees, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
@@ -3009,7 +3009,7 @@ PARAM_TEST_CASE(PolarToCartInterleave1, cv::cuda::DeviceInfo, cv::Size, MatType,
     }
 };
 
-CUDA_TEST_P(PolarToCartInterleave1, Accuracy)
+CUDA_TEST_P(PolarToCartInterleaveXY, Accuracy)
 {
     cv::Mat magnitude = randomMat(size, type);
     cv::Mat angle = randomMat(size, type);
@@ -3030,14 +3030,14 @@ CUDA_TEST_P(PolarToCartInterleave1, Accuracy)
     EXPECT_MAT_NEAR(y_gold, y, tol);
 }
 
-INSTANTIATE_TEST_CASE_P(CUDA_Arithm, PolarToCartInterleave1, testing::Combine(
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, PolarToCartInterleaveXY, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     testing::Values(CV_32FC1, CV_64FC1),
     testing::Values(AngleInDegrees(false), AngleInDegrees(true)),
     WHOLE_SUBMAT));
 
-PARAM_TEST_CASE(PolarToCartInterleave2, cv::cuda::DeviceInfo, cv::Size, MatType, AngleInDegrees, UseRoi)
+PARAM_TEST_CASE(PolarToCartInterleaveMagAngleXY, cv::cuda::DeviceInfo, cv::Size, MatType, AngleInDegrees, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
@@ -3057,7 +3057,7 @@ PARAM_TEST_CASE(PolarToCartInterleave2, cv::cuda::DeviceInfo, cv::Size, MatType,
     }
 };
 
-CUDA_TEST_P(PolarToCartInterleave2, Accuracy)
+CUDA_TEST_P(PolarToCartInterleaveMagAngleXY, Accuracy)
 {
     cv::Mat magnitude = randomMat(size, type);
     cv::Mat angle = randomMat(size, type);
@@ -3081,7 +3081,7 @@ CUDA_TEST_P(PolarToCartInterleave2, Accuracy)
     EXPECT_MAT_NEAR(y_gold, y, tol);
 }
 
-INSTANTIATE_TEST_CASE_P(CUDA_Arithm, PolarToCartInterleave2, testing::Combine(
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, PolarToCartInterleaveMagAngleXY, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     testing::Values(CV_32FC1, CV_64FC1),
