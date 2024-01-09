@@ -243,7 +243,7 @@ namespace
         const int x = blockDim.x * blockIdx.x + threadIdx.x;
         const int y = blockDim.y * blockIdx.y + threadIdx.y;
 
-        if (x >= mag.cols || y >= mag.rows)
+        if (x >= angle.cols || y >= angle.rows)
             return;
 
         const T mag_val = useMag ? mag(y, x) : static_cast<T>(1.0);
@@ -278,7 +278,7 @@ namespace
         xymat(y, x) = xy;
     }
 
-    template <typename T, bool useMag>
+    template <typename T>
     __global__ void polarToCartInterleavedImpl_(const PtrStepSz<typename MakeVec<T, 2>::type > magAngle, PtrStepSz<typename MakeVec<T, 2>::type > xymat, const T scale)
     {
         typedef typename MakeVec<T, 2>::type T2;
@@ -289,7 +289,7 @@ namespace
             return;
 
         const T2 magAngle_val = magAngle(y, x);
-        const T mag_val = useMag ? magAngle_val.x : static_cast<T>(1.0);
+        const T mag_val = magAngle_val.x;
         const T angle_val = magAngle_val.y;
 
         T sin_a, cos_a;
@@ -340,10 +340,7 @@ namespace
 
         const T scale = angleInDegrees ? static_cast<T>(CV_PI / 180.0) : static_cast<T>(1.0);
 
-        if (magAngle.empty())
-            polarToCartInterleavedImpl_<T, false> << <grid, block, 0, stream >> >(magAngle, xy, scale);
-        else
-            polarToCartInterleavedImpl_<T, true> << <grid, block, 0, stream >> >(magAngle, xy, scale);
+        polarToCartInterleavedImpl_<T> << <grid, block, 0, stream >> >(magAngle, xy, scale);
     }
 }
 
