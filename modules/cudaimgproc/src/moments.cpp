@@ -13,7 +13,7 @@ int cv::cuda::numMoments(const MomentsOrder order) {
 }
 
 template<typename T>
-cv::Moments cvtToMomentsT(Mat spatialMoments, const MomentsOrder order) {
+cv::Moments convertSpatialMomentsT(Mat spatialMoments, const MomentsOrder order) {
     switch (order) {
     case MomentsOrder::FIRST_ORDER_MOMENTS:
         return Moments(spatialMoments.at<T>(0), spatialMoments.at<T>(1), spatialMoments.at<T>(2), 0, 0, 0, 0, 0, 0, 0);
@@ -24,11 +24,11 @@ cv::Moments cvtToMomentsT(Mat spatialMoments, const MomentsOrder order) {
     }
 }
 
-cv::Moments cv::cuda::cvtToMoments(Mat spatialMoments, const MomentsOrder order, const int momentsType) {
+cv::Moments cv::cuda::convertSpatialMoments(Mat spatialMoments, const MomentsOrder order, const int momentsType) {
     if (momentsType == CV_32F)
-        return cvtToMomentsT<float>(spatialMoments, order);
+        return convertSpatialMomentsT<float>(spatialMoments, order);
     else
-        return cvtToMomentsT<double>(spatialMoments, order);
+        return convertSpatialMomentsT<double>(spatialMoments, order);
 }
 
 #if !defined (HAVE_CUDA) || defined (CUDA_DISABLER)
@@ -77,7 +77,7 @@ Moments cv::cuda::moments(InputArray src, const bool binary, const MomentsOrder 
     spatialMoments(src, dst, binary, order, momentsType, stream);
     stream.waitForCompletion();
     Mat moments = dst.createMatHeader();
-    return cvtToMoments(moments, order, momentsType);
+    return convertSpatialMoments(moments, order, momentsType);
 }
 
 #endif /* !defined (HAVE_CUDA) */

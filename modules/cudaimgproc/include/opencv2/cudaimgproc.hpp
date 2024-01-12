@@ -811,9 +811,9 @@ CV_EXPORTS_W int numMoments(const MomentsOrder order);
 
 @returns cv::Moments.
 
-@sa cuda::spatialMoments, cuda::moments, cuda::cvtToMoments, cuda::numMoments, cuda::MomentsOrder
+@sa cuda::spatialMoments, cuda::moments, cuda::convertSpatialMoments, cuda::numMoments, cuda::MomentsOrder
  */
-CV_EXPORTS_W Moments cvtToMoments(Mat spatialMoments, const MomentsOrder order, const int momentsType);
+CV_EXPORTS_W Moments convertSpatialMoments(Mat spatialMoments, const MomentsOrder order, const int momentsType);
 
 /** @brief Calculates all of the spatial moments up to the 3rd order of a rasterized shape.
 
@@ -831,18 +831,18 @@ Each moment is returned as a column entry in the 1D \a moments array.
 ```
 GpuMat momentsDevice(1,numMoments(MomentsOrder::SECOND_ORDER_MOMENTS),CV_32F)
 ```
-The central and normalized moments can easily be calculated on the host by downloading the \a moments array and using the cuda::cvtToMoments helper function. e.g.
+The central and normalized moments can easily be calculated on the host by downloading the \a moments array and using the cuda::convertSpatialMoments helper function. e.g.
 ```
 HostMem spatialMomentsHostMem(1, numMoments(MomentsOrder::SECOND_ORDER_MOMENTS), CV_32F);
 spatialMomentsDevice.download(spatialMomentsHostMem, stream);
 stream.waitForCompletion();
 Mat spatialMoments = spatialMomentsHostMem.createMatHeader();
-cv::Moments cvMoments = cvtToMomentsT<float>(spatialMoments, order);
+cv::Moments cvMoments = convertSpatialMoments<float>(spatialMoments, order);
 ```
 
 see the \a CUDA_TEST_P(Moments, Async) test inside opencv_contrib_source_code/modules/cudaimgproc/test/test_moments.cpp for an example.
 @returns cv::Moments.
-@sa cuda::moments, cuda::cvtToMoments, cuda::numMoments, cuda::MomentsOrder
+@sa cuda::moments, cuda::convertSpatialMoments, cuda::numMoments, cuda::MomentsOrder
 */
 CV_EXPORTS_W void spatialMoments(InputArray src, OutputArray moments, const bool binaryImage = false, const MomentsOrder order = MomentsOrder::THIRD_ORDER_MOMENTS, const int momentsType = CV_64F, Stream& stream = Stream::Null());
 
@@ -864,7 +864,7 @@ The costly HostMem allocation cannot be avoided however the GpuMat device alloca
 ```
 see the \a CUDA_TEST_P(Moments, Accuracy) test inside opencv_contrib_source_code/modules/cudaimgproc/test/test_moments.cpp for an example.
 @returns cv::Moments.
-@sa cuda::spatialMoments, cuda::cvtToMoments, cuda::numMoments, cuda::MomentsOrder
+@sa cuda::spatialMoments, cuda::convertSpatialMoments, cuda::numMoments, cuda::MomentsOrder
  */
 CV_EXPORTS_W Moments moments(InputArray src, const bool binaryImage = false, const MomentsOrder order = MomentsOrder::THIRD_ORDER_MOMENTS, const int momentsType = CV_64F);
 

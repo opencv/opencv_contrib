@@ -101,7 +101,7 @@ CUDA_TEST_P(Moments, Async)
     HostMem momentsHost(1, nMoments, momentsType);
     momentsDevice.download(momentsHost, stream);
     stream.waitForCompletion();
-    const cv::Moments moments  = cvtToMoments(momentsHost.createMatHeader(), order, momentsType);
+    const cv::Moments moments  = convertSpatialMoments(momentsHost.createMatHeader(), order, momentsType);
     Mat imgHostAdjustedType = imgHost(roi);
     if (imgType != CV_8U && imgType != CV_32F)
         imgHost(roi).convertTo(imgHostAdjustedType, CV_32F);
