@@ -105,102 +105,69 @@ static inline v_float32 simd_cubicHermite(const v_float32 &v_A, const v_float32 
 }
 #endif
 
-static void cubicInterpolate(const Mat1f &src, uint32_t dstlen, Mat1f &dst, uint32_t srclen)
+static void cubicInterpolate(const float* src/*[srclen]*/, uint32_t srclen, float* dst/*[dstlen]*/, uint32_t dstlen)
 {
-    Mat1f tmp(Size(srclen + 3U, 1U));
-    tmp.at<float>(0) = src.at<float>(0);
-
-#if (CV_SIMD || CV_SIMD_SCALABLE)
-    v_float32 v_reg = vx_setall_f32(src.at<float>(srclen - 1U));
-    vx_store(tmp.ptr<float>(0) + (srclen - 1U), v_reg);
-#else // scalar version
-    tmp.at<float>(srclen + 1U) = src.at<float>(srclen - 1U);
-    tmp.at<float>(srclen + 2U) = src.at<float>(srclen - 1U);
-#endif
+    const int srclen_1 = (int)srclen - 1;
 
     uint32_t i = 0U;
 
+    const float dstToSrcScale = 1.0f / (float)(dstlen - 1U) * (float)srclen;
 #if (CV_SIMD || CV_SIMD_SCALABLE)
-    uint32_t len_sub_vfloatStep = (uint32_t)std::max((int64_t)srclen - (int64_t)v_float32_width, (int64_t)0);
-    for (; i < len_sub_vfloatStep; i+= v_float32_width)
-    {
-        v_float32 v_copy = vx_load(src.ptr<float>(0) + i);
-        vx_store(tmp.ptr<float>(0) + (i + 1U), v_copy);
-    }
-#endif
+    const v_float32 v_dst2src_scale = vx_setall_f32(dstToSrcScale);
+    const v_float32 v_half = vx_setall_f32(0.5f);
 
-    // if the tail exists or scalar version
-    for (; i < srclen; ++i)
-    {
-        tmp.at<float>(i + 1U) = src.at<float>(i);
-    }
-
-    i = 0U;
-
-#if (CV_SIMD || CV_SIMD_SCALABLE)
     int ptr_x_int[v_float32_max_width];
-    uint32_t j;
-
-    v_float32 v_dstlen_sub_1 = vx_setall_f32((float)(dstlen - 1U));
-    v_float32 v_one = vx_setall_f32(1.0f);
-    v_float32 v_x_start = v_div(v_one, v_dstlen_sub_1);
-    v_float32 v_u = vx_setall_f32((float)srclen);
-    v_float32 v_half = vx_setall_f32(0.5f);
-
-    len_sub_vfloatStep = (uint32_t)std::max((int64_t)dstlen - (int64_t)v_float32_width, (int64_t)0);
-    for (; i < v_float32_width; ++i)
+    for (unsigned j = 0; j < v_float32_width; ++j)
     {
-        ptr_x_int[i] = (int)i;
+        ptr_x_int[j] = (int)j;
     }
+    const v_float32 v_sequence = v_cvt_f32(vx_load(ptr_x_int));
 
-    float ptr_for_cubicHermite[v_float32_max_width];
-    v_float32 v_sequence = v_cvt_f32(vx_load(ptr_x_int));
-    for (i = 0U; i < len_sub_vfloatStep; i+= v_float32_width)
+    for (i = 0U; i <= dstlen - v_float32_width; i+= v_float32_width)
     {
         v_float32 v_reg_i = v_add(vx_setall_f32((float)i), v_sequence);
 
-        v_float32 v_x = v_sub(v_mul(v_x_start, v_reg_i, v_u), v_half);
+        v_float32 v_x = v_sub(v_mul(v_reg_i, v_dst2src_scale), v_half);
 
         v_int32 v_x_int = v_trunc(v_x);
         v_float32 v_x_fract = v_sub(v_x, v_cvt_f32(v_floor(v_x)));
 
         vx_store(ptr_x_int, v_x_int);
 
-        for(j = 0U; j < v_float32_width; ++j)
-            ptr_for_cubicHermite[j] = *(tmp.ptr<float>(0) + (ptr_x_int[j] - 1));
-        v_float32 v_x_int_add_A = vx_load(ptr_for_cubicHermite);
+        float ptr_for_cubicHermiteA[v_float32_max_width];
+        float ptr_for_cubicHermiteB[v_float32_max_width];
+        float ptr_for_cubicHermiteC[v_float32_max_width];
+        float ptr_for_cubicHermiteD[v_float32_max_width];
 
-        for(j = 0U; j < v_float32_width; ++j)
-            ptr_for_cubicHermite[j] = *(tmp.ptr<float>(0) + (ptr_x_int[j]));
-        v_float32 v_x_int_add_B = vx_load(ptr_for_cubicHermite);
+        for (unsigned j = 0U; j < v_float32_width; ++j)
+        {
+            int src_offset = ptr_x_int[j];
+            ptr_for_cubicHermiteA[j] = src[std::min(std::max(0, src_offset - 1), srclen_1)];
+            ptr_for_cubicHermiteB[j] = src[std::min(std::max(0, src_offset + 0), srclen_1)];
+            ptr_for_cubicHermiteC[j] = src[std::min(std::max(0, src_offset + 1), srclen_1)];
+            ptr_for_cubicHermiteD[j] = src[std::min(std::max(0, src_offset + 2), srclen_1)];
+        }
+        v_float32 v_x_int_add_A = vx_load(ptr_for_cubicHermiteA);
+        v_float32 v_x_int_add_B = vx_load(ptr_for_cubicHermiteB);
+        v_float32 v_x_int_add_C = vx_load(ptr_for_cubicHermiteC);
+        v_float32 v_x_int_add_D = vx_load(ptr_for_cubicHermiteD);
 
-        for(j = 0U; j < v_float32_width; ++j)
-            ptr_for_cubicHermite[j] = *(tmp.ptr<float>(0) + (ptr_x_int[j] + 1));
-        v_float32 v_x_int_add_C = vx_load(ptr_for_cubicHermite);
-
-        for(j = 0U; j < v_float32_width; ++j)
-            ptr_for_cubicHermite[j] = *(tmp.ptr<float>(0) + (ptr_x_int[j] + 2));
-        v_float32 v_x_int_add_D = vx_load(ptr_for_cubicHermite);
-
-
-        vx_store(dst.ptr<float>(0) + i, simd_cubicHermite(v_x_int_add_A, v_x_int_add_B, v_x_int_add_C, v_x_int_add_D, v_x_fract));
+        vx_store(&dst[i], simd_cubicHermite(v_x_int_add_A, v_x_int_add_B, v_x_int_add_C, v_x_int_add_D, v_x_fract));
     }
 #endif
 
     // if the tail exists or scalar version
-    float *ptr = tmp.ptr<float>(0) + 1U;
-    float lenScale = 1.0f / (float)(dstlen - 1U);
-    float U, X, xfract;
-    int xint;
     for(; i < dstlen; ++i)
     {
-        U = (float)i * lenScale;
-        X = (U * (float)srclen) - 0.5f;
-        xfract = X - floor(X);
-        xint = (int)X;
-        dst.at<float>(i) = scal_cubicHermite(ptr[xint - 1], ptr[xint], ptr[xint + 1], ptr[xint + 2], xfract);
+        float X = (float)i * dstToSrcScale - 0.5f;
+        float xfract = X - floor(X);
+        int xint = (int)X;
+        float cubicHermiteA = src[std::min(std::max(0, xint - 1), srclen_1)];
+        float cubicHermiteB = src[std::min(std::max(0, xint + 0), srclen_1)];
+        float cubicHermiteC = src[std::min(std::max(0, xint + 1), srclen_1)];
+        float cubicHermiteD = src[std::min(std::max(0, xint + 2), srclen_1)];
+        dst[i] = scal_cubicHermite(cubicHermiteA, cubicHermiteB, cubicHermiteC, cubicHermiteD, xfract);
     }
-
 }
 
 static void fir_f32(const float *pSrc,       float *pDst,
@@ -332,7 +299,7 @@ static void fir_f32(const float *pSrc,       float *pDst,
 }
 
 void resampleSignal(InputArray inputSignal, OutputArray outputSignal,
-                    const int inFreq, const int  outFreq)
+                    const int inFreq, const int outFreq)
 {
     CV_TRACE_FUNCTION();
     CV_Assert(!inputSignal.empty());
@@ -343,16 +310,18 @@ void resampleSignal(InputArray inputSignal, OutputArray outputSignal,
         inputSignal.copyTo(outputSignal);
         return;
     }
-    uint32_t filtLen = 33U;
-    float beta = 3.395f;
-    std::vector<float> filt_window(filtLen, 0.f);
-    init_filter(beta, filtLen, filt_window.data());
     float ratio = (float)outFreq / float(inFreq);
     Mat1f inMat = inputSignal.getMat();
-    Mat1f outMat = Mat1f(Size(cvFloor(inMat.cols * ratio), 1));
-    cubicInterpolate(inMat, outMat.cols, outMat, inMat.cols);
+    outputSignal.create(Size(cvFloor(inMat.cols * ratio), 1), CV_32FC1);
+    Mat1f outMat = outputSignal.getMat();
+    cubicInterpolate(inMat.ptr<float>(0), inMat.cols, outMat.ptr<float>(0), outMat.cols);
     if (inFreq < 2 * outFreq)
     {
+        uint32_t filtLen = 33U;
+        float beta = 3.395f;
+        std::vector<float> filt_window(filtLen, 0.f);
+        init_filter(beta, filtLen, filt_window.data());
+
         std::vector<float> dlyl(filtLen * 2 - 1, 0.f);
         std::vector<float> ptmp(outMat.cols + 2 * filtLen, 0.);
 
@@ -367,7 +336,6 @@ void resampleSignal(InputArray inputSignal, OutputArray outputSignal,
             outMat.at<float>(i - filtLen) = ptmp2[i + cvFloor((float)filtLen / 2.f)];
         }
     }
-    outputSignal.assign(std::move(outMat));
 }
 
 
