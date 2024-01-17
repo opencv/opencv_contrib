@@ -1269,7 +1269,7 @@ CV_EXPORTS_W void matchGMS(const Size& size1, const Size& size2, const std::vect
  */
 CV_EXPORTS_W void matchLOGOS(const std::vector<KeyPoint>& keypoints1, const std::vector<KeyPoint>& keypoints2,
                              const std::vector<int>& nn1, const std::vector<int>& nn2,
-                             std::vector<DMatch>& matches1to2);
+                             CV_OUT std::vector<DMatch>& matches1to2);
 
 //! @}
 

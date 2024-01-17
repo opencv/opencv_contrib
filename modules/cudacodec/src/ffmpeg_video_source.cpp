@@ -165,19 +165,21 @@ bool ParamSetsExist(unsigned char* parameterSets, const int szParameterSets, uns
     return paramSetStartCodeLen != 0 && packetStartCodeLen != 0 && parameterSets[paramSetStartCodeLen] == data[packetStartCodeLen];
 }
 
-cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname, const std::vector<int>& _videoCaptureParams)
+cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname, const std::vector<int>& _videoCaptureParams, const int iMaxStartFrame)
     : videoCaptureParams(_videoCaptureParams)
 {
     if (!videoio_registry::hasBackend(CAP_FFMPEG))
         CV_Error(Error::StsNotImplemented, "FFmpeg backend not found");
 
-    cap.open(fname, CAP_FFMPEG, videoCaptureParams);
-    if (!cap.isOpened())
+    videoCaptureParams.push_back(CAP_PROP_FORMAT);
+    videoCaptureParams.push_back(-1);
+    if (!cap.open(fname, CAP_FFMPEG, videoCaptureParams))
         CV_Error(Error::StsUnsupportedFormat, "Unsupported video source");
-
-    if (!cap.set(CAP_PROP_FORMAT, -1))  // turn off video decoder (extract stream)
-        CV_Error(Error::StsUnsupportedFormat, "Fetching of RAW video streams is not supported");
     CV_Assert(cap.get(CAP_PROP_FORMAT) == -1);
+    if (iMaxStartFrame) {
+        CV_Assert(cap.set(CAP_PROP_POS_FRAMES, iMaxStartFrame));
+        firstFrameIdx = static_cast<int>(cap.get(CAP_PROP_POS_FRAMES));
+    }
 
     const int codecExtradataIndex = static_cast<int>(cap.get(CAP_PROP_CODEC_EXTRADATA_INDEX));
     Mat tmpExtraData;

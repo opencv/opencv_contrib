@@ -55,6 +55,39 @@ TEST(Freetype_Basic, success )
     EXPECT_NO_THROW( ft2->putText(dst, "Basic,success", Point( 0,  50), 50, col, -1, LINE_AA, true ) );
 }
 
+TEST(Freetype_Basic, in_memory_font )
+{
+    const string root = cvtest::TS::ptr()->get_data_path();
+    const string font_path = root + "freetype/mplus/Mplus1-Regular.ttf";
+
+    cv::Ptr<cv::freetype::FreeType2> ft2;
+    EXPECT_NO_THROW( ft2 = cv::freetype::createFreeType2() );
+    EXPECT_NO_THROW( ft2->loadFontData( font_path, 0 ) );
+
+    Mat dst(600,600, CV_8UC3, Scalar::all(255) );
+    Scalar col(128,64,255,192);
+    EXPECT_NO_THROW( ft2->putText(dst, "Basic,success", Point( 0,  50), 50, col, -1, LINE_AA, true ) );
+
+    FILE* fp = fopen(font_path.c_str(), "rb");
+    ASSERT_TRUE(fp != NULL);
+    fseek(fp, 0, SEEK_END);
+    const size_t file_size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    std::vector<char> font_buffer(file_size);
+    const size_t actual_read = fread(&font_buffer[0], 1, file_size, fp);
+    fclose(fp);
+    ASSERT_EQ(file_size, actual_read);
+
+    cv::Ptr<cv::freetype::FreeType2> ft2_in_memory;
+    EXPECT_NO_THROW( ft2_in_memory = cv::freetype::createFreeType2() );
+    EXPECT_NO_THROW( ft2_in_memory->loadFontData( &font_buffer[0], file_size, 0 ) );
+    Mat dst_in_memory(600,600, CV_8UC3, Scalar::all(255) );
+    EXPECT_NO_THROW( ft2_in_memory->putText(dst_in_memory, "Basic,success", Point( 0,  50), 50, col, -1, LINE_AA, true ) );
+
+    EXPECT_PRED_FORMAT2(cvtest::MatComparator(0, 0), dst, dst_in_memory);
+}
+
 /******************
  * loadFontData()
  *****************/
@@ -103,6 +136,37 @@ TEST(Freetype_loadFontData, call_multiple)
     Mat dst(600,600, CV_8UC3, Scalar::all(255) );
     Scalar col(128,64,255,192);
     EXPECT_NO_THROW( ft2->putText(dst, "call_mutilple", Point( 0,  50), 50, col, -1, LINE_AA, true ) );
+}
+
+TEST(Freetype_loadFontDataMemory, nullptr )
+{
+    cv::Ptr<cv::freetype::FreeType2> ft2;
+    EXPECT_NO_THROW( ft2 = cv::freetype::createFreeType2() );
+    EXPECT_ANY_THROW( ft2->loadFontData( nullptr, 0, 0 ) );
+}
+
+TEST(Freetype_loadFontDataMemory, broken_data )
+{
+    const string root = cvtest::TS::ptr()->get_data_path();
+    const string font_path = root + "freetype/mplus/Mplus1-Regular.ttf";
+
+    FILE* fp = fopen(font_path.c_str(), "rb");
+    ASSERT_TRUE(fp != NULL);
+    fseek(fp, 0, SEEK_END);
+    const size_t file_size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    std::vector<char> font_buffer(file_size);
+    const size_t actual_read = fread(&font_buffer[0], 1, file_size, fp);
+    fclose(fp);
+    ASSERT_EQ(file_size, actual_read);
+
+    cv::Ptr<cv::freetype::FreeType2> ft2_in_memory;
+    EXPECT_NO_THROW( ft2_in_memory = cv::freetype::createFreeType2() );
+
+    font_buffer[0] = ~font_buffer[0]; // font buffer was broken.
+
+    EXPECT_ANY_THROW( ft2_in_memory->loadFontData( &font_buffer[0], file_size, 0 ) );
 }
 
 typedef testing::TestWithParam<int> idx_range;

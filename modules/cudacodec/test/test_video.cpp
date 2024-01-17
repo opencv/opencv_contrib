@@ -113,6 +113,10 @@ struct CheckParams : SetDevice
 {
 };
 
+struct Seek : SetDevice
+{
+};
+
 #if defined(HAVE_NVCUVID)
 //////////////////////////////////////////////////////
 // VideoReader
@@ -542,36 +546,22 @@ CUDA_TEST_P(CheckParams, Reader)
         ASSERT_TRUE(reader->get(cv::VideoCaptureProperties::CAP_PROP_OPEN_TIMEOUT_MSEC, msActual));
         ASSERT_EQ(msActual, msReference);
     }
-
-    {
-        std::vector<bool> exceptionsThrown = { false,true };
-        std::vector<int> capPropFormats = { -1,0 };
-        for (int i = 0; i < capPropFormats.size(); i++) {
-            bool exceptionThrown = false;
-            try {
-                cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {
-                    cv::VideoCaptureProperties::CAP_PROP_FORMAT, capPropFormats.at(i) });
-            }
-            catch (cv::Exception &ex) {
-                if (ex.code == Error::StsUnsupportedFormat)
-                    exceptionThrown = true;
-            }
-            ASSERT_EQ(exceptionThrown, exceptionsThrown.at(i));
-        }
-    }
 }
 
 CUDA_TEST_P(CheckParams, CaptureProps)
 {
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
-    double width, height, fps;
+    double width, height, fps, iFrame;
     ASSERT_TRUE(reader->get(cv::VideoCaptureProperties::CAP_PROP_FRAME_WIDTH, width));
     ASSERT_EQ(672, width);
     ASSERT_TRUE(reader->get(cv::VideoCaptureProperties::CAP_PROP_FRAME_HEIGHT, height));
     ASSERT_EQ(384, height);
     ASSERT_TRUE(reader->get(cv::VideoCaptureProperties::CAP_PROP_FPS, fps));
     ASSERT_EQ(24, fps);
+    ASSERT_TRUE(reader->grab());
+    ASSERT_TRUE(reader->get(cv::VideoCaptureProperties::CAP_PROP_POS_FRAMES, iFrame));
+    ASSERT_EQ(iFrame, 1.);
 }
 
 CUDA_TEST_P(CheckDecodeSurfaces, Reader)
@@ -617,6 +607,37 @@ CUDA_TEST_P(CheckInitParams, Reader)
     ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_UDP_SOURCE, udpSource) && static_cast<bool>(udpSource) == params.udpSource);
     ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_ALLOW_FRAME_DROP, allowFrameDrop) && static_cast<bool>(allowFrameDrop) == params.allowFrameDrop);
     ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_RAW_MODE, rawMode) && static_cast<bool>(rawMode) == params.rawMode);
+}
+
+CUDA_TEST_P(Seek, Reader)
+{
+#if defined(WIN32)
+    throw SkipTestException("Test disabled on Windows until the FFMpeg wrapper is updated to include PR24012.");
+#endif
+    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
+    // seek to a non key frame
+    const int firstFrameIdx = 18;
+
+    GpuMat frameGs;
+    {
+        cv::Ptr<cv::cudacodec::VideoReader> readerGs = cv::cudacodec::createVideoReader(inputFile);
+        ASSERT_TRUE(readerGs->set(cudacodec::ColorFormat::GRAY));
+        for (int i = 0; i <= firstFrameIdx; i++)
+            ASSERT_TRUE(readerGs->nextFrame(frameGs));
+    }
+
+    cudacodec::VideoReaderInitParams params;
+    params.firstFrameIdx = firstFrameIdx;
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
+    double iFrame = 0.;
+    ASSERT_TRUE(reader->get(cv::VideoCaptureProperties::CAP_PROP_POS_FRAMES, iFrame));
+    ASSERT_EQ(iFrame, static_cast<double>(firstFrameIdx));
+    ASSERT_TRUE(reader->set(cudacodec::ColorFormat::GRAY));
+    GpuMat frame;
+    ASSERT_TRUE(reader->nextFrame(frame));
+    ASSERT_EQ(cuda::norm(frameGs, frame, NORM_INF), 0.0);
+    ASSERT_TRUE(reader->get(cv::VideoCaptureProperties::CAP_PROP_POS_FRAMES, iFrame));
+    ASSERT_EQ(iFrame, static_cast<double>(firstFrameIdx+1));
 }
 
 #endif // HAVE_NVCUVID
@@ -957,6 +978,8 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckInitParams, testing::Combine(
     ALL_DEVICES,
     testing::Values("highgui/video/big_buck_bunny.mp4"),
     testing::Values(true,false), testing::Values(true,false), testing::Values(true,false)));
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, Seek, ALL_DEVICES);
 
 #endif // HAVE_NVCUVID || HAVE_NVCUVENC
 }} // namespace
