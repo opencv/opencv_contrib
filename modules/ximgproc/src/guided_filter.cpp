@@ -128,7 +128,7 @@ class GuidedFilterImpl : public GuidedFilter
 {
 public:
 
-    static Ptr<GuidedFilterImpl> create(InputArray guide, int radius, double eps);
+    static Ptr<GuidedFilterImpl> create(InputArray guide, int radius, double eps, double scale);
 
     void filter(InputArray src, OutputArray dst, int dDepth = -1) CV_OVERRIDE;
 
@@ -136,10 +136,13 @@ protected:
 
     int radius;
     double eps;
+    double scale;
     int h, w;
+    int hOriginal, wOriginal;
 
     vector<Mat> guideCn;
     vector<Mat> guideCnMean;
+    vector<Mat> guideCnOriginal;
 
     SymArray2D<Mat> covarsInv;
 
@@ -149,7 +152,7 @@ protected:
 
     GuidedFilterImpl() {}
 
-    void init(InputArray guide, int radius, double eps);
+    void init(InputArray guide, int radius, double eps, double scale);
 
     void computeCovGuide(SymArray2D<Mat>& covars);
 
@@ -165,6 +168,16 @@ protected:
     inline void convertToWorkType(Mat& src, Mat& dst)
     {
         src.convertTo(dst, CV_32F);
+    }
+
+    inline void subsample(Mat& src, Mat& dst)
+    {
+        resize(src, dst, Size(w, h), 0, 0, INTER_LINEAR);
+    }
+
+    inline void upsample(Mat& src, Mat& dst)
+    {
+        resize(src, dst, Size(wOriginal, hOriginal), 0, 0, INTER_LINEAR);
     }
 
 private: /*Routines to parallelize boxFilter and convertTo*/
@@ -200,6 +213,20 @@ private: /*Routines to parallelize boxFilter and convertTo*/
     void parMeanFilter(V &src, V &dst)
     {
         GFTransform_ParBody pb(*this, src, dst, &GuidedFilterImpl::meanFilter);
+        parallel_for_(pb.getRange(), pb);
+    }
+
+    template<typename V>
+    void parSubsample(V &src, V &dst)
+    {
+        GFTransform_ParBody pb(*this, src, dst, &GuidedFilterImpl::subsample);
+        parallel_for_(pb.getRange(), pb);
+    }
+
+    template<typename V>
+    void parUpsample(V &src, V &dst)
+    {
+        GFTransform_ParBody pb(*this, src, dst, &GuidedFilterImpl::upsample);
         parallel_for_(pb.getRange(), pb);
     }
 
@@ -582,7 +609,7 @@ void GuidedFilterImpl::ApplyTransform_ParBody::operator()(const Range& range) co
     {
         float *_g[4];
         for (int gi = 0; gi < gf.gCnNum; gi++)
-            _g[gi] = gf.guideCn[gi].ptr<float>(i);
+            _g[gi] = gf.guideCnOriginal[gi].ptr<float>(i);
 
         float *betaDst, *g, *a;
         for (int si = 0; si < srcCnNum; si++)
@@ -593,7 +620,7 @@ void GuidedFilterImpl::ApplyTransform_ParBody::operator()(const Range& range) co
                 a = alpha[si][gi].ptr<float>(i);
                 g = _g[gi];
 
-                add_mul(betaDst, a, g, gf.w);
+                add_mul(betaDst, a, g, gf.wOriginal);
             }
         }
     }
@@ -666,28 +693,42 @@ void GuidedFilterImpl::getWalkPattern(int eid, int &cn1, int &cn2)
     cn2 = wdata[6 * 2 * (gCnNum-1) + 6 + eid];
 }
 
-Ptr<GuidedFilterImpl> GuidedFilterImpl::create(InputArray guide, int radius, double eps)
+Ptr<GuidedFilterImpl> GuidedFilterImpl::create(InputArray guide, int radius, double eps, double scale)
 {
     GuidedFilterImpl *gf = new GuidedFilterImpl();
-    gf->init(guide, radius, eps);
+    gf->init(guide, radius, eps, scale);
     return Ptr<GuidedFilterImpl>(gf);
 }
 
-void GuidedFilterImpl::init(InputArray guide, int radius_, double eps_)
+void GuidedFilterImpl::init(InputArray guide, int radius_, double eps_, double scale_)
 {
     CV_Assert( !guide.empty() && radius_ >= 0 && eps_ >= 0 );
     CV_Assert( (guide.depth() == CV_32F || guide.depth() == CV_8U || guide.depth() == CV_16U) && (guide.channels() <= 3) );
+    CV_Assert( scale_ <= 1.0 );
 
     radius = radius_;
     eps = eps_;
+    scale = scale_;
 
-    splitFirstNChannels(guide, guideCn, 3);
-    gCnNum = (int)guideCn.size();
-    h = guideCn[0].rows;
-    w = guideCn[0].cols;
+    splitFirstNChannels(guide, guideCnOriginal, 3);
+    gCnNum = (int)guideCnOriginal.size();
+    hOriginal = guideCnOriginal[0].rows;
+    wOriginal = guideCnOriginal[0].cols;
+    h = int(hOriginal * scale);
+    w = int(wOriginal * scale);
+
+    parConvertToWorkType(guideCnOriginal, guideCnOriginal);
+    if (scale < 1.0)
+    {
+        guideCn.resize(gCnNum);
+        parSubsample(guideCnOriginal, guideCn);
+    }
+    else
+    {
+        guideCn = guideCnOriginal;
+    }
 
     guideCnMean.resize(gCnNum);
-    parConvertToWorkType(guideCn, guideCn);
     parMeanFilter(guideCn, guideCnMean);
 
     SymArray2D<Mat> covars;
@@ -712,7 +753,7 @@ void GuidedFilterImpl::computeCovGuide(SymArray2D<Mat>& covars)
 void GuidedFilterImpl::filter(InputArray src, OutputArray dst, int dDepth /*= -1*/)
 {
     CV_Assert( !src.empty() && (src.depth() == CV_32F || src.depth() == CV_8U) );
-    if (src.rows() != h || src.cols() != w)
+    if (src.rows() != hOriginal || src.cols() != wOriginal)
     {
         CV_Error(Error::StsBadSize, "Size of filtering image must be equal to size of guide image");
         return;
@@ -724,6 +765,11 @@ void GuidedFilterImpl::filter(InputArray src, OutputArray dst, int dDepth /*= -1
     vector<Mat> srcCn(srcCnNum);
     vector<Mat>& srcCnMean = srcCn;
     split(src, srcCn);
+
+    if (scale < 1.0)
+    {
+        parSubsample(srcCn, srcCn);
+    }
 
     if (src.depth() != CV_32F)
     {
@@ -749,7 +795,13 @@ void GuidedFilterImpl::filter(InputArray src, OutputArray dst, int dDepth /*= -1
     parMeanFilter(beta, beta);
     parMeanFilter(alpha, alpha);
 
-    runParBody(ApplyTransform_ParBody(*this, alpha, beta));
+    if (scale < 1.0)
+    {
+        parUpsample(beta, beta);
+        parUpsample(alpha, alpha);
+    }
+
+    parallel_for_(Range(0, hOriginal), ApplyTransform_ParBody(*this, alpha, beta));
     if (dDepth != CV_32F)
     {
         for (int i = 0; i < srcCnNum; i++)
@@ -782,15 +834,15 @@ void GuidedFilterImpl::computeCovGuideAndSrc(vector<Mat>& srcCn, vector<Mat>& sr
 //////////////////////////////////////////////////////////////////////////
 
 CV_EXPORTS_W
-Ptr<GuidedFilter> createGuidedFilter(InputArray guide, int radius, double eps)
+Ptr<GuidedFilter> createGuidedFilter(InputArray guide, int radius, double eps, double scale)
 {
-    return Ptr<GuidedFilter>(GuidedFilterImpl::create(guide, radius, eps));
+    return Ptr<GuidedFilter>(GuidedFilterImpl::create(guide, radius, eps, scale));
 }
 
 CV_EXPORTS_W
-void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius, double eps, int dDepth)
+void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius, double eps, int dDepth, double scale)
 {
-    Ptr<GuidedFilter> gf = createGuidedFilter(guide, radius, eps);
+    Ptr<GuidedFilter> gf = createGuidedFilter(guide, radius, eps, scale);
     gf->filter(src, dst, dDepth);
 }
 
