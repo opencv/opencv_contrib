@@ -15,8 +15,8 @@ SET(SIMPLE_PIPELINE_SRC
 # Define the header files so that they appear in IDEs.
 FILE(GLOB SIMPLE_PIPELINE_HDRS *.h)
 
-ADD_LIBRARY(simple_pipeline STATIC ${SIMPLE_PIPELINE_SRC} ${SIMPLE_PIPELINE_HDRS})
+ADD_LIBRARY(opencv.sfm.simple_pipeline STATIC ${SIMPLE_PIPELINE_SRC} ${SIMPLE_PIPELINE_HDRS})
 
-TARGET_LINK_LIBRARIES(simple_pipeline LINK_PRIVATE multiview ${CERES_LIBRARIES})
+TARGET_LINK_LIBRARIES(opencv.sfm.simple_pipeline LINK_PRIVATE opencv.sfm.multiview ${CERES_LIBRARIES})
 
-LIBMV_INSTALL_LIB(simple_pipeline)
+LIBMV_INSTALL_LIB(opencv.sfm.simple_pipeline)
