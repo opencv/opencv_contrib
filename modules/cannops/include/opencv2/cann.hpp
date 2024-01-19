@@ -318,6 +318,21 @@ CV_EXPORTS_W void initAcl();
  */
 CV_EXPORTS_W void finalizeAcl();
 
+/**
+ * @brief init DVPP system.
+ * @note The DVPP interfaces used are all version V2.
+ * Supported devices: Atlas Inference Series products, Atlas 200/500 A2 Inference products and
+ * Atlas A2 Training Series products/Atlas 300I A2 Inference products
+ */
+CV_EXPORTS_W void initDvpp();
+
+/**
+ * @brief finalize DVPP system.
+ * @note Supported devices: Atlas Inference Series products, Atlas 200/500 A2 Inference products and
+ * Atlas A2 Training Series products/Atlas 300I A2 Inference products
+ */
+CV_EXPORTS_W void finalizeDvpp();
+
 //! @} cann_init
 
 } // namespace cann

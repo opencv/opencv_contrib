@@ -11,6 +11,7 @@ namespace
 {
 #define TYPICAL_ASCEND_MAT_SIZES \
     Values(::perf::sz1080p, ::perf::sz2K, ::perf::sz2160p, ::perf::sz4320p)
+#define DVPP_ASCEND_MAT_SIZES Values(::perf::sz1080p, ::perf::sz2K, ::perf::sz2160p, ::perf::sz5MP)
 #define DEF_PARAM_TEST(name, ...) \
     typedef ::perf::TestBaseWithParam<testing::tuple<__VA_ARGS__>> name
 
@@ -157,5 +158,176 @@ PERF_TEST_P(NPU, CROP_OVERLOAD, TYPICAL_ASCEND_MAT_SIZES)
     cv::cann::resetDevice();
     SANITY_CHECK_NOTHING();
 }
+
+PERF_TEST_P(CPU, RESIZE, DVPP_ASCEND_MAT_SIZES)
+{
+    Mat mat(GET_PARAM(0), CV_8UC3);
+    Mat dst;
+    declare.in(mat, WARMUP_RNG);
+    Size dsize = Size(256, 256);
+    TEST_CYCLE_N(10) { cv::resize(mat, dst, dsize, 0, 0, 1); }
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST_P(NPU, RESIZE, DVPP_ASCEND_MAT_SIZES)
+{
+    Mat mat(GET_PARAM(0), CV_32FC3);
+    AscendMat dst;
+    AscendMat src;
+    src.upload(mat);
+    declare.in(mat, WARMUP_RNG);
+    Size dsize = Size(256, 256);
+    TEST_CYCLE_N(10) { cv::cann::resize(src, dst, dsize, 0, 0, 3); }
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST_P(NPU, THRESHOLD, TYPICAL_ASCEND_MAT_SIZES)
+{
+    Mat mat(GET_PARAM(0), CV_32FC3);
+    AscendMat dst;
+    AscendMat src;
+    src.upload(mat);
+    declare.in(mat, WARMUP_RNG);
+    TEST_CYCLE_N(10) { cv::cann::threshold(src, dst, 100.0, 255.0, cv::THRESH_BINARY); }
+    SANITY_CHECK_NOTHING();
+}
+PERF_TEST_P(CPU, THRESHOLD, TYPICAL_ASCEND_MAT_SIZES)
+{
+    Mat mat(GET_PARAM(0), CV_32FC3);
+    Mat dst;
+    declare.in(mat, WARMUP_RNG);
+    TEST_CYCLE_N(10) { cv::threshold(mat, dst, 100.0, 255.0, cv::THRESH_BINARY); }
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST_P(NPU, RESIZE_INTER_NEAREST, DVPP_ASCEND_MAT_SIZES)
+{
+    Mat mat(GET_PARAM(0), CV_8UC3);
+    Mat dst;
+    declare.in(mat, WARMUP_RNG);
+    Size dsize = Size(256, 256);
+    TEST_CYCLE_N(10) { cv::cann::resize(mat, dst, dsize, 0, 0, 0); }
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST_P(NPU, COPY_MAKE_BORDER, DVPP_ASCEND_MAT_SIZES)
+{
+    Mat resized_cv, checker, cpuOpRet, cpuMat(GET_PARAM(0), CV_8UC3);
+    declare.in(cpuMat, WARMUP_RNG);
+    int top, bottom, left, right;
+    top = (int)(20);
+    bottom = top;
+    left = (int)(20);
+    right = left;
+    int borderType = 1;
+    float scalarV[3] = {0, 0, 255};
+    Scalar value = {scalarV[0], scalarV[1], scalarV[2]};
+
+    TEST_CYCLE_N(10)
+    {
+        cv::cann::copyMakeBorder(cpuMat, checker, top, bottom, left, right, borderType, value);
+    }
+
+    SANITY_CHECK_NOTHING();
+}
+PERF_TEST_P(CPU, COPY_MAKE_BORDER, DVPP_ASCEND_MAT_SIZES)
+{
+    Mat resized_cv, checker, cpuOpRet, cpuMat(GET_PARAM(0), CV_8UC3);
+    declare.in(cpuMat, WARMUP_RNG);
+    int top, bottom, left, right;
+    top = (int)(20);
+    bottom = top;
+    left = (int)(20);
+    right = left;
+    int borderType = 1;
+    float scalarV[3] = {0, 0, 255};
+    Scalar value = {scalarV[0], scalarV[1], scalarV[2]};
+
+    TEST_CYCLE_N(10)
+    {
+        cv::copyMakeBorder(cpuMat, checker, top, bottom, left, right, borderType, value);
+    }
+
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST_P(NPU, CROP_RESIZE_MAKE_BORDER, DVPP_ASCEND_MAT_SIZES)
+{
+    Size size = GET_PARAM(0);
+    Mat resized_cv, checker, cpuOpRet, cpuMat(size, CV_8UC3);
+    declare.in(cpuMat, WARMUP_RNG);
+
+    const Rect b(1, 0, size.width / 2, size.height);
+    Size dsize = Size(size.width / 4, size.height / 2);
+    int top, left;
+    top = (int)(20);
+    left = (int)(20);
+    int borderType = 0;
+    float scalarV[3] = {1, 1, 1};
+    Scalar value = {scalarV[0], scalarV[1], scalarV[2]};
+
+    TEST_CYCLE_N(10)
+    {
+        cv::cann::cropResizeMakeBorder(cpuMat, checker, b, dsize, 0, 0, 1, top, left, borderType,
+                                       value);
+    }
+
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST_P(CPU, CROP_RESIZE_MAKE_BORDER, DVPP_ASCEND_MAT_SIZES)
+{
+    Size size = GET_PARAM(0);
+    Mat resized_cv, checker, cpuOpRet, cpuMat(size, CV_8UC3);
+    declare.in(cpuMat, WARMUP_RNG);
+    const Rect b(1, 0, size.width / 2, size.height);
+    Size dsize = Size(size.width / 4, size.height / 2);
+    int top, bottom, left, right;
+    top = (int)(20);
+    bottom = 0;
+    left = (int)(20);
+    right = 0;
+    int borderType = 0;
+    float scalarV[3] = {1, 1, 1};
+    Scalar value = {scalarV[0], scalarV[1], scalarV[2]};
+
+    TEST_CYCLE_N(10)
+    {
+        Mat cropped_cv(cpuMat, b);
+        cv::resize(cropped_cv, resized_cv, dsize, 0, 0, 1);
+        cv::copyMakeBorder(resized_cv, cpuOpRet, top, bottom, left, right, borderType, value);
+    }
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST_P(NPU, CROP_RESIZE, DVPP_ASCEND_MAT_SIZES)
+{
+    Size size = GET_PARAM(0);
+    Mat resized_cv, checker, cpuOpRet, cpuMat(size, CV_8UC3);
+    declare.in(cpuMat, WARMUP_RNG);
+    const Rect b(1, 0, size.width / 2, size.height);
+    Size dsize = Size(size.width / 4, size.height / 2);
+
+    TEST_CYCLE_N(10) { cv::cann::cropResize(cpuMat, checker, b, dsize, 0, 0, 1); }
+
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST_P(CPU, CROP_RESIZE, DVPP_ASCEND_MAT_SIZES)
+{
+    Size size = GET_PARAM(0);
+    Mat resized_cv, checker, cpuOpRet, cpuMat(size, CV_8UC3);
+    declare.in(cpuMat, WARMUP_RNG);
+    const Rect b(1, 0, size.width / 2, size.height);
+    Size dsize = Size(size.width / 4, size.height / 2);
+
+    TEST_CYCLE_N(10)
+    {
+        Mat cropped_cv(cpuMat, b);
+        cv::resize(cropped_cv, resized_cv, dsize, 0, 0, 1);
+    }
+    SANITY_CHECK_NOTHING();
+}
+
 } // namespace
 } // namespace opencv_test

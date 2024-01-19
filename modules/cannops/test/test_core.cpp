@@ -212,6 +212,128 @@ TEST(CORE, RESIZE)
     cv::cann::resetDevice();
 }
 
+TEST(CORE, RESIZE_NEW)
+{
+    Mat resized_cv, checker;
+    Mat cpuMat = randomMat(1280, 1706, CV_8UC3, 100.0, 255.0);
+    Size dsize = Size(768, 832);
+    // add support for {0 INTER_NEAREST} and {1 INTER_LINEAR}
+    // only the resize result of INTER_LINEAR is close to CV's.
+    int interpolation = 1;
+    cv::resize(cpuMat, resized_cv, dsize, 0, 0, interpolation);
+    cv::cann::resize(cpuMat, checker, dsize, 0, 0, interpolation);
+    EXPECT_MAT_NEAR(resized_cv, checker, 1);
+
+    cv::resize(cpuMat, resized_cv, Size(), 0.5, 0.5, interpolation);
+    cv::cann::resize(cpuMat, checker, Size(), 0.5, 0.5, interpolation);
+    EXPECT_MAT_NEAR(resized_cv, checker, 1);
+
+    AscendMat npuMat, npuChecker;
+    npuMat.upload(cpuMat);
+    cv::resize(cpuMat, resized_cv, dsize, 0, 0, interpolation);
+    cv::cann::resize(npuMat, npuChecker, dsize, 0, 0, interpolation);
+    npuChecker.download(checker);
+    EXPECT_MAT_NEAR(resized_cv, checker, 1);
+
+    cv::resize(cpuMat, resized_cv, Size(), 0.5, 0.5, interpolation);
+    cv::cann::resize(npuMat, npuChecker, Size(), 0.5, 0.5, interpolation);
+    npuChecker.download(checker);
+    EXPECT_MAT_NEAR(resized_cv, checker, 1);
+}
+
+TEST(CORE, CROP_RESIZE)
+{
+    Mat cpuMat = randomMat(1280, 1706, CV_8UC1, 100.0, 255.0);
+    Mat resized_cv, checker, cpuOpRet;
+    Size dsize = Size(496, 512);
+    const Rect b(300, 500, 224, 256);
+
+    cv::cann::cropResize(cpuMat, checker, b, dsize, 0, 0, 1);
+    Mat cropped_cv(cpuMat, b);
+    cv::resize(cropped_cv, cpuOpRet, dsize, 0, 0, 1);
+    EXPECT_MAT_NEAR(checker, cpuOpRet, 1);
+
+    AscendMat npuMat, npuChecker;
+    npuMat.upload(cpuMat);
+    cv::cann::cropResize(npuMat, npuChecker, b, dsize, 0, 0, 1);
+    npuChecker.download(checker);
+    EXPECT_MAT_NEAR(cpuOpRet, checker, 1);
+}
+TEST(CORE, CROP_RESIZE_MAKE_BORDER)
+{
+    Mat cpuMat = randomMat(1024, 896, CV_8UC1, 100.0, 255.0);
+
+    Mat resized_cv, checker, cpuOpRet;
+    Size dsize = Size(320, 256);
+    const Rect b(300, 500, 496, 512);
+    RNG rng(12345);
+    float scalarV[3] = {0, 0, 255};
+    int top, bottom, left, right;
+    top = 54;
+    bottom = 0;
+    left = 32;
+    right = 0;
+    int interpolation = 1;
+
+    Scalar value = {scalarV[0], scalarV[1], scalarV[2], 0};
+    for (int borderType = 0; borderType < 2; borderType++)
+    {
+        cv::cann::cropResizeMakeBorder(cpuMat, checker, b, dsize, 0, 0, interpolation, top, left,
+                                       borderType, value);
+        Mat cropped_cv(cpuMat, b);
+        cv::resize(cropped_cv, resized_cv, dsize, 0, 0, interpolation);
+        cv::copyMakeBorder(resized_cv, cpuOpRet, top, bottom, left, right, borderType, value);
+        EXPECT_MAT_NEAR(checker, cpuOpRet, 1e-10);
+    }
+    AscendMat npuMat, npuChecker;
+    npuMat.upload(cpuMat);
+    for (int borderType = 0; borderType < 2; borderType++)
+    {
+        cv::cann::cropResizeMakeBorder(npuMat, npuChecker, b, dsize, 0, 0, interpolation, top, left,
+                                       borderType, value);
+        npuChecker.download(checker);
+        Mat cropped_cv(cpuMat, b);
+        cv::resize(cropped_cv, resized_cv, dsize, 0, 0, interpolation);
+        cv::copyMakeBorder(resized_cv, cpuOpRet, top, bottom, left, right, borderType, value);
+        EXPECT_MAT_NEAR(checker, cpuOpRet, 1e-10);
+    }
+}
+
+TEST(CORE, COPY_MAKE_BORDER)
+{
+    Mat cpuMat = randomMat(1280, 1706, CV_8UC3, 100, 255);
+
+    Mat cpuOpRet, checker;
+    RNG rng(12345);
+    Scalar value = {static_cast<double>(rng.uniform(0, 255)),
+                    static_cast<double>(rng.uniform(0, 255)),
+                    static_cast<double>(rng.uniform(0, 255))};
+    int top, bottom, left, right;
+    top = 20;
+    bottom = 30;
+    left = 30;
+    right = 20;
+
+    int borderType = 0;
+    for (borderType = 0; borderType < 2; borderType++)
+    {
+        cv::cann::copyMakeBorder(cpuMat, checker, top, bottom, left, right, borderType, value);
+
+        cv::copyMakeBorder(cpuMat, cpuOpRet, top, bottom, left, right, borderType, value);
+        EXPECT_MAT_NEAR(checker, cpuOpRet, 1e-10);
+    }
+
+    AscendMat npuMat, npuChecker;
+    npuMat.upload(cpuMat);
+    for (borderType = 0; borderType < 2; borderType++)
+    {
+        cv::cann::copyMakeBorder(npuMat, npuChecker, top, bottom, left, right, borderType, value);
+        npuChecker.download(checker);
+
+        cv::copyMakeBorder(cpuMat, cpuOpRet, top, bottom, left, right, borderType, value);
+        EXPECT_MAT_NEAR(checker, cpuOpRet, 1e-10);
+    }
+}
 
 } // namespace
 } // namespace opencv_test
