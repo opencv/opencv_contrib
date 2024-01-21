@@ -1366,7 +1366,7 @@ void EdgeDrawingImpl::SplitSegment2Lines(double* x, double* y, int noPixels, int
     {
         // Start by fitting a line to MIN_LINE_LEN pixels
         bool valid = false;
-        double lastA(0), lastB(0), error;
+        double lastA(0), lastB(0), error(0);
         int lastInvert(0);
 
         while (noPixels >= min_line_len)
