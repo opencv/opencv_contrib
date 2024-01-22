@@ -43,6 +43,8 @@
 #include "test_precomp.hpp"
 
 #ifdef HAVE_CUDA
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 
 namespace opencv_test { namespace {
 
@@ -647,7 +649,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, MorphEx, testing::Combine(
 // Median
 
 
-PARAM_TEST_CASE(Median, cv::cuda::DeviceInfo, cv::Size, MatDepth,  KernelSize, UseRoi)
+PARAM_TEST_CASE(Median, cv::cuda::DeviceInfo, cv::Size, MatType, KernelSize, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
@@ -681,7 +683,7 @@ CUDA_TEST_P(Median, Accuracy)
     cv::Mat dst_gold;
     cv::medianBlur(src,dst_gold,kernel);
 
-    cv::Rect rect(kernel+1,0,src.cols-(2*kernel+1),src.rows);
+    cv::Rect rect(kernel/2, kernel/2, src.cols-(kernel-1), src.rows-(kernel-1));
     cv::Mat dst_gold_no_border = dst_gold(rect);
     cv::cuda::GpuMat dst_no_border = cv::cuda::GpuMat(dst, rect);
 
@@ -703,6 +705,18 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, Median, testing::Combine(
     WHOLE_SUBMAT)
     );
 
-}} // namespace
+#if CUDA_VERSION >= 11000 || CUDART_VERSION >= 11000
+INSTANTIATE_TEST_CASE_P(CUDA_Filters_Median_HDR, Median, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    testing::Values(
+        MatType(CV_8UC3), MatType(CV_8UC4),
+        MatType(CV_16U), MatType(CV_16UC3), MatType(CV_16UC4),
+        MatType(CV_32F), MatType(CV_32FC3), MatType(CV_32FC4)),
+    testing::Values(KernelSize(3), KernelSize(5)),
+    WHOLE_SUBMAT));
+#endif
 
+
+}} // namespace
 #endif // HAVE_CUDA
