@@ -32,10 +32,10 @@ __global__ void WaveletMatrixMultiCu4G_UpSweep_gpu(const SrcT mask, const uint16
     using WordT = decltype(BlockT::nbit);
     using WarpWT = uint32_t;
     constexpr int WARP_SIZE = 8 * sizeof(WarpWT);
-    static_assert(WARP_SIZE == 32);
+    static_assert(WARP_SIZE == 32, "");
     static constexpr int THREAD_PER_GRID = ThreadsDimY * WARP_SIZE;
     constexpr int WORD_SIZE = 8 * sizeof(WordT);
-    static_assert(WORD_SIZE == 32 || WORD_SIZE == 64);
+    static_assert(WORD_SIZE == 32 || WORD_SIZE == 64, "");
     constexpr uint32_t WORD_DIV_WARP = WORD_SIZE / WARP_SIZE;
 
     src            = (SrcT*)((uint8_t*)src + (size_t)blockIdx.y * (buf_byte_div32*32ull));
@@ -50,13 +50,13 @@ __global__ void WaveletMatrixMultiCu4G_UpSweep_gpu(const SrcT mask, const uint16
     using WarpReduceY = cub::WarpReduce<uint32_t, ThreadsDimY>;
 
     constexpr size_t shmem_size = sizeof(SrcT) * (ThreadsDimY * (WARP_SIZE - 1) * WARP_SIZE);
-    static_assert(SRCB_S == shmem_size);
-    static_assert(SRCB_S + DSTB_S < 64 * 1024);
+    static_assert(SRCB_S == shmem_size, "");
+    static_assert(SRCB_S + DSTB_S < 64 * 1024, "");
 
     constexpr int DST_BUF_SIZE = DSTB_S;
     constexpr int DST_BUF_NUM_PER_WARP = DST_BUF_SIZE / (ThreadsDimY * sizeof(DstT)); // [32k/32/2=512] [48k/8/1=6114]
     constexpr int DST_BUF_NUM_PER_THREAD = DST_BUF_NUM_PER_WARP / WARP_SIZE;
-    static_assert(DST_BUF_NUM_PER_THREAD <= WARP_SIZE);
+    static_assert(DST_BUF_NUM_PER_THREAD <= WARP_SIZE, "");
 
 
     extern __shared__ uint8_t shmem_base[];
@@ -136,7 +136,7 @@ __global__ void WaveletMatrixMultiCu4G_UpSweep_gpu(const SrcT mask, const uint16
         const IdxType bi = ibb + th_idx;
 
         if (bi < size_div_warp) {
-            static_assert(WORD_SIZE == 32);
+            static_assert(WORD_SIZE == 32, "");
             nbit_bp[bi] = BlockT{s, my_bits};
         }
         if (mask == 0) continue;
@@ -150,7 +150,7 @@ __global__ void WaveletMatrixMultiCu4G_UpSweep_gpu(const SrcT mask, const uint16
             IdxType idx0_begin, idx0_num, idx1_offset, idx01_num, idx1_offset0;
             if (DST_BUF_SIZE > 0) { // constexpr
                 IdxType idx1_begin, idx0_end;
-                const IdxType ib = std::min(size_div_warp, i + DST_BUF_NUM_PER_THREAD);
+                const IdxType ib = ::min(size_div_warp, i + DST_BUF_NUM_PER_THREAD);
                 const IdxType jb = j + ib - i - 1;
                 idx0_begin = cv::cuda::device::shfl(s, j, WARP_SIZE);
                 idx1_begin = i * WARP_SIZE + nsum - idx0_begin;
@@ -285,7 +285,7 @@ template<int ThreadsDimY, typename SrcT, typename IdxType>
 __global__ void WaveletMatrixMultiCu4G_first_gpu(const SrcT mask, uint16_t block_pair_num, const IdxType size_div_warp, const SrcT* __restrict__ src, IdxType* __restrict__ nsum_scan_buf, const uint32_t buf_byte_div32) {
     using WarpWT = uint32_t;
     constexpr int WARP_SIZE = 8 * sizeof(WarpWT);
-    static_assert(WARP_SIZE == 32);
+    static_assert(WARP_SIZE == 32, "");
     static constexpr int THREAD_PER_GRID = ThreadsDimY * WARP_SIZE;
 
     src = (SrcT*)((uint8_t*)src + (size_t)blockIdx.y * (buf_byte_div32*32ull));
@@ -510,7 +510,7 @@ public:
         constexpr int BLOCK_SHMEM_KB = SHMEM_USE_KB * THREAD_PER_GRID / 1024;
         constexpr int DSTB_S_T = WaveletMatrixMultiCu4G_get_dstbuf_kb<BLOCK_SHMEM_KB, MIN_DSTBUF_KB>(SRCB_S_T);
         constexpr int DSTB_S_8 = WaveletMatrixMultiCu4G_get_dstbuf_kb<BLOCK_SHMEM_KB, MIN_DSTBUF_KB>(SRCB_S_8);
-        static_assert(SHMEM_USE_KB >= 64 || THREAD_PER_GRID == 1024);
+        static_assert(SHMEM_USE_KB >= 64 || THREAD_PER_GRID == 1024, "if SHMEM_USE_KB < 64, THREAD_PER_GRID must 1024");
         static_assert(SRCB_S_T + DSTB_S_T <= BLOCK_SHMEM_KB * 1024 && ((DSTB_S_T == 0 && SRCB_S_T + MIN_DSTBUF_KB * 1024> BLOCK_SHMEM_KB * 1024) || (DSTB_S_T >= MIN_DSTBUF_KB * 1024 && SRCB_S_T + DSTB_S_T * 2 > BLOCK_SHMEM_KB * 1024)), "");
         static_assert(SRCB_S_8 + DSTB_S_8 <= BLOCK_SHMEM_KB * 1024 && ((DSTB_S_8 == 0 && SRCB_S_8 + MIN_DSTBUF_KB * 1024> BLOCK_SHMEM_KB * 1024) || (DSTB_S_8 >= MIN_DSTBUF_KB * 1024 && SRCB_S_8 + DSTB_S_8 * 2 > BLOCK_SHMEM_KB * 1024)), "");
 

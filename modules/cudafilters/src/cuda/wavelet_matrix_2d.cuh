@@ -22,13 +22,13 @@ __global__ void WaveletMatrix2dCu5C_UpSweep_gpu(const SrcT mask, const uint16_t 
     using WordT = decltype(BlockT::nbit);
     using WarpWT = uint32_t;
     constexpr int WARP_SIZE = 8 * sizeof(WarpWT);
-    static_assert(WARP_SIZE == 32);
+    static_assert(WARP_SIZE == 32, "");
     static constexpr int THREAD_PER_GRID = ThreadsDimY * WARP_SIZE;
     constexpr int WORD_SIZE = 8 * sizeof(WordT);
-    static_assert(WORD_SIZE == 32 || WORD_SIZE == 64);
+    static_assert(WORD_SIZE == 32 || WORD_SIZE == 64, "");
     constexpr uint32_t WORD_DIV_WARP = WORD_SIZE / WARP_SIZE;
 
-    static_assert(ThreadsDimY % SRC_CACHE_DIV == 0);
+    static_assert(ThreadsDimY % SRC_CACHE_DIV == 0, "");
     static_assert(ThreadsDimY != SRC_CACHE_DIV, "Warning: It's not efficient.");
 
     const size_t buf_byte_y_offset = (size_t)(CH_NUM==1?0:blockIdx.y) * (buf_byte_div32*32ull);
@@ -52,7 +52,7 @@ __global__ void WaveletMatrix2dCu5C_UpSweep_gpu(const SrcT mask, const uint16_t 
     using WarpReduce = cub::WarpReduce<uint32_t>;
     using WarpReduceY = cub::WarpReduce<uint32_t, ThreadsDimY>;
 
-    static_assert(SRCB_S < 64 * 1024);
+    static_assert(SRCB_S < 64 * 1024, "");
 
     __shared__ SrcT   src_val_cache[ThreadsDimY][(WARP_SIZE/SRC_CACHE_DIV)-1][WARP_SIZE];
     __shared__ XIdxT vidx_val_cache[ThreadsDimY][(WARP_SIZE/SRC_CACHE_DIV)-1][WARP_SIZE];
@@ -96,7 +96,6 @@ __global__ void WaveletMatrix2dCu5C_UpSweep_gpu(const SrcT mask, const uint16_t 
         SrcT  first_val;
         XIdxT first_idxval;
 
-        const XYIdxT src_val_cache_offset = (threadIdx.y * (WARP_SIZE - 1) - 1) * WARP_SIZE + threadIdx.x;
         for (XYIdxT kb = 0, i = ibb + WARP_SIZE / SRC_CACHE_DIV * threadIdx.y; kb < WARP_SIZE / SRC_CACHE_DIV; ++kb, ++i) {
             if (i >= size_div_warp) break;
             WarpWT bits;
@@ -155,7 +154,7 @@ __global__ void WaveletMatrix2dCu5C_UpSweep_gpu(const SrcT mask, const uint16_t 
             }
             const XYIdxT bi = ibb + threadIdx.y * WARP_SIZE / SRC_CACHE_DIV + threadIdx.x;
             if (bi < size_div_warp) {
-                static_assert(WORD_SIZE == 32);
+                static_assert(WORD_SIZE == 32, "");
                 nbit_bp[bi] = BlockT{s, my_bits};
             }
         }
@@ -269,10 +268,10 @@ __global__ void WaveletMatrix2dCu5C_last_gpu(const uint16_t block_pair_num, cons
     using WordT = decltype(BlockT::nbit);
     using WarpWT = uint32_t;
     constexpr int WARP_SIZE = 8 * sizeof(WarpWT);
-    static_assert(WARP_SIZE == 32);
+    static_assert(WARP_SIZE == 32, "");
     static constexpr int THREAD_PER_GRID = ThreadsDimY * WARP_SIZE;
     constexpr int WORD_SIZE = 8 * sizeof(WordT);
-    static_assert(WORD_SIZE == 32 || WORD_SIZE == 64);
+    static_assert(WORD_SIZE == 32 || WORD_SIZE == 64, "");
     constexpr uint32_t WORD_DIV_WARP = WORD_SIZE / WARP_SIZE;
 
     const size_t buf_byte_y_offset = (size_t)(CH_NUM==1?0:blockIdx.y) * (buf_byte_div32*32ull);
@@ -362,7 +361,7 @@ template<int CH_NUM, int ThreadsDimY, bool MOV_SRC,typename SrcT, typename XYIdx
 __global__ void WaveletMatrix2dCu5C_first_gpu_multi(const SrcT mask, uint16_t block_pair_num, const XYIdxT size_div_warp, SrcT* __restrict__ src, SrcT* __restrict__ dst, XYIdxT* __restrict__ nsum_scan_buf, const uint32_t buf_byte_div32, XIdxT* __restrict__ buf_idx, const int W, const XYIdxT WH, const SrcT* __restrict__ src_const) {
     using WarpWT = uint32_t;
     constexpr int WARP_SIZE = 8 * sizeof(WarpWT);
-    static_assert(WARP_SIZE == 32);
+    static_assert(WARP_SIZE == 32, "");
     static constexpr int THREAD_PER_GRID = ThreadsDimY * WARP_SIZE;
 
     SrcT* __restrict__ dsts[CH_NUM];
@@ -439,7 +438,7 @@ template<int ThreadsDimY, typename SrcT, typename XYIdxT, typename XIdxT>
 __global__ void WaveletMatrix2dCu5C_first_gpu_multi_srcunpacked(const SrcT mask, uint16_t block_pair_num, const XYIdxT size_div_warp, const SrcT* __restrict__ src, XYIdxT* __restrict__ nsum_scan_buf, const uint32_t buf_byte_div32, XIdxT* __restrict__ buf_idx, const int W, const XYIdxT WH) {
     using WarpWT = uint32_t;
     constexpr int WARP_SIZE = 8 * sizeof(WarpWT);
-    static_assert(WARP_SIZE == 32);
+    static_assert(WARP_SIZE == 32, "");
     static constexpr int THREAD_PER_GRID = ThreadsDimY * WARP_SIZE;
 
     XYIdxT cs = 0;
@@ -492,7 +491,7 @@ __device__
 inline IdxType WaveletMatrix2dCu5C_median2d_rank0(const IdxType i, const BlockT* __restrict__ nbit_bp) {
     using WordT = decltype(BlockT::nbit);
     constexpr int WORD_SIZE = 8 * sizeof(WordT);
-    static_assert(WORD_SIZE == 32 || WORD_SIZE == 64);
+    static_assert(WORD_SIZE == 32 || WORD_SIZE == 64, "");
 
     const IdxType bi = i / WORD_SIZE;
 

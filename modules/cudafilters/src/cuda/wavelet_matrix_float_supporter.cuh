@@ -23,7 +23,7 @@ __global__ void split_and_iota_idx(IdxT *idx_in_cu, const ValT* val_in_cu, ValT*
     const size_t i = blockIdx.x * blockDim + threadIdx.x;
     if (i >= hw) return;
 
-    static_assert(is_same<ValT, float>::value);
+    static_assert(is_same<ValT, float>::value, "");
     // static_assert(2 <= CH_NUM && CH_NUM <= 4);
     using SrcTU = std::conditional_t<CH_NUM == 2, float2, conditional_t<CH_NUM == 3, float3, float4>>;
 
