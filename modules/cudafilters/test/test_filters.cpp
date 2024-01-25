@@ -43,8 +43,7 @@
 #include "test_precomp.hpp"
 
 #ifdef HAVE_CUDA
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include "../src/cuda/wavelet_matrix_feature_support_checks.h"
 
 namespace opencv_test { namespace {
 
@@ -705,7 +704,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, Median, testing::Combine(
     WHOLE_SUBMAT)
     );
 
-#if CUDA_VERSION >= 11000 || CUDART_VERSION >= 11000
+#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
 INSTANTIATE_TEST_CASE_P(CUDA_Filters_Median_HDR, Median, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,

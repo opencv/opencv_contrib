@@ -1,8 +1,12 @@
 #ifndef __OPENCV_WAVELET_MATRIX_2D_CUH__
 #define __OPENCV_WAVELET_MATRIX_2D_CUH__
+
+
 // The CUB library is used for the Median Filter with Wavelet Matrix,
 // which has become a standard library since CUDA 11.
-#if CUDA_VERSION >= 11000 || CUDART_VERSION >= 11000
+#include "wavelet_matrix_feature_support_checks.h"
+#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+
 
 #include <cub/cub.cuh>
 #include <vector>

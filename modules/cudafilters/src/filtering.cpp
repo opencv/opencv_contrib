@@ -1051,9 +1051,7 @@ Ptr<Filter> cv::cuda::createColumnSumFilter(int srcType, int dstType, int ksize,
 
 // The CUB library is used for the Median Filter with Wavelet Matrix,
 // which has become a standard library since CUDA 11.
-#if CUDA_VERSION >= 11000 || CUDART_VERSION >= 11000
-#define __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
-#endif
+#include "cuda/wavelet_matrix_feature_support_checks.h"
 
 
 namespace cv { namespace cuda { namespace device
