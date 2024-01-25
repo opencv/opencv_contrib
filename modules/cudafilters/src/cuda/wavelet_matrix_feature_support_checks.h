@@ -31,5 +31,10 @@
 #endif
 
 
+// I confirmed that it works with Intel C++ Compiler 2021.1.2. It did not work with icc 19.0.1.
+#if defined(__INTEL_COMPILER) && (__INTEL_COMPILER > 202101 || (__INTEL_COMPILER == 202101 && __INTEL_COMPILER_UPDATE >= 2))
+#define __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+#endif
+
 #endif // CUDA_VERSION
 #endif // __OPENCV_WAVELET_MATRIX_FEATURE_SUPPORT_CHECKS_H__
