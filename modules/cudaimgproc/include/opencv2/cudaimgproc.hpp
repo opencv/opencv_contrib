@@ -579,8 +579,8 @@ public:
      */
     CV_WRAP virtual void detect(InputArray image, OutputArray corners, InputArray mask = noArray(), Stream& stream = Stream::Null()) = 0;
 
-    virtual void setMaxCorners(int maxCorners) = 0;
-    virtual void setMinDistance(double minDistance) = 0;
+    CV_WRAP virtual void setMaxCorners(int maxCorners) = 0;
+    CV_WRAP virtual void setMinDistance(double minDistance) = 0;
 };
 
 /** @brief Creates implementation for cuda::CornersDetector .
