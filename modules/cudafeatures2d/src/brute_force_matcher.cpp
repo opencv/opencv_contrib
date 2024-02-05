@@ -791,8 +791,13 @@ namespace
             for (int i = 0; i < k; ++i)
             {
                 const int trainIdx = *trainIdxPtr;
-                if (trainIdx == -1)
+                if (trainIdx == -1){
+                    ++trainIdxPtr;
+                    ++distancePtr;
+                    if (imgIdxPtr)
+                        ++imgIdxPtr;
                     continue;
+                }
 
                 const int imgIdx = imgIdxPtr ? *imgIdxPtr : 0;
                 const float distance = *distancePtr;
