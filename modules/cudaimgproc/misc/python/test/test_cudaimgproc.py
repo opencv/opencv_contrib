@@ -89,5 +89,30 @@ class cudaimgproc_test(NewOpenCVTests):
         self.assertTrue(np.allclose(cv.cuda.cvtColor(cuMat, cv.COLOR_BGR2HSV).download(),
                                          cv.cvtColor(npMat, cv.COLOR_BGR2HSV)))
 
+    def test_moments(self):
+        # setup
+        src_host = (np.ones([10,10])).astype(np.uint8)*255
+        cpu_moments = cv.moments(src_host, True)
+        moments_order = cv.cuda.THIRD_ORDER_MOMENTS
+        n_moments = cv.cuda.numMoments(cv.cuda.THIRD_ORDER_MOMENTS)
+        src_device = cv.cuda.GpuMat(src_host)
+
+        # synchronous
+        cv.cuda.setBufferPoolUsage(True)
+        cv.cuda.setBufferPoolConfig(cv.cuda.getDevice(), n_moments * np.dtype(float).itemsize, 1);
+        gpu_moments = cv.cuda.moments(src_device, True, moments_order, cv.CV_64F)
+        self.assertTrue(len([1 for moment_type in cpu_moments if moment_type in gpu_moments and cpu_moments[moment_type] == gpu_moments[moment_type]]) == 24)
+
+        # asynchronous
+        stream = cv.cuda.Stream()
+        moments_array_host = np.empty([1, n_moments], np.float64)
+        cv.cuda.registerPageLocked(moments_array_host)
+        moments_array_device = cv.cuda.GpuMat(1, n_moments, cv.CV_64F)
+        cv.cuda.spatialMoments(src_device, moments_array_device, True, moments_order, cv.CV_64F, stream)
+        moments_array_device.download(stream, moments_array_host);
+        stream.waitForCompletion()
+        cv.cuda.unregisterPageLocked(moments_array_host)
+        self.assertTrue(len([ 1 for moment_type,gpu_moment in zip(cpu_moments,moments_array_host[0]) if cpu_moments[moment_type] == gpu_moment]) == 10)
+
 if __name__ == '__main__':
     NewOpenCVTests.bootstrap()
