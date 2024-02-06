@@ -402,13 +402,10 @@ Ptr<VideoWriter> createVideoWriter(const String& fileName, const Size frameSize,
 {
     CV_Assert(params.idrPeriod >= params.gopLength);
     if (!encoderCallback) {
-        // required until PR for raw video encapsulation is merged and windows dll is updated
-#ifndef WIN32 // remove #define and keep code once merged
         try {
             encoderCallback = new FFmpegVideoWriter(fileName, codec, fps, frameSize, params.idrPeriod);
         }
         catch (...)
-#endif
         {
             encoderCallback = new RawVideoWriter(fileName);
         }

@@ -16,14 +16,22 @@ constexpr int blockSizeY = 16;
 template <typename T>
 __device__ T butterflyWarpReduction(T value) {
     for (int i = 16; i >= 1; i /= 2)
+#if (CUDART_VERSION >= 9000)
         value += __shfl_xor_sync(0xffffffff, value, i, 32);
+#else
+        value += __shfl_xor(value, i, 32);
+#endif
     return value;
 }
 
 template <typename T>
 __device__ T butterflyHalfWarpReduction(T value) {
     for (int i = 8; i >= 1; i /= 2)
-        value += __shfl_xor_sync(0xffff, value, i, 32);
+#if (CUDART_VERSION >= 9000)
+        value += __shfl_xor_sync(0xffff, value, i, 16);
+#else
+        value += __shfl_xor(value, i, 16);
+#endif
     return value;
 }
 

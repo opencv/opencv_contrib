@@ -15,17 +15,23 @@ if(OCV_DEPENDENCIES_FOUND)
 
   ocv_cuda_filter_options()
 
-  if(CUDA_VERSION VERSION_LESS "11.0")
-    ocv_update(OPENCV_CUDA_OPTIONS_opencv_test_cudev "-std=c++11")
+  set(target_libs ${test_deps} ${OPENCV_LINKER_LIBS})
+  if(NOT ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
+    ocv_check_windows_crt_linkage()
+    set(target_libs ${target_libs} ${CUDA_LIBRARIES})
+    if(CUDA_VERSION VERSION_LESS "11.0")
+      ocv_update(OPENCV_CUDA_OPTIONS_opencv_test_cudev "-std=c++11")
+    else()
+      ocv_update(OPENCV_CUDA_OPTIONS_opencv_test_cudev "-std=c++14")
+      ocv_warnings_disable(CMAKE_CXX_FLAGS -Wdeprecated-declarations)
+    endif()
+    CUDA_ADD_EXECUTABLE(${the_target} ${OPENCV_TEST_${the_module}_SOURCES} OPTIONS ${OPENCV_CUDA_OPTIONS_opencv_test_cudev})
   else()
-    ocv_update(OPENCV_CUDA_OPTIONS_opencv_test_cudev "-std=c++14")
-    ocv_warnings_disable(CMAKE_CXX_FLAGS -Wdeprecated-declarations)
+    ocv_add_executable(${the_target} ${OPENCV_TEST_${the_module}_SOURCES})
   endif()
 
-  CUDA_ADD_EXECUTABLE(${the_target} ${OPENCV_TEST_${the_module}_SOURCES} OPTIONS ${OPENCV_CUDA_OPTIONS_opencv_test_cudev})
-  ocv_target_link_libraries(${the_target} PRIVATE
-      ${test_deps} ${OPENCV_LINKER_LIBS} ${CUDA_LIBRARIES}
-  )
+  ocv_target_link_libraries(${the_target} PRIVATE ${target_libs})
+
   add_dependencies(opencv_tests ${the_target})
 
   set_target_properties(${the_target} PROPERTIES LABELS "${OPENCV_MODULE_${the_module}_LABEL}")

@@ -88,16 +88,16 @@ set(LIBMV_LIGHT_INCLUDES
 )
 
 set(LIBMV_LIGHT_LIBS
-  correspondence
-  multiview
-  numeric
+  opencv.sfm.correspondence
+  opencv.sfm.multiview
+  opencv.sfm.numeric
   ${GLOG_LIBRARIES}
   ${GFLAGS_LIBRARIES}
 )
 
 if(Ceres_FOUND)
   add_definitions("-DCERES_FOUND=1")
-  list(APPEND LIBMV_LIGHT_LIBS simple_pipeline)
+  list(APPEND LIBMV_LIGHT_LIBS opencv.sfm.simple_pipeline)
   if(Ceres_VERSION VERSION_LESS 2.0.0)
     list(APPEND LIBMV_LIGHT_INCLUDES "${CERES_INCLUDE_DIRS}")
   endif()

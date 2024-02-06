@@ -42,7 +42,7 @@
 
 #include "opencv2/opencv_modules.hpp"
 
-#ifdef HAVE_OPENCV_CUDAARITHM
+#if defined(HAVE_OPENCV_CUDAARITHM) && defined(OPENCV_ENABLE_NONFREE)
 
 #include "opencv2/core/cuda/common.hpp"
 #include "opencv2/core/cuda/limits.hpp"
