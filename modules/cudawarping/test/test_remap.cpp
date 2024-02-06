@@ -227,7 +227,7 @@ PARAM_TEST_CASE(RemapRelative, cv::cuda::DeviceInfo, MatType, Interpolation, Bor
         cv::cuda::setDevice(devInfo.deviceID());
 
         const int nChannels = CV_MAT_CN(type);
-        const cv::Size size(8, 8);
+        const cv::Size size(127, 61);
         cv::Mat data64FC1(1, size.area()*nChannels, CV_64FC1);
         data64FC1.forEach<double>([&](double& pixel, const int* position) {pixel = static_cast<double>(position[1]);});
 
@@ -274,9 +274,12 @@ CUDA_TEST_P(RemapRelative, RemapRelative_Validity)
 
 INSTANTIATE_TEST_CASE_P(CUDA_RemapRelative, RemapRelative, testing::Combine(
         ALL_DEVICES,
-        testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
-        testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR)),
-        testing::Values(BorderType(cv::BORDER_CONSTANT))));
+        testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4),
+                        MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4),
+                        MatType(CV_16SC1), MatType(CV_16SC3), MatType(CV_16SC4),
+                        MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+        testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC)),
+        testing::Values(BorderType(cv::BORDER_REFLECT101), BorderType(cv::BORDER_REPLICATE), BorderType(cv::BORDER_CONSTANT))));
 
 }} // namespace
 #endif // HAVE_CUDA
