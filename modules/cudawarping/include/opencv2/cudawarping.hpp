@@ -78,6 +78,7 @@ BORDER_REPLICATE , BORDER_CONSTANT , BORDER_REFLECT and BORDER_WRAP are supporte
 The function transforms the source image using the specified map:
 
 \f[\texttt{dst} (x,y) =  \texttt{src} (xmap(x,y), ymap(x,y))\f]
+\f[\texttt{dst} (x,y) =  \texttt{src} (x+map_x(x,y),y+map_y(x,y))\f] with WARP_RELATIVE_MAP
 
 Values of pixels with non-integer coordinates are computed using the bilinear interpolation.
 
@@ -101,6 +102,8 @@ Either dsize or both fx and fy must be non-zero.
 \f[\texttt{(double)dsize.height/src.rows}\f]
 @param interpolation Interpolation method. INTER_NEAREST , INTER_LINEAR and INTER_CUBIC are
 supported for now.
+The extra flag WARP_RELATIVE_MAP that can be ORed to the interpolation method
+(e.g. INTER_LINEAR | WARP_RELATIVE_MAP)
 @param stream Stream for the asynchronous version.
 
 @sa resize
