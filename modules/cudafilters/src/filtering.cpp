@@ -1089,7 +1089,9 @@ namespace
                || srcType == CV_16UC1 || srcType == CV_16UC3 || srcType == CV_16UC4
                || srcType == CV_32FC1 || srcType == CV_32FC3 || srcType == CV_32FC4);
 #else
-        CV_Assert(srcType == CV_8UC1);
+        if (srcType != CV_8UC1) {
+            CV_Error(Error::StsNotImplemented, "If CUDA version is below 10, only implementations that support CV_8UC1 are available");
+        }
 #endif
         CV_Assert(windowSize>=3);
         CV_Assert(_partitions>=1);

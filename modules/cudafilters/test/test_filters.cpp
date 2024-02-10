@@ -704,7 +704,6 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, Median, testing::Combine(
     WHOLE_SUBMAT)
     );
 
-#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
 INSTANTIATE_TEST_CASE_P(CUDA_Filters_Median_HDR, Median, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
@@ -713,8 +712,8 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters_Median_HDR, Median, testing::Combine(
         MatType(CV_16U), MatType(CV_16UC3), MatType(CV_16UC4),
         MatType(CV_32F), MatType(CV_32FC3), MatType(CV_32FC4)),
     testing::Values(KernelSize(3), KernelSize(5)),
-    WHOLE_SUBMAT));
-#endif
+    WHOLE_SUBMAT)
+    );
 
 
 }} // namespace
