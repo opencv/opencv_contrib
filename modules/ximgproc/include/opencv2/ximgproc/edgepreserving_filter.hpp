@@ -26,8 +26,8 @@ namespace cv { namespace ximgproc {
     */
     CV_EXPORTS_W void edgePreservingFilter( InputArray src, OutputArray dst, int d, double threshold );
 
-}} // namespace
-
 //! @}
+
+}} // namespace
 
 #endif
