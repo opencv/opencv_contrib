@@ -363,7 +363,6 @@ CV_EXPORTS_W Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierCNN(cons
 
  */
 CV_EXPORTS_W Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifier(const String& filename, int classifier);
-//! @}
 
 /** @brief Utility function to create a tailored language model transitions table from a given list of words (lexicon).
  *
