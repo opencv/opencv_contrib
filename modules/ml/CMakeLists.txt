@@ -7,4 +7,4 @@ ocv_create_module()
 
 ocv_add_accuracy_tests()
 ocv_add_perf_tests()
-ocv_add_samples(opencv_imgproc opencv_imgcodecs opencv_objdetect opencv_videoio opencv_video)
+ocv_add_samples(opencv_imgproc opencv_objdetect opencv_video)

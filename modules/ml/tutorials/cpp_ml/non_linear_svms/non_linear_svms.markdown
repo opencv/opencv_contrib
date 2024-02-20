@@ -4,7 +4,6 @@ Support Vector Machines for Non-Linearly Separable Data {#tutorial_non_linear_sv
 @tableofcontents
 
 @prev_tutorial{tutorial_introduction_to_svm}
-@next_tutorial{tutorial_introduction_to_pca}
 
 |    |    |
 | -: | :- |
@@ -104,7 +103,7 @@ You may also find the source code in `samples/cpp/tutorial_code/ml/non_linear_sv
     [here](https://github.com/opencv/opencv/tree/5.x/samples/cpp/tutorial_code/ml/non_linear_svms/non_linear_svms.cpp)
 
 -   **Code at glance:**
-    @include samples/cpp/tutorial_code/ml/non_linear_svms/non_linear_svms.cpp
+    @include samples/non_linear_svms.cpp
 @end_toggle
 
 @add_toggle_java
@@ -137,7 +136,7 @@ We have divided the generation of the training data into two main parts.
 In the first part we generate data for both classes that is linearly separable.
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/non_linear_svms/non_linear_svms.cpp setup1
+@snippet samples/non_linear_svms.cpp setup1
 @end_toggle
 
 @add_toggle_java
@@ -152,7 +151,7 @@ In the second part we create data for both classes that is non-linearly separabl
 overlaps.
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/non_linear_svms/non_linear_svms.cpp setup2
+@snippet samples/non_linear_svms.cpp setup2
 @end_toggle
 
 @add_toggle_java
@@ -169,7 +168,7 @@ overlaps.
 attributes of the class @ref cv::ml::SVM that we configure here before training the SVM.
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/non_linear_svms/non_linear_svms.cpp init
+@snippet samples/non_linear_svms.cpp init
 @end_toggle
 
 @add_toggle_java
@@ -202,7 +201,7 @@ We call the method @ref cv::ml::SVM::train to build the SVM model. Watch out tha
 process may take a quite long time. Have patiance when your run the program.
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/non_linear_svms/non_linear_svms.cpp train
+@snippet samples/non_linear_svms.cpp train
 @end_toggle
 
 @add_toggle_java
@@ -222,7 +221,7 @@ Cartesian plane. Each of the points is colored depending on the class predicted 
 dark green if it is the class with label 1 and in dark blue if it is the class with label 2.
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/non_linear_svms/non_linear_svms.cpp show
+@snippet samples/non_linear_svms.cpp show
 @end_toggle
 
 @add_toggle_java
@@ -240,7 +239,7 @@ of the class labeled with 1 are shown in light green and in light blue the sampl
 labeled with 2.
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/non_linear_svms/non_linear_svms.cpp show_data
+@snippet samples/non_linear_svms.cpp show_data
 @end_toggle
 
 @add_toggle_java
@@ -258,7 +257,7 @@ We use here a couple of methods to obtain information about the support vectors.
 to find the training examples that are support vectors and highlight them.
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/non_linear_svms/non_linear_svms.cpp show_vectors
+@snippet samples/non_linear_svms.cpp show_vectors
 @end_toggle
 
 @add_toggle_java

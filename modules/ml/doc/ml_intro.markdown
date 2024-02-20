@@ -476,6 +476,6 @@ training error and ensuring high training accuracy:
     "setMiniBatchSize".
 
 A sample set of training parameters for the Logistic Regression classifier can be initialized as follows:
-@snippet samples/cpp/logistic_regression.cpp init
+@snippet samples/logistic_regression.cpp init
 
 @sa cv::ml::LogisticRegression

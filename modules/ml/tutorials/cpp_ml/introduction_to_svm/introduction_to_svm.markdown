@@ -3,7 +3,6 @@ Introduction to Support Vector Machines {#tutorial_introduction_to_svm}
 
 @tableofcontents
 
-@prev_tutorial{tutorial_barcode_detect_and_decode}
 @next_tutorial{tutorial_non_linear_svms}
 
 |    |    |
@@ -109,7 +108,7 @@ Source Code
     [here](https://github.com/opencv/opencv/tree/5.x/samples/cpp/tutorial_code/ml/introduction_to_svm/introduction_to_svm.cpp)
 
 -   **Code at glance:**
-    @include samples/cpp/tutorial_code/ml/introduction_to_svm/introduction_to_svm.cpp
+    @include samples/introduction_to_svm.cpp
 @end_toggle
 
 @add_toggle_java
@@ -137,7 +136,7 @@ The training data of this exercise is formed by a set of labeled 2D-points that 
 two different classes; one of the classes consists of one point and the other of three points.
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/introduction_to_svm/introduction_to_svm.cpp setup1
+@snippet samples/introduction_to_svm.cpp setup1
 @end_toggle
 
 @add_toggle_java
@@ -153,7 +152,7 @@ stored as @ref cv::Mat objects of floats. Therefore, we create these objects fro
 defined above:
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/introduction_to_svm/introduction_to_svm.cpp setup2
+@snippet samples/introduction_to_svm.cpp setup2
 @end_toggle
 
 @add_toggle_java
@@ -174,7 +173,7 @@ defined above:
     object of the class @ref cv::ml::SVM.
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/introduction_to_svm/introduction_to_svm.cpp init
+@snippet samples/introduction_to_svm.cpp init
 @end_toggle
 
 @add_toggle_java
@@ -210,7 +209,7 @@ Here:
     We call the method @ref cv::ml::SVM::train to build the SVM model.
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/introduction_to_svm/introduction_to_svm.cpp train
+@snippet samples/introduction_to_svm.cpp train
 @end_toggle
 
 @add_toggle_java
@@ -230,7 +229,7 @@ Here:
     green if it is the class with label 1 and in blue if it is the class with label -1.
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/introduction_to_svm/introduction_to_svm.cpp show
+@snippet samples/introduction_to_svm.cpp show
 @end_toggle
 
 @add_toggle_java
@@ -249,7 +248,7 @@ Here:
     support vectors and highlight them.
 
 @add_toggle_cpp
-@snippet samples/cpp/tutorial_code/ml/introduction_to_svm/introduction_to_svm.cpp show_vectors
+@snippet samples/introduction_to_svm.cpp show_vectors
 @end_toggle
 
 @add_toggle_java
