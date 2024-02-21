@@ -377,11 +377,3 @@ extern "C" __global__ __aicore__ void threshold_opencv(GM_ADDR tilingGM, GM_ADDR
     // Clear tiling GM cache manually. (cce compiler bug)
     dcci(tilingGM, 1);
 }
-
-#ifndef __CCE_KT_TEST__
-void threshold_opencv_kernel(uint32_t blockDim, void* l2ctrl, void* stream, uint8_t* tiling,
-                             uint8_t* x, uint8_t* y)
-{
-    threshold_opencv<<<blockDim, l2ctrl, stream>>>(tiling, x, y);
-}
-#endif

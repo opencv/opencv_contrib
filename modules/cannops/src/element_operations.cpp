@@ -444,7 +444,7 @@ double threshold(const AscendMat& src, AscendMat& dst, double thresh, double max
         tiling.thresh = thresh;
         // AscendMat memory will be align to 32B, it's safe to set totalLengh a little bigger.
         size_t totalBytes = src.rows * src.cols * src.channels();
-        tiling.totalLength = ((totalBytes + 32) & ~31);
+        tiling.totalLength = ALIGN_UP(totalBytes, 32);
         tiling.threshType = type;
         tiling.dtype = src.depth();
 
