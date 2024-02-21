@@ -26,6 +26,6 @@ class Arguments(NewOpenCVTests):
         self.assertEqual(cv.ml.Boost, cv.ml_Boost,
                          msg="Classes from submodules and global module don't refer "
                          "to the same type")
-        
+
 if __name__ == '__main__':
     NewOpenCVTests.bootstrap()
