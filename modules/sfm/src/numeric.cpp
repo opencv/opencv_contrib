@@ -162,7 +162,7 @@ skew( InputArray _x )
   }
   else
   {
-    //CV_Error(CV_StsBadArg, "The DataType must be CV_32F or CV_64F");
+    //CV_Error(cv::Error::StsBadArg, "The DataType must be CV_32F or CV_64F");
   }
 
   return skewMatrix;

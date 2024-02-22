@@ -1,5 +1,4 @@
 #include <cmath>
-#include <opencv2/imgproc/imgproc_c.h>
 #define CLIP(x,a,b) MIN(MAX((x),(a)),(b))
 #define HIST_SIZE 50
 

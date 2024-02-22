@@ -109,7 +109,7 @@ enum
     if(!(expr)) {\
     String msg = cv::format args; \
     printf("%s in %s:%d\n", msg.c_str(), __FILE__, __LINE__); \
-    cv::error(cv::Exception(CV_StsAssert, msg, __FUNCTION__, __FILE__, __LINE__) ); }\
+    cv::error(cv::Exception(cv::Error::StsAssert, msg, __FUNCTION__, __FILE__, __LINE__) ); }\
 }
 
 

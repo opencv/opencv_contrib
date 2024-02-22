@@ -81,7 +81,7 @@ void ParalComputePyramid::initialize()
 
     if (params.maxScale < params.interval)
     {
-        CV_Error(CV_StsBadArg, "The image is too small to create a pyramid");
+        CV_Error(cv::Error::StsBadArg, "The image is too small to create a pyramid");
         return;
     }
 
