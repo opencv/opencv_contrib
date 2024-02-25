@@ -40,8 +40,6 @@ namespace cv
 namespace mcc
 {
 
-std::mutex mtx; // mutex for critical section
-
 Ptr<CCheckerDetector> CCheckerDetector::create()
 {
     return makePtr<CCheckerDetectorImpl>();
@@ -113,7 +111,7 @@ bool CCheckerDetectorImpl::
         // Get chanels
         split(img_rgb_org, rgb_planes);
         split(img_ycbcr_org, ycbcr_planes);
-
+        cv::Mutex mtx;
         parallel_for_(
             Range(0, (int)img_bw.size()), [&](const Range &range) {
                 const int begin = range.start;
@@ -237,9 +235,10 @@ bool CCheckerDetectorImpl::
                         for (cv::Point2f &corner : checker->getBox())
                             corner += static_cast<cv::Point2f>(region.tl());
 
-                        mtx.lock(); // push_back is not thread safe
-                        m_checkers.push_back(checker);
-                        mtx.unlock();
+                        {
+                            cv::AutoLock lock(mtx);
+                            m_checkers.push_back(checker);
+                        }
                     }
                 }
 #ifdef MCC_DEBUG
@@ -332,7 +331,7 @@ bool CCheckerDetectorImpl::
                 cv::Mat3f img_rgb_f(img_bgr);
                 cv::cvtColor(img_rgb_f, img_rgb_f, COLOR_BGR2RGB);
                 img_rgb_f /= 255;
-
+                cv::Mutex mtx;
                 parallel_for_(
                     Range(0, (int)img_bw.size()), [&](const Range &range) {
                         const int begin = range.start;
@@ -456,9 +455,11 @@ bool CCheckerDetectorImpl::
                             {
                                 for (cv::Point2f &corner : checker->getBox())
                                     corner += static_cast<cv::Point2f>(region.tl() + innerRegion.tl());
-                                mtx.lock(); // push_back is not thread safe
-                                m_checkers.push_back(checker);
-                                mtx.unlock();
+
+                                {
+                                    cv::AutoLock lock(mtx);
+                                    m_checkers.push_back(checker);
+                                }
                             }
                         }
 #ifdef MCC_DEBUG
@@ -1236,7 +1237,7 @@ void CCheckerDetectorImpl::
     // Create table charts information
     //          |p_size|average|stddev|max|min|
     //    RGB   |      |       |      |   |   |
-    //  YCbCr |
+    //  YCbCr   |
 
     Mat _charts_rgb = cv::Mat(cv::Size(5, 3 * (int)N), CV_64F);
     Mat _charts_ycbcr = cv::Mat(cv::Size(5, 3 * (int)N), CV_64F);
