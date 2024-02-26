@@ -38,7 +38,6 @@
 
 #include <vector>
 #include <string>
-#include <mutex> // std::mutex
 
 #include "opencv2/mcc.hpp"
 
