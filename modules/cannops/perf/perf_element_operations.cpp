@@ -207,5 +207,25 @@ PERF_TEST_P(CPU, MAT_BITWISE_NOT_MAT, testing::Combine(TYPICAL_ASCEND_MAT_SIZES,
     SANITY_CHECK_NOTHING();
 }
 
+PERF_TEST_P(NPU, THRESHOLD_ASCENDC, testing::Combine(TYPICAL_ASCEND_MAT_SIZES,  Values(CV_8U, CV_16S, CV_32F)))
+{
+    Mat mat(GET_PARAM(0), GET_PARAM(1));
+    AscendMat dst;
+    AscendMat src;
+    src.upload(mat);
+    declare.in(mat, WARMUP_RNG);
+    TEST_CYCLE_N(10) { cv::cann::threshold(src, dst, 100.0, 255.0, cv::THRESH_BINARY); }
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST_P(CPU, THRESHOLD, testing::Combine(TYPICAL_ASCEND_MAT_SIZES, Values(CV_8U, CV_16S, CV_32F)))
+{
+    Mat mat(GET_PARAM(0), GET_PARAM(1));
+    Mat dst;
+    declare.in(mat, WARMUP_RNG);
+    TEST_CYCLE_N(10) { cv::threshold(mat, dst, 100.0, 255.0, cv::THRESH_BINARY); }
+    SANITY_CHECK_NOTHING();
+}
+
 } // namespace
 } // namespace opencv_test
