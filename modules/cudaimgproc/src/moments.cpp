@@ -12,6 +12,25 @@ int cv::cuda::numMoments(const MomentsOrder order) {
     return order == MomentsOrder::FIRST_ORDER_MOMENTS ? device::imgproc::n1 : order == MomentsOrder::SECOND_ORDER_MOMENTS ? device::imgproc::n12 : device::imgproc::n123;
 }
 
+template<typename T>
+cv::Moments convertSpatialMomentsT(Mat spatialMoments, const MomentsOrder order) {
+    switch (order) {
+    case MomentsOrder::FIRST_ORDER_MOMENTS:
+        return Moments(spatialMoments.at<T>(0), spatialMoments.at<T>(1), spatialMoments.at<T>(2), 0, 0, 0, 0, 0, 0, 0);
+    case MomentsOrder::SECOND_ORDER_MOMENTS:
+        return Moments(spatialMoments.at<T>(0), spatialMoments.at<T>(1), spatialMoments.at<T>(2), spatialMoments.at<T>(3), spatialMoments.at<T>(4), spatialMoments.at<T>(5), 0, 0, 0, 0);
+    default:
+        return Moments(spatialMoments.at<T>(0), spatialMoments.at<T>(1), spatialMoments.at<T>(2), spatialMoments.at<T>(3), spatialMoments.at<T>(4), spatialMoments.at<T>(5), spatialMoments.at<T>(6), spatialMoments.at<T>(7), spatialMoments.at<T>(8), spatialMoments.at<T>(9));
+    }
+}
+
+cv::Moments cv::cuda::convertSpatialMoments(Mat spatialMoments, const MomentsOrder order, const int momentsType) {
+    if (momentsType == CV_32F)
+        return convertSpatialMomentsT<float>(spatialMoments, order);
+    else
+        return convertSpatialMomentsT<double>(spatialMoments, order);
+}
+
 #if !defined (HAVE_CUDA) || defined (CUDA_DISABLER)
     Moments cv::cuda::moments(InputArray src, const bool binary, const MomentsOrder order, const int momentsType) { throw_no_cuda(); }
     void spatialMoments(InputArray src, OutputArray moments, const bool binary, const MomentsOrder order, const int momentsType, Stream& stream) { throw_no_cuda(); }
@@ -53,15 +72,12 @@ void cv::cuda::spatialMoments(InputArray src, OutputArray moments, const bool bi
 }
 
 Moments cv::cuda::moments(InputArray src, const bool binary, const MomentsOrder order, const int momentsType) {
-    Stream& stream = Stream::Null();
+    Stream stream;
     HostMem dst;
     spatialMoments(src, dst, binary, order, momentsType, stream);
     stream.waitForCompletion();
     Mat moments = dst.createMatHeader();
-    if(momentsType == CV_32F)
-        return Moments(moments.at<float>(0), moments.at<float>(1), moments.at<float>(2), moments.at<float>(3), moments.at<float>(4), moments.at<float>(5), moments.at<float>(6), moments.at<float>(7), moments.at<float>(8), moments.at<float>(9));
-    else
-        return Moments(moments.at<double>(0), moments.at<double>(1), moments.at<double>(2), moments.at<double>(3), moments.at<double>(4), moments.at<double>(5), moments.at<double>(6), moments.at<double>(7), moments.at<double>(8), moments.at<double>(9));
+    return convertSpatialMoments(moments, order, momentsType);
 }
 
 #endif /* !defined (HAVE_CUDA) */
