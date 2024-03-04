@@ -75,7 +75,7 @@ protected:
         inputShape.push_back(getPerceptiveField().height);
         inputShape.push_back(getPerceptiveField().width);
         vector<dnn::MatShape> inShapes, outShapes;
-        net.getLayerShapes(inputShape, id, inShapes, outShapes);
+        net.getLayerShapes(inputShape, CV_32F, id, inShapes, outShapes);
         CV_Assert(outShapes.size() == 1 && outShapes[0].size() == 4);
         CV_Assert(outShapes[0][0] == 1 && outShapes[0][2] == 1 && outShapes[0][3] == 1);
         return outShapes[0][1];
