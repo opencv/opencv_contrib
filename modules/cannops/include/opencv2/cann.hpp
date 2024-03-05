@@ -8,12 +8,12 @@
 #include "opencv2/core.hpp"
 
 /**
-  @defgroup cann Ascend-accelerated Computer Vision
+  @defgroup cannops Ascend-accelerated Computer Vision
   @{
     @defgroup canncore Core part
     @{
       @defgroup cann_struct Data Structures
-      @defgroup cann_init Initializeation and Information
+      @defgroup cann_init Initialization and Information
     @}
   @}
  */

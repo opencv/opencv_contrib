@@ -61,6 +61,8 @@ CV_EXPORTS_W void qdft(InputArray img, OutputArray qimg, int  	flags, bool sideL
 */
 CV_EXPORTS_W void colorMatchTemplate(InputArray img, InputArray templ, OutputArray result);
 
+//! @}
+
 }
 }
 #endif

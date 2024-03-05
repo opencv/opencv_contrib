@@ -844,7 +844,6 @@ cv::Moments cvMoments = convertSpatialMoments<float>(spatialMoments, order);
 ```
 
 see the \a CUDA_TEST_P(Moments, Async) test inside opencv_contrib_source_code/modules/cudaimgproc/test/test_moments.cpp for an example.
-@returns cv::Moments.
 @sa cuda::moments, cuda::convertSpatialMoments, cuda::numMoments, cuda::MomentsOrder
 */
 CV_EXPORTS_W void spatialMoments(InputArray src, OutputArray moments, const bool binaryImage = false, const MomentsOrder order = MomentsOrder::THIRD_ORDER_MOMENTS, const int momentsType = CV_64F, Stream& stream = Stream::Null());

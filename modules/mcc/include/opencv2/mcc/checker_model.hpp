@@ -116,7 +116,6 @@ public:
     virtual ~CCheckerDraw() {}
     /** \brief Draws the checker to the given image.
     * \param img image in color space BGR
-    * \return void
     */
     CV_WRAP virtual void draw(InputOutputArray img) = 0;
     /** \brief Create a new CCheckerDraw object.

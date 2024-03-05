@@ -82,8 +82,7 @@ enum AngleRangeOption
  *          two operands. Formally, a binary operation @f$ f @f$ on a set @f$ S @f$
  *          is a binary relation that maps elements of the Cartesian product
  *          @f$ S \times S @f$ to @f$ S @f$:
-*           @f[ f: S \times S \to S @f]
- * @ingroup MinUtils_MathOper
+ *          @f[ f: S \times S \to S @f]
  */
 enum HoughOp
 {

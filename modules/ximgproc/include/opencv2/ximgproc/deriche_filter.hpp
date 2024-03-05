@@ -71,6 +71,8 @@ CV_EXPORTS_W void GradientDericheY(InputArray op, OutputArray dst, double alpha,
 */
 CV_EXPORTS_W void GradientDericheX(InputArray op, OutputArray dst, double alpha,double omega);
 
+//! @}
+
 }
 }
 #endif

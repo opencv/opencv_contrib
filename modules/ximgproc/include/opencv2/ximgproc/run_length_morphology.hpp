@@ -113,6 +113,8 @@ CV_EXPORTS void createRLEImage(const std::vector<cv::Point3i>& runs, OutputArray
 CV_EXPORTS void morphologyEx(InputArray rlSrc, OutputArray rlDest, int op, InputArray rlKernel,
     bool bBoundaryOnForErosion = true, Point anchor = Point(0,0));
 
+//! @}
+
 }
 }
 }
