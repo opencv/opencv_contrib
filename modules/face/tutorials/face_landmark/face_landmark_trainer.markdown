@@ -1,4 +1,4 @@
-![](images/2.jpg)
+![](face_landmark/images/2.jpg)
 
 Training face landmark detector{#tutorial_face_training_face_landmark_detector}
 ==============================
@@ -52,7 +52,7 @@ To get more detailed description about the training parameters you can refer to 
 ## Understanding code
 
 
-![](images/3.jpg)
+![](face_landmark/images/3.jpg)
 
 
 Jumping directly to the code :
@@ -165,13 +165,13 @@ In the above function scale is passed to scale all images and the corresponding 
 images can be reduced as it takes greater time to process large images.
 This call to the train function trains the model and stores the trained model file with the given
 filename specified.As the training starts successfully you will see something like this :
-![](images/train1.png)
+![](face_landmark/images/train1.png)
 
 
 **The error rate on trained images depends on the number of images used for training used as follows :**
 
-![](images/train.png)
+![](face_landmark/images/train.png)
 
 **The error rate on test images depends on the number of images used for training used as follows :**
 
-![](images/test.png)
+![](face_landmark/images/test.png)
