@@ -50,6 +50,9 @@ namespace cv
 namespace xfeatures2d
 {
 
+//! @addtogroup xfeatures2d_nonfree
+//! @{
+
 /** @brief Class for extracting Speeded Up Robust Features from an image @cite Bay06 .
 
 The algorithm parameters:

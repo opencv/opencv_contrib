@@ -12,12 +12,6 @@ Mentor: Delia Passalacqua
 #ifndef __OPENCV_FACELANDMARKTRAIN_HPP__
 #define __OPENCV_FACELANDMARKTRAIN_HPP__
 
-/**
-@defgroup face Face Analysis
-- @ref tutorial_table_of_content_facemark
-- The Facemark API
-*/
-
 #include "opencv2/face/facemark.hpp"
 #include "opencv2/objdetect.hpp"
 #include <vector>

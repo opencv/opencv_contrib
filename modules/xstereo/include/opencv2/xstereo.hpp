@@ -58,6 +58,9 @@ namespace cv
 {
     namespace stereo
     {
+        //! @ingroup xstereo
+        //! @{
+
         //!speckle removal algorithms. These algorithms have the purpose of removing small regions
         enum {
             CV_SPECKLE_REMOVAL_ALGORITHM, CV_SPECKLE_REMOVAL_AVG_ALGORITHM

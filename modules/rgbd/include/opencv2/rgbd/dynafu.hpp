@@ -114,7 +114,6 @@ public:
     virtual void renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage, bool warp=true) = 0;
 };
 
-//! @}
-}
-}
-#endif
+} // dynafu::
+} // cv::
+#endif // __OPENCV_RGBD_DYNAFU_HPP__
