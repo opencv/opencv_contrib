@@ -1,10 +1,12 @@
 
 #include "precomp.hpp"
-#include "opencv2/rgbd/twist.hpp"
+#include "opencv2/tracking/twist.hpp"
 
 namespace cv
 {
-namespace rgbd
+namespace detail
+{
+inline namespace tracking
 {
 
 Twist::Twist()
@@ -13,7 +15,8 @@ Twist::Twist()
     _flow = new cv::Mat();
 }
 
-void Twist::interactionMatrix(const cv::Mat& uv, const cv::Mat& depth, const cv::Mat& K, cv::Mat& J)
+void Twist::interactionMatrix(const cv::Mat& uv, const cv::Mat& depth, const cv::Mat& K, cv::Mat&
+J)
 {
     CV_Assert(uv.cols == depth.cols);
     CV_Assert(depth.type() == CV_32F); // Validate depth input type
@@ -50,7 +53,8 @@ void Twist::interactionMatrix(const cv::Mat& uv, const cv::Mat& depth, const cv:
     }
 }
 
-cv::Vec6d Twist::compute(const cv::Mat& im0, const cv::Mat& im1, const cv::Mat depths0, const cv::Mat& K,
+cv::Vec6d Twist::compute(const cv::Mat& im0, const cv::Mat& im1, const cv::Mat depths0, const
+cv::Mat& K,
                const double dt)
 {
     _optflow->calc(im0, im1, *_flow);
@@ -79,5 +83,6 @@ cv::Vec6d Twist::compute(const cv::Mat& im0, const cv::Mat& im1, const cv::Mat d
     return twist;
 }
 
-} // namespace rgbd
+} // namespace tracking
+} // namespace detail
 } // namespace cv

@@ -1,13 +1,22 @@
-#ifndef __OPENCV_RGBD_TWIST_HPP__
-#define __OPENCV_RGBD_TWIST_HPP__
+#ifndef OPENCV_TWIST_HPP
+#define OPENCV_TWIST_HPP
 
 #include "opencv2/video/tracking.hpp"
+#include "opencv2/core.hpp"
 
 namespace cv
 {
-namespace rgbd
+class CV_EXPORTS Twist
+{};
+
+namespace detail
 {
-class CV_EXPORTS_W Twist
+inline namespace tracking
+{
+//! @addtogroup tracking_detail
+//! @{
+
+class CV_EXPORTS Twist
 {
 public:
     Twist();
@@ -22,7 +31,11 @@ private:
     Ptr<DenseOpticalFlow> _optflow;
     Ptr<cv::Mat> _flow;
 };
-} // namespace rgbd
+
+//! @}
+
+} // namespace tracking
+} // namespace detail
 } // namespace cv
 
 #endif
