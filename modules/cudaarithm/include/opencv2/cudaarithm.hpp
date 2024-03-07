@@ -433,6 +433,17 @@ CV_EXPORTS_W void magnitudeSqr(InputArray x, InputArray y, OutputArray magnitude
  */
 CV_EXPORTS_W void phase(InputArray x, InputArray y, OutputArray angle, bool angleInDegrees = false, Stream& stream = Stream::Null());
 
+/** @brief Computes polar angles of complex matrix elements.
+
+@param xy Source matrix containing real and imaginary components ( CV_32FC2 ).
+@param angle Destination matrix of angles ( CV_32FC1 ).
+@param angleInDegrees Flag for angles that must be evaluated in degrees.
+@param stream Stream for the asynchronous version.
+
+@sa phase
+*/
+CV_EXPORTS_W void phase(InputArray xy, OutputArray angle, bool angleInDegrees = false, Stream& stream = Stream::Null());
+
 /** @brief Converts Cartesian coordinates into polar.
 
 @param x Source matrix containing real components ( CV_32FC1 ).
@@ -446,6 +457,29 @@ CV_EXPORTS_W void phase(InputArray x, InputArray y, OutputArray angle, bool angl
  */
 CV_EXPORTS_W void cartToPolar(InputArray x, InputArray y, OutputArray magnitude, OutputArray angle, bool angleInDegrees = false, Stream& stream = Stream::Null());
 
+/** @brief Converts Cartesian coordinates into polar.
+
+@param xy Source matrix containing real and imaginary components ( CV_32FC2 ).
+@param magnitude Destination matrix of float magnitudes ( CV_32FC1 ).
+@param angle Destination matrix of angles ( CV_32FC1 ).
+@param angleInDegrees Flag for angles that must be evaluated in degrees.
+@param stream Stream for the asynchronous version.
+
+@sa cartToPolar
+*/
+CV_EXPORTS_W void cartToPolar(InputArray xy, OutputArray magnitude, OutputArray angle, bool angleInDegrees = false, Stream& stream = Stream::Null());
+
+/** @brief Converts Cartesian coordinates into polar.
+
+@param xy Source matrix containing real and imaginary components ( CV_32FC2 ).
+@param magnitudeAngle Destination matrix of float magnitudes and angles ( CV_32FC2 ).
+@param angleInDegrees Flag for angles that must be evaluated in degrees.
+@param stream Stream for the asynchronous version.
+
+@sa cartToPolar
+*/
+CV_EXPORTS_W void cartToPolar(InputArray xy, OutputArray magnitudeAngle, bool angleInDegrees = false, Stream& stream = Stream::Null());
+
 /** @brief Converts polar coordinates into Cartesian.
 
 @param magnitude Source matrix containing magnitudes ( CV_32FC1 or CV_64FC1 ).
@@ -456,6 +490,25 @@ CV_EXPORTS_W void cartToPolar(InputArray x, InputArray y, OutputArray magnitude,
 @param stream Stream for the asynchronous version.
  */
 CV_EXPORTS_W void polarToCart(InputArray magnitude, InputArray angle, OutputArray x, OutputArray y, bool angleInDegrees = false, Stream& stream = Stream::Null());
+
+/** @brief Converts polar coordinates into Cartesian.
+
+@param magnitude Source matrix containing magnitudes ( CV_32FC1 or CV_64FC1 ).
+@param angle Source matrix containing angles ( same type as magnitude ).
+@param xy Destination matrix of real and imaginary components ( same depth as magnitude, i.e. CV_32FC2 or CV_64FC2 ).
+@param angleInDegrees Flag that indicates angles in degrees.
+@param stream Stream for the asynchronous version.
+*/
+CV_EXPORTS_W void polarToCart(InputArray magnitude, InputArray angle, OutputArray xy, bool angleInDegrees = false, Stream& stream = Stream::Null());
+
+/** @brief Converts polar coordinates into Cartesian.
+
+@param magnitudeAngle Source matrix containing magnitudes and angles ( CV_32FC2 or CV_64FC2 ).
+@param xy Destination matrix of real and imaginary components ( same depth as source ).
+@param angleInDegrees Flag that indicates angles in degrees.
+@param stream Stream for the asynchronous version.
+*/
+CV_EXPORTS_W void polarToCart(InputArray magnitudeAngle, OutputArray xy, bool angleInDegrees = false, Stream& stream = Stream::Null());
 
 //! @} cudaarithm_elem
 
