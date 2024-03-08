@@ -12,7 +12,8 @@ inline namespace tracking
 void Twist::interactionMatrix(const cv::Mat& uv, const cv::Mat& depth, const cv::Mat& K, cv::Mat& J)
 {
     CV_Assert(uv.cols == depth.cols);
-    CV_Assert(depth.type() == CV_32F); // Validate depth input type
+    CV_Assert(depth.type() == CV_32F);
+    CV_Assert(K.cols == 3 && K.rows == 3);
 
     J.create(depth.cols * 2, 6, CV_32F);
     J.setTo(0);
@@ -50,6 +51,8 @@ void Twist::interactionMatrix(const cv::Mat& uv, const cv::Mat& depth, const cv:
 cv::Vec6d Twist::compute(const cv::Mat& uv, const cv::Mat& duv, const cv::Mat depths,
                          const cv::Mat& K)
 {
+    CV_Assert(uv.cols * 2 == duv.rows);
+
     cv::Mat J;
     interactionMatrix(uv, depths, K, J);
     cv::Mat Jinv;
