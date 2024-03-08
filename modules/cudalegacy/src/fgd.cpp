@@ -54,7 +54,6 @@ Ptr<cuda::BackgroundSubtractorFGD> cv::cuda::createBackgroundSubtractorFGD(const
 #else
 
 #include "cuda/fgd.hpp"
-#include "opencv2/imgproc/imgproc_c.h"
 
 /////////////////////////////////////////////////////////////////////////
 // FGDParams

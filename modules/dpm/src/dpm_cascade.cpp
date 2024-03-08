@@ -62,7 +62,7 @@ void DPMCascade::loadCascadeModel(const string &modelPath)
     if (!is_success)
     {
         string errorMessage = format("Unable to parse the model: %s", modelPath.c_str());
-        CV_Error(CV_StsBadArg, errorMessage);
+        CV_Error(cv::Error::StsBadArg, errorMessage);
     }
 
     model.initModel();

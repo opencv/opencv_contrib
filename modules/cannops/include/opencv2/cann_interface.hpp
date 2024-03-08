@@ -13,9 +13,9 @@ namespace cann
 {
 
 /**
-  @addtogroup cann
+  @addtogroup cannops
   @{
-    @defgroup cannops Operations for Ascend Backend.
+    @defgroup cannops_ops Operations for Ascend Backend.
     @{
         @defgroup cannops_elem Per-element Operations
         @defgroup cannops_core Core Operations on Matrices

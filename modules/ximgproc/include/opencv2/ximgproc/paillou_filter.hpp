@@ -61,6 +61,8 @@ namespace ximgproc {
 CV_EXPORTS void GradientPaillouY(InputArray op, OutputArray _dst, double alpha, double omega);
 CV_EXPORTS void GradientPaillouX(InputArray op, OutputArray _dst, double alpha, double omega);
 
+//! @}
+
 }
 }
 #endif

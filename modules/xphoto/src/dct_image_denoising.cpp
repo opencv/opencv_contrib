@@ -175,7 +175,7 @@ namespace xphoto
         else if ( img.type() == CV_32FC1 )
             grayDctDenoising( img, img, sigma, psize );
         else
-            CV_Error_( CV_StsNotImplemented,
+            CV_Error_( cv::Error::StsNotImplemented,
             ("Unsupported source image format (=%d)", img.type()) );
 
         img.convertTo( dst, src.type() );
