@@ -69,13 +69,13 @@ class cudacodec_test(NewOpenCVTests):
             # Read raw encoded bitstream
             ret, i_base = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_RAW_PACKAGES_BASE_INDEX)
             self.assertTrue(ret and i_base == 2.0)
-            self.assertTrue(reader.grab())
-            ret, gpu_mat3 = reader.retrieve()
+            ret, gpu_mat3 = reader.nextFrame()
             self.assertTrue(ret and isinstance(gpu_mat3,cv.cuda.GpuMat) and not gpu_mat3.empty())
             ret = reader.retrieve(gpu_mat3)
             self.assertTrue(ret and isinstance(gpu_mat3,cv.cuda.GpuMat) and not gpu_mat3.empty())
             ret, n_raw_packages_since_last_grab = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB)
             self.assertTrue(ret and n_raw_packages_since_last_grab > 0)
+            self.assertTrue(reader.rawPackageHasKeyFrame(int(i_base)))
             ret, raw_data = reader.retrieve(int(i_base))
             self.assertTrue(ret and isinstance(raw_data,np.ndarray) and np.any(raw_data))
 

@@ -60,7 +60,7 @@
 using namespace cv;
 using namespace cv::cudev;
 
-void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, cudaStream_t stream);
+void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const bool videoFullRangeFlag, cudaStream_t stream);
 
 namespace
 {
@@ -95,7 +95,7 @@ namespace
                 (chromaCr * constHueColorSpaceMat[8]);
     }
 
-    __device__ static uint RGBA_pack_10bit(float red, float green, float blue, uint alpha)
+    __device__ __forceinline__ uint RGBA_pack_10bit(float red, float green, float blue, uint alpha)
     {
         uint ARGBpixel = 0;
 

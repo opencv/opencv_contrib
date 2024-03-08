@@ -352,7 +352,6 @@ enum class VideoReaderProps {
     PROP_RAW_PACKAGES_BASE_INDEX = 2, //!< Base index for retrieving raw encoded data using retrieve().
     PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB = 3, //!< Number of raw packages recieved since the last call to grab().
     PROP_RAW_MODE = 4, //!< Status of raw mode.
-    PROP_LRF_HAS_KEY_FRAME = 5, //!< FFmpeg source only - Indicates whether the Last Raw Frame (LRF), output from VideoReader::retrieve() when VideoReader is initialized in raw mode, contains encoded data for a key frame.
     PROP_COLOR_FORMAT = 6, //!< Set the ColorFormat of the decoded frame.  This can be changed before every call to nextFrame() and retrieve().
     PROP_UDP_SOURCE = 7, //!< Status of VideoReaderInitParams::udpSource initialization.
     PROP_ALLOW_FRAME_DROP = 8, //!< Status of VideoReaderInitParams::allowFrameDrop initialization.
@@ -487,8 +486,7 @@ public:
      - Out: Value of the property.
     @return `true` unless the property is not supported.
     */
-    virtual bool get(const VideoReaderProps propertyId, double& propertyVal) const = 0;
-    CV_WRAP virtual bool getVideoReaderProps(const VideoReaderProps propertyId,  CV_OUT double& propertyValOut, double propertyValIn = 0) const = 0;
+    CV_WRAP_AS(getVideoReaderProps) virtual bool get(const VideoReaderProps propertyId, CV_OUT size_t& propertyVal) const = 0;
 
     /** @brief Retrieves the specified property used by the VideoSource.
 
@@ -499,6 +497,43 @@ public:
     @return `true` unless the property is unset set or not supported.
      */
     CV_WRAP virtual bool get(const int propertyId, CV_OUT double& propertyVal) const = 0;
+
+    /** @brief Determine whether the raw package at \a idx contains encoded data for a key frame.
+
+    @param idx Index of the encoded package to check.
+
+    @returns `true` if the raw package at \a idx contains encoded data for a key frame and `false` otherwise.
+
+    @note A typical use case is deciding to archive live video after streaming has been initialized. In this scenario you would not want to write any encoded frames before a key frame. This is simulated in the example below where VideoReader is initialized without enabling raw mode
+    ```
+    VideoReaderInitParams params;
+    params.rawMode = false;
+    Ptr<VideoReader> reader = createVideoReader(rtspUrl, {}, params);
+    ```
+    and then at some point in the future raw mode is enabled to enable the footage to be archived
+    ```
+    reader->set(VideoReaderProps::PROP_RAW_MODE, true);
+    ```
+    Because raw mode has been enabled mid stream the first raw package retrieved now is not guaranteed to contain a key frame. To locate the next raw package containing a key frame rawPackageHasKeyFrame() can then be used as shown below.
+    ```
+    double iRawPacketBase = -1;
+    reader->get(VideoReaderProps::PROP_RAW_PACKAGES_BASE_INDEX, iRawPacketBase);
+    GpuMat frame;
+    while (reader->nextFrame(frame)) {
+        double nRawPackets = -1;
+        reader->get(VideoReaderProps::PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB, nRawPackets);
+        for (int iRawPacketToWrite = static_cast<int>(iRawPacketBase); iRawPacketToWrite < static_cast<int>(iRawPacketBase + nRawPackets); iRawPacketToWrite++) {
+            if (reader->rawPackageHasKeyFrame(iRawPacketToWrite)) {
+                Mat packageToWrite;
+                reader->retrieve(packageToWrite, iRawPacketToWrite);
+                ...
+            }
+        }
+    }
+    ```
+    \sa retrieve
+    */
+    CV_WRAP virtual bool rawPackageHasKeyFrame(const size_t idx) const = 0;
 };
 
 /** @brief Interface for video demultiplexing. :

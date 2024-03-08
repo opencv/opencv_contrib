@@ -106,7 +106,7 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     codecSupported |= cudaVideoCodec_VP8 == _codec || cudaVideoCodec_VP9 == _codec;
 #endif
 #if (CUDART_VERSION >= 9000)
-    codecSupported |= cudaVideoCodec_AV1;
+    codecSupported |= cudaVideoCodec_AV1 == _codec;
 #endif
     CV_Assert(codecSupported);
     CV_Assert(  cudaVideoChromaFormat_Monochrome == _chromaFormat ||
@@ -143,12 +143,12 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
         }
     }
 
-    CV_Assert(videoFormat.ulWidth >= decodeCaps.nMinWidth &&
-        videoFormat.ulHeight >= decodeCaps.nMinHeight &&
-        videoFormat.ulWidth <= decodeCaps.nMaxWidth &&
-        videoFormat.ulHeight <= decodeCaps.nMaxHeight);
+    CV_Assert(videoFormat.ulWidth >= static_cast<int>(decodeCaps.nMinWidth) &&
+        videoFormat.ulHeight >= static_cast<int>(decodeCaps.nMinHeight) &&
+        videoFormat.ulWidth <= static_cast<int>(decodeCaps.nMaxWidth) &&
+        videoFormat.ulHeight <= static_cast<int>(decodeCaps.nMaxHeight));
 
-    CV_Assert((videoFormat.width >> 4) * (videoFormat.height >> 4) <= decodeCaps.nMaxMBCount);
+    CV_Assert((static_cast<unsigned int>(videoFormat.width) >> 4) * (static_cast<unsigned int>(videoFormat.height) >> 4) <= decodeCaps.nMaxMBCount);
 #else
     if (videoFormat.enableHistogram) {
         CV_Error(Error::StsBadArg, "Luma histogram output is not supported when CUDA Toolkit version <= 9.0.");
@@ -172,14 +172,14 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     createInfo_.DeinterlaceMode = static_cast<cudaVideoDeinterlaceMode>(videoFormat.deinterlaceMode);
     createInfo_.ulTargetWidth       = videoFormat.width;
     createInfo_.ulTargetHeight      = videoFormat.height;
-    createInfo_.display_area.left   = videoFormat.displayArea.x;
-    createInfo_.display_area.right  = videoFormat.displayArea.x + videoFormat.displayArea.width;
-    createInfo_.display_area.top    = videoFormat.displayArea.y;
-    createInfo_.display_area.bottom = videoFormat.displayArea.y + videoFormat.displayArea.height;
-    createInfo_.target_rect.left    = videoFormat.targetRoi.x;
-    createInfo_.target_rect.right   = videoFormat.targetRoi.x + videoFormat.targetRoi.width;
-    createInfo_.target_rect.top     = videoFormat.targetRoi.y;
-    createInfo_.target_rect.bottom  = videoFormat.targetRoi.y + videoFormat.targetRoi.height;
+    createInfo_.display_area.left = static_cast<short>(videoFormat.displayArea.x);
+    createInfo_.display_area.right = static_cast<short>(videoFormat.displayArea.x + videoFormat.displayArea.width);
+    createInfo_.display_area.top = static_cast<short>(videoFormat.displayArea.y);
+    createInfo_.display_area.bottom = static_cast<short>(videoFormat.displayArea.y + videoFormat.displayArea.height);
+    createInfo_.target_rect.left = static_cast<short>(videoFormat.targetRoi.x);
+    createInfo_.target_rect.right = static_cast<short>(videoFormat.targetRoi.x + videoFormat.targetRoi.width);
+    createInfo_.target_rect.top = static_cast<short>(videoFormat.targetRoi.y);
+    createInfo_.target_rect.bottom = static_cast<short>(videoFormat.targetRoi.y + videoFormat.targetRoi.height);
     createInfo_.ulNumOutputSurfaces = 2;
     createInfo_.ulCreationFlags     = videoCreateFlags;
     createInfo_.vidLock = lock_;
@@ -220,19 +220,19 @@ int cv::cudacodec::detail::VideoDecoder::reconfigure(const FormatInfo& videoForm
         videoFormat_.targetRoi = videoFormat.targetRoi;
     }
 
-    CUVIDRECONFIGUREDECODERINFO reconfigParams = { 0 };
+    CUVIDRECONFIGUREDECODERINFO reconfigParams = {};
     reconfigParams.ulWidth = videoFormat_.ulWidth;
     reconfigParams.ulHeight = videoFormat_.ulHeight;
-    reconfigParams.display_area.left = videoFormat_.displayArea.x;
-    reconfigParams.display_area.right = videoFormat_.displayArea.x + videoFormat_.displayArea.width;
-    reconfigParams.display_area.top = videoFormat_.displayArea.y;
-    reconfigParams.display_area.bottom = videoFormat_.displayArea.y + videoFormat_.displayArea.height;
+    reconfigParams.display_area.left = static_cast<short>(videoFormat_.displayArea.x);
+    reconfigParams.display_area.right = static_cast<short>(videoFormat_.displayArea.x + videoFormat_.displayArea.width);
+    reconfigParams.display_area.top = static_cast<short>(videoFormat_.displayArea.y);
+    reconfigParams.display_area.bottom = static_cast<short>(videoFormat_.displayArea.y + videoFormat_.displayArea.height);
     reconfigParams.ulTargetWidth = videoFormat_.width;
     reconfigParams.ulTargetHeight = videoFormat_.height;
-    reconfigParams.target_rect.left = videoFormat_.targetRoi.x;
-    reconfigParams.target_rect.right = videoFormat_.targetRoi.x + videoFormat_.targetRoi.width;
-    reconfigParams.target_rect.top = videoFormat_.targetRoi.y;
-    reconfigParams.target_rect.bottom = videoFormat_.targetRoi.y + videoFormat_.targetRoi.height;
+    reconfigParams.target_rect.left = static_cast<short>(videoFormat_.targetRoi.x);
+    reconfigParams.target_rect.right = static_cast<short>(videoFormat_.targetRoi.x + videoFormat_.targetRoi.width);
+    reconfigParams.target_rect.top = static_cast<short>(videoFormat_.targetRoi.y);
+    reconfigParams.target_rect.bottom = static_cast<short>(videoFormat_.targetRoi.y + videoFormat_.targetRoi.height);
     reconfigParams.ulNumDecodeSurfaces = videoFormat_.ulNumDecodeSurfaces;
 
     cuSafeCall(cuCtxPushCurrent(ctx_));
