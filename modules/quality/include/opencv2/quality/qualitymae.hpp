@@ -36,6 +36,7 @@ public:
     /**
     @brief Create an object which calculates quality
     @param ref input image to use as the reference for comparison
+    @param statsProc statistical method to apply on the error
     */
     CV_WRAP static Ptr<QualityMAE> create(InputArray ref, int statsProc = MAE_Mean);
 
@@ -61,6 +62,7 @@ protected:
     /**
     @brief Constructor
     @param ref reference image, converted to internal type
+    @param statsProc statistical method to apply on the error
     */
     QualityMAE(QualityBase::_mat_type ref, int flags)
         : _ref(std::move(ref)),
