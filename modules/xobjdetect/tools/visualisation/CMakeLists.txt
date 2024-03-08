@@ -1,0 +1,1 @@
+ocv_add_tool(opencv_visualisation MODULES opencv_core opencv_highgui opencv_imgproc opencv_videoio opencv_imgcodecs)
