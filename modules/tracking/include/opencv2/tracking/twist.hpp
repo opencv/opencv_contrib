@@ -1,13 +1,13 @@
 #ifndef OPENCV_TWIST_HPP
 #define OPENCV_TWIST_HPP
 
-#include "opencv2/video/tracking.hpp"
 #include "opencv2/core.hpp"
 
 namespace cv
 {
 class CV_EXPORTS Twist
-{};
+{
+};
 
 namespace detail
 {
@@ -19,17 +19,14 @@ inline namespace tracking
 class CV_EXPORTS Twist
 {
 public:
-    Twist();
+    Twist() = default;
 
-    cv::Vec6d compute(const cv::Mat& im0, const cv::Mat& im1, const cv::Mat depths0,
-                      const cv::Mat& K, const double dt);
+    // TODO(ernie): docs
+    cv::Vec6d compute(const cv::Mat& uv, const cv::Mat& duv, const cv::Mat depths,
+                      const cv::Mat& K);
 
-private:
+    // TODO(ernie): docs
     void interactionMatrix(const cv::Mat& uv, const cv::Mat& depth, const cv::Mat& K, cv::Mat& J);
-
-private:
-    Ptr<DenseOpticalFlow> _optflow;
-    Ptr<cv::Mat> _flow;
 };
 
 //! @}

@@ -9,14 +9,7 @@ namespace detail
 inline namespace tracking
 {
 
-Twist::Twist()
-{
-    _optflow = DISOpticalFlow::create(DISOpticalFlow::PRESET_MEDIUM);
-    _flow = new cv::Mat();
-}
-
-void Twist::interactionMatrix(const cv::Mat& uv, const cv::Mat& depth, const cv::Mat& K, cv::Mat&
-J)
+void Twist::interactionMatrix(const cv::Mat& uv, const cv::Mat& depth, const cv::Mat& K, cv::Mat& J)
 {
     CV_Assert(uv.cols == depth.cols);
     CV_Assert(depth.type() == CV_32F); // Validate depth input type
@@ -32,6 +25,7 @@ J)
     for (int i = 0; i < uv.cols; i++)
     {
         const float z = depth.at<float>(i);
+        // skip points with zero depth
         if (cv::abs(z) < 0.001f)
             continue;
 
@@ -53,33 +47,14 @@ J)
     }
 }
 
-cv::Vec6d Twist::compute(const cv::Mat& im0, const cv::Mat& im1, const cv::Mat depths0, const
-cv::Mat& K,
-               const double dt)
+cv::Vec6d Twist::compute(const cv::Mat& uv, const cv::Mat& duv, const cv::Mat depths,
+                         const cv::Mat& K)
 {
-    _optflow->calc(im0, im1, *_flow);
-
-    const int N = (im0.cols * im0.rows) * 0.1;
-    cv::Mat uv(2, N, CV_32F);
-    cv::Mat depth(1, N, CV_32F);
-    cv::Mat flow(1, 2 * N, CV_32F);
-    for (int i = 0; i < N; i++)
-    {
-        int x = rand() % im0.cols;
-        int y = rand() % im0.rows;
-        uv.at<float>(0, i) = x;
-        uv.at<float>(1, i) = y;
-        depth.at<float>(i) = depths0.at<float>(y, x);
-        flow.at<float>(0, 2 * i) = _flow->at<cv::Point2f>(y, x).x;
-        flow.at<float>(0, 2 * i + 1) = _flow->at<cv::Point2f>(y, x).y;
-    }
     cv::Mat J;
-    interactionMatrix(uv, depth, K, J);
-
+    interactionMatrix(uv, depths, K, J);
     cv::Mat Jinv;
     cv::invert(J, Jinv, cv::DECOMP_SVD);
-    cv::Mat duv = flow / dt;
-    cv::Mat twist = Jinv * duv.t();
+    cv::Mat twist = Jinv * duv.reshape(1, duv.total());
     return twist;
 }
 
