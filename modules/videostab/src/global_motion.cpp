@@ -727,7 +727,11 @@ Mat KeypointBasedMotionEstimator::estimate(InputArray frame0, InputArray frame1,
     // find keypoints
     detector_->detect(frame0, keypointsPrev_, mask_);
     if (keypointsPrev_.empty())
+    {
+        if (featureVisualizationCallback_)
+            featureVisualizationCallback_(Mat());
         return Mat::eye(3, 3, CV_32F);
+    }
 
     // extract points from keypoints
     pointsPrev_.resize(keypointsPrev_.size());
@@ -775,6 +779,23 @@ Mat KeypointBasedMotionEstimator::estimate(InputArray frame0, InputArray frame1,
                 pointsGood_.push_back(points_[i]);
             }
         }
+    }
+
+    if (featureVisualizationCallback_) {
+        Mat featureVisualizationPrev;
+        drawKeypoints(frame0, keypointsPrev_, featureVisualizationPrev,
+            Scalar(0, 0, 255), DrawMatchesFlags::DEFAULT);
+
+        std::vector<KeyPoint> keypointsPrevGood;
+        keypointsPrevGood.reserve(pointsPrevGood_.size());
+
+        for( size_t i = 0; i < pointsPrevGood_.size(); ++i) {
+            keypointsPrevGood.push_back(KeyPoint(pointsPrevGood_[i], 1.f));
+        }
+        drawKeypoints(frame0, keypointsPrevGood, featureVisualizationPrev,
+            Scalar(0, 255, 0), DrawMatchesFlags::DRAW_OVER_OUTIMG);
+
+        featureVisualizationCallback_(featureVisualizationPrev);
     }
 
     // estimate motion
