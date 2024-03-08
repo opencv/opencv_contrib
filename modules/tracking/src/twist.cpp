@@ -54,7 +54,7 @@ cv::Vec6d Twist::compute(const cv::Mat& uv, const cv::Mat& duv, const cv::Mat de
     interactionMatrix(uv, depths, K, J);
     cv::Mat Jinv;
     cv::invert(J, Jinv, cv::DECOMP_SVD);
-    cv::Mat twist = Jinv * duv.reshape(1, duv.total());
+    cv::Mat twist = Jinv * duv;
     return twist;
 }
 

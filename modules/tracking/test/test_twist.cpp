@@ -12,30 +12,89 @@ class TwistTest : public ::testing::Test
 {
 protected:
     cv::detail::tracking::Twist twist;
-    cv::Mat uv, depth, K, J, duv;
-    cv::Vec6d result;
+    cv::Mat K, J;
 
     void SetUp() override
     {
-        uv = (cv::Mat_<float>(2, 2) << 0.0, 0.0, 0.0, 0.0);
-        depth = (cv::Mat_<float>(1, 2) << 1.0, 1.0);
         K = (cv::Mat_<float>(3, 3) << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-        duv = (cv::Mat_<float>(2, 2) << 0.0, 0.0, 0.0, 0.0);
     }
 };
 
 TEST_F(TwistTest, TestInteractionMatrix)
 {
+    // import machinevisiontoolbox as mv
+    // cam = mv.CentralCamera()
+    // print(cam.K)
+    // print(cam.visjac_p([1, 1], 2.0))
+    // [[1. 0. 0.]
+    //  [0. 1. 0.]
+    //  [0. 0. 1.]]
+    // [[-0.5  0.   0.5  1.  -2.   1. ]
+    //  [ 0.  -0.5  0.5  2.  -1.  -1. ]]
+
+    cv::Mat uv = (cv::Mat_<float>(2, 1) << 1.0, 1.0);
+    cv::Mat depth = (cv::Mat_<float>(1, 1) << 2.0);
+
     twist.interactionMatrix(uv, depth, K, J);
     ASSERT_EQ(J.cols, 6);
-    ASSERT_EQ(J.rows, 4);
+    ASSERT_EQ(J.rows, 2);
+    float expected[2][6] = {{-0.5, 0.0, 0.5, 1.0, -2.0, 1.0}, {0.0, -0.5, 0.5, 2.0, -1.0, -1.0}};
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 6; j++)
+            ASSERT_NEAR(J.at<float>(i, j), expected[i][j], 1e-6);
 }
 
-TEST_F(TwistTest, TestCompute)
+TEST_F(TwistTest, TestComputeWithZeroPixelVelocities)
 {
-    result = twist.compute(uv, duv, depth, K);
+    cv::Mat uv = (cv::Mat_<float>(2, 2) << 0.0, 0.0, 0.0, 0.0);
+    cv::Mat depth = (cv::Mat_<float>(1, 2) << 1.0, 1.0);
+    cv::Mat duv = (cv::Mat_<float>(4, 1) << 0.0, 0.0, 0.0, 0.0);
+
+    cv::Vec6d result = twist.compute(uv, duv, depth, K);
     for (int i = 0; i < 6; i++)
         ASSERT_NEAR(result[i], 0.0, 1e-6);
+}
+
+TEST_F(TwistTest, TestComputeWithNonZeroPixelVelocities)
+{
+    // import machinevisiontoolbox as mv
+    // cam = mv.CentralCamera()
+    // pixels = np.array([[1, 2, 3],
+    //                    [1, 2, 3]], dtype=float)
+    // depths = np.array([1.0, 2.0, 3.0])
+    // Jac = cam.visjac_p(pixels, depths)
+    // duv = np.array([1, 2, 1, 3, 1, 4])
+    // twist = np.linalg.lstsq(Jac, duv, rcond=None)[0]
+    // print(twist)
+    // print(Jac)
+    // [ 0.5       0.5       1.875     0.041667 -0.041667 -0.5     ]
+    // [[ -1.         0.         1.         1.        -2.         1.      ]
+    //  [  0.        -1.         1.         2.        -1.        -1.      ]
+    //  [ -0.5        0.         1.         4.        -5.         2.      ]
+    //  [  0.        -0.5        1.         5.        -4.        -2.      ]
+    //  [ -0.333333   0.         1.         9.       -10.         3.      ]
+    //  [  0.        -0.333333   1.        10.        -9.        -3.      ]]
+
+    cv::Mat uv = (cv::Mat_<float>(2, 3) << 1.0, 2.0, 3.0, 1.0, 2.0, 3.0);
+    cv::Mat depth = (cv::Mat_<float>(1, 3) << 1.0, 2.0, 3.0);
+    cv::Mat duv = (cv::Mat_<float>(6, 1) << 1.0, 2.0, 1.0, 3.0, 1.0, 4.0);
+
+    twist.interactionMatrix(uv, depth, K, J);
+    ASSERT_EQ(J.cols, 6);
+    ASSERT_EQ(J.rows, 6);
+    float expected_jac[6][6] = {
+        {-1.0, 0.0, 1.0, 1.0, -2.0, 1.0},       {0.0, -1.0, 1.0, 2.0, -1.0, -1.0},
+        {-0.5, 0.0, 1.0, 4.0, -5.0, 2.0},       {0.0, -0.5, 1.0, 5.0, -4.0, -2.0},
+        {-0.333333, 0.0, 1.0, 9.0, -10.0, 3.0}, {0.0, -0.333333, 1.0, 10.0, -9.0, -3.0}};
+
+    for (int i = 0; i < 6; i++)
+        for (int j = 0; j < 6; j++)
+            ASSERT_NEAR(J.at<float>(i, j), expected_jac[i][j], 1e-6);
+
+    cv::Vec6d result = twist.compute(uv, duv, depth, K);
+    float expected_twist[6] = {0.5, 0.5, 1.875, 0.041667, -0.041667, -0.5};
+    for (int i = 0; i < 6; i++)
+        ASSERT_NEAR(result[i], expected_twist[i], 1e-6);
 }
 
 } // namespace
