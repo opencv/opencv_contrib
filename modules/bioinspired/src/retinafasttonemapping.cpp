@@ -21,7 +21,7 @@
  ** Vision: Images, Signals and Neural Networks: Models of Neural Processing in Visual Perception (Progress in Neural Processing),By: Jeanny Herault, ISBN: 9814273686. WAPI (Tower ID): 113266891.
  **
  **
- ** This class is based on image processing tools of the author and already used within the Retina class (this is the same code as method retina::applyFastToneMapping, but in an independent class, it is ligth from a memory requirement point of view). It implements an adaptation of the efficient tone mapping algorithm propose by David Alleyson, Sabine Susstruck and Laurence Meylan's work, please cite:
+ ** This class is based on image processing tools of the author and already used within the Retina class (this is the same code as method retina::applyFastToneMapping, but in an independent class, it is light from a memory requirement point of view). It implements an adaptation of the efficient tone mapping algorithm propose by David Alleyson, Sabine Susstruck and Laurence Meylan's work, please cite:
  ** -> Meylan L., Alleysson D., and Susstrunk S., A Model of Retinal Local Adaptation for the Tone Mapping of Color Filter Array Images, Journal of Optical Society of America, A, Vol. 24, N 9, September, 1st, 2007, pp. 2807-2816
  **
  **

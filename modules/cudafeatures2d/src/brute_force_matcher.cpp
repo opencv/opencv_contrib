@@ -791,15 +791,13 @@ namespace
             for (int i = 0; i < k; ++i)
             {
                 const int trainIdx = *trainIdxPtr;
-                if (trainIdx == -1)
-                    continue;
-
-                const int imgIdx = imgIdxPtr ? *imgIdxPtr : 0;
-                const float distance = *distancePtr;
-
-                DMatch m(queryIdx, trainIdx, imgIdx, distance);
-
-                curMatches.push_back(m);
+                if (trainIdx != -1)
+                {
+                    const int imgIdx = imgIdxPtr ? *imgIdxPtr : 0;
+                    const float distance = *distancePtr;
+                    DMatch m(queryIdx, trainIdx, imgIdx, distance);
+                    curMatches.push_back(m);
+                }
 
                 ++trainIdxPtr;
                 ++distancePtr;

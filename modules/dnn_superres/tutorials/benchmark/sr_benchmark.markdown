@@ -50,14 +50,9 @@ Explanation
 Benchmarking results
 -----------
 
-Dataset benchmarking
-----
+## General100 dataset
 
-###General100 dataset
-
-<center>
-
-#####2x scaling factor
+### 2x scaling factor
 
 
 |               | Avg inference time in sec (CPU)| Avg PSNR | Avg SSIM |
@@ -70,7 +65,7 @@ Dataset benchmarking
 | Nearest neighbor | 0.000114 | 29.1665 | 0.9049 |
 | Lanczos          | 0.001094 | 32.4687 | 0.9327 |
 
-#####3x scaling factor
+### 3x scaling factor
 
 |               | Avg inference time in sec (CPU)| Avg PSNR | Avg SSIM |
 | ------------- |:-------------------:| ---------:|--------:|
@@ -83,7 +78,7 @@ Dataset benchmarking
 | Lanczos          | 0.001012  |25.9115  |0.8706  |
 
 
-#####4x scaling factor
+### 4x scaling factor
 
 |               | Avg inference time in sec (CPU)| Avg PSNR | Avg SSIM |
 | ------------- |:-------------------:| ---------:|--------:|
@@ -96,14 +91,10 @@ Dataset benchmarking
 | Lanczos          | 0.001012  |25.9115  |0.8706  |
 
 
-</center>
 
-Images
-----
+## Images
 
-<center>
-
-####2x scaling factor
+### 2x scaling factor
 
 |Set5: butterfly.png | size: 256x256 | ||
 |:-------------:|:-------------------:|:-------------:|:----:|
@@ -112,7 +103,7 @@ Images
 ![ESPCN](images/espcn_butterfly.jpg)| ![FSRCNN](images/fsrcnn_butterfly.jpg) | ![LapSRN](images/lapsrn_butterfly.jpg) | ![EDSR](images/edsr_butterfly.jpg)
 |29.0341 / 0.9354 / **0.004157**| 29.0077 / 0.9345 / 0.006325 | 27.8212 / 0.9230 / 0.037937 | **30.0347** / **0.9453** / 2.077280 |
 
-####3x scaling factor
+### 3x scaling factor
 
 |Urban100: img_001.png | size: 1024x644 | ||
 |:-------------:|:-------------------:|:-------------:|:----:|
@@ -122,7 +113,7 @@ Images
 |28.0118 / 0.8588 / **0.030748**| 28.0184 / 0.8597 / 0.094173 |  | **30.5671** / **0.9019** / 9.517580 |
 
 
-####4x scaling factor
+### 4x scaling factor
 
 |Set14: comic.png | size: 250x361 | ||
 |:-------------:|:-------------------:|:-------------:|:----:|
@@ -131,7 +122,7 @@ Images
 |![ESPCN](images/espcn_comic.jpg)| ![FSRCNN](images/fsrcnn_comic.jpg) | ![LapSRN](images/lapsrn_comic.jpg) | ![EDSR](images/edsr_comic.jpg)
 |20.0417 / 0.6302 / **0.001894**| 20.0885 / 0.6384 / 0.002103 | 20.0676 / 0.6339 / 0.061640 | **20.5233** / **0.6901** / 0.665876 |
 
-####8x scaling factor
+### 8x scaling factor
 
 |Div2K: 0006.png | size: 1356x2040 | |
 |:-------------:|:-------------------:|:-------------:|
@@ -139,5 +130,3 @@ Images
 |PSRN / SSIM / Speed (CPU)| 26.3139 / **0.8033** / 0.001107| 23.8291 / 0.7340 / **0.000611** |
 |![Lanczos interpolation](images/lanczos_div2k.jpg)| ![LapSRN](images/lapsrn_div2k.jpg) | |
 |26.1565 / 0.7962 / 0.004782| **26.7046** / 0.7987 / 2.274290 | |
-
-</center>

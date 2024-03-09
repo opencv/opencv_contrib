@@ -10,7 +10,7 @@ namespace opencv_test { namespace {
 
 TEST(CV_ArucoTutorial, can_find_singlemarkersoriginal)
 {
-    string img_path = cvtest::findDataFile("singlemarkersoriginal.jpg", false);
+    string img_path = cvtest::findDataFile("aruco/singlemarkersoriginal.jpg", false);
     Mat image = imread(img_path);
     aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
 
@@ -44,9 +44,9 @@ TEST(CV_ArucoTutorial, can_find_singlemarkersoriginal)
 
 TEST(CV_ArucoTutorial, can_find_gboriginal)
 {
-    string imgPath = cvtest::findDataFile("gboriginal.png", false);
+    string imgPath = cvtest::findDataFile("aruco/gboriginal.jpg", false);
     Mat image = imread(imgPath);
-    string dictPath = cvtest::findDataFile("tutorial_dict.yml", false);
+    string dictPath = cvtest::findDataFile("aruco/tutorial_dict.yml", false);
     aruco::Dictionary dictionary;
 
     FileStorage fs(dictPath, FileStorage::READ);
@@ -99,7 +99,7 @@ TEST(CV_ArucoTutorial, can_find_gboriginal)
 
 TEST(CV_ArucoTutorial, can_find_choriginal)
 {
-    string imgPath = cvtest::findDataFile("choriginal.jpg", false);
+    string imgPath = cvtest::findDataFile("aruco/choriginal.jpg", false);
     Mat image = imread(imgPath);
     aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
 
@@ -138,7 +138,7 @@ TEST(CV_ArucoTutorial, can_find_choriginal)
 
 TEST(CV_ArucoTutorial, can_find_chocclusion)
 {
-    string imgPath = cvtest::findDataFile("chocclusion_original.jpg", false);
+    string imgPath = cvtest::findDataFile("aruco/chocclusion_original.jpg", false);
     Mat image = imread(imgPath);
     aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
 
@@ -176,15 +176,15 @@ TEST(CV_ArucoTutorial, can_find_chocclusion)
 
 TEST(CV_ArucoTutorial, can_find_diamondmarkers)
 {
-    string imgPath = cvtest::findDataFile("diamondmarkers.png", false);
+    string imgPath = cvtest::findDataFile("aruco/diamondmarkers.jpg", false);
     Mat image = imread(imgPath);
 
-    string dictPath = cvtest::findDataFile("tutorial_dict.yml", false);
+    string dictPath = cvtest::findDataFile("aruco/tutorial_dict.yml", false);
     aruco::Dictionary dictionary;
     FileStorage fs(dictPath, FileStorage::READ);
     dictionary.aruco::Dictionary::readDictionary(fs.root()); // set marker from tutorial_dict.yml
 
-    string detectorPath = cvtest::findDataFile("detector_params.yml", false);
+    string detectorPath = cvtest::findDataFile("aruco/detector_params.yml", false);
     fs = FileStorage(detectorPath, FileStorage::READ);
     aruco::DetectorParameters detectorParams;
     detectorParams.readDetectorParameters(fs.root());
@@ -203,13 +203,14 @@ TEST(CV_ArucoTutorial, can_find_diamondmarkers)
 
     detector.detectMarkers(image, corners, ids, rejected);
     map<int, int> counterRes;
+
+    ASSERT_EQ(N, ids.size());
     for (size_t i = 0; i < N; i++)
     {
         int arucoId = ids[i];
         counterRes[arucoId]++;
     }
 
-    ASSERT_EQ(N, ids.size());
     EXPECT_EQ(counterGoldCornersIds, counterRes); // check the number of ArUco markers
 }
 
