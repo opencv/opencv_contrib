@@ -57,7 +57,7 @@ protected:
     QualityBase::_mat_type _ref;
 
     /** @brief What statistics analysis to apply on the absolute error */
-    int _flags;
+    int _flag;
 
     /**
     @brief Constructor
@@ -66,7 +66,7 @@ protected:
     */
     QualityMAE(QualityBase::_mat_type ref, int statsProc)
         : _ref(std::move(ref)),
-          _flags(flags)
+          _flag(statsProc)
     {}
 
 };
