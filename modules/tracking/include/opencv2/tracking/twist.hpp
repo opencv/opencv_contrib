@@ -5,10 +5,6 @@
 
 namespace cv
 {
-class CV_EXPORTS Twist
-{
-};
-
 namespace detail
 {
 inline namespace tracking
