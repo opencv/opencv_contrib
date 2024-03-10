@@ -64,7 +64,7 @@ protected:
     @param ref reference image, converted to internal type
     @param statsProc statistical method to apply on the error
     */
-    QualityMAE(QualityBase::_mat_type ref, int flags)
+    QualityMAE(QualityBase::_mat_type ref, int statsProc)
         : _ref(std::move(ref)),
           _flags(flags)
     {}
