@@ -48,7 +48,7 @@
 #endif
 
 #include "opencv2/core/cuda.hpp"
-#include "opencv2/objdetect.hpp"
+#include "opencv2/xobjdetect.hpp"
 
 /**
   @addtogroup cuda

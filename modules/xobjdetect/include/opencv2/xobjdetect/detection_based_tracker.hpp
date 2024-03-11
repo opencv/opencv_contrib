@@ -41,8 +41,8 @@
 //
 //M*/
 
-#ifndef OPENCV_OBJDETECT_DBT_HPP
-#define OPENCV_OBJDETECT_DBT_HPP
+#ifndef OPENCV_XOBJDETECT_DBT_HPP
+#define OPENCV_XOBJDETECT_DBT_HPP
 
 #include <opencv2/core.hpp>
 
@@ -51,7 +51,7 @@
 namespace cv
 {
 
-//! @addtogroup objdetect_cascade_classifier
+//! @addtogroup xobjdetect_cascade_classifier
 //! @{
 
 class CV_EXPORTS DetectionBasedTracker

@@ -1,11 +1,11 @@
-package org.opencv.test.objdetect;
+package org.opencv.test.xobjdetect;
 
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.objdetect.CascadeClassifier;
-import org.opencv.objdetect.Objdetect;
+import org.opencv.xobjdetect.CascadeClassifier;
+import org.opencv.xobjdetect.Xobjdetect;
 import org.opencv.test.OpenCVTestCase;
 import org.opencv.test.OpenCVTestRunner;
 
@@ -38,7 +38,7 @@ public class CascadeClassifierTest extends OpenCVTestCase {
         Imgproc.cvtColor(rgbLena, greyLena, Imgproc.COLOR_RGB2GRAY);
         Imgproc.equalizeHist(greyLena, greyLena);
 
-        cc.detectMultiScale(greyLena, faces, 1.1, 3, Objdetect.CASCADE_SCALE_IMAGE, new Size(30, 30), new Size());
+        cc.detectMultiScale(greyLena, faces, 1.1, 3, Xobjdetect.CASCADE_SCALE_IMAGE, new Size(30, 30), new Size());
         assertEquals(1, faces.total());
     }
 

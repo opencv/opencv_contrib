@@ -1,4 +1,4 @@
-#ifdef HAVE_OPENCV_OBJDETECT
+#ifdef HAVE_OPENCV_XOBJDETECT
 
 #include "opencv2/xobjdetect.hpp"
 

@@ -10,7 +10,7 @@ Introduction
 
 Working with a boosted cascade of weak classifiers includes two major stages: the training and the detection stage. The detection stage using either HAAR or LBP based models, is described in the @ref tutorial_cascade_classifier "object detection tutorial". This documentation gives an overview of the functionality needed to train your own boosted cascade of weak classifiers. The current guide will walk through all the different stages: collecting training data, preparation of the training data and executing the actual model training.
 
-To support this tutorial, several official OpenCV applications will be used: [opencv_createsamples](https://github.com/opencv/opencv/tree/5.x/apps/createsamples), [opencv_annotation](https://github.com/opencv/opencv/tree/5.x/apps/annotation), [opencv_traincascade](https://github.com/opencv/opencv/tree/5.x/apps/traincascade) and [opencv_visualisation](https://github.com/opencv/opencv/tree/5.x/apps/visualisation).
+To support this tutorial, several official OpenCV applications will be used: [opencv_createsamples](https://github.com/opencv/opencv_contrib/tree/5.x/modules/xobjdetect/tools/createsamples), [opencv_annotation](https://github.com/opencv/opencv_contrib/tree/5.x/modules/xobjdetect/tools/annotation), [opencv_traincascade](https://github.com/opencv/opencv_contrib/tree/5.x/modules/xobjdetect/tools/traincascade) and [opencv_visualisation](https://github.com/opencv/opencv_contrib/tree/5.x/modules/xobjdetect/tools/visualisation).
 
 @note Createsamples and traincascade are disabled since OpenCV 4.0. Consider using these apps for training from 3.4 branch for Cascade Classifier. Model format is the same between 3.4 and 4.x.
 
@@ -120,7 +120,7 @@ The manual process of creating the `-info` file can also been done by using the 
 #### Extra remarks
 
  - opencv_createsamples utility may be used for examining samples stored in any given positive samples file. In order to do this only `-vec`, `-w` and `-h` parameters should be specified.
- - Example of vec-file is available here `opencv/data/vec_files/trainingfaces_24-24.vec`. It can be used to train a face detector with the following window size: `-w 24 -h 24`.
+ - Example of vec-file is available here `opencv_contrib/modules/xobjdetect/data/vec_files/trainingfaces_24-24.vec`. It can be used to train a face detector with the following window size: `-w 24 -h 24`.
 
 ### Using OpenCV's integrated annotation tool
 

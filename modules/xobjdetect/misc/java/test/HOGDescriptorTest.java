@@ -1,4 +1,4 @@
-package org.opencv.test.objdetect;
+package org.opencv.test.xobjdetect;
 
 import org.opencv.xobjdetect.HOGDescriptor;
 import org.opencv.test.OpenCVTestCase;

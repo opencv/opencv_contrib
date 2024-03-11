@@ -64,7 +64,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <cassert>
 #include <cstdio>
 
-#include "cascadeclassifier.h"
 #include "feature_evaluator.hpp"
 #include "lbpfeatures.h"
 #include "waldboost.hpp"

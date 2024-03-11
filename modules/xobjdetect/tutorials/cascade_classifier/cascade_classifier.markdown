@@ -95,7 +95,7 @@ more details or check out the references in the Additional Resources section.
 Haar-cascade Detection in OpenCV
 --------------------------------
 OpenCV provides a training method (see @ref tutorial_traincascade) or pretrained models, that can be read using the @ref cv::CascadeClassifier::load method.
-The pretrained models are located in the data folder in the OpenCV installation or can be found [here](https://github.com/opencv/opencv/tree/5.x/data).
+The pretrained models are located in the data folder in the OpenCV installation or can be found [here](https://github.com/opencv/opencv_contrib/tree/5.x/modules/xobjdetect/data).
 
 The following code example will use pretrained Haar cascade models to detect faces and eyes in an image.
 First, a @ref cv::CascadeClassifier is created and the necessary XML file is loaded using the @ref cv::CascadeClassifier::load method.
@@ -103,19 +103,19 @@ Afterwards, the detection is done using the @ref cv::CascadeClassifier::detectMu
 
 @add_toggle_cpp
 This tutorial code's is shown lines below. You can also download it from
-[here](https://github.com/opencv/opencv/tree/5.x/samples/cpp/tutorial_code/objectDetection/objectDetection.cpp)
-@include samples/cpp/tutorial_code/objectDetection/objectDetection.cpp
+[here](https://github.com/opencv/opencv_contrib/tree/5.x/modules/xobjdetect/samples/objectDetection.cpp)
+@include samples/objectDetection.cpp
 @end_toggle
 
 @add_toggle_java
 This tutorial code's is shown lines below. You can also download it from
-[here](https://github.com/opencv/opencv/tree/5.x/samples/java/tutorial_code/objectDetection/cascade_classifier/ObjectDetectionDemo.java)
+[here](https://github.com/opencv/opencv_contrib/tree/5.x/moudles/xobjdetect/samples/java/tutorial_code/objectDetection/cascade_classifier/ObjectDetectionDemo.java)
 @include samples/java/tutorial_code/objectDetection/cascade_classifier/ObjectDetectionDemo.java
 @end_toggle
 
 @add_toggle_python
 This tutorial code's is shown lines below. You can also download it from
-[here](https://github.com/opencv/opencv/tree/5.x/samples/python/tutorial_code/objectDetection/cascade_classifier/objectDetection.py)
+[here](https://github.com/opencv/opencv_contrib/tree/5.x/modules/xobjdetect/samples/python/tutorial_code/objectDetection/cascade_classifier/objectDetection.py)
 @include samples/python/tutorial_code/objectDetection/cascade_classifier/objectDetection.py
 @end_toggle
 
@@ -129,7 +129,7 @@ Result
 
     Be sure the program will find the path of files *haarcascade_frontalface_alt.xml* and
     *haarcascade_eye_tree_eyeglasses.xml*. They are located in
-    *opencv/data/haarcascades*
+    *opencv_contrib/modules/xobjdetect/data/haarcascades*
 
 -#  This is the result of using the file *lbpcascade_frontalface.xml* (LBP trained) for the face
     detection. For the eyes we keep using the file used in the tutorial.
