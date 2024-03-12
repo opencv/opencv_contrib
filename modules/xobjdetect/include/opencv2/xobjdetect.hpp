@@ -572,7 +572,7 @@ public:
     */
     CV_WRAP static std::vector<float> getDefaultPeopleDetector();
 
-    /**@example samples/tapi/hog.cpp
+    /**@example samples/hog_tapi.cpp
     */
     /** @brief Returns coefficients of the classifier trained for people detection (for 48x96 windows).
     */

@@ -63,6 +63,10 @@
 #  include "opencv2/objdetect.hpp"
 #endif
 
+#ifdef HAVE_OPENCV_XOBJDETECT
+#  include "opencv2/xobjdetect.hpp"
+#endif
+
 #ifdef HAVE_OPENCV_3D
 #  include "opencv2/3d.hpp"
 #endif
