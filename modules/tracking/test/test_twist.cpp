@@ -3,22 +3,24 @@
 #include "opencv2/core.hpp"
 #include "opencv2/tracking/twist.hpp"
 
-#define eps 1e-4
-
 namespace opencv_test
 {
 namespace
 {
 
+using namespace cv::detail::tracking;
+
+float const eps = 1e-4f;
+
 class TwistTest : public ::testing::Test
 {
 protected:
-    cv::detail::tracking::Twist twist;
-    cv::Mat K, J;
+    cv::Mat J, K;
 
     void SetUp() override
     {
-        K = (cv::Mat_<float>(3, 3) << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+        cv::Matx33f K = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+        this->K = cv::Mat(K);
     }
 };
 
@@ -34,10 +36,13 @@ TEST_F(TwistTest, TestInteractionMatrix)
     // [[-0.5  0.   0.5  1.  -2.   1. ]
     //  [ 0.  -0.5  0.5  2.  -1.  -1. ]]
 
-    cv::Mat uv = (cv::Mat_<float>(2, 1) << 1.0, 1.0);
-    cv::Mat depth = (cv::Mat_<float>(1, 1) << 2.0);
+    // float data[] = {1.5f, 2.0f, 3.0f, 4.2f};
+    // cv::Mat mat = cv::Mat(2, 2, CV_32F, data);
 
-    twist.interactionMatrix(uv, depth, K, J);
+    cv::Mat uv = cv::Mat(2, 1, CV_32F, {1.0f, 1.0f});
+    cv::Mat depth = cv::Mat(1, 1, CV_32F, {2.0f});
+
+    getInteractionMatrix(uv, depth, K, J);
     ASSERT_EQ(J.cols, 6);
     ASSERT_EQ(J.rows, 2);
     float expected[2][6] = {{-0.5f, 0.0f, 0.5f, 1.0f, -2.0f, 1.0f},
@@ -49,11 +54,11 @@ TEST_F(TwistTest, TestInteractionMatrix)
 
 TEST_F(TwistTest, TestComputeWithZeroPixelVelocities)
 {
-    cv::Mat uv = (cv::Mat_<float>(2, 2) << 0.0, 0.0, 0.0, 0.0);
-    cv::Mat depth = (cv::Mat_<float>(1, 2) << 1.0, 1.0);
-    cv::Mat duv = (cv::Mat_<float>(4, 1) << 0.0, 0.0, 0.0, 0.0);
+    cv::Mat uv = cv::Mat(2, 2, CV_32F, {1.0f, 0.0f, 3.0f, 0.0f});
+    cv::Mat depths = cv::Mat(1, 2, CV_32F, {1.1f, 1.0f});
+    cv::Mat duv = cv::Mat(4, 1, CV_32F, {0.0f, 0.0f, 0.0f, 0.0f});
 
-    cv::Vec6d result = twist.compute(uv, duv, depth, K);
+    cv::Vec6d result = computeTwist(uv, duv, depths, K);
     for (int i = 0; i < 6; i++)
         ASSERT_NEAR(result[i], 0.0, eps);
 }
@@ -78,11 +83,23 @@ TEST_F(TwistTest, TestComputeWithNonZeroPixelVelocities)
     //  [ -0.333333   0.         1.         9.       -10.         3.      ]
     //  [  0.        -0.333333   1.        10.        -9.        -3.      ]]
 
-    cv::Mat uv = (cv::Mat_<float>(2, 3) << 1.0, 2.0, 3.0, 1.0, 2.0, 3.0);
-    cv::Mat depth = (cv::Mat_<float>(1, 3) << 1.0, 2.0, 3.0);
-    cv::Mat duv = (cv::Mat_<float>(6, 1) << 1.0, 2.0, 1.0, 3.0, 1.0, 4.0);
+    // cv::Mat uv = (cv::Mat_<float>(2, 3) << 1.0, 2.0, 3.0, 1.0, 2.0, 3.0);
+    // std::vector<float> depth_data = {1.0f, 2.0f, 3.0f};
+    // cv::Mat depth = cv::Mat(depth_data).reshape(0, 3);
+    // cv::Mat duv = (cv::Mat_<float>(6, 1) << 1.0, 2.0, 1.0, 3.0, 1.0, 4.0);
 
-    twist.interactionMatrix(uv, depth, K, J);
+    // cv::Mat uv = (cv::Mat_<float>(2, 3) << 1.0, 2.0, 3.0, 1.0, 2.0, 3.0);
+    // cv::Mat depth = (cv::Mat_<float>(1, 3) << 1.0, 2.0, 3.0);
+    // cv::Mat duv = (cv::Mat_<float>(6, 1) << 1.0, 2.0, 1.0, 3.0, 1.0, 4.0);
+
+    float uv_data[] = {1.0f, 2.0f, 3.0f, 1.0f, 2.0f, 3.0f};
+    cv::Mat uv = cv::Mat(2, 3, CV_32F, uv_data);
+    float depth_data[] = {1.0f, 2.0f, 3.0f};
+    cv::Mat depth = cv::Mat(1, 3, CV_32F, depth_data);
+    float duv_data[] = {1.0f, 2.0f, 1.0f, 3.0f, 1.0f, 4.0f};
+    cv::Mat duv = cv::Mat(6, 1, CV_32F, duv_data);
+
+    getInteractionMatrix(uv, depth, K, J);
     ASSERT_EQ(J.cols, 6);
     ASSERT_EQ(J.rows, 6);
     float expected_jac[6][6] = {{-1.0f, 0.0f, 1.0f, 1.0f, -2.0f, 1.0f},
@@ -96,7 +113,7 @@ TEST_F(TwistTest, TestComputeWithNonZeroPixelVelocities)
         for (int j = 0; j < 6; j++)
             ASSERT_NEAR(J.at<float>(i, j), expected_jac[i][j], eps);
 
-    cv::Vec6d result = twist.compute(uv, duv, depth, K);
+    cv::Vec6d result = computeTwist(uv, duv, depth, K);
     float expected_twist[6] = {0.5f, 0.5f, 1.875f, 0.041667f, -0.041667f, -0.5f};
     for (int i = 0; i < 6; i++)
         ASSERT_NEAR(result[i], expected_twist[i], eps);

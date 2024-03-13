@@ -9,13 +9,13 @@ namespace detail
 inline namespace tracking
 {
 
-void Twist::interactionMatrix(const cv::Mat& uv, const cv::Mat& depth, const cv::Mat& K, cv::Mat& J)
+void getInteractionMatrix(const cv::Mat& uv, const cv::Mat& depths, const cv::Mat& K, cv::Mat& J)
 {
-    CV_Assert(uv.cols == depth.cols);
-    CV_Assert(depth.type() == CV_32F);
+    CV_Assert(uv.cols == depths.cols);
+    CV_Assert(depths.type() == CV_32F);
     CV_Assert(K.cols == 3 && K.rows == 3);
 
-    J.create(depth.cols * 2, 6, CV_32F);
+    J.create(depths.cols * 2, 6, CV_32F);
     J.setTo(0);
 
     cv::Mat Kinv;
@@ -25,7 +25,7 @@ void Twist::interactionMatrix(const cv::Mat& uv, const cv::Mat& depth, const cv:
     cv::Mat Jp(2, 6, CV_32F);
     for (int i = 0; i < uv.cols; i++)
     {
-        const float z = depth.at<float>(i);
+        const float z = depths.at<float>(i);
         // skip points with zero depth
         if (cv::abs(z) < 0.001f)
             continue;
@@ -38,8 +38,18 @@ void Twist::interactionMatrix(const cv::Mat& uv, const cv::Mat& depth, const cv:
         float y = xy.at<float>(1);
 
         // 2x6 Jacobian for this point
-        Jp = (cv::Mat_<float>(2, 6) << -1 / z, 0.0, x / z, x * y, -(1 + x * x), y, 0.0, -1 / z,
-              y / z, 1 + y * y, -x * y, -x);
+        Jp.at<float>(0, 0) = -1 / z;
+        Jp.at<float>(0, 1) = 0.0;
+        Jp.at<float>(0, 2) = x / z;
+        Jp.at<float>(0, 3) = x * y;
+        Jp.at<float>(0, 4) = -(1 + x * x);
+        Jp.at<float>(0, 5) = y;
+        Jp.at<float>(1, 0) = 0.0;
+        Jp.at<float>(1, 1) = -1 / z;
+        Jp.at<float>(1, 2) = y / z;
+        Jp.at<float>(1, 3) = 1 + y * y;
+        Jp.at<float>(1, 4) = -x * y;
+        Jp.at<float>(1, 5) = -x;
 
         Jp = K(cv::Rect(0, 0, 2, 2)) * Jp;
 
@@ -48,13 +58,13 @@ void Twist::interactionMatrix(const cv::Mat& uv, const cv::Mat& depth, const cv:
     }
 }
 
-cv::Vec6d Twist::compute(const cv::Mat& uv, const cv::Mat& duv, const cv::Mat depths,
-                         const cv::Mat& K)
+cv::Vec6d computeTwist(const cv::Mat& uv, const cv::Mat& duv, const cv::Mat& depths,
+                       const cv::Mat& K)
 {
     CV_Assert(uv.cols * 2 == duv.rows);
 
     cv::Mat J;
-    interactionMatrix(uv, depths, K, J);
+    getInteractionMatrix(uv, depths, K, J);
     cv::Mat Jinv;
     cv::invert(J, Jinv, cv::DECOMP_SVD);
     cv::Mat twist = Jinv * duv;
