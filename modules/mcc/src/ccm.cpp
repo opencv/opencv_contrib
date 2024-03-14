@@ -296,7 +296,7 @@ Mat ColorCorrectionModel::infer(const Mat& img, bool islinear)
     {
         return img_ccm;
     }
-    return p->cs.fromL(img_ccm);
+    return p->cs.fromLFunc(img_ccm);
 }
 
 void ColorCorrectionModel::Impl::getColor(CONST_COLOR constcolor)
