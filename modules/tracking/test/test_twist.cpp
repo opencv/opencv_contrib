@@ -36,9 +36,6 @@ TEST_F(TwistTest, TestInteractionMatrix)
     // [[-0.5  0.   0.5  1.  -2.   1. ]
     //  [ 0.  -0.5  0.5  2.  -1.  -1. ]]
 
-    // float data[] = {1.5f, 2.0f, 3.0f, 4.2f};
-    // cv::Mat mat = cv::Mat(2, 2, CV_32F, data);
-
     cv::Mat uv = cv::Mat(2, 1, CV_32F, {1.0f, 1.0f});
     cv::Mat depth = cv::Mat(1, 1, CV_32F, {2.0f});
 
@@ -82,15 +79,6 @@ TEST_F(TwistTest, TestComputeWithNonZeroPixelVelocities)
     //  [  0.        -0.5        1.         5.        -4.        -2.      ]
     //  [ -0.333333   0.         1.         9.       -10.         3.      ]
     //  [  0.        -0.333333   1.        10.        -9.        -3.      ]]
-
-    // cv::Mat uv = (cv::Mat_<float>(2, 3) << 1.0, 2.0, 3.0, 1.0, 2.0, 3.0);
-    // std::vector<float> depth_data = {1.0f, 2.0f, 3.0f};
-    // cv::Mat depth = cv::Mat(depth_data).reshape(0, 3);
-    // cv::Mat duv = (cv::Mat_<float>(6, 1) << 1.0, 2.0, 1.0, 3.0, 1.0, 4.0);
-
-    // cv::Mat uv = (cv::Mat_<float>(2, 3) << 1.0, 2.0, 3.0, 1.0, 2.0, 3.0);
-    // cv::Mat depth = (cv::Mat_<float>(1, 3) << 1.0, 2.0, 3.0);
-    // cv::Mat duv = (cv::Mat_<float>(6, 1) << 1.0, 2.0, 1.0, 3.0, 1.0, 4.0);
 
     float uv_data[] = {1.0f, 2.0f, 3.0f, 1.0f, 2.0f, 3.0f};
     cv::Mat uv = cv::Mat(2, 3, CV_32F, uv_data);
