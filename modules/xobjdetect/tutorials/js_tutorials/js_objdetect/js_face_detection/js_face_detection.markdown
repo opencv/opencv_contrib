@@ -79,7 +79,7 @@ Haar-cascade Detection in OpenCV
 --------------------------------
 
 Here we will deal with detection. OpenCV already contains many pre-trained classifiers for face,
-eyes, smile etc. Those XML files are stored in opencv/data/haarcascades/ folder. Let's create a face
+eyes, smile etc. Those XML files are stored in opencv_contrib/modules/xobjdetect/data/haarcascades/ folder. Let's create a face
 and eye detector with OpenCV.
 
 We use the function: **detectMultiScale (image, objects, scaleFactor = 1.1, minNeighbors = 3, flags = 0, minSize = new cv.Size(0, 0), maxSize = new cv.Size(0, 0))**
