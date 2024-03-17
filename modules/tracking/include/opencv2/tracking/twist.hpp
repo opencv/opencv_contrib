@@ -36,7 +36,7 @@ CV_EXPORTS cv::Vec6d computeTwist(const cv::Mat& uv, const cv::Mat& duv, const c
  * velocity i.e., the twist.
  *
  * @param uv 2xN matrix of 2D pixel locations
- * @param depth 1xN matrix of depth values
+ * @param depths 1xN matrix of depth values
  * @param K 3x3 camera intrinsic matrix
  * @param J 2Nx6 interaction matrix
  *
