@@ -1,46 +1,7 @@
-/*
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
-copy or use the software.
-
-                          License Agreement
-               For Open Source Computer Vision Library
-                       (3-clause BSD License)
-
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-Third party copyrights are property of their respective owners.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-
-  * Neither the names of the copyright holders nor the names of the contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
-
-This software is provided by the copyright holders and contributors "as is" and
-any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
-(including, but not limited to, procurement of substitute goods or services;
-loss of use, data, or profits; or business interruption) however caused
-and on any theory of liability, whether in contract, strict liability,
-or tort (including negligence or otherwise) arising in any way out of
-the use of this software, even if advised of the possibility of such damage.
-*/
-
-
-#include <opencv2/highgui.hpp>
-#include <opencv2/aruco/charuco.hpp>
-#include <vector>
 #include <iostream>
+#include <vector>
+#include <opencv2/highgui.hpp>
+#include <opencv2/objdetect.hpp>
 #include "aruco_samples_utility.hpp"
 
 using namespace std;
@@ -90,19 +51,19 @@ int main(int argc, char *argv[]) {
         video = parser.get<String>("v");
     }
 
-    Mat camMatrix, distCoeffs;
+    Mat cameraMatrix, distCoeffs;
     if(parser.has("c")) {
-        bool readOk = readCameraParameters(parser.get<string>("c"), camMatrix, distCoeffs);
+        bool readOk = readCameraParameters(parser.get<string>("c"), cameraMatrix, distCoeffs);
         if(!readOk) {
             cerr << "Invalid camera file" << endl;
             return 0;
         }
     }
 
-    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
+    aruco::DetectorParameters detectorParams = aruco::DetectorParameters();
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
-        bool readOk = detectorParams->readDetectorParameters(fs.root());
+        bool readOk = detectorParams.readDetectorParameters(fs.root());
         if(!readOk) {
             cerr << "Invalid detector parameters file" << endl;
             return 0;
@@ -144,9 +105,18 @@ int main(int argc, char *argv[]) {
 
     float axisLength = 0.5f * ((float)min(squaresX, squaresY) * (squareLength));
 
-    // create charuco board object
-    Ptr<aruco::CharucoBoard> charucoboard = new aruco::CharucoBoard(Size(squaresX, squaresY), squareLength, markerLength, dictionary);
-    Ptr<aruco::Board> board = charucoboard.staticCast<aruco::Board>();
+    // Create charuco board object
+    aruco::CharucoBoard board(Size(squaresX, squaresY), squareLength, markerLength, dictionary);
+
+    aruco::CharucoParameters charucoParams;
+    charucoParams.cameraMatrix = cameraMatrix;
+    charucoParams.distCoeffs = distCoeffs;
+
+    if(refindStrategy) {
+        charucoParams.tryRefineMarkers = true;
+    }
+
+    aruco::CharucoDetector detector(board, charucoParams, detectorParams);  // , refineParams);
 
     double totalTime = 0;
     int totalIterations = 0;
@@ -157,34 +127,23 @@ int main(int argc, char *argv[]) {
 
         double tick = (double)getTickCount();
 
-        vector< int > markerIds, charucoIds;
-        vector< vector< Point2f > > markerCorners, rejectedMarkers;
-        vector< Point2f > charucoCorners;
+        vector<int> markerIds, charucoIds;
+        vector<vector<Point2f>> markerCorners, rejectedMarkers;
+        vector<Point2f> charucoCorners;
         Vec3d rvec, tvec;
 
-        // detect markers
-        aruco::detectMarkers(image, makePtr<aruco::Dictionary>(dictionary), markerCorners, markerIds, detectorParams,
-                             rejectedMarkers);
+        detector.detectBoard(image, charucoCorners, charucoIds, markerCorners, markerIds);
 
-        // refind strategy to detect more markers
-        if(refindStrategy)
-            aruco::refineDetectedMarkers(image, board, markerCorners, markerIds, rejectedMarkers,
-                                         camMatrix, distCoeffs);
+        // Estimate charuco board pose
+        Mat objPoints, imgPoints;
+        int markersOfBoardDetected = 0;
 
-        // interpolate charuco corners
-        int interpolatedCorners = 0;
-        if(markerIds.size() > 0)
-            interpolatedCorners =
-                aruco::interpolateCornersCharuco(markerCorners, markerIds, image, charucoboard,
-                                                 charucoCorners, charucoIds, camMatrix, distCoeffs);
+        // Get object and image points for the solvePnP function
+        board.matchImagePoints(charucoCorners, charucoIds, objPoints, imgPoints);
 
-        // estimate charuco board pose
-        bool validPose = false;
-        if(camMatrix.total() != 0)
-            validPose = estimatePoseCharucoBoard(charucoCorners, charucoIds, charucoboard,
-                                                 camMatrix, distCoeffs, rvec, tvec);
-
-
+        // Find pose
+        solvePnP(objPoints, imgPoints, cameraMatrix, distCoeffs, rvec, tvec);
+        markersOfBoardDetected = (int)objPoints.total() / 4;
 
         double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
         totalTime += currentTime;
@@ -194,25 +153,25 @@ int main(int argc, char *argv[]) {
                  << "(Mean = " << 1000 * totalTime / double(totalIterations) << " ms)" << endl;
         }
 
-
-
-        // draw results
+        // Draw results
         image.copyTo(imageCopy);
-        if(markerIds.size() > 0) {
-            aruco::drawDetectedMarkers(imageCopy, markerCorners);
+        if(!markerIds.empty()) {
+            aruco::drawDetectedMarkers(imageCopy, markerCorners);  // , markerIds);
         }
 
-        if(showRejected && rejectedMarkers.size() > 0)
+        if(showRejected && !rejectedMarkers.empty()) {
             aruco::drawDetectedMarkers(imageCopy, rejectedMarkers, noArray(), Scalar(100, 0, 255));
+        }
 
-        if(interpolatedCorners > 0) {
+        if(!charucoIds.empty()) {
             Scalar color;
             color = Scalar(255, 0, 0);
             aruco::drawDetectedCornersCharuco(imageCopy, charucoCorners, charucoIds, color);
         }
 
-        if(validPose)
-            cv::drawFrameAxes(imageCopy, camMatrix, distCoeffs, rvec, tvec, axisLength);
+        if(markersOfBoardDetected > 0) {
+            drawFrameAxes(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, axisLength);
+        }
 
         imshow("out", imageCopy);
         char key = (char)waitKey(waitTime);
