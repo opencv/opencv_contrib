@@ -155,9 +155,11 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
 
                     if (use_nn_detector_)
                         points_qr = aligner.warpBack(points_qr);
+
+                    auto point_to_save = Mat(4, 2, CV_32FC1);
                     for (int j = 0; j < 4; ++j) {
-                        point.at<float>(j, 0) = points_qr[j].x;
-                        point.at<float>(j, 1) = points_qr[j].y;
+                        point_to_save.at<float>(j, 0) = points_qr[j].x;
+                        point_to_save.at<float>(j, 1) = points_qr[j].y;
                     }
                     // try to find duplicate qr corners
                     bool isDuplicate = false;
@@ -175,7 +177,7 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
                         }
                     }
                     if (isDuplicate == false) {
-                        points.push_back(point);
+                        points.push_back(point_to_save);
                         check_points.push_back(points_qr);
                     }
                     else {
