@@ -101,7 +101,7 @@ public:
 
     static void doTest3(const SizeArray& size)
     {
-        if (std::is_same<CnType, float16_t>::value) // GpuMat::convertTo is not implemented for CV_16F
+        if (std::is_same<CnType, hfloat>::value) // GpuMat::convertTo is not implemented for CV_16F
             return;
 
         const MatType gold = RandomMat(size);
@@ -140,7 +140,7 @@ public:
 
     static void doTest4(const SizeArray& size)
     {
-        if (std::is_same<CnType, float16_t>::value) // GpuMat::convertTo is not implemented for CV_16F
+        if (std::is_same<CnType, hfloat>::value) // GpuMat::convertTo is not implemented for CV_16F
             return;
 
         const MatType gold = RandomMat(size);
@@ -169,7 +169,7 @@ public:
 
     static void doTest5(const SizeArray& size)
     {
-        if (std::is_same<CnType, float16_t>::value) // GpuMat::convertTo is not implemented for CV_16F
+        if (std::is_same<CnType, hfloat>::value) // GpuMat::convertTo is not implemented for CV_16F
             return;
 
         const MatType gold = RandomMat(size);
@@ -204,7 +204,7 @@ using ElemTypes = ::testing::Types<
     Vec<int, 1>, Vec<int, 2>, Vec<int, 3>, Vec<int, 4>, // CV_32S
     Vec<float, 1>, Vec<float, 2>, Vec<float, 3>, Vec<float, 4>, // CV_32F
     Vec<double, 1>, Vec<double, 2>, Vec<double, 3>, Vec<double, 4>, //CV_64F
-    Vec<float16_t, 1>, Vec<float16_t, 2>, Vec<float16_t, 3>, Vec<float16_t, 4> // CV_16F
+    Vec<hfloat, 1>, Vec<hfloat, 2>, Vec<hfloat, 3>, Vec<hfloat, 4> // CV_16F
 >;
 
 using SizeArray = GpuMatND::SizeArray;
