@@ -13,7 +13,7 @@ Mentor: Delia Passalacqua
 #define __OPENCV_FACELANDMARKTRAIN_HPP__
 
 #include "opencv2/face/facemark.hpp"
-#include "opencv2/objdetect.hpp"
+#include "opencv2/xobjdetect.hpp"
 #include <vector>
 #include <string>
 

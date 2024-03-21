@@ -9,4 +9,4 @@ if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
   ocv_module_include_directories(${CUDAToolkit_INCLUDE_DIRS})
 endif()
 ocv_define_module(cudalegacy opencv_core opencv_video
-  OPTIONAL opencv_objdetect opencv_imgproc opencv_3d opencv_stereo opencv_calib opencv_cudaarithm opencv_cudafilters opencv_cudaimgproc)
+  OPTIONAL opencv_objdetect opencv_xobjdetect opencv_imgproc opencv_3d opencv_stereo opencv_calib opencv_cudaarithm opencv_cudafilters opencv_cudaimgproc)

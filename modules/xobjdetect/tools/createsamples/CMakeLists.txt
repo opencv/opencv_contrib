@@ -1,0 +1,1 @@
+ocv_add_tool(opencv_createsamples MODULES opencv_core opencv_imgproc opencv_xobjdetect opencv_imgcodecs opencv_highgui opencv_3d opencv_features2d opencv_videoio)

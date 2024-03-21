@@ -64,8 +64,8 @@
 
 #include "opencv2/opencv_modules.hpp"
 
-#ifdef HAVE_OPENCV_OBJDETECT
-#  include "opencv2/objdetect.hpp"
+#ifdef HAVE_OPENCV_XOBJDETECT
+#  include "opencv2/xobjdetect.hpp"
 //#  include "opencv2/objdetect/objdetect_c.h"
 #endif
 
