@@ -35,7 +35,8 @@ public:
      * @param points succussfully decoded qrcode with bounding box points.
      * @return vector<string>
      */
-    std::vector<std::string> decode(const Mat& img, std::vector<Mat>& candidate_points,
+    std::vector<std::string> decode(const Mat& img,
+                                    const std::vector<Mat>& candidate_points,
                                     std::vector<Mat>& points);
     int applyDetector(const Mat& img, std::vector<Mat>& points);
     Mat cropObj(const Mat& img, const Mat& point, Align& aligner);
@@ -123,13 +124,14 @@ float WeChatQRCode::getScaleFactor() {
     return p->scaleFactor;
 };
 
-vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate_points,
+vector<string> WeChatQRCode::Impl::decode(const Mat& img,
+                                          const vector<Mat>& candidate_points,
                                           vector<Mat>& points) {
     if (candidate_points.size() == 0) {
         return vector<string>();
     }
     vector<string> decode_results;
-    for (auto& point : candidate_points) {
+    for (const auto& point : candidate_points) {
         Mat cropped_img;
         Align aligner;
         if (use_nn_detector_) {
