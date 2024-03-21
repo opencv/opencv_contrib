@@ -18,9 +18,9 @@ public :
 };
 
 template<>
-uchar Vec3fTo<uchar>::extract()
+unsigned char Vec3fTo<unsigned char>::extract()
 {
-    return static_cast<uchar>(a[0]);
+    return static_cast<unsigned char>(a[0]);
 }
 
 template<>
@@ -30,7 +30,7 @@ cv::Vec3b Vec3fTo<cv::Vec3b>::extract()
 }
 
 template<>
-cv::Vec3f Vec3fTo<uchar>::make(int x)
+cv::Vec3f Vec3fTo<unsigned char>::make(int x)
 {
     return cv::Vec3f((a*x)/x);
 }

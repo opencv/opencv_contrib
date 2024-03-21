@@ -88,7 +88,7 @@ int AdaptiveThresholdMeanBinarizer::TransMatToBuffer(cv::Mat mSrc, unsigned char
         unsigned char* pdi = ppBuffer + j * nWidth;
         for (int z = 0; z < nWidth; ++z) {
             int nj = nHeight - j - 1;
-            int value = *(uchar*)(mSrc.ptr<uchar>(nj) + z);
+            int value = *(unsigned char*)(mSrc.ptr<unsigned char>(nj) + z);
             if (value > 120)
                 pdi[z] = 0;
             else
