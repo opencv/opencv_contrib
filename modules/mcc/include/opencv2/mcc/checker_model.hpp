@@ -89,6 +89,15 @@ public:
 
     CV_WRAP virtual TYPECHART getTarget() = 0;
     CV_WRAP virtual std::vector<Point2f> getBox() = 0;
+
+    /** @brief Computes and returns the coordinates of the central parts of the charts modules.
+     *
+     * This method computes transformation matrix from the checkers's coordinates (`cv::mcc::CChecker::getBox()`)
+     * and find by this the coordinates of the central parts of the charts modules.
+     * It is used in `cv::mcc::CCheckerDraw::draw()` and in `ChartsRGB` calculation.
+     */
+    CV_WRAP virtual std::vector<Point2f> getColorCharts() = 0;
+
     CV_WRAP virtual Mat getChartsRGB() = 0;
     CV_WRAP virtual Mat getChartsYCbCr() = 0;
     CV_WRAP virtual float getCost() = 0;

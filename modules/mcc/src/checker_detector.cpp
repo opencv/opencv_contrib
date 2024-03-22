@@ -1177,31 +1177,6 @@ void CCheckerDetectorImpl::
 }
 
 void CCheckerDetectorImpl::
-    transform_points_forward(InputArray T, const std::vector<cv::Point2f> &X, std::vector<cv::Point2f> &Xt)
-{
-    size_t N = X.size();
-    if (N == 0)
-        return;
-
-    Xt.clear();
-    Xt.resize(N);
-    cv::Matx31f p, xt;
-    cv::Point2f pt;
-
-    cv::Matx33f _T = T.getMat();
-    for (int i = 0; i < (int)N; i++)
-    {
-        p(0, 0) = X[i].x;
-        p(1, 0) = X[i].y;
-        p(2, 0) = 1;
-        xt = _T * p;
-        pt.x = xt(0, 0) / xt(2, 0);
-        pt.y = xt(1, 0) / xt(2, 0);
-        Xt[i] = pt;
-    }
-}
-
-void CCheckerDetectorImpl::
     transform_points_inverse(InputArray T, const std::vector<cv::Point2f> &X, std::vector<cv::Point2f> &Xt)
 {
     cv::Matx33f _T = T.getMat();
