@@ -58,7 +58,7 @@ template <typename T> struct NearestInterpolator
 {
     static T getValue(const cv::Mat& src, float y, float x, int c, int border_type, cv::Scalar borderVal = cv::Scalar())
     {
-        return readVal<T>(src, int(y), int(x), c, border_type, borderVal);
+        return readVal<T>(src, (int)(y), (int)(x), c, border_type, borderVal);
     }
 };
 
@@ -87,18 +87,21 @@ template <typename T> struct CubicInterpolator
     static float bicubicCoeff(float x_)
     {
         float x = fabsf(x_);
-        if (x <= 1.0f)
-        {
+        // here A = -0.5, but cpu interpolateCubic use A = -0.75
+        /*if (x <= 1.0f)
             return x * x * (1.5f * x - 2.5f) + 1.0f;
-        }
         else if (x < 2.0f)
-        {
             return x * (x * (-0.5f * x + 2.5f) - 4.0f) + 2.0f;
-        }
         else
-        {
+            return 0.0f;*/
+        // https://en.wikipedia.org/wiki/Bicubic_interpolation
+        const float A = -0.75f;
+        if (x <= 1.0f)
+            return ((A + 2.f) * x - (A + 3.f)) * x * x + 1.f;
+        else if (x < 2.0f)
+            return (((x - 5.f) * x + 8.f) * x - 4.f) * A;
+        else
             return 0.0f;
-        }
     }
 
     static T getValue(const cv::Mat& src, float y, float x, int c, int border_type, cv::Scalar borderVal = cv::Scalar())

@@ -50,6 +50,37 @@
 #include "opencv2/core/cuda/saturate_cast.hpp"
 #include "opencv2/core/cuda/filters.hpp"
 #include <opencv2/cudev/ptr2d/texture.hpp>
+#include <opencv2/imgproc.hpp>
+
+namespace cv
+{
+    static void interpolateCoordinate(int coordinate, int dst, int src, float scale, float& a, float& b)
+    {
+        if (coordinate == INTER_HALF_PIXEL
+            || coordinate == INTER_HALF_PIXEL_SYMMETRIC
+            || coordinate == INTER_HALF_PIXEL_PYTORCH)
+        {
+            a = scale;
+            b = 0.5f * scale - 0.5f;
+            if (coordinate == INTER_HALF_PIXEL_SYMMETRIC)
+                b += 0.5f * (src - dst * scale);
+            if (coordinate == INTER_HALF_PIXEL_PYTORCH && dst <= 1)
+                a = b = 0.f;
+        }
+        else if (coordinate == INTER_ALIGN_CORNERS)
+        {
+            a = (src - 1.f) / (dst - 1.f);
+            b = 0.f;
+        }
+        else if (coordinate == INTER_ASYMMETRIC)
+        {
+            a = scale;
+            b = 0.f;
+        }
+        else
+            CV_Error(Error::StsBadArg, format("Unknown coordinate transformation mode %d", coordinate));
+    }
+}
 
 namespace cv { namespace cuda { namespace device
 {
@@ -69,7 +100,7 @@ namespace cv { namespace cuda { namespace device
         }
     }
 
-    template <typename T> __global__ void resize_linear(const PtrStepSz<T> src, PtrStepSz<T> dst, const float fy, const float fx)
+    template <typename T> __global__ void resize_linear(const PtrStepSz<T> src, PtrStepSz<T> dst, const float a_y, const float b_y, const float a_x, const float b_x)
     {
         typedef typename TypeVec<float, VecTraits<T>::cn>::vec_type work_type;
 
@@ -78,30 +109,24 @@ namespace cv { namespace cuda { namespace device
 
         if (dst_x < dst.cols && dst_y < dst.rows)
         {
-            const float src_x = dst_x * fx;
-            const float src_y = dst_y * fy;
+            const float src_x = ::fmaf((float)(dst_x), a_x, b_x);
+            const float src_y = ::fmaf((float)(dst_y), a_y, b_y);
+            const int ix = __float2int_rd(src_x);
+            const int iy = __float2int_rd(src_y);
+            const float fx2 = src_x - ix;
+            const float fx1 = 1.f - fx2;
+            const float fy2 = src_y - iy;
+            const float fy1 = 1.f - fy2;
+            const int ix1 = ::max(ix, 0);
+            const int ix2 = ::min(ix + 1, src.cols - 1);
+            const int iy1 = ::max(iy, 0);
+            const int iy2 = ::min(iy + 1, src.rows - 1);
 
             work_type out = VecTraits<work_type>::all(0);
-
-            const int x1 = __float2int_rd(src_x);
-            const int y1 = __float2int_rd(src_y);
-            const int x2 = x1 + 1;
-            const int y2 = y1 + 1;
-            const int x2_read = ::min(x2, src.cols - 1);
-            const int y2_read = ::min(y2, src.rows - 1);
-
-            T src_reg = src(y1, x1);
-            out = out + src_reg * ((x2 - src_x) * (y2 - src_y));
-
-            src_reg = src(y1, x2_read);
-            out = out + src_reg * ((src_x - x1) * (y2 - src_y));
-
-            src_reg = src(y2_read, x1);
-            out = out + src_reg * ((x2 - src_x) * (src_y - y1));
-
-            src_reg = src(y2_read, x2_read);
-            out = out + src_reg * ((src_x - x1) * (src_y - y1));
-
+            out = out + src(iy1, ix1) * (fy1 * fx1);
+            out = out + src(iy1, ix2) * (fy1 * fx2);
+            out = out + src(iy2, ix1) * (fy2 * fx1);
+            out = out + src(iy2, ix2) * (fy2 * fx2);
             dst(dst_y, dst_x) = saturate_cast<T>(out);
         }
     }
@@ -120,6 +145,21 @@ namespace cv { namespace cuda { namespace device
         }
     }
 
+
+
+    template <class Ptr2D, typename T> __global__ void resize(Ptr2D src, PtrStepSz<T> dst, const float a_y, const float b_y, const float a_x, const float b_x)
+    {
+        const int dst_x = blockDim.x * blockIdx.x + threadIdx.x;
+        const int dst_y = blockDim.y * blockIdx.y + threadIdx.y;
+
+        if (dst_x < dst.cols && dst_y < dst.rows)
+        {
+            const float src_x = ::fmaf((float)(dst_x), a_x, b_x);
+            const float src_y = ::fmaf((float)(dst_y), a_y, b_y);
+            dst(dst_y, dst_x) = src(src_y, src_x);
+        }
+    }
+
     template <typename Ptr2D, typename T> __global__ void resize_area(const Ptr2D src, PtrStepSz<T> dst)
     {
         const int x = blockDim.x * blockIdx.x + threadIdx.x;
@@ -130,6 +170,42 @@ namespace cv { namespace cuda { namespace device
             dst(y, x) = src(y, x);
         }
     }
+
+    template <typename T> __global__ void resize_area_larger(const PtrStepSz<T> src, PtrStepSz<T> dst, float fy, float fx)
+    {
+        typedef typename TypeVec<float, VecTraits<T>::cn>::vec_type work_type;
+
+        const int dst_x = blockDim.x * blockIdx.x + threadIdx.x;
+        const int dst_y = blockDim.y * blockIdx.y + threadIdx.y;
+
+        if (dst_x < dst.cols && dst_y < dst.rows)
+        {
+            // cpu resize:
+            //      sx = cvFloor(dx*scale_x);
+            //      fx = (float)((dx+1) - (sx+1)*inv_scale_x);
+            //      fx = fx <= 0 ? 0.f : fx - cvFloor(fx);
+            const int src_x = __float2int_rd(dst_x * fx);
+            const int src_y = __float2int_rd(dst_y * fy);
+            float fx2 = dst_x + 1 - (src_x + 1) / fx;
+            fx2 = fx2 <= 0.f ? 0.f : fx2 - ::floor(fx2);
+            const float fx1 = 1.f - fx2;
+            float fy2 = dst_y + 1 - (src_y + 1) / fy;
+            fy2 = fy2 <= 0.f ? 0.f : fy2 - ::floor(fy2);
+            const float fy1 = 1.f - fy2;
+            const int ix1 = src_x;
+            const int ix2 = ::min(src_x + 1, src.cols - 1);
+            const int iy1 = src_y;
+            const int iy2 = ::min(src_y + 1, src.rows - 1);
+
+            work_type out = VecTraits<work_type>::all(0);
+            out = out + src(iy1, ix1) * (fy1 * fx1);
+            out = out + src(iy1, ix2) * (fy1 * fx2);
+            out = out + src(iy2, ix1) * (fy2 * fx1);
+            out = out + src(iy2, ix2) * (fy2 * fx2);
+            dst(dst_y, dst_x) = saturate_cast<T>(out);
+        }
+    }
+
 
     // callers for nearest interpolation
 
@@ -166,12 +242,12 @@ namespace cv { namespace cuda { namespace device
     // callers for linear interpolation
 
     template <typename T>
-    void call_resize_linear_glob(const PtrStepSz<T>& src, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
+    void call_resize_linear_glob(const PtrStepSz<T>& src, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x, cudaStream_t stream)
     {
         const dim3 block(32, 8);
         const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
 
-        resize_linear<<<grid, block, 0, stream>>>(src, dst, fy, fx);
+        resize_linear<<<grid, block, 0, stream>>>(src, dst, a_y, b_y, a_x, b_x);
         cudaSafeCall( cudaGetLastError() );
 
         if (stream == 0)
@@ -179,15 +255,16 @@ namespace cv { namespace cuda { namespace device
     }
 
     template <typename T>
-    void call_resize_linear_tex(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float fy, float fx)
+    void call_resize_linear_tex(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x)
     {
         const dim3 block(32, 8);
         const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
+        // Here the texture is only used for holding memory and border clamp, and only its integer coordinates are visited in LinearFilter, so no b + 0.5
         if (srcWhole.data == src.data)
         {
             cudev::Texture<T> texSrc(src);
             LinearFilter<cudev::TexturePtr<T>> filteredSrc(texSrc);
-            resize<<<grid, block>>>(filteredSrc, dst, fy, fx);
+            resize<<<grid, block>>>(filteredSrc, dst, a_y, b_y, a_x, b_x);
         }
         else
         {
@@ -195,7 +272,7 @@ namespace cv { namespace cuda { namespace device
             BrdReplicate<T> brd(src.rows, src.cols);
             BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>> brdSrc(texSrcWhole, brd);
             LinearFilter<BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>>> filteredSrc(brdSrc);
-            resize<<<grid, block>>>(filteredSrc, dst, fy, fx);
+            resize<<<grid, block>>>(filteredSrc, dst, a_y, b_y, a_x, b_x);
         }
         cudaSafeCall( cudaGetLastError() );
         cudaSafeCall( cudaDeviceSynchronize() );
@@ -204,7 +281,7 @@ namespace cv { namespace cuda { namespace device
     // callers for cubic interpolation
 
     template <typename T>
-    void call_resize_cubic_glob(const PtrStepSz<T>& src, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
+    void call_resize_cubic_glob(const PtrStepSz<T>& src, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x, cudaStream_t stream)
     {
         const dim3 block(32, 8);
         const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
@@ -213,7 +290,7 @@ namespace cv { namespace cuda { namespace device
         BorderReader<PtrStep<T>, BrdReplicate<T>> brdSrc(src, brd);
         CubicFilter<BorderReader< PtrStep<T>, BrdReplicate<T>>> filteredSrc(brdSrc);
 
-        resize<<<grid, block, 0, stream>>>(filteredSrc, dst, fy, fx);
+        resize<<<grid, block, 0, stream>>>(filteredSrc, dst, a_y, b_y, a_x, b_x);
         cudaSafeCall( cudaGetLastError() );
 
         if (stream == 0)
@@ -221,15 +298,16 @@ namespace cv { namespace cuda { namespace device
     }
 
     template <typename T>
-    void call_resize_cubic_tex(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float fy, float fx)
+    void call_resize_cubic_tex(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x)
     {
         const dim3 block(32, 8);
         const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
+        // Here the texture is only used for holding memory and border clamp, and only its integer coordinates are used in CubicFilter, so no b + 0.5
         if (srcWhole.data == src.data)
         {
             cudev::Texture<T> texSrc(src);
             CubicFilter<cudev::TexturePtr<T>> filteredSrc(texSrc);
-            resize<<<grid, block>>>(filteredSrc, dst, fy, fx);
+            resize<<<grid, block>>>(filteredSrc, dst, a_y, b_y, a_x, b_x);
         }
         else
         {
@@ -237,7 +315,7 @@ namespace cv { namespace cuda { namespace device
             BrdReplicate<T> brd(src.rows, src.cols);
             BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>> brdSrc(texSrcWhole, brd);
             CubicFilter<BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>>> filteredSrc(brdSrc);
-            resize<<<grid, block>>>(filteredSrc, dst, fy, fx);
+            resize<<<grid, block>>>(filteredSrc, dst, a_y, b_y, a_x, b_x);
         }
         cudaSafeCall( cudaGetLastError() );
         cudaSafeCall( cudaDeviceSynchronize() );
@@ -285,24 +363,24 @@ namespace cv { namespace cuda { namespace device
 
     template <typename T> struct ResizeLinearDispatcher
     {
-        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& /*srcWhole*/, int /*yoff*/, int /*xoff*/, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
+        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& /*srcWhole*/, int /*yoff*/, int /*xoff*/, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x, cudaStream_t stream)
         {
-            call_resize_linear_glob(src, dst, fy, fx, stream);
+            call_resize_linear_glob(src, dst, a_y, b_y, a_x, b_x, stream);
         }
     };
 
     template <typename T> struct SelectImplForLinear
     {
-        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
+        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x, cudaStream_t stream)
         {
             if (stream)
-                call_resize_linear_glob(src, dst, fy, fx, stream);
+                call_resize_linear_glob(src, dst, a_y, b_y, a_x, b_x, stream);
             else
             {
-                if (fx > 1 || fy > 1)
-                    call_resize_linear_glob(src, dst, fy, fx, 0);
+                if (a_x > 1 || a_y > 1)
+                    call_resize_linear_glob(src, dst, a_y, b_y, a_x, b_x, 0);
                 else
-                    call_resize_linear_tex(src, srcWhole, yoff, xoff, dst, fy, fx);
+                    call_resize_linear_tex(src, srcWhole, yoff, xoff, dst, a_y, b_y, a_x, b_x);
             }
         }
     };
@@ -323,20 +401,20 @@ namespace cv { namespace cuda { namespace device
 
     template <typename T> struct ResizeCubicDispatcher
     {
-        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& /*srcWhole*/, int /*yoff*/, int /*xoff*/, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
+        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& /*srcWhole*/, int /*yoff*/, int /*xoff*/, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x, cudaStream_t stream)
         {
-            call_resize_cubic_glob(src, dst, fy, fx, stream);
+            call_resize_cubic_glob(src, dst, a_y, b_y, a_x, b_x, stream);
         }
     };
 
     template <typename T> struct SelectImplForCubic
     {
-        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
+        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x, cudaStream_t stream)
         {
             if (stream)
-                call_resize_cubic_glob(src, dst, fy, fx, stream);
-           else
-                call_resize_cubic_tex(src, srcWhole, yoff, xoff, dst, fy, fx);
+                call_resize_cubic_glob(src, dst, a_y, b_y, a_x, b_x, stream);
+            else
+                call_resize_cubic_tex(src, srcWhole, yoff, xoff, dst, a_y, b_y, a_x, b_x);
         }
     };
 
@@ -364,6 +442,12 @@ namespace cv { namespace cuda { namespace device
             const dim3 block(32, 8);
             const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
 
+            if (fy <= 1.f || fx <= 1.f)
+            {
+                resize_area_larger<<<grid, block, 0, stream>>>(src, dst, fy, fx);
+                return;
+            }
+
             if (std::abs(fx - iscale_x) < FLT_MIN && std::abs(fy - iscale_y) < FLT_MIN)
             {
                 BrdConstant<T> brd(src.rows, src.cols);
@@ -390,39 +474,54 @@ namespace cv { namespace cuda { namespace device
 
     // resize
 
-    template <typename T> void resize(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream)
+    template <typename T> void resize(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream)
     {
-        typedef void (*func_t)(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream);
-        static const func_t funcs[4] =
+        if (interpolation == INTER_AREA)
         {
-            ResizeNearestDispatcher<T>::call,
-            ResizeLinearDispatcher<T>::call,
-            ResizeCubicDispatcher<T>::call,
-            ResizeAreaDispatcher<T>::call
-        };
+            ResizeAreaDispatcher<T>::call(static_cast<PtrStepSz<T>>(src), static_cast<PtrStepSz<T>>(srcWhole), yoff, xoff, static_cast<PtrStepSz<T>>(dst), fy, fx, stream);
+            return;
+        }
 
-        // change to linear if area interpolation upscaling
-        if (interpolation == 3 && (fx <= 1.f || fy <= 1.f))
-            interpolation = 1;
+        if (interpolation == INTER_NEAREST)
+        {
+            ResizeNearestDispatcher<T>::call(static_cast<PtrStepSz<T>>(src), static_cast<PtrStepSz<T>>(srcWhole), yoff, xoff, static_cast<PtrStepSz<T>>(dst), fy, fx, stream);
+            return;
+        }
 
-        funcs[interpolation](static_cast< PtrStepSz<T> >(src), static_cast< PtrStepSz<T> >(srcWhole), yoff, xoff, static_cast< PtrStepSz<T> >(dst), fy, fx, stream);
+        float a_x, b_x, a_y, b_y;
+        interpolateCoordinate(coordinate, dst.cols, src.cols, fx, a_x, b_x);
+        interpolateCoordinate(coordinate, dst.rows, src.rows, fy, a_y, b_y);
+
+        if (interpolation == INTER_LINEAR)
+        {
+            ResizeLinearDispatcher<T>::call(static_cast<PtrStepSz<T>>(src), static_cast<PtrStepSz<T>>(srcWhole), yoff, xoff, static_cast<PtrStepSz<T>>(dst), a_y, b_y, a_x, b_x, stream);
+            return;
+        }
+
+        if (interpolation == INTER_CUBIC)
+        {
+            ResizeCubicDispatcher<T>::call(static_cast<PtrStepSz<T>>(src), static_cast<PtrStepSz<T>>(srcWhole), yoff, xoff, static_cast<PtrStepSz<T>>(dst), a_y, b_y, a_x, b_x, stream);
+            return;
+        }
+
+        CV_Error(Error::StsBadArg, format("Unknown interpolation mode %d", interpolation));
     }
 
-    template void resize<uchar >(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
-    template void resize<uchar3>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
-    template void resize<uchar4>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
+    template void resize<uchar >(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
+    template void resize<uchar3>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
+    template void resize<uchar4>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
 
-    template void resize<ushort >(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
-    template void resize<ushort3>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
-    template void resize<ushort4>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
+    template void resize<ushort >(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
+    template void resize<ushort3>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
+    template void resize<ushort4>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
 
-    template void resize<short >(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
-    template void resize<short3>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
-    template void resize<short4>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
+    template void resize<short >(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
+    template void resize<short3>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
+    template void resize<short4>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
 
-    template void resize<float >(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
-    template void resize<float3>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
-    template void resize<float4>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
+    template void resize<float >(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
+    template void resize<float3>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
+    template void resize<float4>(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
 }}}
 
 #endif /* CUDA_DISABLER */

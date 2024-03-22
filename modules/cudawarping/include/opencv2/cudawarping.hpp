@@ -89,6 +89,8 @@ CV_EXPORTS_W void remap(InputArray src, OutputArray dst, InputArray xmap, InputA
 
 /** @brief Resizes an image.
 
+because the types of both interpolation and coordinate are int, we can not use default function arguments until stream (has different type from its previous) due to error C2668: 'cv::cuda::resize': ambiguous call to overloaded function,
+
 @param src Source image.
 @param dst Destination image with the same type as src . The size is dsize (when it is non-zero)
 or the size is computed from src.size() , fx , and fy .
@@ -101,11 +103,18 @@ Either dsize or both fx and fy must be non-zero.
 \f[\texttt{(double)dsize.height/src.rows}\f]
 @param interpolation Interpolation method. INTER_NEAREST , INTER_LINEAR and INTER_CUBIC are
 supported for now.
+@param coordinate Coordinate transformation method, see #CoordinateTransformationFlags
 @param stream Stream for the asynchronous version.
 
 @sa resize
  */
-CV_EXPORTS_W void resize(InputArray src, OutputArray dst, Size dsize, double fx=0, double fy=0, int interpolation = INTER_LINEAR, Stream& stream = Stream::Null());
+CV_EXPORTS_W void resize(InputArray src, OutputArray dst, Size dsize, double fx, double fy, int interpolation, int coordinate, Stream& stream = Stream::Null());
+
+CV_WRAP inline void resize(InputArray src, OutputArray dst, Size dsize, double fx = 0, double fy = 0, int interpolation = INTER_LINEAR, Stream& stream = Stream::Null())
+{
+    // old cuda resize use asymmetric coordinate, different from cpu / opencl resize
+    resize(src, dst, dsize, fx, fy, interpolation, INTER_ASYMMETRIC, stream);
+}
 
 /** @brief Applies an affine transformation to an image.
 
