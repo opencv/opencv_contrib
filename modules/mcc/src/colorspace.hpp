@@ -167,7 +167,7 @@ private:
 
     /** @brief Used by fromLFunc.
     */
-    double fromLFuncEW(double& x) const;
+    double fromLFuncEW(const double& x) const;
 
     /** @brief Delinearization.
         @param rgbl the input array, type of cv::Mat.

@@ -36,7 +36,8 @@ PERF_TEST(CV_mcc_perf, infer) {
     ColorCorrectionModel model(chartsRGB.col(1).clone().reshape(3, chartsRGB.rows/3) / 255., COLORCHECKER_Macbeth);
     model.run();
 
-    Mat img = randomMat(Size(4000, 1000), CV_8UC3);
+    Mat img(1000, 4000, CV_8UC3);
+    randu(img, 0, 255);
     img.convertTo(img, CV_64F, 1. / 255.);
 
     TEST_CYCLE() {

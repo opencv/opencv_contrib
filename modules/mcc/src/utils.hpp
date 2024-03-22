@@ -42,8 +42,9 @@ double gammaCorrection_(const double& element, const double& gamma);
             \f]
     @param src the input array,type of Mat.
     @param gamma a constant for gamma correction.
+    @param dst the output array, type of Mat.
  */
-Mat gammaCorrection(const Mat& src, const double& gamma);
+Mat gammaCorrection(const Mat& src, const double& gamma, Mat dst=Mat());
 
 /** @brief maskCopyTo a function to delete unsatisfied elementwise.
     @param src the input array, type of Mat.
@@ -77,10 +78,26 @@ Mat rgb2gray(const Mat& rgb);
     @param lambda a for operation
  */
 template <typename F>
-Mat elementWise(const Mat& src, F&& lambda)
+Mat elementWise(const Mat& src, F&& lambda, Mat dst=Mat())
 {
-    Mat dst = src.clone();
+    if (dst.empty() || !dst.isContinuous() || dst.total() != src.total() || dst.type() != src.type())
+        dst = Mat(src.rows, src.cols, src.type());
     const int channel = src.channels();
+    if (src.isContinuous()) {
+        const int num_elements = (int)src.total()*channel;
+        const double *psrc = (double*)src.data;
+        double *pdst = (double*)dst.data;
+        const int batch = getNumThreads() > 1 ? 128 : num_elements;
+        const int N = (num_elements / batch) + ((num_elements % batch) > 0);
+        parallel_for_(Range(0, N),[&](const Range& range) {
+            const int start = range.start * batch;
+            const int end = std::min(range.end*batch, num_elements);
+            for (int i = start; i < end; i++) {
+                pdst[i] = lambda(psrc[i]);
+            }
+        });
+        return dst;
+    }
     switch (channel)
     {
     case 1:

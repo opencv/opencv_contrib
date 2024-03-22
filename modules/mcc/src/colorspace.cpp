@@ -150,7 +150,7 @@ void RGBBase_::calOperations()
 
 Mat RGBBase_::toLFunc(Mat& /*rgb*/) const { return Mat(); }
 
-Mat RGBBase_::fromLFunc(Mat& /*rgbl*/, Mat dst) const { return Mat(); }
+Mat RGBBase_::fromLFunc(Mat& /*rgbl*/, Mat dst) const { return dst; }
 
 /* @brief Base of Adobe RGB color space;
  */
@@ -159,7 +159,7 @@ Mat AdobeRGBBase_::toLFunc(Mat& rgb) const { return gammaCorrection(rgb, gamma);
 
 Mat AdobeRGBBase_::fromLFunc(Mat& rgbl, Mat dst) const
 {
-    return gammaCorrection(rgbl, 1. / gamma);
+    return gammaCorrection(rgbl, 1. / gamma, dst);
 }
 
 /* @brief Base of sRGB color space;
@@ -203,7 +203,7 @@ Mat sRGBBase_::toLFunc(Mat& rgb) const
 
 /* @brief Used by fromLFunc.
  */
-double sRGBBase_::fromLFuncEW(double& x) const
+double sRGBBase_::fromLFuncEW(const double& x) const
 {
     if (x > beta)
     {
@@ -225,8 +225,7 @@ double sRGBBase_::fromLFuncEW(double& x) const
  */
 Mat sRGBBase_::fromLFunc(Mat& rgbl, Mat dst) const
 {
-    return elementWise(rgbl,
-            [this](double a_) -> double { return fromLFuncEW(a_); });
+    return elementWise(rgbl, [this](double a_) -> double { return fromLFuncEW(a_); }, dst);
 }
 
 /* @brief sRGB color space.
