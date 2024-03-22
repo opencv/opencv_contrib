@@ -35,7 +35,8 @@ public:
      * @param points succussfully decoded qrcode with bounding box points.
      * @return vector<string>
      */
-    std::vector<std::string> decode(const Mat& img, std::vector<Mat>& candidate_points,
+    std::vector<std::string> decode(const Mat& img,
+                                    const std::vector<Mat>& candidate_points,
                                     std::vector<Mat>& points);
     int applyDetector(const Mat& img, std::vector<Mat>& points);
     Mat cropObj(const Mat& img, const Mat& point, Align& aligner);
@@ -123,13 +124,14 @@ float WeChatQRCode::getScaleFactor() {
     return p->scaleFactor;
 };
 
-vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate_points,
+vector<string> WeChatQRCode::Impl::decode(const Mat& img,
+                                          const vector<Mat>& candidate_points,
                                           vector<Mat>& points) {
     if (candidate_points.size() == 0) {
         return vector<string>();
     }
     vector<string> decode_results;
-    for (auto& point : candidate_points) {
+    for (const auto& point : candidate_points) {
         Mat cropped_img;
         Align aligner;
         if (use_nn_detector_) {
@@ -155,9 +157,11 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
 
                     if (use_nn_detector_)
                         points_qr = aligner.warpBack(points_qr);
+
+                    auto point_to_save = Mat(4, 2, CV_32FC1);
                     for (int j = 0; j < 4; ++j) {
-                        point.at<float>(j, 0) = points_qr[j].x;
-                        point.at<float>(j, 1) = points_qr[j].y;
+                        point_to_save.at<float>(j, 0) = points_qr[j].x;
+                        point_to_save.at<float>(j, 1) = points_qr[j].y;
                     }
                     // try to find duplicate qr corners
                     bool isDuplicate = false;
@@ -175,7 +179,7 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
                         }
                     }
                     if (isDuplicate == false) {
-                        points.push_back(point);
+                        points.push_back(point_to_save);
                         check_points.push_back(points_qr);
                     }
                     else {
