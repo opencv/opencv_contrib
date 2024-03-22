@@ -99,7 +99,7 @@ namespace xphoto
 
         for (int i = 0; i < ddmask.rows; ++i)
         {
-            unsigned char *dmask_data = (unsigned char *) ddmask.template ptr<unsigned char>(i);
+            uint8_t *dmask_data = (uint8_t *) ddmask.template ptr<uint8_t>(i);
             int *backref_data = (int *) backref.template ptr< int >(i);
 
             for (int j = 0; j < ddmask.cols; ++j)
@@ -123,7 +123,7 @@ namespace xphoto
 
         for (size_t i = 0; i < pPath.size(); ++i)
         {
-            unsigned char xmask = dmask.template at<unsigned char>(pPath[i]);
+            uint8_t xmask = dmask.template at<uint8_t>(pPath[i]);
 
             for (int j = 0; j < nTransform + 1; ++j)
             {
@@ -136,7 +136,7 @@ namespace xphoto
                 &&   u.x < src.cols && u.x >= 0 )
                 {
                     if ( xmask == 0 || j == nTransform )
-                        vmask = mask.template at<unsigned char>(u);
+                        vmask = mask.template at<uint8_t>(u);
                     vimg = img.template at<cv::Vec<float, cn> >(u);
                 }
 
@@ -152,7 +152,7 @@ namespace xphoto
                                  pPath[i] + cv::Point2i(+1, 0)
                                };
 
-            for (unsigned int j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
+            for (uint j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
                 if ( p[j].y < src.rows && p[j].y >= 0 &&
                      p[j].x < src.cols && p[j].x >= 0 )
                     linkIdx[i].push_back( backref(p[j]) );
@@ -184,7 +184,7 @@ namespace xphoto
                     __pPath[i] + cv::Point2i(-1, 0)
                 };
 
-                for (unsigned int j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
+                for (uint j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
                     if ( p[j].y < src.rows && p[j].y >= 0 &&
                         p[j].x < src.cols && p[j].x >= 0 )
                         __linkIdx[i].push_back( backref(p[j]) );
@@ -221,14 +221,14 @@ namespace xphoto
                                                };
 
                             std::vector <cv::Vec <float, cn> > pointVec;
-                                            std::vector <unsigned char> maskVec;
+                                            std::vector <uint8_t> maskVec;
 
-                            for (unsigned int q = 0; q < sizeof(dv)/sizeof(cv::Point2i); ++q)
+                            for (uint q = 0; q < sizeof(dv)/sizeof(cv::Point2i); ++q)
                                 if (u.x + dv[q].x >= 0 && u.x + dv[q].x < img.cols
                                 &&  u.y + dv[q].y >= 0 && u.y + dv[q].y < img.rows)
                                 {
                                     pointVec.push_back(img.template at<cv::Vec <float, cn> >(u + dv[q]));
-                                    maskVec.push_back(_mask.template at<unsigned char>(u + dv[q]));
+                                    maskVec.push_back(_mask.template at<uint8_t>(u + dv[q]));
                                 }
                                 else
                                 {
@@ -265,7 +265,7 @@ namespace xphoto
 
                 std::vector <int> linkVec;
 
-                for (unsigned int j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
+                for (uint j = 0; j < sizeof(p)/sizeof(cv::Point2i); ++j)
                     if ( p[j].y < src.rows && p[j].y >= 0 &&
                         p[j].x < src.cols && p[j].x >= 0 )
                         linkVec.push_back( __backref(p[j]) );
@@ -325,16 +325,16 @@ namespace xphoto
                 inpaint <char,   4>( src, mask, dst, algorithmType );
                 break;
             case CV_8UC1:
-                inpaint <unsigned char,  1>( src, mask, dst, algorithmType );
+                inpaint <uint8_t,  1>( src, mask, dst, algorithmType );
                 break;
             case CV_8UC2:
-                inpaint <unsigned char,  2>( src, mask, dst, algorithmType );
+                inpaint <uint8_t,  2>( src, mask, dst, algorithmType );
                 break;
             case CV_8UC3:
-                inpaint <unsigned char,  3>( src, mask, dst, algorithmType );
+                inpaint <uint8_t,  3>( src, mask, dst, algorithmType );
                 break;
             case CV_8UC4:
-                inpaint <unsigned char,  4>( src, mask, dst, algorithmType );
+                inpaint <uint8_t,  4>( src, mask, dst, algorithmType );
                 break;
             case CV_16SC1:
                 inpaint <short,  1>( src, mask, dst, algorithmType );
@@ -349,16 +349,16 @@ namespace xphoto
                 inpaint <short,  4>( src, mask, dst, algorithmType );
                 break;
             case CV_16UC1:
-                inpaint <unsigned short, 1>( src, mask, dst, algorithmType );
+                inpaint <ushort, 1>( src, mask, dst, algorithmType );
                 break;
             case CV_16UC2:
-                inpaint <unsigned short, 2>( src, mask, dst, algorithmType );
+                inpaint <ushort, 2>( src, mask, dst, algorithmType );
                 break;
             case CV_16UC3:
-                inpaint <unsigned short, 3>( src, mask, dst, algorithmType );
+                inpaint <ushort, 3>( src, mask, dst, algorithmType );
                 break;
             case CV_16UC4:
-                inpaint <unsigned short, 4>( src, mask, dst, algorithmType );
+                inpaint <ushort, 4>( src, mask, dst, algorithmType );
                 break;
             case CV_32SC1:
                 inpaint <int,    1>( src, mask, dst, algorithmType );
