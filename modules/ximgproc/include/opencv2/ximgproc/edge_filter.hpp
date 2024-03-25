@@ -123,15 +123,15 @@ void dtFilter(InputArray guide, InputArray src, OutputArray dst, double sigmaSpa
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-/** @brief Interface for realizations of Guided Filter.
+/** @brief Interface for realizations of (Fast) Guided Filter.
 
-For more details about this filter see @cite Kaiming10 .
+For more details about this filter see @cite Kaiming10 @cite Kaiming15 .
  */
 class CV_EXPORTS_W GuidedFilter : public Algorithm
 {
 public:
 
-    /** @brief Apply Guided Filter to the filtering image.
+    /** @brief Apply (Fast) Guided Filter to the filtering image.
 
     @param src filtering image with any numbers of channels.
 
@@ -153,11 +153,14 @@ channels then only first 3 channels will be used.
 @param eps regularization term of Guided Filter. \f${eps}^2\f$ is similar to the sigma in the color
 space into bilateralFilter.
 
-For more details about Guided Filter parameters, see the original article @cite Kaiming10 .
- */
-CV_EXPORTS_W Ptr<GuidedFilter> createGuidedFilter(InputArray guide, int radius, double eps);
+@param scale subsample factor of Fast Guided Filter, use a scale less than 1 to speeds up computation
+with almost no visible degradation. (e.g. scale==0.5 shrinks the image by 2x inside the filter)
 
-/** @brief Simple one-line Guided Filter call.
+For more details about (Fast) Guided Filter parameters, see the original articles @cite Kaiming10 @cite Kaiming15 .
+ */
+CV_EXPORTS_W Ptr<GuidedFilter> createGuidedFilter(InputArray guide, int radius, double eps, double scale = 1.0);
+
+/** @brief Simple one-line (Fast) Guided Filter call.
 
 If you have multiple images to filter with the same guided image then use GuidedFilter interface to
 avoid extra computations on initialization stage.
@@ -176,8 +179,11 @@ space into bilateralFilter.
 
 @param dDepth optional depth of the output image.
 
+@param scale subsample factor of Fast Guided Filter, use a scale less than 1 to speeds up computation
+with almost no visible degradation. (e.g. scale==0.5 shrinks the image by 2x inside the filter)
+
 @sa bilateralFilter, dtFilter, amFilter */
-CV_EXPORTS_W void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius, double eps, int dDepth = -1);
+CV_EXPORTS_W void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius, double eps, int dDepth = -1, double scale = 1.0);
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////

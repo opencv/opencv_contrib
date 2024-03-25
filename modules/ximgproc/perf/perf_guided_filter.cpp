@@ -7,11 +7,11 @@ namespace opencv_test { namespace {
 
 CV_ENUM(GuideTypes, CV_8UC1, CV_8UC3, CV_32FC1, CV_32FC3);
 CV_ENUM(SrcTypes, CV_8UC1, CV_8UC3, CV_32FC1, CV_32FC3);
-typedef tuple<GuideTypes, SrcTypes, Size> GFParams;
+typedef tuple<GuideTypes, SrcTypes, Size, double> GFParams;
 
 typedef TestBaseWithParam<GFParams> GuidedFilterPerfTest;
 
-PERF_TEST_P( GuidedFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTypes::all(), Values(sz1080p, sz2K)) )
+PERF_TEST_P( GuidedFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTypes::all(), Values(sz1080p, sz2K), Values(1./1, 1./2, 1./3, 1./4)) )
 {
     RNG rng(0);
 
@@ -19,6 +19,7 @@ PERF_TEST_P( GuidedFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTypes::al
     int guideType   = get<0>(params);
     int srcType     = get<1>(params);
     Size sz         = get<2>(params);
+    double scale    = get<3>(params);
 
     Mat guide(sz, guideType);
     Mat src(sz, srcType);
@@ -30,7 +31,7 @@ PERF_TEST_P( GuidedFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTypes::al
     {
         int radius = rng.uniform(5, 30);
         double eps = rng.uniform(0.1, 1e5);
-        guidedFilter(guide, src, dst, radius, eps);
+        guidedFilter(guide, src, dst, radius, eps, -1, scale);
     }
 
     SANITY_CHECK_NOTHING();
