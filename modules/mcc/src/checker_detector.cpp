@@ -511,7 +511,7 @@ void CCheckerDetectorImpl::
     if (params->minImageSize > min_size)
     {
         aspOut = (float)params->minImageSize / min_size;
-        cv::resize(bgr, bgrOut, cv::Size(int(size.width * aspOut), int(size.height * aspOut)));
+        cv::resize(bgr, bgrOut, cv::Size(int(size.width * aspOut), int(size.height * aspOut)), INTER_LINEAR_EXACT);
     }
 
     // Convert to grayscale
