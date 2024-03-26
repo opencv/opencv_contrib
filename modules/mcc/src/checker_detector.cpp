@@ -539,17 +539,18 @@ void CCheckerDetectorImpl::
     // number of window sizes (scales) to apply adaptive thresholding
     int nScales = (params->adaptiveThreshWinSizeMax - params->adaptiveThreshWinSizeMin) / params->adaptiveThreshWinSizeStep + 1;
     thresholdImgs.create(nScales, 1, CV_8U);
-    std::vector<cv::Mat> _thresholdImgs;
-    for (int i = 0; i < nScales; i++)
-    {
-        int currScale = params->adaptiveThreshWinSizeMin + i * params->adaptiveThreshWinSizeStep;
-
-        cv::Mat tempThresholdImg;
-        cv::adaptiveThreshold(grayscaleImg, tempThresholdImg, 255, cv::ADAPTIVE_THRESH_MEAN_C,
-                              cv::THRESH_BINARY_INV, currScale, params->adaptiveThreshConstant);
-
-        _thresholdImgs.push_back(tempThresholdImg);
-    }
+    std::vector<cv::Mat> _thresholdImgs(nScales);
+    parallel_for_(Range(0, nScales),[&](const Range& range) {
+        const int start = range.start;
+        const int end = range.end;
+        for (int i = start; i < end; i++) {
+            int currScale = params->adaptiveThreshWinSizeMin + i * params->adaptiveThreshWinSizeStep;
+            cv::Mat tempThresholdImg;
+            cv::adaptiveThreshold(grayscaleImg, tempThresholdImg, 255, ADAPTIVE_THRESH_MEAN_C,
+                                  THRESH_BINARY_INV, currScale, params->adaptiveThreshConstant);
+            _thresholdImgs[i] = tempThresholdImg;
+        }
+    });
 
     thresholdImgs.assign(_thresholdImgs);
 }

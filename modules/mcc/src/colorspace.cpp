@@ -83,9 +83,9 @@ Operations RGBBase_::relation(const ColorSpace& other) const
     }
     if (linear)
     {
-        return Operations({ Operation(fromL) });
+        return Operations({ Operation([this](Mat rgbl) -> Mat { return fromLFunc(rgbl); }) });
     }
-    return Operations({ Operation(toL) });
+    return Operations({ Operation([this](Mat rgb) -> Mat { return toLFunc(rgb); })});
 }
 
 /* @brief Initial operations.
@@ -134,12 +134,6 @@ void RGBBase_::calM()
  */
 void RGBBase_::calOperations()
 {
-    // rgb -> rgbl
-    toL = [this](Mat rgb) -> Mat { return toLFunc(rgb); };
-
-    // rgbl -> rgb
-    fromL = [this](Mat rgbl) -> Mat { return fromLFunc(rgbl); };
-
     if (linear)
     {
         to = Operations({ Operation(M_to.t()) });
@@ -147,23 +141,25 @@ void RGBBase_::calOperations()
     }
     else
     {
-        to = Operations({ Operation(toL), Operation(M_to.t()) });
-        from = Operations({ Operation(M_from.t()), Operation(fromL) });
+        // rgb -> rgbl
+        to = Operations({ Operation([this](Mat rgb) -> Mat { return toLFunc(rgb); }), Operation(M_to.t()) });
+        // rgbl -> rgb
+        from = Operations({ Operation(M_from.t()), Operation([this](Mat rgbl) -> Mat { return fromLFunc(rgbl); }) });
     }
 }
 
-Mat RGBBase_::toLFunc(Mat& /*rgb*/) { return Mat(); }
+Mat RGBBase_::toLFunc(Mat& /*rgb*/) const { return Mat(); }
 
-Mat RGBBase_::fromLFunc(Mat& /*rgbl*/) { return Mat(); }
+Mat RGBBase_::fromLFunc(Mat& /*rgbl*/, Mat dst) const { return dst; }
 
 /* @brief Base of Adobe RGB color space;
  */
 
-Mat AdobeRGBBase_::toLFunc(Mat& rgb) { return gammaCorrection(rgb, gamma); }
+Mat AdobeRGBBase_::toLFunc(Mat& rgb) const { return gammaCorrection(rgb, gamma); }
 
-Mat AdobeRGBBase_::fromLFunc(Mat& rgbl)
+Mat AdobeRGBBase_::fromLFunc(Mat& rgbl, Mat dst) const
 {
-    return gammaCorrection(rgbl, 1. / gamma);
+    return gammaCorrection(rgbl, 1. / gamma, dst);
 }
 
 /* @brief Base of sRGB color space;
@@ -179,7 +175,7 @@ void sRGBBase_::calLinear()
 
 /* @brief Used by toLFunc.
  */
-double sRGBBase_::toLFuncEW(double& x)
+double sRGBBase_::toLFuncEW(double& x) const
 {
     if (x > K0)
     {
@@ -199,7 +195,7 @@ double sRGBBase_::toLFuncEW(double& x)
  * @param rgb the input array, type of cv::Mat.
  * @return the output array, type of cv::Mat.
  */
-Mat sRGBBase_::toLFunc(Mat& rgb)
+Mat sRGBBase_::toLFunc(Mat& rgb) const
 {
     return elementWise(rgb,
             [this](double a_) -> double { return toLFuncEW(a_); });
@@ -207,7 +203,7 @@ Mat sRGBBase_::toLFunc(Mat& rgb)
 
 /* @brief Used by fromLFunc.
  */
-double sRGBBase_::fromLFuncEW(double& x)
+double sRGBBase_::fromLFuncEW(const double& x) const
 {
     if (x > beta)
     {
@@ -227,10 +223,9 @@ double sRGBBase_::fromLFuncEW(double& x)
  * @param rgbl the input array, type of cv::Mat.
  * @return the output array, type of cv::Mat.
  */
-Mat sRGBBase_::fromLFunc(Mat& rgbl)
+Mat sRGBBase_::fromLFunc(Mat& rgbl, Mat dst) const
 {
-    return elementWise(rgbl,
-            [this](double a_) -> double { return fromLFuncEW(a_); });
+    return elementWise(rgbl, [this](double a_) -> double { return fromLFuncEW(a_); }, dst);
 }
 
 /* @brief sRGB color space.
