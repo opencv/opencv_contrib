@@ -60,7 +60,7 @@ template <class T> struct same_as<T, T> : ttype {};   // is_same
 
 template <typename _Tp> struct is_norm2_type :
     int_const<bool, !same_as<_Tp,   char>::value
-                 && !same_as<_Tp,  uchar>::value
+                 && !same_as<_Tp,  uint8_t>::value
                  && !same_as<_Tp, ushort>::value
                  && !same_as<_Tp,   uint>::value>{};
 

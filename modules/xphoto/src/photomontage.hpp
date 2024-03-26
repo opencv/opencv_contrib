@@ -79,7 +79,7 @@ template <typename Tp> class Photomontage
 {
 private:
     const std::vector <std::vector <Tp> > &pointSeq;   // points for stitching
-    const std::vector <std::vector <uchar> > &maskSeq; // corresponding masks
+    const std::vector <std::vector <uint8_t> > &maskSeq; // corresponding masks
 
     const std::vector <std::vector <int> > &linkIdx;   // vector of neighbors for pointSeq
 
@@ -116,7 +116,7 @@ public:
     void gradientDescent(); // gradient descent in alpha-expansion topology
 
     Photomontage(const std::vector <std::vector <Tp> > &pointSeq,
-                 const std::vector <std::vector <uchar> > &maskSeq,
+                 const std::vector <std::vector <uint8_t> > &maskSeq,
                  const std::vector <std::vector <int> > &linkIdx,
                        std::vector <labelTp> &labelSeq);
     virtual ~Photomontage(){};
@@ -219,7 +219,7 @@ gradientDescent()
 
 template <typename Tp> Photomontage <Tp>::
 Photomontage( const std::vector <std::vector <Tp> > &_pointSeq,
-            const std::vector <std::vector <uchar> > &_maskSeq,
+            const std::vector <std::vector <uint8_t> > &_maskSeq,
               const std::vector <std::vector <int> > &_linkIdx,
                               std::vector <labelTp> &_labelSeq )
   :
@@ -235,7 +235,7 @@ Photomontage( const std::vector <std::vector <Tp> > &_pointSeq,
 
 template <typename Tp> static inline
 void photomontage( const std::vector <std::vector <Tp> > &pointSeq,
-                 const std::vector <std::vector <uchar> > &maskSeq,
+                 const std::vector <std::vector <uint8_t> > &maskSeq,
                    const std::vector <std::vector <int> > &linkIdx,
                    std::vector <gcoptimization::labelTp> &labelSeq )
 {
