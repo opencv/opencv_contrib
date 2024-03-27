@@ -7,7 +7,7 @@
 //  copy or use the software.
 //
 //
-//                          License Agreement
+//                           License Agreement
 //                For Open Source Computer Vision Library
 //
 // Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
@@ -40,26 +40,69 @@
 //
 //M*/
 
-#ifndef __OPENCV_PRECOMP_H__
-#define __OPENCV_PRECOMP_H__
+#include "test_precomp.hpp"
 
-#include "opencv2/xfeatures2d/cuda.hpp"
+namespace opencv_test { namespace {
 
-#include "opencv2/xfeatures2d.hpp"
-#include "opencv2/imgproc.hpp"
+class CV_BRISKTest : public cvtest::BaseTest
+{
+public:
+    CV_BRISKTest();
+    ~CV_BRISKTest();
+protected:
+    void run(int);
+};
 
-#include "opencv2/core/utility.hpp"
-#include "opencv2/core/private.hpp"
-#include "opencv2/core/private.cuda.hpp"
-#include "opencv2/core/ocl.hpp"
-#include "opencv2/core/hal/hal.hpp"
+CV_BRISKTest::CV_BRISKTest() {}
+CV_BRISKTest::~CV_BRISKTest() {}
 
-#include "opencv2/opencv_modules.hpp"
+void CV_BRISKTest::run( int )
+{
+  Mat image1 = imread(string(ts->get_data_path()) + "inpaint/orig.png");
+  Mat image2 = imread(string(ts->get_data_path()) + "cameracalibration/chess9.png");
 
-#ifdef HAVE_OPENCV_CUDAARITHM
-#  include "opencv2/cudaarithm.hpp"
-#endif
+  if (image1.empty() || image2.empty())
+    {
+      ts->set_failed_test_info( cvtest::TS::FAIL_INVALID_TEST_DATA );
+      return;
+    }
 
-#include "opencv2/core/private.hpp"
+  Mat gray1, gray2;
+  cvtColor(image1, gray1, COLOR_BGR2GRAY);
+  cvtColor(image2, gray2, COLOR_BGR2GRAY);
 
-#endif
+  Ptr<FeatureDetector> detector = BRISK::create();
+
+  // Check parameter get/set functions.
+  BRISK* detectorTyped = dynamic_cast<BRISK*>(detector.get());
+  ASSERT_NE(nullptr, detectorTyped);
+  detectorTyped->setOctaves(3);
+  detectorTyped->setThreshold(30);
+  ASSERT_EQ(detectorTyped->getOctaves(), 3);
+  ASSERT_EQ(detectorTyped->getThreshold(), 30);
+  detectorTyped->setOctaves(4);
+  detectorTyped->setThreshold(29);
+  ASSERT_EQ(detectorTyped->getOctaves(), 4);
+  ASSERT_EQ(detectorTyped->getThreshold(), 29);
+
+  vector<KeyPoint> keypoints1;
+  vector<KeyPoint> keypoints2;
+  detector->detect(image1, keypoints1);
+  detector->detect(image2, keypoints2);
+
+  for(size_t i = 0; i < keypoints1.size(); ++i)
+    {
+      const KeyPoint& kp = keypoints1[i];
+      ASSERT_NE(kp.angle, -1);
+    }
+
+  for(size_t i = 0; i < keypoints2.size(); ++i)
+    {
+      const KeyPoint& kp = keypoints2[i];
+      ASSERT_NE(kp.angle, -1);
+    }
+}
+
+TEST(Features2d_BRISK, regression) { CV_BRISKTest test; test.safe_run(); }
+
+}} // namespace

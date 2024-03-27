@@ -13,5 +13,9 @@
         "PCTSignatures" : {
             "(PCTSignatures*)create:(NSArray<Point2f*>*)initSamplingPoints initSeedCount:(int)initSeedCount" : { "create" : {"name" : "create2"} }
         }
+    },
+    "enum_fix" : {
+        "FastFeatureDetector" : { "DetectorType": "FastDetectorType" },
+        "AgastFeatureDetector" : { "DetectorType": "AgastDetectorType" }
     }
 }

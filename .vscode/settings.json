@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "atomic": "cpp",
+        "bitset": "cpp"
+    }
+}
