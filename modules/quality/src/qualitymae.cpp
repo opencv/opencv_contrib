@@ -64,12 +64,12 @@ Scalar QualityMAE::compute( InputArray cmpImg )
     // If the input is a set of images.
     _mat_type cmp = extract_mat<_mat_type>(cmpImg, std::max(cmpImg.depth(), CV_32F));
 
-    return QualityMAE::compute(this->_ref, cmp, this->_qualityMap, this->_flags);
+    return QualityMAE::compute(this->_ref, cmp, this->_qualityMap, this->_flag);
 }
 
-QualityMAE::QualityMAE(QualityBase::_mat_type ref, int flags)
+QualityMAE::QualityMAE(QualityBase::_mat_type ref, int flag)
     : _ref(std::move(ref)),
-      _flags(flags)
+      _flag(flag)
 {}
 
 } // quality
