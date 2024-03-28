@@ -24,6 +24,7 @@ mask = genMask(mask, listx, listy)
 class cannop_test(NewOpenCVTests):
     def test_ascend(self):
         cv.cann.initAcl()
+        cv.cann.initDvpp()
         cv.cann.getDevice()
         cv.cann.setDevice(0)
         stream = cv.cann.AscendStream_Null()
@@ -275,6 +276,50 @@ class cannop_test(NewOpenCVTests):
                 aclMat, 127, 255, tType)
             self.assertTrue(np.allclose(cvThresh, cannThresh.download()))
             self.assertTrue(np.allclose(cvRet, cannRet))
+
+        npMat = (np.random.random((1280, 1024, 3)) * 255).astype(np.uint8)
+        w_off, h_off, crop_w, crop_h = 0, 0, 512, 384
+        roi = [w_off, h_off, crop_w, crop_h]
+        aclMat = cv.cann.AscendMat()
+        aclMat.upload(npMat)
+
+        # resize
+        dstSize = np.array([crop_w, crop_h])
+        self.assertTrue(np.allclose(cv.cann.resize(npMat, dstSize, 0, 0, 1),
+                        cv.resize(npMat, dstSize, 0, 0, 1)))
+        self.assertTrue(np.allclose(cv.cann.resize(aclMat, dstSize, 0, 0, 1).download(),
+                        cv.resize(npMat, dstSize, 0, 0, 1)))
+        # cropResize
+        self.assertTrue(np.allclose(cv.cann.cropResize(npMat, roi, dstSize, 0, 0, 1),
+                        cv.resize(npMat[h_off:crop_h, w_off:crop_w], dstSize, 0, 0, 1)), 0)
+        self.assertTrue(np.allclose(cv.cann.cropResize(aclMat, roi, dstSize, 0, 0, 1).download(),
+                        cv.resize(npMat[h_off:crop_h, w_off:crop_w], dstSize, 0, 0, 1)), 0)
+
+        # cropResizeMakeBorder
+        # TODO cv.copyMakeBorder ignores borderColorValue param; find the reason and fix it
+        borderColorValue = (100, 0, 255)
+        top, bottom, left, right = 32, 0, 10, 0
+        borderTypes = [0, 1]
+
+        for borderType in borderTypes:
+            self.assertTrue(np.allclose(cv.cann.cropResizeMakeBorder(npMat, roi, dstSize,
+                                0, 0, 1, top, left, borderType),
+                            cv.copyMakeBorder(cv.resize(npMat[h_off:crop_h, w_off:crop_w],
+                                dstSize, 0, 0, 1), top, bottom, left, right, borderType), 1))
+            self.assertTrue(np.allclose(cv.cann.cropResizeMakeBorder(aclMat, roi, dstSize,
+                                0, 0, 1, top, left, borderType).download(),
+                            cv.copyMakeBorder(cv.resize(npMat[h_off:crop_h, w_off:crop_w],
+                                dstSize, 0, 0, 1), top, bottom, left, right, borderType), 1))
+
+        # copyMakeBorder
+        for borderType in borderTypes:
+            self.assertTrue(np.allclose(cv.cann.copyMakeBorder(npMat, top, bottom, left, right,
+                                                               borderType),
+                            cv.copyMakeBorder(npMat, top, bottom, left, right, borderType)))
+            self.assertTrue(np.allclose(cv.cann.copyMakeBorder(aclMat, top, bottom, left, right,
+                                                               borderType).download(),
+                            cv.copyMakeBorder(npMat, top, bottom, left, right, borderType)))
+
         cv.cann.resetDevice()
 
 if __name__ == '__main__':
