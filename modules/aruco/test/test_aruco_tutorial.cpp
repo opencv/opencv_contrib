@@ -10,7 +10,7 @@ namespace opencv_test { namespace {
 
 TEST(CV_ArucoTutorial, can_find_singlemarkersoriginal)
 {
-    string img_path = cvtest::findDataFile("aruco/singlemarkersoriginal.jpg");
+    string img_path = cvtest::findDataFile("singlemarkersoriginal.jpg");
     Mat image = imread(img_path);
     aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
 
@@ -44,9 +44,9 @@ TEST(CV_ArucoTutorial, can_find_singlemarkersoriginal)
 
 TEST(CV_ArucoTutorial, can_find_gboriginal)
 {
-    string imgPath = cvtest::findDataFile("aruco/gboriginal.jpg");
+    string imgPath = cvtest::findDataFile("gboriginal.jpg");
     Mat image = imread(imgPath);
-    string dictPath = cvtest::findDataFile("aruco/tutorial_dict.yml");
+    string dictPath = cvtest::findDataFile("tutorial_dict.yml");
     aruco::Dictionary dictionary;
 
     FileStorage fs(dictPath, FileStorage::READ);
@@ -99,7 +99,7 @@ TEST(CV_ArucoTutorial, can_find_gboriginal)
 
 TEST(CV_ArucoTutorial, can_find_choriginal)
 {
-    string imgPath = cvtest::findDataFile("aruco/choriginal.jpg");
+    string imgPath = cvtest::findDataFile("choriginal.jpg");
     Mat image = imread(imgPath);
     aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
 
@@ -138,7 +138,7 @@ TEST(CV_ArucoTutorial, can_find_choriginal)
 
 TEST(CV_ArucoTutorial, can_find_chocclusion)
 {
-    string imgPath = cvtest::findDataFile("aruco/chocclusion_original.jpg");
+    string imgPath = cvtest::findDataFile("chocclusion_original.jpg");
     Mat image = imread(imgPath);
     aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
 
@@ -176,15 +176,15 @@ TEST(CV_ArucoTutorial, can_find_chocclusion)
 
 TEST(CV_ArucoTutorial, can_find_diamondmarkers)
 {
-    string imgPath = cvtest::findDataFile("aruco/diamondmarkers.jpg");
+    string imgPath = cvtest::findDataFile("diamondmarkers.png");
     Mat image = imread(imgPath);
 
-    string dictPath = cvtest::findDataFile("aruco/tutorial_dict.yml");
+    string dictPath = cvtest::findDataFile("tutorial_dict.yml");
     aruco::Dictionary dictionary;
     FileStorage fs(dictPath, FileStorage::READ);
     dictionary.aruco::Dictionary::readDictionary(fs.root()); // set marker from tutorial_dict.yml
 
-    string detectorPath = cvtest::findDataFile("aruco/detector_params.yml");
+    string detectorPath = cvtest::findDataFile("detector_params.yml");
     fs = FileStorage(detectorPath, FileStorage::READ);
     aruco::DetectorParameters detectorParams;
     detectorParams.readDetectorParameters(fs.root());
