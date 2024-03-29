@@ -26,7 +26,7 @@ Scalar QualityMAE::compute(InputArray ref, InputArray cmp, OutputArray qualityMa
 {
     CV_Assert_3(ref.channels() <= 4,
                 cmp.channels() <= 4,
-                (statsProc == MAE_Max) || (statsProc == MAE_MEAN) );
+                (statsProc == MAE_MAX) || (statsProc == MAE_MEAN) );
 
     _mat_type err;
     int wdepth = std::max(std::max(ref.depth(), cmp.depth()), CV_32F);
@@ -36,7 +36,7 @@ Scalar QualityMAE::compute(InputArray ref, InputArray cmp, OutputArray qualityMa
     absdiff(extract_mat<_mat_type>(ref, wtype), extract_mat<_mat_type>(cmp, wtype), err);
 
     if(qualityMap.needed())
-        qualityMap.assign(statsProc == MAE_Max ? err : err.clone());
+        qualityMap.assign(statsProc == MAE_MAX ? err : err.clone());
 
     if(statsProc == MAE_MEAN)
     {

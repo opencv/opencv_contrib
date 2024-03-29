@@ -26,7 +26,7 @@ TEST(TEST_CASE_NAME, static_max )
 {
     // Max
     cv::Mat qMat = {};
-    quality_expect_near(quality::QualityMAE::compute(get_testfile_1a(), get_testfile_1a(), qMat, quality::MAE_Max), cv::Scalar(0.)); // ref vs ref == 0
+    quality_expect_near(quality::QualityMAE::compute(get_testfile_1a(), get_testfile_1a(), qMat, quality::MAE_MAX), cv::Scalar(0.)); // ref vs ref == 0
     check_quality_map(qMat);
 }
 
@@ -35,14 +35,14 @@ TEST(TEST_CASE_NAME, static_mean )
 {
     // Mean
     cv::Mat qMat = {};
-    quality_expect_near(quality::QualityMAE::compute(get_testfile_1a(), get_testfile_1a(), qMat, quality::MAE_Mean), cv::Scalar(0.)); // ref vs ref == 0
+    quality_expect_near(quality::QualityMAE::compute(get_testfile_1a(), get_testfile_1a(), qMat, quality::MAE_MEAN), cv::Scalar(0.)); // ref vs ref == 0
     check_quality_map(qMat);
 }
 
 // single channel, with and without opencl
 TEST(TEST_CASE_NAME, single_channel_max )
 {
-    auto fn = []() { quality_test(quality::QualityMAE::create(get_testfile_1a(), quality::MAE_Max), get_testfile_1b(), MAE_MAX_EXPECTED_1); };
+    auto fn = []() { quality_test(quality::QualityMAE::create(get_testfile_1a(), quality::MAE_MAX), get_testfile_1b(), MAE_MAX_EXPECTED_1); };
 
     OCL_OFF( fn() );
     OCL_ON( fn() );
@@ -51,7 +51,7 @@ TEST(TEST_CASE_NAME, single_channel_max )
 // single channel, with and without opencl
 TEST(TEST_CASE_NAME, single_channel_mean )
 {
-    auto fn = []() { quality_test(quality::QualityMAE::create(get_testfile_1a(), quality::MAE_Mean), get_testfile_1b(), MAE_MEAN_EXPECTED_1); };
+    auto fn = []() { quality_test(quality::QualityMAE::create(get_testfile_1a(), quality::MAE_MEAN), get_testfile_1b(), MAE_MEAN_EXPECTED_1); };
 
     OCL_OFF( fn() );
     OCL_ON( fn() );
@@ -60,13 +60,13 @@ TEST(TEST_CASE_NAME, single_channel_mean )
 // multi-channel max
 TEST(TEST_CASE_NAME, multi_channel_max)
 {
-    quality_test(quality::QualityMAE::create(get_testfile_2a(), quality::MAE_Max), get_testfile_2b(), MAE_MAX_EXPECTED_2);
+    quality_test(quality::QualityMAE::create(get_testfile_2a(), quality::MAE_MAX), get_testfile_2b(), MAE_MAX_EXPECTED_2);
 }
 
 // multi-channel mean
 TEST(TEST_CASE_NAME, multi_channel_mean)
 {
-    quality_test(quality::QualityMAE::create(get_testfile_2a(), quality::MAE_Mean), get_testfile_2b(), MAE_MEAN_EXPECTED_2);
+    quality_test(quality::QualityMAE::create(get_testfile_2a(), quality::MAE_MEAN), get_testfile_2b(), MAE_MEAN_EXPECTED_2);
 }
 
 } // namespace quality_test

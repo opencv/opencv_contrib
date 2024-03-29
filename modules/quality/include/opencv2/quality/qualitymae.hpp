@@ -52,7 +52,7 @@ public:
     @param statsProc which statistical method should be apply on the absolute error
     @returns cv::Scalar with per-channel quality values.  Values range from 0 (best) to max float (worst)
     */
-    CV_WRAP static Scalar compute( InputArray ref, InputArray cmp, OutputArray qualityMap, int statsProc = MAE_Mean );
+    CV_WRAP static Scalar compute( InputArray ref, InputArray cmp, OutputArray qualityMap, int statsProc = MAE_MEAN );
 
 
 protected:
