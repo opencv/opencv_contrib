@@ -22,6 +22,15 @@ enum MAEStatsFlags
     MAE_MEAN
 };
 
+/** @brief This class implement two algorithm which commonly refered as MAE in the litterature.
+Both definition shares the absolute error, which can be defined as: \f[ absolute\_error(x,y) = |I_{ref}(x,y) - I_{cmp}(x,y)|\f].
+The two algorithms follows the mathematic:
+-   **MAE_MAX**
+    \f[score =  \fork{\texttt{absolute\_error(x,y)}}{if \(src(x,y) > score\)}{score}{otherwise}\f]
+-   **MAE_MEAN**
+    \f[score = \frac{\sum_{r=0}^{nb\_rows}\sum_{c=0}^{nb\_cols} \texttt{absolute\_error(r,c)}}{nb\_rows \times \nb\_cols}\f]
+More informations about the the Mean of Absolute Error can be found here: https://en.wikipedia.org/wiki/Mean_absolute_error
+*/
 class CV_EXPORTS_W QualityMAE : public QualityBase
 {
 public:
