@@ -1,3 +1,7 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
 #include "test_precomp.hpp"
 
 #define TEST_CASE_NAME CV_Quality_MAE
@@ -7,12 +11,15 @@ namespace opencv_test
 namespace quality_test
 {
 
+namespace
+{
 const cv::Scalar
     MAE_MAX_EXPECTED_1 = { 203. },
     MAE_MEAN_EXPECTED_1 = { 33.5824 },
     MAE_MAX_EXPECTED_2 = { 138., 145., 156. },
     MAE_MEAN_EXPECTED_2 = { 5.7918, 6.0645, 5.5609}
     ;
+} // anonymous
 
 // static method
 TEST(TEST_CASE_NAME, static_max )

@@ -1,3 +1,7 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
 #ifndef OPENCV_QUALITY_MAE_HPP
 #define OPENCV_QUALITY_MAE_HPP
 
@@ -14,8 +18,8 @@ namespace quality
  */
 enum MAEStatsFlags
 {
-    MAE_Max,
-    MAE_Mean
+    MAE_MAX,
+    MAE_MEAN
 };
 
 class CV_EXPORTS_W QualityMAE : public QualityBase
@@ -38,7 +42,7 @@ public:
     @param ref input image to use as the reference for comparison
     @param statsProc statistical method to apply on the error
     */
-    CV_WRAP static Ptr<QualityMAE> create(InputArray ref, int statsProc = MAE_Mean);
+    CV_WRAP static Ptr<QualityMAE> create(InputArray ref, int statsProc = MAE_MEAN);
 
     /**
     @brief static method for computing quality
