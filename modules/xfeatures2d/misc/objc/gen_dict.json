@@ -15,7 +15,6 @@
         }
     },
     "enum_fix" : {
-        "FastFeatureDetector" : { "DetectorType": "FastDetectorType" },
         "AgastFeatureDetector" : { "DetectorType": "AgastDetectorType" }
     }
 }
