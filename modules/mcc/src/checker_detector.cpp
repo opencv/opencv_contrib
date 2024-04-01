@@ -511,7 +511,7 @@ void CCheckerDetectorImpl::
     if (params->minImageSize > min_size)
     {
         aspOut = (float)params->minImageSize / min_size;
-        cv::resize(bgr, bgrOut, cv::Size(int(size.width * aspOut), int(size.height * aspOut)));
+        cv::resize(bgr, bgrOut, cv::Size(int(size.width * aspOut), int(size.height * aspOut)), INTER_LINEAR_EXACT);
     }
 
     // Convert to grayscale
@@ -539,17 +539,18 @@ void CCheckerDetectorImpl::
     // number of window sizes (scales) to apply adaptive thresholding
     int nScales = (params->adaptiveThreshWinSizeMax - params->adaptiveThreshWinSizeMin) / params->adaptiveThreshWinSizeStep + 1;
     thresholdImgs.create(nScales, 1, CV_8U);
-    std::vector<cv::Mat> _thresholdImgs;
-    for (int i = 0; i < nScales; i++)
-    {
-        int currScale = params->adaptiveThreshWinSizeMin + i * params->adaptiveThreshWinSizeStep;
-
-        cv::Mat tempThresholdImg;
-        cv::adaptiveThreshold(grayscaleImg, tempThresholdImg, 255, cv::ADAPTIVE_THRESH_MEAN_C,
-                              cv::THRESH_BINARY_INV, currScale, params->adaptiveThreshConstant);
-
-        _thresholdImgs.push_back(tempThresholdImg);
-    }
+    std::vector<cv::Mat> _thresholdImgs(nScales);
+    parallel_for_(Range(0, nScales),[&](const Range& range) {
+        const int start = range.start;
+        const int end = range.end;
+        for (int i = start; i < end; i++) {
+            int currScale = params->adaptiveThreshWinSizeMin + i * params->adaptiveThreshWinSizeStep;
+            cv::Mat tempThresholdImg;
+            cv::adaptiveThreshold(grayscaleImg, tempThresholdImg, 255, ADAPTIVE_THRESH_MEAN_C,
+                                  THRESH_BINARY_INV, currScale, params->adaptiveThreshConstant);
+            _thresholdImgs[i] = tempThresholdImg;
+        }
+    });
 
     thresholdImgs.assign(_thresholdImgs);
 }
@@ -1174,31 +1175,6 @@ void CCheckerDetectorImpl::
     // add ... X[i] MAX X[i+] ...
     if (fmax > 4 * tol)
         x_new.insert(x_new.begin() + idx + 1, (x_new[idx] + x_new[idx + 1]) / 2);
-}
-
-void CCheckerDetectorImpl::
-    transform_points_forward(InputArray T, const std::vector<cv::Point2f> &X, std::vector<cv::Point2f> &Xt)
-{
-    size_t N = X.size();
-    if (N == 0)
-        return;
-
-    Xt.clear();
-    Xt.resize(N);
-    cv::Matx31f p, xt;
-    cv::Point2f pt;
-
-    cv::Matx33f _T = T.getMat();
-    for (int i = 0; i < (int)N; i++)
-    {
-        p(0, 0) = X[i].x;
-        p(1, 0) = X[i].y;
-        p(2, 0) = 1;
-        xt = _T * p;
-        pt.x = xt(0, 0) / xt(2, 0);
-        pt.y = xt(1, 0) / xt(2, 0);
-        Xt[i] = pt;
-    }
 }
 
 void CCheckerDetectorImpl::

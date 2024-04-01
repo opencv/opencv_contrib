@@ -15,3 +15,9 @@ ocv_include_directories(${CMAKE_SOURCE_DIR}/modules/ts/include)
 ocv_add_accuracy_tests(DEPENDS_ON opencv_cannops)
 ocv_add_perf_tests(DEPENDS_ON opencv_cannops)
 ocv_add_samples(opencv_cannops)
+
+# compile ascnedc kernels.
+add_subdirectory(ascendc_kernels)
+ocv_include_directories(${CMAKE_BINARY_DIR}/include/ascendc_kernels)
+ocv_target_link_libraries(opencv_cannops PRIVATE ascendc_kernels)
+ocv_target_link_libraries(opencv_test_cannops PRIVATE ascendc_kernels)

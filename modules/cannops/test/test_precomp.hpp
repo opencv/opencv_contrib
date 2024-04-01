@@ -9,6 +9,7 @@
 #include "opencv2/cann.hpp"
 #include "opencv2/ts/cuda_test.hpp"
 #include "opencv2/cann_interface.hpp"
+#include "opencv2/ascendc_kernels.hpp"
 
 using namespace cv;
 using namespace cv::cann;

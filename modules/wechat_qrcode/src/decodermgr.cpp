@@ -33,7 +33,7 @@ int DecoderMgr::decodeImage(cv::Mat src, bool use_nn_detector, vector<string>& r
     decode_hints_.setUseNNDetector(use_nn_detector);
 
     Ref<ImgSource> source;
-    qbarUicomBlock_ = new UnicomBlock(width, height);
+    qbarUicomBlock_ = new UnicomBlock(height, width);
 
     // Four Binarizers
     int tryBinarizeTime = 4;

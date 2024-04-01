@@ -519,7 +519,7 @@ namespace cv
             switch (image.type())
             {
             case CV_8UC1:
-                grayImage = image;
+                grayImage = sigma_ ? image.clone() : image;
                 break;
             case CV_8UC3:
                 cvtColor(image, grayImage, COLOR_BGR2GRAY);

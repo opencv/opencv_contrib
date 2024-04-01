@@ -1066,8 +1066,6 @@ bool FinderPatternFinder::handlePossibleCenter(int* stateCount, size_t i, size_t
     }
     float estimatedHorizontalModuleSize = (float)stateCountTotal / 7.0f;
 
-    float estimatedVerticalModuleSize;
-
     // try different size according to the estimatedHorizontalModuleSize
     float tolerateModuleSize =
         estimatedHorizontalModuleSize > 4.0 ? estimatedHorizontalModuleSize / 2.0f : 1.0f;
@@ -1082,7 +1080,9 @@ bool FinderPatternFinder::handlePossibleCenter(int* stateCount, size_t i, size_t
     int image_width = image_->getWidth();
     for (int k = 0; k < CENTER_CHECK_TIME; k++) {
         float possibleCenterJ = possbileCenterJs[k];
-        if (possibleCenterJ < 0 || possibleCenterJ >= image_width) continue;
+        if (possibleCenterJ < 0 || possibleCenterJ >= image_width)
+            continue;
+        float estimatedVerticalModuleSize = 0;
         float centerI = crossCheckVertical(i, (size_t)possibleCenterJ, stateCount[2],
                                            stateCountTotal, estimatedVerticalModuleSize);
 

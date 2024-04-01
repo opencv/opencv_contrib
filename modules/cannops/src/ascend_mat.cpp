@@ -23,7 +23,11 @@ std::shared_ptr<uchar> DefaultAllocator::allocate(size_t size)
 
 bool DefaultAllocator::allocate(cv::cann::AscendMat* mat, int rows, int cols, size_t elemSize)
 {
-    mat->data = allocate(elemSize * cols * rows);
+    size_t totalBytes = elemSize * cols * rows;
+
+    // align by 32B.
+    totalBytes = ((totalBytes + 32) & ~31);
+    mat->data = allocate(totalBytes);
     mat->step = cols * elemSize;
 
     return true;

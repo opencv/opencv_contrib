@@ -187,7 +187,7 @@ TWeight GCGraph<TWeight>::maxFlow()
         Vtx* v, *u;
         int e0 = -1, ei = 0, ej = 0;
         TWeight minWeight, weight;
-        uchar vt;
+        uint8_t vt;
 
         // grow S & T search trees, find an edge connecting them
         while( first != nilNode )

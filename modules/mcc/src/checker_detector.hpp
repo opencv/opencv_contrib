@@ -171,11 +171,6 @@ private: // methods aux
         std::vector<float> &x_new,
         float tol);
 
-    void transform_points_forward(
-        InputArray T,
-        const std::vector<cv::Point2f> &X,
-        std::vector<cv::Point2f> &Xt);
-
     void transform_points_inverse(
         InputArray T,
         const std::vector<cv::Point2f> &X,

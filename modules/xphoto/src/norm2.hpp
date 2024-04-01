@@ -59,10 +59,10 @@ template <class T> struct same_as<T, T> : ttype {};   // is_same
 
 
 template <typename _Tp> struct is_norm2_type :
-    int_const<bool, !same_as<_Tp,   char>::value
-                 && !same_as<_Tp,  uchar>::value
-                 && !same_as<_Tp, ushort>::value
-                 && !same_as<_Tp,   uint>::value>{};
+    int_const<bool, !same_as<_Tp,   int8_t>::value
+                 && !same_as<_Tp,  uint8_t>::value
+                 && !same_as<_Tp, uint16_t>::value
+                 && !same_as<_Tp, uint32_t>::value>{};
 
 template <typename _Tp, int cn> static inline typename iftype< is_norm2_type<_Tp>::value, _Tp >::
     type norm2(cv::Vec<_Tp, cn> a, cv::Vec<_Tp, cn> b) { return (a - b).dot(a - b); }

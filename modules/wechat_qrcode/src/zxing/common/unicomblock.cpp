@@ -26,7 +26,7 @@ void UnicomBlock::Init() {
 
 void UnicomBlock::Reset(Ref<BitMatrix> poImage) {
     m_poImage = poImage;
-    memset(&m_vcIndex[0], 0, m_vcIndex.size() * sizeof(short));
+    memset(&m_vcIndex[0], 0, m_vcIndex.size() * sizeof(m_vcIndex[0]));
     m_iNowIdx = 0;
 }
 

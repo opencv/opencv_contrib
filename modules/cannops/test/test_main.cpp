@@ -8,8 +8,18 @@ class CannEnvironment : public ::testing::Environment
 {
 public:
     virtual ~CannEnvironment() = default;
-    virtual void SetUp() CV_OVERRIDE { initAcl(); }
-    virtual void TearDown() CV_OVERRIDE { finalizeAcl(); }
+    virtual void SetUp() CV_OVERRIDE
+    {
+        initAcl();
+        cv::cann::setDevice(DEVICE_ID);
+        initDvpp();
+    }
+    virtual void TearDown() CV_OVERRIDE
+    {
+        finalizeAcl();
+        cv::cann::resetDevice();
+        finalizeDvpp();
+    }
 };
 
 static void initTests()
