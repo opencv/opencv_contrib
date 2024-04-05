@@ -190,10 +190,12 @@ TEST(CV_ArucoTutorial, can_find_diamondmarkers)
     detectorParams.readDetectorParameters(fs.root());
     detectorParams.cornerRefinementMethod = aruco::CORNER_REFINE_APRILTAG;
 
-    aruco::ArucoDetector detector(dictionary, detectorParams);
+    aruco::CharucoBoard charucoBoard(Size(3, 3), 0.4f, 0.25f, dictionary);
+    aruco::CharucoDetector detector(charucoBoard, aruco::CharucoParameters(), detectorParams);
 
-    vector< int > ids;
-    vector< vector< Point2f > > corners, rejected;
+    vector<int> ids;
+    vector<vector<Point2f> > corners, diamondCorners;
+    vector<Vec4i> diamondIds;
     const size_t N = 12ull;
     // corner indices of ArUco markers
     const int goldCornersIds[N] = { 4, 12, 11, 3, 12, 10, 12, 10, 10, 11, 2, 11 };
@@ -201,7 +203,23 @@ TEST(CV_ArucoTutorial, can_find_diamondmarkers)
     for (int i = 0; i < static_cast<int>(N); i++)
         counterGoldCornersIds[goldCornersIds[i]]++;
 
-    detector.detectMarkers(image, corners, ids, rejected);
+    const size_t diamondsN = 3;
+    // corners of diamonds with Vec4i indices
+    const float goldDiamondCorners[diamondsN][8] = {{195.6f,150.9f, 213.5f,201.2f, 136.4f,215.3f, 122.4f,163.5f},
+                                            {501.1f,171.3f, 501.9f,208.5f, 446.2f,199.8f, 447.8f,163.3f},
+                                            {343.4f,361.2f, 359.7f,328.7f, 400.8f,344.6f, 385.7f,378.4f}};
+    auto comp = [](const Vec4i& a, const Vec4i& b) {
+        if (a[0] < b[0]) return true;
+        if (a[1] < b[1]) return true;
+        if (a[2] < b[2]) return true;
+        return a[3] < b[3];
+    };
+    map<Vec4i, const float*, decltype(comp)> goldDiamonds(comp);
+    goldDiamonds[Vec4i(10, 4, 11, 12)] = goldDiamondCorners[0];
+    goldDiamonds[Vec4i(10, 3, 11, 12)] = goldDiamondCorners[1];
+    goldDiamonds[Vec4i(10, 2, 11, 12)] = goldDiamondCorners[2];
+
+    detector.detectDiamonds(image, diamondCorners, diamondIds, corners, ids);
     map<int, int> counterRes;
 
     ASSERT_EQ(N, ids.size());
@@ -211,7 +229,19 @@ TEST(CV_ArucoTutorial, can_find_diamondmarkers)
         counterRes[arucoId]++;
     }
 
-    EXPECT_EQ(counterGoldCornersIds, counterRes); // check the number of ArUco markers
+    ASSERT_EQ(counterGoldCornersIds, counterRes); // check the number of ArUco markers
+    ASSERT_EQ(goldDiamonds.size(), diamondIds.size()); // check the number of diamonds
+
+    for (size_t i = 0; i < goldDiamonds.size(); i++)
+    {
+        Vec4i diamondId = diamondIds[i];
+        ASSERT_TRUE(goldDiamonds.find(diamondId) != goldDiamonds.end());
+        for (int j = 0; j < 4; j++)
+        {
+            EXPECT_NEAR(goldDiamonds[diamondId][j * 2], diamondCorners[i][j].x, 0.5f);
+            EXPECT_NEAR(goldDiamonds[diamondId][j * 2 + 1], diamondCorners[i][j].y, 0.5f);
+        }
+    }
 }
 
 }} // namespace
