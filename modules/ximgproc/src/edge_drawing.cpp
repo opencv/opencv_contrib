@@ -2592,7 +2592,7 @@ void EdgeDrawingImpl::detectEllipses(OutputArray ellipses)
     }
 
     // This is how much space we will allocate for circles buffers
-    int maxNoOfCircles = (int)lines.size() / 3 + noCircles1 * 2;
+    int maxNoOfCircles = (int)lines.size() / 3 + noCircles1 * 2 + 2;
 
     edarcs1 = new EDArcs(maxNoOfCircles);
     DetectArcs();    // Detect all arcs
