@@ -581,7 +581,7 @@ void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& s
     bool is_merged = false;
     int ith = (int)segments_tmp.size() - 1;
     int jth = ith - 1;
-    while(ith > 1 || jth > 0)
+    while(ith > 1 || jth >= 0)
     {
         seg1 = segments_tmp[ith];
         seg2 = segments_tmp[jth];
