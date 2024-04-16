@@ -52,7 +52,7 @@ CV_EXPORTS_W void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArr
                                                InputArray detectedIds, OutputArray objPoints, OutputArray imgPoints);
 
 
-/** @deprecated Use cv::solvePnP
+/** @deprecated Use Board::matchImagePoints and cv::solvePnP
  */
 CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Ptr<Board> &board,
                                    InputArray cameraMatrix, InputArray distCoeffs, InputOutputArray rvec,
@@ -75,6 +75,7 @@ CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, c
  * This function estimates a Charuco board pose from some detected corners.
  * The function checks if the input corners are enough and valid to perform pose estimation.
  * If pose estimation is valid, returns true, else returns false.
+ * @deprecated Use CharucoBoard::matchImagePoints and cv::solvePnP
  * @sa use cv::drawFrameAxes to get world coordinate system axis for object points
  */
 CV_EXPORTS_W bool estimatePoseCharucoBoard(InputArray charucoCorners, InputArray charucoIds,

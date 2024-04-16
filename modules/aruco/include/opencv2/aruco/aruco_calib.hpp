@@ -16,7 +16,10 @@ namespace aruco {
  * PatternPositionType defines center this system and axes direction.
  * Axis X (red color) - first coordinate, axis Y (green color) - second coordinate,
  * axis Z (blue color) - third coordinate.
- * @sa estimatePoseSingleMarkers(), check tutorial_aruco_detection in aruco contrib
+ *
+ * @deprecated Use Board::matchImagePoints and cv::solvePnP
+ *
+ * @sa estimatePoseSingleMarkers()
  */
 enum PatternPositionType {
     /** @brief The marker coordinate system is centered on the middle of the marker.
@@ -24,9 +27,6 @@ enum PatternPositionType {
      * The coordinates of the four corners (CCW order) of the marker in its own coordinate system are:
      * (-markerLength/2, markerLength/2, 0), (markerLength/2, markerLength/2, 0),
      * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0).
-     *
-     * These pattern points define this coordinate system:
-     * ![Image with axes drawn](tutorials/images/singlemarkersaxes2.jpg)
      */
     ARUCO_CCW_CENTER,
     /** @brief The marker coordinate system is centered on the top-left corner of the marker.
@@ -34,9 +34,6 @@ enum PatternPositionType {
      * The coordinates of the four corners (CW order) of the marker in its own coordinate system are:
      * (0, 0, 0), (markerLength, 0, 0),
      * (markerLength, markerLength, 0), (0, markerLength, 0).
-     *
-     * These pattern points define this coordinate system:
-     * ![Image with axes drawn](tutorials/images/singlemarkersaxes.jpg)
      *
      * These pattern dots are convenient to use with a chessboard/ChArUco board.
      */
@@ -50,7 +47,10 @@ enum PatternPositionType {
  * rvec and tvec values as initial approximations of the rotation and translation vectors, respectively, and further
  * optimizes them (default false).
  * @param solvePnPMethod Method for solving a PnP problem: see @ref calib3d_solvePnP_flags (default SOLVEPNP_ITERATIVE).
- * @sa PatternPositionType, solvePnP(), check tutorial_aruco_detection in aruco contrib
+ *
+ * @deprecated Use Board::matchImagePoints and cv::solvePnP
+ *
+ * @sa PatternPositionType, solvePnP()
  */
 struct CV_EXPORTS_W_SIMPLE EstimateParameters {
     CV_PROP_RW PatternPositionType pattern;
@@ -95,6 +95,8 @@ struct CV_EXPORTS_W_SIMPLE EstimateParameters {
  * This function calibrates a camera using an Aruco Board. The function receives a list of
  * detected markers from several views of the Board. The process is similar to the chessboard
  * calibration in calibrateCamera(). The function returns the final re-projection error.
+ *
+ * @deprecated Use Board::matchImagePoints and cv::solvePnP
  */
 CV_EXPORTS_AS(calibrateCameraArucoExtended)
 double calibrateCameraAruco(InputArrayOfArrays corners, InputArray ids, InputArray counter, const Ptr<Board> &board,
@@ -105,6 +107,7 @@ double calibrateCameraAruco(InputArrayOfArrays corners, InputArray ids, InputArr
 
 /** @overload
  * @brief It's the same function as #calibrateCameraAruco but without calibration error estimation.
+ * @deprecated Use Board::matchImagePoints and cv::solvePnP
  */
 CV_EXPORTS_W double calibrateCameraAruco(InputArrayOfArrays corners, InputArray ids, InputArray counter,
                                          const Ptr<Board> &board, Size imageSize, InputOutputArray cameraMatrix,
@@ -147,6 +150,8 @@ CV_EXPORTS_W double calibrateCameraAruco(InputArrayOfArrays corners, InputArray 
  * This function calibrates a camera using a set of corners of a  Charuco Board. The function
  * receives a list of detected corners and its identifiers from several views of the Board.
  * The function returns the final re-projection error.
+ *
+ * @deprecated Use CharucoBoard::matchImagePoints and cv::solvePnP
  */
 CV_EXPORTS_AS(calibrateCameraCharucoExtended)
 double calibrateCameraCharuco(InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds,
@@ -158,6 +163,8 @@ double calibrateCameraCharuco(InputArrayOfArrays charucoCorners, InputArrayOfArr
 
 /**
  * @brief It's the same function as #calibrateCameraCharuco but without calibration error estimation.
+ *
+ * @deprecated Use CharucoBoard::matchImagePoints and cv::solvePnP
  */
 CV_EXPORTS_W double calibrateCameraCharuco(InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds,
                                            const Ptr<CharucoBoard> &board, Size imageSize,
