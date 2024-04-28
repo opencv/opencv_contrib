@@ -11,10 +11,6 @@ class tracking_contrib_test(NewOpenCVTests):
 
         t = cv.TrackerMIL_create()
         t = cv.TrackerKCF_create()
-        try:
-            t = cv.TrackerGOTURN_create()
-        except cv.error as e:
-            pass  # may fail due to missing DL model files
 
     def test_createLegacyTracker(self):
 
@@ -22,7 +18,6 @@ class tracking_contrib_test(NewOpenCVTests):
         t = cv.legacy.TrackerMIL_create()
         t = cv.legacy.TrackerKCF_create()
         t = cv.legacy.TrackerMedianFlow_create()
-        #t = cv.legacy.TrackerGOTURN_create()
         t = cv.legacy.TrackerMOSSE_create()
         t = cv.legacy.TrackerCSRT_create()
 
