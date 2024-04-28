@@ -11,7 +11,6 @@ namespace opencv_test { namespace {
 
 static const char* const IMAGE_TSUKUBA = "features2d/tsukuba.png";
 static const char* const IMAGE_BIKES = "detectors_descriptors_evaluation/images_datasets/bikes/img1.png";
-#define Value(...) Values(make_tuple(__VA_ARGS__))
 
 // ========================== ROTATION INVARIANCE =============================
 
@@ -27,23 +26,32 @@ INSTANTIATE_TEST_CASE_P(SURF, DescriptorRotationInvariance, Values(
 
 #endif // NONFREE
 
-INSTANTIATE_TEST_CASE_P(BRISK, DetectorRotationInvariance,
-                        Value(IMAGE_TSUKUBA, BRISK::create(), 0.45f, 0.76f));
+INSTANTIATE_TEST_CASE_P(BRISK, DetectorRotationInvariance, Values(
+    make_tuple(IMAGE_TSUKUBA, []() { return BRISK::create(); }, 0.45f, 0.76f)
+));
 
-INSTANTIATE_TEST_CASE_P(AKAZE, DetectorRotationInvariance,
-                        Value(IMAGE_TSUKUBA, AKAZE::create(), 0.5f, 0.71f));
+INSTANTIATE_TEST_CASE_P(AKAZE, DetectorRotationInvariance, Values(
+    make_tuple(IMAGE_TSUKUBA, []() { return AKAZE::create(); }, 0.5f, 0.71f)
+));
 
-INSTANTIATE_TEST_CASE_P(AKAZE_DESCRIPTOR_KAZE, DetectorRotationInvariance,
-                        Value(IMAGE_TSUKUBA, AKAZE::create(AKAZE::DESCRIPTOR_KAZE), 0.5f, 0.71f));
+INSTANTIATE_TEST_CASE_P(AKAZE_DESCRIPTOR_KAZE, DetectorRotationInvariance, Values(
+    make_tuple(IMAGE_TSUKUBA, []() { return AKAZE::create(AKAZE::DESCRIPTOR_KAZE); }, 0.5f, 0.71f)
+));
 
-INSTANTIATE_TEST_CASE_P(BRISK, DescriptorRotationInvariance,
-                        Value(IMAGE_TSUKUBA, BRISK::create(), BRISK::create(), 0.99f));
+INSTANTIATE_TEST_CASE_P(BRISK, DescriptorRotationInvariance, Values(
+    make_tuple(IMAGE_TSUKUBA, []() { return BRISK::create(); }, []() { return BRISK::create(); }, 0.99f)
+));
 
-INSTANTIATE_TEST_CASE_P(AKAZE, DescriptorRotationInvariance,
-                        Value(IMAGE_TSUKUBA, AKAZE::create(), AKAZE::create(), 0.99f));
+INSTANTIATE_TEST_CASE_P(AKAZE, DescriptorRotationInvariance, Values(
+    make_tuple(IMAGE_TSUKUBA, []() { return AKAZE::create(); }, []() { return AKAZE::create();} , 0.99f)
+));
 
-INSTANTIATE_TEST_CASE_P(AKAZE_DESCRIPTOR_KAZE, DescriptorRotationInvariance,
-                        Value(IMAGE_TSUKUBA, AKAZE::create(AKAZE::DESCRIPTOR_KAZE), AKAZE::create(AKAZE::DESCRIPTOR_KAZE), 0.99f));
+INSTANTIATE_TEST_CASE_P(AKAZE_DESCRIPTOR_KAZE, DescriptorRotationInvariance, Values(
+    make_tuple(IMAGE_TSUKUBA,
+    []() { return AKAZE::create(AKAZE::DESCRIPTOR_KAZE); },
+    []() { return AKAZE::create(AKAZE::DESCRIPTOR_KAZE); },
+    0.99f)
+));
 
 INSTANTIATE_TEST_CASE_P(LATCH, DescriptorRotationInvariance, Values(
     make_tuple(IMAGE_TSUKUBA, []() { return SIFT::create(); }, []() { return LATCH::create(); }, 0.98f)
@@ -54,7 +62,7 @@ INSTANTIATE_TEST_CASE_P(BEBLID, DescriptorRotationInvariance, Values(
 ));
 
 INSTANTIATE_TEST_CASE_P(TEBLID, DescriptorRotationInvariance, Values(
-        make_tuple(IMAGE_TSUKUBA, []() { return SIFT::create(); }, []() { return TEBLID::create(6.75); }, 0.98f)
+    make_tuple(IMAGE_TSUKUBA, []() { return SIFT::create(); }, []() { return TEBLID::create(6.75); }, 0.98f)
 ));
 
 INSTANTIATE_TEST_CASE_P(DAISY, DescriptorRotationInvariance, Values(
@@ -197,23 +205,32 @@ INSTANTIATE_TEST_CASE_P(DISABLED_DAISY, DescriptorScaleInvariance, Values(
 ));
 #endif
 
-INSTANTIATE_TEST_CASE_P(BRISK, DetectorScaleInvariance,
-                        Value(IMAGE_BIKES, BRISK::create(), 0.08f, 0.49f));
+INSTANTIATE_TEST_CASE_P(BRISK, DetectorScaleInvariance, Values(
+    make_tuple(IMAGE_BIKES, []() { return BRISK::create(); }, 0.08f, 0.49f)
+));
 
-INSTANTIATE_TEST_CASE_P(KAZE, DetectorScaleInvariance,
-                        Value(IMAGE_BIKES, KAZE::create(), 0.08f, 0.49f));
+INSTANTIATE_TEST_CASE_P(KAZE, DetectorScaleInvariance, Values(
+    make_tuple(IMAGE_BIKES, []() { return KAZE::create(); }, 0.08f, 0.49f)
+));
 
-INSTANTIATE_TEST_CASE_P(AKAZE, DetectorScaleInvariance,
-                        Value(IMAGE_BIKES, AKAZE::create(), 0.08f, 0.49f));
+INSTANTIATE_TEST_CASE_P(AKAZE, DetectorScaleInvariance, Values(
+    make_tuple(IMAGE_BIKES, []() { return AKAZE::create(); }, 0.08f, 0.49f)
+));
 
-INSTANTIATE_TEST_CASE_P(AKAZE_DESCRIPTOR_KAZE, DetectorScaleInvariance,
-                        Value(IMAGE_BIKES, AKAZE::create(AKAZE::DESCRIPTOR_KAZE), 0.08f, 0.49f));
+INSTANTIATE_TEST_CASE_P(AKAZE_DESCRIPTOR_KAZE, DetectorScaleInvariance, Values(
+    make_tuple(IMAGE_BIKES, []() { return AKAZE::create(AKAZE::DESCRIPTOR_KAZE); }, 0.08f, 0.49f)
+));
 
-INSTANTIATE_TEST_CASE_P(AKAZE, DescriptorScaleInvariance,
-                        Value(IMAGE_BIKES, AKAZE::create(), AKAZE::create(), 0.6f));
+INSTANTIATE_TEST_CASE_P(AKAZE, DescriptorScaleInvariance, Values(
+    make_tuple(IMAGE_BIKES, []() { return AKAZE::create(); }, []() { return AKAZE::create(); }, 0.6f)
+));
 
-INSTANTIATE_TEST_CASE_P(AKAZE_DESCRIPTOR_KAZE, DescriptorScaleInvariance,
-                        Value(IMAGE_BIKES, AKAZE::create(AKAZE::DESCRIPTOR_KAZE), AKAZE::create(AKAZE::DESCRIPTOR_KAZE), 0.55f));
+INSTANTIATE_TEST_CASE_P(AKAZE_DESCRIPTOR_KAZE, DescriptorScaleInvariance, Values(
+    make_tuple(IMAGE_BIKES,
+               []() { return AKAZE::create(AKAZE::DESCRIPTOR_KAZE); },
+               []() { return AKAZE::create(AKAZE::DESCRIPTOR_KAZE); },
+               0.55f)
+));
 
 #ifdef OPENCV_XFEATURES2D_HAS_VGG_DATA
 INSTANTIATE_TEST_CASE_P(VGG120, DescriptorScaleInvariance, Values(
