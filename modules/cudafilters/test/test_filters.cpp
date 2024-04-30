@@ -280,6 +280,93 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilter, testing::Combine(
                     BorderType(cv::BORDER_REFLECT)),
     WHOLE_SUBMAT));
 
+PARAM_TEST_CASE(SeparableLinearFilterWithEmptyKernels, cv::cuda::DeviceInfo, bool, bool, bool)
+{
+    cv::cuda::DeviceInfo devInfo;
+    bool inPlace;
+    bool useRowKernel;
+    bool useColKernel;
+
+    cv::Size size;
+    int depth;
+    int cn;
+    cv::Size ksize;
+    cv::Point anchor;
+    int borderType;
+    int type;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        inPlace = GET_PARAM(1);
+        useRowKernel = GET_PARAM(2);
+        useColKernel = GET_PARAM(3);
+
+        size = cv::Size(640, 480);
+        depth = CV_32F;
+        cn = 1;
+        ksize = cv::Size(3, 1);
+        anchor = cv::Point(-1, -1);
+        borderType = cv::BORDER_REPLICATE;
+
+        cv::cuda::setDevice(devInfo.deviceID());
+
+        type = CV_MAKE_TYPE(depth, cn);
+    }
+};
+
+CUDA_TEST_P(SeparableLinearFilterWithEmptyKernels, Accuracy)
+{
+    cv::Mat src = randomMat(size, type);
+    cv::Mat rowKernel = (cv::Mat_<float>(ksize) << -1, 0, 1);
+    cv::Mat colKernel = rowKernel.t();
+    cv::Mat oneKernel = cv::Mat::ones(cv::Size(1, 1), CV_32FC1);
+    cv::Mat noKernel = cv::Mat();
+    cv::Mat rowColKernel;
+    cv::gemm(rowKernel, colKernel, 1.0, cv::noArray(), 0., rowColKernel, cv::GEMM_1_T + cv::GEMM_2_T);
+
+    const cv::Mat& linKernel =
+        !useRowKernel && !useColKernel ? oneKernel :
+        !useRowKernel &&  useColKernel ? colKernel :
+        useRowKernel  && !useColKernel ? rowKernel :
+        rowColKernel;
+    cv::Ptr<cv::cuda::Filter> linFilter =
+        cv::cuda::createLinearFilter(type, type, linKernel, cv::Point(-1, -1), cv::BORDER_REPLICATE);
+
+    cv::Ptr<cv::cuda::Filter> sepFilterDummyKernels =
+        cv::cuda::createSeparableLinearFilter(type, type,
+            useRowKernel ? rowKernel : oneKernel,
+            useColKernel ? colKernel : oneKernel,
+            cv::Point(-1, -1), cv::BORDER_REPLICATE, cv::BORDER_REPLICATE);
+
+    cv::Ptr<cv::cuda::Filter> sepFilterEmptyKernels =
+        cv::cuda::createSeparableLinearFilter(type, type,
+            useRowKernel ? rowKernel : noKernel,
+            useColKernel ? colKernel : noKernel,
+            cv::Point(-1, -1), cv::BORDER_REPLICATE, cv::BORDER_REPLICATE);
+
+    cv::cuda::GpuMat src_lin = loadMat(src);
+    cv::cuda::GpuMat dst_lin = cv::cuda::GpuMat();//does not support in-place
+    cv::cuda::GpuMat src_sep_dummyK = loadMat(src);
+    cv::cuda::GpuMat dst_sep_dummyK = inPlace ? src_sep_dummyK : cv::cuda::GpuMat();
+    cv::cuda::GpuMat src_sep_emptyK = loadMat(src);
+    cv::cuda::GpuMat dst_sep_emptyK = inPlace ? src_sep_emptyK : cv::cuda::GpuMat();
+
+    linFilter->apply(src_lin, dst_lin);
+    sepFilterDummyKernels->apply(src_sep_dummyK, dst_sep_dummyK);
+    sepFilterEmptyKernels->apply(src_sep_emptyK, dst_sep_emptyK);
+
+    EXPECT_MAT_NEAR(dst_lin, dst_sep_dummyK, src.depth() < CV_32F ? 1.0 : 1e-2);
+    EXPECT_MAT_NEAR(dst_lin, dst_sep_emptyK, src.depth() < CV_32F ? 1.0 : 1e-2);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilterWithEmptyKernels, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(false, true),//in-place
+    testing::Values(false, true),//use row kernel
+    testing::Values(false, true)//use col kernel
+    ));
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Sobel
 
