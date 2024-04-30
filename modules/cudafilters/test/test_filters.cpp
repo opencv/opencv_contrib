@@ -299,7 +299,7 @@ PARAM_TEST_CASE(SeparableLinearFilterWithEmptyKernels, cv::cuda::DeviceInfo, Mat
 
     virtual void SetUp()
     {
-        devInfo = GET_PARAM(0);        
+        devInfo = GET_PARAM(0);
         srcDepth = GET_PARAM(1);
         cn = GET_PARAM(2);
         dstDepth = GET_PARAM(3);
