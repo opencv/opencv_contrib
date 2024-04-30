@@ -448,7 +448,6 @@ namespace
         if (needsSrcAdaptation)
             src.convertTo(buf_, bufType_, _stream);
         GpuMat& srcAdapted = needsSrcAdaptation ? buf_ : src;
-        GpuMat& dstAdapted = needsDstAdaptation ? buf_ : dst;
 
         DeviceInfo devInfo;
         const int cc = devInfo.majorVersion() * 10 + devInfo.minorVersion();
@@ -466,7 +465,7 @@ namespace
 
             if (hasRowKernel)
                 rowFilter_(rowFilterSrc, rowFilterDst, rowKernel_.ptr<float>(), rowKernel_.cols, anchor_.x, rowBorderMode_, cc, stream);
-            else if (hasColKernel && needsBufForIntermediateStorage)
+            else if (hasColKernel && (needsBufForIntermediateStorage && !needsSrcAdaptation))
                 rowFilterSrc.convertTo(buf_, bufType_, _stream);
 
             if (hasColKernel)
