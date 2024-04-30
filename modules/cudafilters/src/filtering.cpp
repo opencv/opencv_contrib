@@ -438,9 +438,17 @@ namespace
         const bool hasRowKernel = !rowKernel_.empty();
         const bool hasColKernel = !columnKernel_.empty();
         const bool hasSingleKernel = (hasRowKernel ^ hasColKernel);
-        const bool needsBuf = (hasRowKernel && hasColKernel) || (hasSingleKernel && isInPlace);
+        const bool needsSrcAdaptation = !hasRowKernel &&  hasColKernel && (srcType_ != bufType_);
+        const bool needsDstAdaptation =  hasRowKernel && !hasColKernel && (dstType_ != bufType_);
+        const bool needsBufForIntermediateStorage = (hasRowKernel && hasColKernel) || (hasSingleKernel && isInPlace);
+        const bool needsBuf = needsSrcAdaptation || needsDstAdaptation || needsBufForIntermediateStorage;
         if (needsBuf)
             ensureSizeIsEnough(src.size(), bufType_, buf_);
+
+        if (needsSrcAdaptation)
+            src.convertTo(buf_, bufType_, _stream);
+        GpuMat& srcAdapted = needsSrcAdaptation ? buf_ : src;
+        GpuMat& dstAdapted = needsDstAdaptation ? buf_ : dst;
 
         DeviceInfo devInfo;
         const int cc = devInfo.majorVersion() * 10 + devInfo.minorVersion();
@@ -448,23 +456,23 @@ namespace
         cudaStream_t stream = StreamAccessor::getStream(_stream);
 
         if (!hasRowKernel && !hasColKernel && !isInPlace)
-          src.copyTo(dst, _stream);
+            srcAdapted.convertTo(dst, dstType_, _stream);
         else if (hasRowKernel || hasColKernel)
         {
-            GpuMat& rowFilterSrc = src;
-            GpuMat& rowFilterDst = !hasRowKernel ? src : needsBuf ? buf_ : dst;
-            GpuMat& colFilterSrc = hasColKernel && needsBuf ? buf_ : src;
+            GpuMat& rowFilterSrc = srcAdapted;
+            GpuMat& rowFilterDst = !hasRowKernel ? srcAdapted : needsBuf ? buf_ : dst;
+            GpuMat& colFilterSrc = hasColKernel && needsBuf ? buf_ : srcAdapted;
             GpuMat& colFilterTo = dst;
 
             if (hasRowKernel)
                 rowFilter_(rowFilterSrc, rowFilterDst, rowKernel_.ptr<float>(), rowKernel_.cols, anchor_.x, rowBorderMode_, cc, stream);
-            else if (hasColKernel && needsBuf)
-                rowFilterSrc.copyTo(buf_, _stream);
+            else if (hasColKernel && needsBufForIntermediateStorage)
+                rowFilterSrc.convertTo(buf_, bufType_, _stream);
 
             if (hasColKernel)
                 columnFilter_(colFilterSrc, colFilterTo, columnKernel_.ptr<float>(), columnKernel_.cols, anchor_.y, columnBorderMode_, cc, stream);
             else if (needsBuf)
-                buf_.copyTo(dst, _stream);
+                buf_.convertTo(dst, dstType_, _stream);
         }
     }
 }
