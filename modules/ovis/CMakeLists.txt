@@ -24,7 +24,10 @@ ocv_glob_module_sources()
 ocv_module_include_directories()
 ocv_create_module()
 
-ocv_add_samples(opencv_aruco)
+# see https://github.com/opencv/opencv_contrib/issues/3732
+# This sample program uses out-dated headers.
+# To avoid build error, remove it.
+# ocv_add_samples(opencv_aruco)
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter)
 ocv_target_link_libraries(${the_module} ${OGRE_LIBRARIES})
