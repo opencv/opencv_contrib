@@ -120,7 +120,7 @@ We present here some illustrations of the retina outputs on some examples taken 
 Also take into account that the two retina outputs are rescaled in range [0:255] such that magno output can show a lot of "noise" when nothing moves while drawing it. However, its energy remains low if you retrieve it using *getMagnoRAW* getter instead.
 
 
-![Retina processing on RGB image sequence : example from http://changedetection.net/ (baseline/PETS2006). Parvo enforces static signals but smooths moving persons since they do not remain static from its point of view. Magno channel highligths moving persons, observe the energy mapping on the one on top, partly behind a dark glass.](images/VideoDemo_RGB_PETS2006.jpg)
+![Retina processing on RGB image sequence : example from http://changedetection.net/ (baseline/PETS2006). Parvo enforces static signals but smooths moving persons since they do not remain static from its point of view. Magno channel highlights moving persons, observe the energy mapping on the one on top, partly behind a dark glass.](images/VideoDemo_RGB_PETS2006.jpg)
 
 ![Retina processing on gray levels image sequence : example from http://changedetection.net/ (thermal/park). On such grayscale images, parvo channel enforces contrasts while magno strongly reacts on moving pedestrians](images/VideoDemo_thermal_park.jpg)
 

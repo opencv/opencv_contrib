@@ -263,7 +263,7 @@ static void dominantTransforms(const cv::Mat &img, std::vector <cv::Point2i> &tr
     cv::GaussianBlur( annfHist, annfHist,
         cv::Size(0, 0), std::sqrt(2.0), 0.0, cv::BORDER_CONSTANT);
     cv::dilate( annfHist, _annfHist,
-        cv::Matx<uchar, 9, 9>::ones() );
+        cv::Matx<uint8_t, 9, 9>::ones() );
 
     std::vector < std::pair<double, int> > amount;
     std::vector <cv::Point2i> shiftM;

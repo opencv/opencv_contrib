@@ -678,7 +678,6 @@ TEST(ELEMENTWISE_OP, MAT_THRESHOLD)
     for (int i = 0; i <= 4; i++)
     {
         cv::threshold(cpuMat, cpuOpRet, 128, 250, i);
-        // TODO find the reason empty AscendMat is not continuous.
         cv::cann::threshold(ascendMat16F, aclOpRet, 128, 250, i);
         aclOpRet.convertTo(aclOpRet16S, CV_16S);
         aclOpRet16S.download(checker);
@@ -688,6 +687,38 @@ TEST(ELEMENTWISE_OP, MAT_THRESHOLD)
         cv::cann::threshold(cpuMat16F, checker16F, 128, 250, i);
         checker16F.convertTo(checker, CV_16S);
         EXPECT_MAT_NEAR(cpuOpRet, checker, 1e-10);
+    }
+
+    cv::cann::resetDevice();
+}
+
+TEST(ELEMENTWISE_OP, MAT_THRESHOLD_ASCENDC)
+{
+    cv::cann::setDevice(DEVICE_ID);
+    Mat cpuRet, npuRet;
+    AscendMat npuImg, npuTmpMat;
+
+    // opencv do not support CV_8S, CV_32S, CV_16F
+    // ascend do not support CV_16U, CV_64F
+    uint8_t dtypes[] = {CV_8U, CV_16S, CV_32F};
+
+    for (uint i = 0; i <= 4; i++)
+    {
+        for (uint j = 0; j < sizeof(dtypes) / sizeof(dtypes[0]); j++)
+        {
+            double thresh = 90.5;
+            double maxVal = 85.2;
+
+            Mat img = randomMat(10, 10, CV_MAKETYPE(dtypes[j], 3), 0.0f, 128.0f);
+            npuImg.upload(img);
+            npuTmpMat.create(npuImg.rows, npuImg.cols, npuImg.type());
+
+            cv::threshold(img, cpuRet, thresh, maxVal, i);
+            cv::cann::threshold(npuImg, npuTmpMat, thresh, maxVal, i);
+
+            npuTmpMat.download(npuRet);
+            EXPECT_MAT_NEAR(cpuRet, npuRet, 10.0f);
+        }
     }
 
     cv::cann::resetDevice();

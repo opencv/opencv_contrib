@@ -41,17 +41,15 @@
 
 This module provides storage routines for Hierarchical Data Format objects.
 
-  @{
+@{
     @defgroup hdf5 Hierarchical Data Format version 5
 
-Hierarchical Data Format version 5
---------------------------------------------------------
+    Hierarchical Data Format version 5
+    --------------------------------------------------------
 
-In order to use it, the hdf5 library has to be installed, which
-means cmake should find it using `find_package(HDF5)` .
-
-
-  @}
+    In order to use it, the hdf5 library has to be installed, which
+    means cmake should find it using `find_package(HDF5)`.
+@}
 */
 
 #endif

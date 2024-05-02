@@ -137,6 +137,7 @@ public:
 
     TYPECHART getTarget() CV_OVERRIDE;
     std::vector<Point2f> getBox() CV_OVERRIDE;
+    std::vector<Point2f> getColorCharts() CV_OVERRIDE;
     Mat getChartsRGB() CV_OVERRIDE;
     Mat getChartsYCbCr() CV_OVERRIDE;
     float getCost() CV_OVERRIDE;
@@ -173,15 +174,10 @@ private:
     Ptr<CChecker> m_pChecker;
     cv::Scalar m_color;
     int m_thickness;
-
-private:
-    /** \brief transformation perspetive*/
-    void transform_points_forward(
-        InputArray T,
-        const std::vector<cv::Point2f> &X,
-        std::vector<cv::Point2f> &Xt);
 };
 // @}
+
+void transform_points_forward(const Matx33f& T, const std::vector<Point2f> &X, std::vector<Point2f> &Xt);
 
 } // namespace mcc
 } // namespace cv

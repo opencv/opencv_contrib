@@ -11,7 +11,7 @@ namespace cv
 namespace cann
 {
 /*******************************Acl Error Checker*****************************/
-static inline void checkAclError(aclError err, const char* file, const int line, const char* func)
+void checkAclError(aclError err, const char* file, const int line, const char* func)
 {
     if (ACL_SUCCESS != err)
     {
@@ -20,7 +20,7 @@ static inline void checkAclError(aclError err, const char* file, const int line,
     }
 }
 
-static inline void checkAclPtr(void* ptr, const char* file, const int line, const char* func)
+void checkAclPtr(void* ptr, const char* file, const int line, const char* func)
 {
     if (nullptr == ptr)
     {
@@ -28,14 +28,6 @@ static inline void checkAclPtr(void* ptr, const char* file, const int line, cons
         cv::error(cv::Error::StsError, errMsg == nullptr ? "" : errMsg, func, file, line);
     }
 }
-
-#define CV_ACL_SAFE_CALL(expr) checkAclError((expr), __FILE__, __LINE__, CV_Func)
-#define CV_ACL_SAFE_CALL_PTR(expr)                     \
-    ({                                                 \
-        auto ptr = (expr);                             \
-        checkAclPtr(ptr, __FILE__, __LINE__, CV_Func); \
-        ptr;                                           \
-    })
 
 /******************************Acl Runtime Warpper****************************/
 void aclrtMallocWarpper(void** data, size_t size)

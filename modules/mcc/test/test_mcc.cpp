@@ -81,5 +81,101 @@ TEST(CV_mccRunCCheckerDetectorBasic, accuracy_VINYL18)
     runCCheckerDetectorBasic("VINYL18.png", VINYL18);
 }
 
+TEST(CV_mcc_ccm_test, detect_Macbeth)
+{
+    string path = cvtest::findDataFile("mcc/mcc_ccm_test.jpg");
+    Mat img = imread(path, IMREAD_COLOR);
+    Ptr<CCheckerDetector> detector = CCheckerDetector::create();
+
+    // detect MCC24 board
+    ASSERT_TRUE(detector->process(img, MCC24, 1, false));
+
+    // read gold Macbeth corners
+    path = cvtest::findDataFile("mcc/mcc_ccm_test.yml");
+    FileStorage fs(path, FileStorage::READ);
+    ASSERT_TRUE(fs.isOpened());
+    FileNode node = fs["Macbeth_corners"];
+    ASSERT_FALSE(node.empty());
+    vector<Point2f> gold_corners;
+    node >> gold_corners;
+    Ptr<CChecker> checker = detector->getBestColorChecker();
+
+    // check Macbeth corners
+    vector<Point2f> corners = checker->getBox();
+    EXPECT_MAT_NEAR(gold_corners, corners, 3.6); // diff 3.57385 in ARM only
+
+    // read gold chartsRGB
+    node = fs["chartsRGB"];
+    Mat goldChartsRGB;
+    node >> goldChartsRGB;
+    fs.release();
+
+    // check chartsRGB
+    Mat chartsRGB = checker->getChartsRGB();
+    EXPECT_MAT_NEAR(goldChartsRGB.col(1), chartsRGB.col(1), 0.25); // diff 0.240634 in ARM only
+}
+
+TEST(CV_mcc_ccm_test, compute_ccm)
+{
+    // read gold chartsRGB
+    string path = cvtest::findDataFile("mcc/mcc_ccm_test.yml");
+    FileStorage fs(path, FileStorage::READ);
+    Mat chartsRGB;
+    FileNode node = fs["chartsRGB"];
+    node >> chartsRGB;
+
+    // compute CCM
+    ColorCorrectionModel model(chartsRGB.col(1).clone().reshape(3, chartsRGB.rows/3) / 255., COLORCHECKER_Macbeth);
+    model.run();
+
+    // read gold CCM
+    node = fs["ccm"];
+    ASSERT_FALSE(node.empty());
+    Mat gold_ccm;
+    node >> gold_ccm;
+    fs.release();
+
+    // check CCM
+    Mat ccm = model.getCCM();
+    EXPECT_MAT_NEAR(gold_ccm, ccm, 1e-8);
+
+    const double gold_loss = 4.6386569120323129;
+    // check loss
+    const double loss = model.getLoss();
+    EXPECT_NEAR(gold_loss, loss, 1e-8);
+}
+
+TEST(CV_mcc_ccm_test, infer)
+{
+    string path = cvtest::findDataFile("mcc/mcc_ccm_test.jpg");
+    Mat img = imread(path, IMREAD_COLOR);
+    // read gold calibrate img
+    path = cvtest::findDataFile("mcc/mcc_ccm_test_res.png");
+    Mat gold_img = imread(path);
+
+    // read gold chartsRGB
+    path = cvtest::findDataFile("mcc/mcc_ccm_test.yml");
+    FileStorage fs(path, FileStorage::READ);
+    Mat chartsRGB;
+    FileNode node = fs["chartsRGB"];
+    node >> chartsRGB;
+    fs.release();
+
+    // compute CCM
+    ColorCorrectionModel model(chartsRGB.col(1).clone().reshape(3, chartsRGB.rows/3) / 255., COLORCHECKER_Macbeth);
+    model.run();
+
+    // compute calibrate image
+    Mat calibratedImage;
+    cvtColor(img, calibratedImage, COLOR_BGR2RGB);
+    calibratedImage.convertTo(calibratedImage, CV_64F, 1. / 255.);
+    calibratedImage = model.infer(calibratedImage);
+    calibratedImage.convertTo(calibratedImage, CV_8UC3, 255.);
+    cvtColor(calibratedImage, calibratedImage, COLOR_RGB2BGR);
+    // check calibrated image
+    EXPECT_MAT_NEAR(gold_img, calibratedImage, 0.1);
+}
+
+
 } // namespace
 } // namespace opencv_test

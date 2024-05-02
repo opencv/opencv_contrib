@@ -611,9 +611,6 @@ CUDA_TEST_P(CheckInitParams, Reader)
 
 CUDA_TEST_P(Seek, Reader)
 {
-#if defined(WIN32)
-    throw SkipTestException("Test disabled on Windows until the FFMpeg wrapper is updated to include PR24012.");
-#endif
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
     // seek to a non key frame
     const int firstFrameIdx = 18;
@@ -660,13 +657,7 @@ CUDA_TEST_P(TransCode, H264ToH265)
     constexpr cv::cudacodec::ColorFormat colorFormat = cv::cudacodec::ColorFormat::NV_NV12;
     constexpr double fps = 25;
     const cudacodec::Codec codec = cudacodec::Codec::HEVC;
-    // required until PR for raw video encapsulation is merged and windows dll is updated
-#ifdef WIN32
-    const std::string ext = ".hevc";
-#else
-    // use this after update
     const std::string ext = ".mp4";
-#endif
     const std::string outputFile = cv::tempfile(ext.c_str());
     constexpr int nFrames = 5;
     Size frameSz;
@@ -743,13 +734,7 @@ CUDA_TEST_P(Write, Writer)
     const cudacodec::Codec codec = GET_PARAM(2);
     const double fps = GET_PARAM(3);
     const cv::cudacodec::ColorFormat colorFormat = GET_PARAM(4);
-    // required until PR for raw video encapsulation is merged and windows dll is updated
-#ifdef WIN32
-    const std::string ext = codec == cudacodec::Codec::H264 ? ".h264" : ".hevc";
-#else
-    // use this after update
     const std::string ext = ".mp4";
-#endif
     const std::string outputFile = cv::tempfile(ext.c_str());
     constexpr int nFrames = 5;
     Size frameSz;
@@ -827,13 +812,7 @@ CUDA_TEST_P(EncoderParams, Writer)
     const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
     constexpr double fps = 25.0;
     constexpr cudacodec::Codec codec = cudacodec::Codec::H264;
-    // required until PR for raw video encapsulation is merged and windows dll is updated
-#ifdef WIN32
-    const std::string ext = ".h264";
-#else
-    // use this after update
     const std::string ext = ".mp4";
-#endif
     const std::string outputFile = cv::tempfile(ext.c_str());
     Size frameSz;
     const int nFrames = max(params.gopLength, params.idrPeriod) + 1;

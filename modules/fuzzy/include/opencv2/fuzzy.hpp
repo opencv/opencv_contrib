@@ -52,19 +52,19 @@
 
 Namespace for all functions is `ft`. The module brings implementation of the last image processing algorithms based on fuzzy mathematics. Method are named based on the pattern `FT`_degree_dimension`_`method.
 
-  @{
+@{
     @defgroup f0_math Math with F0-transform support
 
-Fuzzy transform (\f$F^0\f$-transform) of the 0th degree transforms whole image to a matrix of its components. These components are used in latter computation where each of them represents average color of certain subarea.
+    Fuzzy transform (\f$F^0\f$-transform) of the 0th degree transforms whole image to a matrix of its components. These components are used in latter computation where each of them represents average color of certain subarea.
 
     @defgroup f1_math Math with F1-transform support
 
-Fuzzy transform (\f$F^1\f$-transform) of the 1th degree transforms whole image to a matrix of its components. Each component is polynomial of the 1th degree carrying information about average color and average gradient of certain subarea.
+    Fuzzy transform (\f$F^1\f$-transform) of the 1th degree transforms whole image to a matrix of its components. Each component is polynomial of the 1th degree carrying information about average color and average gradient of certain subarea.
 
     @defgroup f_image Fuzzy image processing
 
-Image proceesing based on fuzzy mathematics namely F-transform.
-   @}
+    Image proceesing based on fuzzy mathematics namely F-transform.
+@}
 
 */
 

@@ -10,5 +10,8 @@
 #include "opencv2/cann_call.hpp"
 #include "opencv2/cann_interface.hpp"
 #include "opencv2/cann_private.hpp"
+#include "opencv2/dvpp_call.hpp"
+#include "opencv2/ascendc_kernels.hpp"
+#define ALIGN_UP(num, align) (((num) + (align) - 1) & ~((align) - 1))
 
 #endif /* __OPENCV_PRECOMP_H__ */

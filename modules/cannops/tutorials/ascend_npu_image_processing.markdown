@@ -109,22 +109,3 @@ Results
 4. Upon applying the flip operation with a flip code of 0 (flipping around the x-axis), we achieve the final result:
 
    ![puppy_processed_normalized](./puppy_processed.jpg)
-
-
-
-## Usage Limitations
-
-While Ascend supports most commonly used operators, there are still some limitations that need to be addressed.
-
-- There is no strict limit on the size of the input image used for encoding; however, it depends on the available RAM size of your device.
-- Please note that not all data types (dtypes) are supported by every operator. The current dtype limitations are outlined in the following table. We are actively working on addressing these limitations through automatic dtype conversion in an upcoming commit.
-
-
-| Operator               | Supported Dtype                                              |
-| ---------------------- | ------------------------------------------------------------ |
-| multiply (with scale)  | float16,float32,int32                                        |
-| divide (with scale)    | float16,float,int32,int8,uint8                               |
-| bitwise add/or/xor/not | int32,int16,uint16                                           |
-| flip                   | float16,float,int64,int32,int16,uint16                       |
-| transpose              | float16,float,int64,int32,int16,int8,uint64,uint32,uint16,uint8,bool |
-| rotate                 | float16,float,int64,int32,int16,uint16                       |
