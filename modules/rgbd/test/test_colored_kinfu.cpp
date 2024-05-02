@@ -206,7 +206,7 @@ struct CubeSpheresScene : Scene
         Range range(0, frame.rows);
         parallel_for_(range, RenderInvoker<CubeSpheresScene>(frame, pose, reproj, depthFactor));
 
-        return std::move(frame);
+        return frame;
     }
 
     Mat rgb(Affine3f pose) override
@@ -217,7 +217,7 @@ struct CubeSpheresScene : Scene
         Range range(0, frame.rows);
         parallel_for_(range, RenderColorInvoker<CubeSpheresScene>(frame, pose, reproj, depthFactor));
 
-        return std::move(frame);
+        return frame;
     }
 
     std::vector<Affine3f> getPoses() override
@@ -313,7 +313,7 @@ struct RotatingScene : Scene
         Range range(0, frame.rows);
         parallel_for_(range, RenderInvoker<RotatingScene>(frame, pose, reproj, depthFactor));
 
-        return std::move(frame);
+        return frame;
     }
 
     Mat rgb(Affine3f pose) override
@@ -324,7 +324,7 @@ struct RotatingScene : Scene
         Range range(0, frame.rows);
         parallel_for_(range, RenderColorInvoker<RotatingScene>(frame, pose, reproj, depthFactor));
 
-        return std::move(frame);
+        return frame;
     }
 
     std::vector<Affine3f> getPoses() override
