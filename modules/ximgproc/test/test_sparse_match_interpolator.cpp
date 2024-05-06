@@ -17,7 +17,7 @@ Mat readOpticalFlow( const String& path )
 //    CV_Assert(sizeof(float) == 4);
     //FIXME: ensure right sizes of int and float - here and in writeOpticalFlow()
 
-    Mat_<Point2f> flow;
+    Mat flow;
     std::ifstream file(path.c_str(), std::ios_base::binary);
     if ( !file.good() )
         return flow; // no file - return empty matrix
@@ -32,7 +32,7 @@ Mat readOpticalFlow( const String& path )
     file.read((char*) &width, 4);
     file.read((char*) &height, 4);
 
-    flow.create(height, width);
+    flow.create(height, width, CV_32FC2);
 
     for ( int i = 0; i < flow.rows; ++i )
     {
@@ -47,7 +47,7 @@ Mat readOpticalFlow( const String& path )
                 return flow;
             }
 
-            flow(i, j) = u;
+            flow.at<Point2f>(i, j) = u;
         }
     }
     file.close();

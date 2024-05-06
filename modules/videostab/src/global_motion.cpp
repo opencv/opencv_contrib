@@ -82,7 +82,7 @@ namespace videostab
 {
 
 // does isotropic normalization
-static Mat normalizePoints(int npoints, Point2f *points)
+static Mat_<float> normalizePoints(int npoints, Point2f *points)
 {
     float cx = 0.f, cy = 0.f;
     for (int i = 0; i < npoints; ++i)
