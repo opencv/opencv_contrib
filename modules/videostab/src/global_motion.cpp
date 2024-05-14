@@ -120,21 +120,21 @@ static Mat_<float> normalizePoints(int npoints, Point2f *points)
 static Mat estimateGlobMotionLeastSquaresTranslation(
         int npoints, Point2f *points0, Point2f *points1, float *rmse)
 {
-    Mat_<float> M = Mat::eye(3, 3, CV_32F);
+    Mat M = Mat::eye(3, 3, CV_32FC1);
     for (int i = 0; i < npoints; ++i)
     {
-        M(0,2) += points1[i].x - points0[i].x;
-        M(1,2) += points1[i].y - points0[i].y;
+        M.at<float>(0,2) += points1[i].x - points0[i].x;
+        M.at<float>(1,2) += points1[i].y - points0[i].y;
     }
-    M(0,2) /= npoints;
-    M(1,2) /= npoints;
+    M.at<float>(0,2) /= npoints;
+    M.at<float>(1,2) /= npoints;
 
     if (rmse)
     {
         *rmse = 0;
         for (int i = 0; i < npoints; ++i)
-            *rmse += sqr(points1[i].x - points0[i].x - M(0,2)) +
-                     sqr(points1[i].y - points0[i].y - M(1,2));
+            *rmse += sqr(points1[i].x - points0[i].x - M.at<float>(0,2)) +
+                     sqr(points1[i].y - points0[i].y - M.at<float>(1,2));
         *rmse = std::sqrt(*rmse / npoints);
     }
 
@@ -194,16 +194,16 @@ static Mat estimateGlobMotionLeastSquaresRotation(
 
     // A*sin(alpha) + B*cos(alpha) = 0
     float C = std::sqrt(A*A + B*B);
-    Mat_<float> M = Mat::eye(3, 3, CV_32F);
+    Mat M = Mat::eye(3, 3, CV_32F);
     if ( C != 0 )
     {
         float sinAlpha = - B / C;
         float cosAlpha = A / C;
 
-        M(0,0) = cosAlpha;
-        M(1,1) = M(0,0);
-        M(0,1) = sinAlpha;
-        M(1,0) = - M(0,1);
+        M.at<float>(0,0) = cosAlpha;
+        M.at<float>(1,1) = cosAlpha;
+        M.at<float>(0,1) = sinAlpha;
+        M.at<float>(1,0) = - sinAlpha;
     }
 
     if (rmse)
@@ -213,8 +213,8 @@ static Mat estimateGlobMotionLeastSquaresRotation(
         {
             p0 = points0[i];
             p1 = points1[i];
-            *rmse += sqr(p1.x - M(0,0)*p0.x - M(0,1)*p0.y) +
-                     sqr(p1.y - M(1,0)*p0.x - M(1,1)*p0.y);
+            *rmse += sqr(p1.x - M.at<float>(0,0)*p0.x - M.at<float>(0,1)*p0.y) +
+                     sqr(p1.y - M.at<float>(1,0)*p0.x - M.at<float>(1,1)*p0.y);
         }
         *rmse = std::sqrt(*rmse / npoints);
     }
@@ -222,7 +222,7 @@ static Mat estimateGlobMotionLeastSquaresRotation(
     return M;
 }
 
-static Mat  estimateGlobMotionLeastSquaresRigid(
+static Mat estimateGlobMotionLeastSquaresRigid(
         int npoints, Point2f *points0, Point2f *points1, float *rmse)
 {
     Point2f mean0(0.f, 0.f);
@@ -250,15 +250,15 @@ static Mat  estimateGlobMotionLeastSquaresRigid(
         A(1,1) += pt1.y * pt0.y;
     }
 
-    Mat_<float> M = Mat::eye(3, 3, CV_32F);
+    Mat M = Mat::eye(3, 3, CV_32FC1);
 
     SVD svd(A);
     Mat_<float> R = svd.u * svd.vt;
     Mat tmp(M(Rect(0,0,2,2)));
     R.copyTo(tmp);
 
-    M(0,2) = mean1.x - R(0,0)*mean0.x - R(0,1)*mean0.y;
-    M(1,2) = mean1.y - R(1,0)*mean0.x - R(1,1)*mean0.y;
+    M.at<float>(0,2) = mean1.x - R(0,0)*mean0.x - R(0,1)*mean0.y;
+    M.at<float>(1,2) = mean1.y - R(1,0)*mean0.x - R(1,1)*mean0.y;
 
     if (rmse)
     {
@@ -267,8 +267,8 @@ static Mat  estimateGlobMotionLeastSquaresRigid(
         {
             pt0 = points0[i];
             pt1 = points1[i];
-            *rmse += sqr(pt1.x - M(0,0)*pt0.x - M(0,1)*pt0.y - M(0,2)) +
-                     sqr(pt1.y - M(1,0)*pt0.x - M(1,1)*pt0.y - M(1,2));
+            *rmse += sqr(pt1.x - M.at<float>(0,0)*pt0.x - M.at<float>(0,1)*pt0.y - M.at<float>(0,2)) +
+                     sqr(pt1.y - M.at<float>(1,0)*pt0.x - M.at<float>(1,1)*pt0.y - M.at<float>(1,2));
         }
         *rmse = std::sqrt(*rmse / npoints);
     }
@@ -404,7 +404,7 @@ Mat estimateGlobalMotionRansac(
     // best hypothesis
     std::vector<int> bestIndices(params.size);
 
-    Mat_<float> bestM;
+    Mat bestM;
     int ninliersMax = -1;
 
     RNG rng(0);
@@ -469,8 +469,8 @@ Mat estimateGlobalMotionRansac(
         {
             p0 = points0_[i];
             p1 = points1_[i];
-            x = bestM(0,0)*p0.x + bestM(0,1)*p0.y + bestM(0,2);
-            y = bestM(1,0)*p0.x + bestM(1,1)*p0.y + bestM(1,2);
+            x = bestM.at<float>(0,0)*p0.x + bestM.at<float>(0,1)*p0.y + bestM.at<float>(0,2);
+            y = bestM.at<float>(1,0)*p0.x + bestM.at<float>(1,1)*p0.y + bestM.at<float>(1,2);
             if (sqr(x - p1.x) + sqr(y - p1.y) < params.thresh * params.thresh)
             {
                 subset0[j] = p0;
@@ -505,7 +505,7 @@ Mat MotionEstimatorRansacL2::estimate(InputArray points0, InputArray points1, bo
     // find motion
 
     int ninliers = 0;
-    Mat_<float> M;
+    Mat M;
 
     if (motionModel() != MM_HOMOGRAPHY)
         M = estimateGlobalMotionRansac(
@@ -675,11 +675,11 @@ FromFileMotionReader::FromFileMotionReader(const String &path)
 
 Mat FromFileMotionReader::estimate(const Mat &/*frame0*/, const Mat &/*frame1*/, bool *ok)
 {
-    Mat_<float> M(3, 3);
+    Mat M(3, 3, CV_32FC1);
     bool ok_;
-    file_ >> M(0,0) >> M(0,1) >> M(0,2)
-          >> M(1,0) >> M(1,1) >> M(1,2)
-          >> M(2,0) >> M(2,1) >> M(2,2) >> ok_;
+    file_ >> M.at<float>(0,0) >> M.at<float>(0,1) >> M.at<float>(0,2)
+          >> M.at<float>(1,0) >> M.at<float>(1,1) >> M.at<float>(1,2)
+          >> M.at<float>(2,0) >> M.at<float>(2,1) >> M.at<float>(2,2) >> ok_;
     if (ok) *ok = ok_;
     return M;
 }
@@ -696,10 +696,11 @@ ToFileMotionWriter::ToFileMotionWriter(const String &path, Ptr<ImageMotionEstima
 Mat ToFileMotionWriter::estimate(const Mat &frame0, const Mat &frame1, bool *ok)
 {
     bool ok_;
-    Mat_<float> M = motionEstimator_->estimate(frame0, frame1, &ok_);
-    file_ << M(0,0) << " " << M(0,1) << " " << M(0,2) << " "
-          << M(1,0) << " " << M(1,1) << " " << M(1,2) << " "
-          << M(2,0) << " " << M(2,1) << " " << M(2,2) << " " << ok_ << std::endl;
+    Mat M = motionEstimator_->estimate(frame0, frame1, &ok_);
+    file_ << M.at<float>(0,0) << " " << M.at<float>(0,1) << " " << M.at<float>(0,2) << " "
+          << M.at<float>(1,0) << " " << M.at<float>(1,1) << " " << M.at<float>(1,2) << " "
+          << M.at<float>(2,0) << " " << M.at<float>(2,1) << " " << M.at<float>(2,2) << " "
+          << ok_ << std::endl;
     if (ok) *ok = ok_;
     return M;
 }

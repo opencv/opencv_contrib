@@ -158,8 +158,8 @@ struct Scene
 {
     virtual ~Scene() {}
     static Ptr<Scene> create(int nScene, Size sz, Matx33f _intr, float _depthFactor);
-    virtual Mat depth(Affine3f pose) = 0;
-    virtual Mat rgb(Affine3f pose) = 0;
+    virtual Mat_<float> depth(const Affine3f& pose) = 0;
+    virtual Mat_<Vec3f> rgb(const Affine3f& pose) = 0;
     virtual std::vector<Affine3f> getPoses() = 0;
 };
 
@@ -198,7 +198,7 @@ struct CubeSpheresScene : Scene
         return res;
     }
 
-    Mat depth(Affine3f pose) override
+    Mat_<float> depth(const Affine3f& pose) override
     {
         Mat_<float> frame(frameSize);
         Reprojector reproj(intr);
@@ -209,7 +209,7 @@ struct CubeSpheresScene : Scene
         return frame;
     }
 
-    Mat rgb(Affine3f pose) override
+    Mat_<Vec3f> rgb(const Affine3f& pose) override
     {
         Mat_<Vec3f> frame(frameSize);
         Reprojector reproj(intr);
@@ -305,7 +305,7 @@ struct RotatingScene : Scene
         return res;
     }
 
-    Mat depth(Affine3f pose) override
+    Mat_<float> depth(const Affine3f& pose) override
     {
         Mat_<float> frame(frameSize);
         Reprojector reproj(intr);
@@ -316,7 +316,7 @@ struct RotatingScene : Scene
         return frame;
     }
 
-    Mat rgb(Affine3f pose) override
+    Mat_<Vec3f> rgb(const Affine3f& pose) override
     {
         Mat_<Vec3f> frame(frameSize);
         Reprojector reproj(intr);

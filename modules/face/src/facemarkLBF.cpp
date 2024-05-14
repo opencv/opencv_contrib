@@ -671,11 +671,10 @@ Mat FacemarkLBFImpl::BBox::project(const Mat &shape) const {
 
 // Project relative shape to absolute shape binding to this bbox
 Mat FacemarkLBFImpl::BBox::reproject(const Mat &shape) const {
-    Mat_<double> res(shape.rows, shape.cols);
-    const Mat_<double> &shape_ = (Mat_<double>)shape;
+    Mat res(shape.rows, shape.cols, CV_64FC1);
     for (int i = 0; i < shape.rows; i++) {
-        res(i, 0) = shape_(i, 0)*x_scale + x_center;
-        res(i, 1) = shape_(i, 1)*y_scale + y_center;
+        res.at<double>(i, 0) = shape.at<double>(i, 0)*x_scale + x_center;
+        res.at<double>(i, 1) = shape.at<double>(i, 1)*y_scale + y_center;
     }
     return res;
 }
