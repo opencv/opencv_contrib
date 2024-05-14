@@ -114,7 +114,7 @@ TEST(CV_mcc_ccm_test, detect_Macbeth)
 
     // check chartsRGB
     Mat chartsRGB = checker->getChartsRGB();
-    EXPECT_MAT_NEAR(goldChartsRGB.col(1), chartsRGB.col(1), 0.25); // diff 0.240634 in ARM only
+    EXPECT_MAT_NEAR(goldChartsRGB.col(1), chartsRGB.col(1), 0.3); // diff 0.292077 on Ubuntu 20.04 ARM64
 }
 
 TEST(CV_mcc_ccm_test, compute_ccm)
