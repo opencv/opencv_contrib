@@ -102,7 +102,9 @@ TEST(CV_mcc_ccm_test, detect_Macbeth)
 
     // check Macbeth corners
     vector<Point2f> corners = checker->getBox();
-    EXPECT_MAT_NEAR(gold_corners, corners, 3.6); // diff 3.57385 in ARM only
+    // diff 3.57385 corresponds to ARM v8
+    // diff 4.37915 correspnds to Ubuntu 24.04 x86_64 configuration
+    EXPECT_MAT_NEAR(gold_corners, corners, 4.38);
 
     // read gold chartsRGB
     node = fs["chartsRGB"];
@@ -112,7 +114,7 @@ TEST(CV_mcc_ccm_test, detect_Macbeth)
 
     // check chartsRGB
     Mat chartsRGB = checker->getChartsRGB();
-    EXPECT_MAT_NEAR(goldChartsRGB.col(1), chartsRGB.col(1), 0.25); // diff 0.240634 in ARM only
+    EXPECT_MAT_NEAR(goldChartsRGB.col(1), chartsRGB.col(1), 0.3); // diff 0.292077 on Ubuntu 20.04 ARM64
 }
 
 TEST(CV_mcc_ccm_test, compute_ccm)

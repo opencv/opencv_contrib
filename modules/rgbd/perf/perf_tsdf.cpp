@@ -91,7 +91,7 @@ struct Scene
 {
     virtual ~Scene() {}
     static Ptr<Scene> create(Size sz, Matx33f _intr, float _depthFactor, bool onlySemisphere);
-    virtual Mat depth(Affine3f pose) = 0;
+    virtual Mat_<float> depth(const Affine3f& pose) = 0;
     virtual std::vector<Affine3f> getPoses() = 0;
 };
 
@@ -131,7 +131,7 @@ struct SemisphereScene : Scene
         return res;
     }
 
-    Mat depth(Affine3f pose) override
+    Mat_<float> depth(const Affine3f& pose) override
     {
         Mat_<float> frame(frameSize);
         Reprojector reproj(intr);
@@ -139,7 +139,7 @@ struct SemisphereScene : Scene
         Range range(0, frame.rows);
         parallel_for_(range, RenderInvoker<SemisphereScene>(frame, pose, reproj, depthFactor, onlySemisphere));
 
-        return std::move(frame);
+        return frame;
     }
 
     std::vector<Affine3f> getPoses() override
