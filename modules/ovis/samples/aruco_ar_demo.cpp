@@ -3,7 +3,7 @@
 #include <opencv2/videoio.hpp>
 
 #include <opencv2/ovis.hpp>
-#include <opencv2/aruco_detector.hpp>
+#include <opencv2/aruco.hpp>
 
 #include <iostream>
 
@@ -24,10 +24,12 @@ int main()
   const double focal_length = 800.0;
 
   // aruco
-  Ptr<aruco::Dictionary> adict = aruco::getPredefinedDictionary(aruco::DICT_4X4_50);
-  //Mat out_img;
-  //aruco::drawMarker(adict, 0, 400, out_img);
-  //imshow("marker", out_img);
+  aruco::Dictionary adict = aruco::getPredefinedDictionary(aruco::DICT_4X4_50);
+
+  aruco::ArucoDetector detector(adict);
+  Mat out_img;
+  adict.generateImageMarker(0, 400, out_img);
+  imshow("marker", out_img);
 
   // random calibration data, your mileage may vary
   Mat1d cm = Mat1d::zeros(3, 3); // init empty matrix
@@ -53,7 +55,7 @@ int main()
   while (ovis::waitKey(1) != KEY_ESCAPE) {
     cap.read(img);
     win->setBackground(img);
-    aruco::detectMarkers(img, adict, corners, ids);
+    detector.detectMarkers(img, corners, ids);
 
     waitKey(1);
 
