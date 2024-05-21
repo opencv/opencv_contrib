@@ -31,7 +31,7 @@ static Vector2 toOGRE_SS = Vector2(1, -1);
 
 WindowScene::~WindowScene() {}
 
-void _createTexture(const String& name, Mat image)
+void _createTexture(const String& name, Mat image, int mipmaps)
 {
     PixelFormat format;
     switch(image.type())
@@ -62,7 +62,7 @@ void _createTexture(const String& name, Mat image)
     if(!tex)
     {
         tex = texMgr.createManual(name, RESOURCEGROUP_NAME, TEX_TYPE_2D, image.cols, image.rows,
-                                  MIP_DEFAULT, format);
+                                  mipmaps, format);
     }
 
     PixelBox box(image.cols, image.rows, 1, format, image.ptr());
@@ -441,7 +441,7 @@ public:
 
         String name = sceneMgr->getName() + "_Background";
 
-        _createTexture(name, image.getMat());
+        _createTexture(name, image.getMat(), 0);
 
         // ensure bgplane is visible
         bgplane->setVisible(true);
@@ -808,7 +808,7 @@ public:
         String name = "_" + sceneMgr->getName() + "_DefaultBackground";
 
         Mat_<Vec3b> img = (Mat_<Vec3b>(2, 1) << Vec3b(2, 1, 1), Vec3b(240, 120, 120));
-        _createTexture(name, img);
+        _createTexture(name, img, 0);
 
         MaterialPtr mat = MaterialManager::getSingleton().create(name, RESOURCEGROUP_NAME);
         Pass* rpass = mat->getTechniques()[0]->getPasses()[0];
