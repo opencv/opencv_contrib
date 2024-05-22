@@ -47,10 +47,10 @@
 // this header for future compatibility
 
 
-/** @defgroup dnn Deep Neural Network module
+/** @defgroup dnnlegacy Deep Neural Network module function for Caffe and Darknet framework
   @{
     This module contains:
-        - API to read Caffe or Darkent models;
+        - API to read Caffe or Darknet models;
 
     Functionality of this module is designed only for forward pass computations (i.e. network testing).
     A network training is in principle not supported.
