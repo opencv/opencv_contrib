@@ -370,7 +370,7 @@ testing::internal::ParamGenerator< tuple<cv::dnn::Backend, cv::dnn::Target> > dn
 
     return testing::ValuesIn(targets);
 #else
-    return testing::ValuesIn(std::vector< tuple<Backend, Target> >());
+    return testing::ValuesIn(std::vector< tuple<cv::dnn::Backend, cv::dnn::Target> >());
 #endif
 }
 
