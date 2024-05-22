@@ -151,7 +151,12 @@ void cv::cuda::meanStdDev(InputArray src, OutputArray dst, Stream& stream)
     sz.width  = gsrc.cols;
     sz.height = gsrc.rows;
 
+#if (CUDA_VERSION >= 12040)
+    size_t bufSize;
+#else
     int bufSize;
+#endif
+
 #if (CUDA_VERSION <= 4020)
     nppSafeCall( nppiMeanStdDev8uC1RGetBufferHostSize(sz, &bufSize) );
 #else
@@ -162,7 +167,8 @@ void cv::cuda::meanStdDev(InputArray src, OutputArray dst, Stream& stream)
 #endif
 
     BufferPool pool(stream);
-    GpuMat buf = pool.getBuffer(1, bufSize, gsrc.type());
+    CV_Assert(bufSize <= std::numeric_limits<int>::max());
+    GpuMat buf = pool.getBuffer(1, static_cast<int>(bufSize), gsrc.type());
 
     // detail: https://github.com/opencv/opencv/issues/11063
     //NppStreamHandler h(StreamAccessor::getStream(stream));
@@ -227,7 +233,12 @@ void cv::cuda::meanStdDev(InputArray src, OutputArray dst, InputArray mask, Stre
     sz.width  = gsrc.cols;
     sz.height = gsrc.rows;
 
+#if (CUDA_VERSION >= 12040)
+    size_t bufSize;
+#else
     int bufSize;
+#endif
+
 #if (CUDA_VERSION <= 4020)
         nppSafeCall( nppiMeanStdDev8uC1MRGetBufferHostSize(sz, &bufSize) );
 #else
@@ -238,7 +249,8 @@ void cv::cuda::meanStdDev(InputArray src, OutputArray dst, InputArray mask, Stre
 #endif
 
     BufferPool pool(stream);
-    GpuMat buf = pool.getBuffer(1, bufSize, gsrc.type());
+    CV_Assert(bufSize <= std::numeric_limits<int>::max());
+    GpuMat buf = pool.getBuffer(1, static_cast<int>(bufSize), gsrc.type());
 
     if(gsrc.type() == CV_8UC1)
         nppSafeCall( nppiMean_StdDev_8u_C1MR(gsrc.ptr<Npp8u>(), static_cast<int>(gsrc.step), gmask.ptr<Npp8u>(), static_cast<int>(gmask.step),
