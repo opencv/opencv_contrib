@@ -72,6 +72,8 @@ Ptr<Filter> cv::cuda::createColumnSumFilter(int, int, int, int, int, Scalar) { t
 Ptr<Filter> cv::cuda::createMedianFilter(int srcType, int _windowSize, int _partitions){ throw_no_cuda(); return Ptr<Filter>();}
 
 #else
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 
 namespace
 {
@@ -1047,12 +1049,20 @@ Ptr<Filter> cv::cuda::createColumnSumFilter(int srcType, int dstType, int ksize,
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Median Filter
 
+// The CUB library is used for the Median Filter with Wavelet Matrix,
+// which has become a standard library since CUDA 11.
+#include "cuda/wavelet_matrix_feature_support_checks.h"
 
 
 namespace cv { namespace cuda { namespace device
 {
     void medianFiltering_gpu(const PtrStepSzb src, PtrStepSzb dst, PtrStepSzi devHist,
         PtrStepSzi devCoarseHist,int kernel, int partitions, cudaStream_t stream);
+
+#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+    template<typename T>
+    void medianFiltering_wavelet_matrix_gpu(const PtrStepSz<T> src, PtrStepSz<T> dst, int radius, const int num_channels, cudaStream_t stream);
+#endif
 }}}
 
 namespace
@@ -1074,7 +1084,15 @@ namespace
     MedianFilter::MedianFilter(int srcType, int _windowSize, int _partitions) :
         windowSize(_windowSize),partitions(_partitions)
     {
-        CV_Assert( srcType == CV_8UC1 );
+#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+        CV_Assert(srcType == CV_8UC1  || srcType == CV_8UC3  || srcType == CV_8UC4
+               || srcType == CV_16UC1 || srcType == CV_16UC3 || srcType == CV_16UC4
+               || srcType == CV_32FC1 || srcType == CV_32FC3 || srcType == CV_32FC4);
+#else
+        if (srcType != CV_8UC1) {
+            CV_Error(Error::StsNotImplemented, "If CUDA version is below 10, only implementations that support CV_8UC1 are available");
+        }
+#endif
         CV_Assert(windowSize>=3);
         CV_Assert(_partitions>=1);
 
@@ -1094,6 +1112,18 @@ namespace
         // Kernel needs to be half window size
         int kernel=windowSize/2;
 
+#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+        const int depth = src.depth();
+        if (depth == CV_8U) {
+            medianFiltering_wavelet_matrix_gpu<uint8_t>(src, dst, kernel, src.channels(), StreamAccessor::getStream(_stream));
+        } else if (depth == CV_16U) {
+            medianFiltering_wavelet_matrix_gpu<uint16_t>(src, dst, kernel, src.channels(), StreamAccessor::getStream(_stream));
+        } else if (depth == CV_32F) {
+            medianFiltering_wavelet_matrix_gpu<float>(src, dst, kernel, src.channels(), StreamAccessor::getStream(_stream));
+        } else {
+            CV_Assert(depth == CV_8U || depth == CV_16U || depth == CV_32F);
+        }
+#else
         CV_Assert(kernel < src.rows);
         CV_Assert(kernel < src.cols);
 
@@ -1107,6 +1137,7 @@ namespace
         devCoarseHist.setTo(0, _stream);
 
         medianFiltering_gpu(src,dst,devHist, devCoarseHist,kernel,partitions,StreamAccessor::getStream(_stream));
+# endif
     }
 }
 
