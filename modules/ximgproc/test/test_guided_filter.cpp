@@ -64,6 +64,16 @@ static Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)
     return dst;
 }
 
+static double laplacianVariance(Mat src)
+{
+    Mat laplacian;
+    Laplacian(src, laplacian, CV_64F);
+    Scalar mean, stddev;
+    meanStdDev(laplacian, mean, stddev);
+    double variance = stddev.val[0] * stddev.val[0];
+    return variance;
+}
+
 class GuidedFilterRefImpl : public GuidedFilter
 {
     int height, width, rad, chNum;
@@ -347,6 +357,46 @@ TEST_P(GuidedFilterTest, accuracy)
 
         EXPECT_LE(normInf, 1.0);
         EXPECT_LE(normL2, 1.0/64.0);
+    }
+}
+
+TEST_P(GuidedFilterTest, accuracyFastGuidedFilter)
+{
+    int radius = 8;
+    double eps = 1;
+
+    GFParams params = GetParam();
+    string guideFileName = get<1>(params);
+    string srcFileName = get<2>(params);
+    int guideCnNum = 3;
+    int srcCnNum = get<0>(params);
+
+    Mat guide = imread(getOpenCVExtraDir() + guideFileName);
+    Mat src = imread(getOpenCVExtraDir() + srcFileName);
+    ASSERT_TRUE(!guide.empty() && !src.empty());
+
+    Size dstSize(guide.cols, guide.rows);
+    guide = convertTypeAndSize(guide, CV_MAKE_TYPE(guide.depth(), guideCnNum), dstSize);
+    src = convertTypeAndSize(src, CV_MAKE_TYPE(src.depth(), srcCnNum), dstSize);
+    Mat outputRef;
+    ximgproc::guidedFilter(guide, src, outputRef, radius, eps);
+
+    for (double scale : {1./2, 1./3, 1./4}) {
+        Mat outputFastGuidedFilter;
+        ximgproc::guidedFilter(guide, src, outputFastGuidedFilter, radius, eps, -1, scale);
+
+        Mat guideNaiveDownsampled, srcNaiveDownsampled, outputNaiveDownsampled;
+        resize(guide, guideNaiveDownsampled, {}, scale, scale, INTER_LINEAR);
+        resize(src, srcNaiveDownsampled, {}, scale, scale, INTER_LINEAR);
+        ximgproc::guidedFilter(guideNaiveDownsampled, srcNaiveDownsampled, outputNaiveDownsampled, radius, eps);
+        resize(outputNaiveDownsampled, outputNaiveDownsampled, dstSize, 0, 0, INTER_LINEAR);
+
+        double laplacianVarianceFastGuidedFilter = laplacianVariance(outputFastGuidedFilter);
+        double laplacianVarianceNaiveDownsampled = laplacianVariance(outputNaiveDownsampled);
+        EXPECT_GT(laplacianVarianceFastGuidedFilter, laplacianVarianceNaiveDownsampled);
+
+        double normL2 = cv::norm(outputFastGuidedFilter, outputRef, NORM_L2) / guide.total();
+        EXPECT_LE(normL2, 1.0/48.0/scale);
     }
 }
 
