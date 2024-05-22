@@ -43,7 +43,7 @@
 #define OPENCV_DNNLEGACY_HPP
 
 // This is an umbrella header to include into you project.
-// We are free to change headers layout in dnn subfolder, so please include
+// We are free to change headers layout in dnnlegacy subfolder, so please include
 // this header for future compatibility
 
 

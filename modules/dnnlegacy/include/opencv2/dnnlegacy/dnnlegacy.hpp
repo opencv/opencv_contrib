@@ -59,6 +59,8 @@ namespace dnnlegacy {
         Importer importer(net, std::forward<Args>(args)...);
         return net;
     }
+//! @addtogroup dnn
+//! @{
 
     /** @brief Reads a network model stored in <a href="https://pjreddie.com/darknet/">Darknet</a> model files.
     *  @param cfgFile      path to the .cfg file with text description of the network architecture.
@@ -127,6 +129,7 @@ namespace dnnlegacy {
      */
     CV_EXPORTS_W void shrinkCaffeModel(CV_WRAP_FILE_PATH const String& src, CV_WRAP_FILE_PATH const String& dst,
         const std::vector<String>& layersTypes = std::vector<String>());
+//! @}
 }
 }
 
