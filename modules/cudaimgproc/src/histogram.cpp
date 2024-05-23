@@ -281,8 +281,13 @@ cv::Ptr<cv::cuda::CLAHE> cv::cuda::createCLAHE(double clipLimit, cv::Size tileGr
 
 namespace
 {
+#if (CUDA_VERSION >= 12040)
+    typedef NppStatus (*get_buf_size_c1_t)(NppiSize oSizeROI, int nLevels, size_t* hpBufferSize);
+    typedef NppStatus (*get_buf_size_c4_t)(NppiSize oSizeROI, int nLevels[], size_t* hpBufferSize);
+#else
     typedef NppStatus (*get_buf_size_c1_t)(NppiSize oSizeROI, int nLevels, int* hpBufferSize);
     typedef NppStatus (*get_buf_size_c4_t)(NppiSize oSizeROI, int nLevels[], int* hpBufferSize);
+#endif
 
     template<int SDEPTH> struct NppHistogramEvenFuncC1
     {
@@ -315,7 +320,11 @@ namespace
             sz.width = src.cols;
             sz.height = src.rows;
 
+#if (CUDA_VERSION >= 12040)
+            size_t buf_size;
+#else
             int buf_size;
+#endif
             get_buf_size(sz, levels, &buf_size);
 
             BufferPool pool(stream);
@@ -349,7 +358,11 @@ namespace
 
             Npp32s* pHist[] = {hist[0].ptr<Npp32s>(), hist[1].ptr<Npp32s>(), hist[2].ptr<Npp32s>(), hist[3].ptr<Npp32s>()};
 
+#if (CUDA_VERSION >= 12040)
+            size_t buf_size;
+#else
             int buf_size;
+#endif
             get_buf_size(sz, levels, &buf_size);
 
             BufferPool pool(stream);
@@ -419,7 +432,11 @@ namespace
             sz.width = src.cols;
             sz.height = src.rows;
 
+#if (CUDA_VERSION >= 12040)
+            size_t buf_size;
+#else
             int buf_size;
+#endif
             get_buf_size(sz, levels.cols, &buf_size);
 
             BufferPool pool(stream);
@@ -460,7 +477,11 @@ namespace
             sz.width = src.cols;
             sz.height = src.rows;
 
+#if (CUDA_VERSION >= 12040)
+            size_t buf_size;
+#else
             int buf_size;
+#endif
             get_buf_size(sz, nLevels, &buf_size);
 
             BufferPool pool(stream);
