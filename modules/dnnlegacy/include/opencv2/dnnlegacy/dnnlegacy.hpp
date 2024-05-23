@@ -59,7 +59,7 @@ namespace dnnlegacy {
         Importer importer(net, std::forward<Args>(args)...);
         return net;
     }
-//! @addtogroup dnn
+//! @addtogroup dnnlegacy
 //! @{
 
     /** @brief Reads a network model stored in <a href="https://pjreddie.com/darknet/">Darknet</a> model files.
