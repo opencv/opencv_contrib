@@ -160,6 +160,7 @@ namespace block_reduce_key_val_detail
         data = smem[tid];
     }
 
+#if (CUDART_VERSION < 12040)
     template <typename VP0, typename VP1, typename VP2, typename VP3, typename VP4, typename VP5, typename VP6, typename VP7, typename VP8, typename VP9,
               typename VR0, typename VR1, typename VR2, typename VR3, typename VR4, typename VR5, typename VR6, typename VR7, typename VR8, typename VR9>
     __device__ __forceinline__ void loadToSmem(const tuple<VP0, VP1, VP2, VP3, VP4, VP5, VP6, VP7, VP8, VP9>& smem,
@@ -241,6 +242,67 @@ namespace block_reduce_key_val_detail
     {
         For<0, tuple_size<tuple<VP0, VP1, VP2, VP3, VP4, VP5, VP6, VP7, VP8, VP9> >::value>::merge(skeys, key, svals, val, cmp, tid, delta);
     }
+#else
+    template <typename... VP, typename... VR>
+    __device__ __forceinline__ void loadToSmem(const tuple<VP...>& smem, const tuple<VR...>& data, uint tid)
+    {
+        For<0, tuple_size<tuple<VP...> >::value>::loadToSmem(smem, data, tid);
+    }
+
+    template <typename... VP, typename... VR>
+    __device__ __forceinline__ void loadFromSmem(const tuple<VP...>& smem, const tuple<VR...>& data, uint tid)
+    {
+        For<0, tuple_size<tuple<VP...> >::value>::loadFromSmem(smem, data, tid);
+    }
+
+    // copyVals
+
+    template <typename V>
+    __device__ __forceinline__ void copyVals(volatile V* svals, V& val, uint tid, uint delta)
+    {
+        svals[tid] = val = svals[tid + delta];
+    }
+
+    template <typename... VP, typename... VR>
+    __device__ __forceinline__ void copyVals(const tuple<VP...>& svals, const tuple<VR...>& val, uint tid, uint delta)
+    {
+        For<0, tuple_size<tuple<VP...> >::value>::copy(svals, val, tid, delta);
+    }
+
+    // merge
+
+    template <typename K, typename V, class Cmp>
+    __device__ void merge(volatile K* skeys, K& key, volatile V* svals, V& val, const Cmp& cmp, uint tid, uint delta)
+    {
+        K reg = skeys[tid + delta];
+
+        if (cmp(reg, key))
+        {
+            skeys[tid] = key = reg;
+            copyVals(svals, val, tid, delta);
+        }
+    }
+
+    template <typename K, typename... VP, typename... VR, class Cmp>
+    __device__ void merge(volatile K* skeys, K& key, const tuple<VP...>& svals, const tuple<VR...>& val, const Cmp& cmp, uint tid, uint delta)
+    {
+        K reg = skeys[tid + delta];
+
+        if (cmp(reg, key))
+        {
+            skeys[tid] = key = reg;
+            copyVals(svals, val, tid, delta);
+        }
+    }
+
+    template <typename... KP, typename... KR, typename... VP, typename... VR, class... Cmp>
+    __device__ __forceinline__ void merge(const tuple<KP...>& skeys, const tuple<KR...>& key,
+                                          const tuple<VP...>& svals, const tuple<VR...>& val,
+                                          const tuple<Cmp...>& cmp, uint tid, uint delta)
+    {
+        For<0, tuple_size<tuple<VP...> >::value>::merge(skeys, key, svals, val, cmp, tid, delta);
+    }
+#endif
 
     // Generic
 

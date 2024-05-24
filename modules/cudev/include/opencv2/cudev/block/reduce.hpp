@@ -134,7 +134,7 @@ template <int N, typename... P, typename... R, typename... Op>
 __device__ __forceinline__ void blockReduce(const tuple<P...>& smem,
                                             const tuple<R...>& val,
                                             uint tid,
-                                            const tuple<Op..>& op)
+                                            const tuple<Op...>& op)
 {
     block_reduce_detail::Dispatcher<N>::reductor::template reduce<const tuple<P...>&, const tuple<R...>&, const tuple<Op...>&>(smem, val, tid, op);
 }

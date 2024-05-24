@@ -229,7 +229,7 @@ namespace block_reduce_detail
         For<0, tuple_size<tuple<P...> >::value>::loadFromSmem(smem, val, tid);
     }
 
-    template <typename P..., typename... R, class... Op>
+    template <typename... P, typename... R, class... Op>
     __device__ __forceinline__ void merge(const tuple<P...>& smem, const tuple<R...>& val, uint tid, uint delta, const tuple<Op...>& op)
     {
         For<0, tuple_size<tuple<P...> >::value>::merge(smem, val, tid, delta, op);
