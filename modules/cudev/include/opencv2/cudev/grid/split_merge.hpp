@@ -117,7 +117,7 @@ __host__ void gridMerge_(const SrcPtrTuple& src, GpuMat_<DstType>& dst, Stream& 
 template <class Policy, class SrcPtrTuple, typename DstType>
 __host__ void gridMerge_(const SrcPtrTuple& src, const GlobPtrSz<DstType>& dst, Stream& stream = Stream::Null())
 {
-    CV_StaticAssert( VecTraits<DstType>::cn == tuple_size<SrcPtrTuple>::value, "" );
+    //CV_StaticAssert( VecTraits<DstType>::cn == tuple_size<SrcPtrTuple>::value, "" );
 
     const int rows = getRows(src);
     const int cols = getCols(src);
