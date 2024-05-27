@@ -49,6 +49,7 @@
 #include "../common.hpp"
 #include "../util/tuple.hpp"
 #include "traits.hpp"
+#include <cuda/std/tuple>
 
 namespace cv { namespace cudev {
 
@@ -174,5 +175,26 @@ template <class PtrTuple> struct PtrTraits< ZipPtrSz<PtrTuple> > : PtrTraitsBase
 //! @}
 
 }}
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+template< class... Types >
+struct tuple_size< cv::cudev::ZipPtr<tuple<Types...> > >
+: tuple_size<tuple<Types...> > { };
+
+template< class... Types >
+struct tuple_size< cv::cudev::ZipPtrSz<tuple<Types...> > >
+: tuple_size<tuple<Types...> > { };
+
+
+template<size_t N, class... Types >
+struct tuple_element<N, cv::cudev::ZipPtr<tuple<Types...> > >
+: tuple_element<N, tuple<Types...> > { };
+
+template<size_t N, class... Types >
+struct tuple_element<N, cv::cudev::ZipPtrSz<tuple<Types...> > >
+: tuple_element<N, tuple<Types...> > { };
+
+_LIBCUDACXX_END_NAMESPACE_STD
 
 #endif
