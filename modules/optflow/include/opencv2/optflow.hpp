@@ -114,8 +114,6 @@ CV_EXPORTS_W void calcOpticalFlowSF( InputArray from, InputArray to, OutputArray
                                      int upscale_averaging_radius, double upscale_sigma_dist,
                                      double upscale_sigma_color, double speed_up_thr );
 
-
-
 /** @brief Fast dense optical flow based on PyrLK sparse matches interpolation.
 
 @param from first 8-bit 3-channel or 1-channel image.
