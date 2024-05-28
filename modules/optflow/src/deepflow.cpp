@@ -52,16 +52,16 @@ class OpticalFlowDeepFlow: public DenseOpticalFlow
 {
 public:
     OpticalFlowDeepFlow(
-    float alpha = 1.0f,
-    float delta = 0.5f,
-    float gamma = 5.0f,
-    float omega = 1.6f,
-    float sigma = 0.6f,
-    int minSize = 25,
-    float downscaleFactor = 0.95f,
-    int fixedPointIterations = 5,
-    int sorIterations = 25
-);
+        float alpha = 1.0f,
+        float delta = 0.5f,
+        float gamma = 5.0f,
+        float omega = 1.6f,
+        float sigma = 0.6f,
+        int minSize = 25,
+        float downscaleFactor = 0.95f,
+        int fixedPointIterations = 5,
+        int sorIterations = 25
+    );
 
     void calc( InputArray I0, InputArray I1, InputOutputArray flow ) CV_OVERRIDE;
     void collectGarbage() CV_OVERRIDE;
