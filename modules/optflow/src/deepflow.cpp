@@ -41,6 +41,7 @@
  //M*/
 
 #include "precomp.hpp"
+#include "opencv2/optflow.hpp"
 
 namespace cv
 {
@@ -50,7 +51,17 @@ namespace optflow
 class OpticalFlowDeepFlow: public DenseOpticalFlow
 {
 public:
-    OpticalFlowDeepFlow();
+    OpticalFlowDeepFlow(
+    float alpha = 1.0f,
+    float delta = 0.5f,
+    float gamma = 5.0f,
+    float omega = 1.6f,
+    float sigma = 0.6f,
+    int minSize = 25,
+    float downscaleFactor = 0.95f,
+    int fixedPointIterations = 5,
+    int sorIterations = 25
+);
 
     void calc( InputArray I0, InputArray I1, InputOutputArray flow ) CV_OVERRIDE;
     void collectGarbage() CV_OVERRIDE;
@@ -74,22 +85,31 @@ private:
 
 };
 
-OpticalFlowDeepFlow::OpticalFlowDeepFlow()
+OpticalFlowDeepFlow::OpticalFlowDeepFlow(
+    float alpha,
+    float delta,
+    float gamma,
+    float omega,
+    float sigma,
+    int minSize,
+    float downscaleFactor,
+    int fixedPointIterations,
+    int sorIterations
+)
 {
-    // parameters
-    sigma = 0.6f;
-    minSize = 25;
-    downscaleFactor = 0.95f;
-    fixedPointIterations = 5;
-    sorIterations = 25;
-    alpha = 1.0f;
-    delta = 0.5f;
-    gamma = 5.0f;
-    omega = 1.6f;
+    this->sigma = sigma;
+    this->minSize = minSize;
+    this->downscaleFactor = downscaleFactor;
+    this->fixedPointIterations = fixedPointIterations;
+    this->sorIterations = sorIterations;
+    this->alpha = alpha;
+    this->delta = delta;
+    this->gamma = gamma;
+    this->omega = omega;
 
     //consts
-    interpolationType = INTER_LINEAR;
-    maxLayers = 200;
+    this->interpolationType = INTER_LINEAR;
+    this->maxLayers = 200;
 }
 
 std::vector<Mat> OpticalFlowDeepFlow::buildPyramid( const Mat& src )
@@ -170,7 +190,11 @@ void OpticalFlowDeepFlow::calc( InputArray _I0, InputArray _I1, InputOutputArray
 
 void OpticalFlowDeepFlow::collectGarbage() {}
 
-Ptr<DenseOpticalFlow> createOptFlow_DeepFlow() { return makePtr<OpticalFlowDeepFlow>(); }
+Ptr<DenseOpticalFlow> createOptFlow_DeepFlow(
+    float alpha, float delta, float gamma, float omega, float sigma, int minSize,
+    float downscaleFactor, int fixedPointIterations, int sorIterations) {
+return Ptr<OpticalFlowDeepFlow>(new OpticalFlowDeepFlow(alpha, delta, gamma, omega, sigma, minSize, downscaleFactor, fixedPointIterations, sorIterations)); }
+
 
 }//optflow
 }//cv

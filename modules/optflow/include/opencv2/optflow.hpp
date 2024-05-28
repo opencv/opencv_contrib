@@ -114,6 +114,8 @@ CV_EXPORTS_W void calcOpticalFlowSF( InputArray from, InputArray to, OutputArray
                                      int upscale_averaging_radius, double upscale_sigma_dist,
                                      double upscale_sigma_color, double speed_up_thr );
 
+
+
 /** @brief Fast dense optical flow based on PyrLK sparse matches interpolation.
 
 @param from first 8-bit 3-channel or 1-channel image.
@@ -162,7 +164,9 @@ Iterations of Succesive Over-Relaxation (solver)
 -   member float omega
 Relaxation factor in SOR
  */
-CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_DeepFlow();
+CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_DeepFlow(
+    float alpha = 1.0f, float delta = 0.5f, float gamma = 5.0f, float omega = 1.6f, float sigma = 0.6f, int minSize = 25,
+    float downscaleFactor = 0.95f, int fixedPointIterations = 5, int sorIterations = 25);
 
 //! Additional interface to the SimpleFlow algorithm - calcOpticalFlowSF()
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SimpleFlow();
