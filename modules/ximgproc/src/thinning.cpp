@@ -190,11 +190,13 @@ void thinning(InputArray input, OutputArray output, int thinningType){
     processed /= 255;
 
     Mat prev = processed.clone();
+    Mat diff;
 
     do {
         thinningIteration(processed, 0, thinningType);
         thinningIteration(processed, 1, thinningType);
-        if (!hasNonZero(processed - prev)) break;
+        absdiff(processed, prev, diff);
+        if (!hasNonZero(diff)) break;
         processed.copyTo(prev);
     }
     while (true);
