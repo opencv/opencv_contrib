@@ -70,7 +70,7 @@ public:
         GpuMat_<T> d_src2(src2);
 
         GpuMat_<typename MakeVec<T, 2>::type> dst;
-        std::vector<GlobPtrSz<T> > d_src = {globPtr(d_src1), globPtr(d_src2)};
+        std::array<GlobPtrSz<T>, 2 > d_src = {globPtr(d_src1), globPtr(d_src2)};
         gridMerge(d_src, dst);
 
         Mat dst_gold;
@@ -94,7 +94,7 @@ public:
         GpuMat_<T> d_src2(src2);
         GpuMat_<T> d_src3(src3);
 
-        std::vector<GlobPtrSz<T> > d_src = {globPtr(d_src1), globPtr(d_src2), globPtr(d_src3)};
+        std::array<GlobPtrSz<T>, 3 > d_src = {globPtr(d_src1), globPtr(d_src2), globPtr(d_src3)};
 
         GpuMat_<typename MakeVec<T, 3>::type> dst;
         gridMerge(d_src, dst);

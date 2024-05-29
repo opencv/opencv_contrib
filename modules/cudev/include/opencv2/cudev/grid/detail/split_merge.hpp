@@ -162,8 +162,8 @@ namespace grid_split_merge_detail
             mergeC2<Policy>(get<0>(src), get<1>(src), dst, mask, rows, cols, stream);
         }
 
-        template <typename VecType, typename DstType, class MaskPtr>
-        __host__ static void mergeVector(const std::vector<VecType>& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+        template <class SrcPtrArray, typename DstType, class MaskPtr>
+        __host__ static void mergeArray(const SrcPtrArray& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
             mergeC2<Policy>(src[0], src[1], dst, mask, rows, cols, stream);
         }
@@ -178,8 +178,8 @@ namespace grid_split_merge_detail
             mergeC3<Policy>(get<0>(src), get<1>(src), get<2>(src), dst, mask, rows, cols, stream);
         }
 
-        template <typename VecType, typename DstType, class MaskPtr>
-        __host__ static void mergeVector(const std::vector<VecType>& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+        template <class SrcPtrArray, typename DstType, class MaskPtr>
+        __host__ static void mergeArray(const SrcPtrArray& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
             mergeC3<Policy>(src[0], src[1], src[2], dst, mask, rows, cols, stream);
         }
@@ -193,8 +193,8 @@ namespace grid_split_merge_detail
             mergeC4<Policy>(get<0>(src), get<1>(src), get<2>(src), get<3>(src), dst, mask, rows, cols, stream);
         }
 
-        template <typename VecType, typename DstType, class MaskPtr>
-        __host__ static void mergeVector(const std::vector<VecType>& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+        template <class SrcPtrArray, typename DstType, class MaskPtr>
+        __host__ static void mergeArray(const SrcPtrArray& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
             mergeC4<Policy>(src[0], src[1], src[2], src[3], dst, mask, rows, cols, stream);
         }

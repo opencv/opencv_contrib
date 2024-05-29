@@ -131,8 +131,8 @@ __host__ void gridMerge_(const SrcPtrTuple& src, const GlobPtrSz<DstType>& dst, 
                                                                                    StreamAccessor::getStream(stream));
 }
 
-template <class Policy, typename VecType, typename DstType, class MaskPtr>
-__host__ void gridMergeVector_(const std::vector<VecType>& src, GpuMat_<DstType>& dst, const MaskPtr& mask, Stream& stream = Stream::Null())
+template <class Policy, class ArrayType, size_t ArraySize, typename DstType, class MaskPtr>
+__host__ void gridMergeArray_(const std::array<ArrayType, ArraySize>& src, GpuMat_<DstType>& dst, const MaskPtr& mask, Stream& stream = Stream::Null())
 {
     CV_Assert( VecTraits<DstType>::cn == src.size() );
 
@@ -143,15 +143,15 @@ __host__ void gridMergeVector_(const std::vector<VecType>& src, GpuMat_<DstType>
 
     dst.create(rows, cols);
 
-    grid_split_merge_detail::MergeImpl<VecTraits<DstType>::cn, Policy>::mergeVector(src,
+    grid_split_merge_detail::MergeImpl<VecTraits<DstType>::cn, Policy>::mergeArray(src,
                                                                                    shrinkPtr(dst),
                                                                                    shrinkPtr(mask),
                                                                                    rows, cols,
                                                                                    StreamAccessor::getStream(stream));
 }
 
-template <class Policy, typename VecType, typename DstType, class MaskPtr>
-__host__ void gridMergeVector_(const std::vector<VecType>& src, const GlobPtrSz<DstType>& dst, const MaskPtr& mask, Stream& stream = Stream::Null())
+template <class Policy, class ArrayType, size_t ArraySize, typename DstType, class MaskPtr>
+__host__ void gridMergeArray_(const std::array<ArrayType, ArraySize>& src, const GlobPtrSz<DstType>& dst, const MaskPtr& mask, Stream& stream = Stream::Null())
 {
     CV_Assert( VecTraits<DstType>::cn == src.size() );
 
@@ -161,15 +161,15 @@ __host__ void gridMergeVector_(const std::vector<VecType>& src, const GlobPtrSz<
     CV_Assert( getRows(dst) == rows && getCols(dst) == cols );
     CV_Assert( getRows(mask) == rows && getCols(mask) == cols );
 
-    grid_split_merge_detail::MergeImpl<VecTraits<DstType>::cn, Policy>::mergeVector(src,
+    grid_split_merge_detail::MergeImpl<VecTraits<DstType>::cn, Policy>::mergeArray(src,
                                                                                    shrinkPtr(dst),
                                                                                    shrinkPtr(mask),
                                                                                    rows, cols,
                                                                                    StreamAccessor::getStream(stream));
 }
 
-template <class Policy, typename VecType, typename DstType>
-__host__ void gridMergeVector_(const std::vector<VecType>& src, GpuMat_<DstType>& dst, Stream& stream = Stream::Null())
+template <class Policy, class ArrayType, size_t ArraySize, typename DstType>
+__host__ void gridMergeArray_(const std::array<ArrayType, ArraySize>& src, GpuMat_<DstType>& dst, Stream& stream = Stream::Null())
 {
     CV_Assert( VecTraits<DstType>::cn == src.size() );
 
@@ -178,15 +178,15 @@ __host__ void gridMergeVector_(const std::vector<VecType>& src, GpuMat_<DstType>
 
     dst.create(rows, cols);
 
-    grid_split_merge_detail::MergeImpl<VecTraits<DstType>::cn, Policy>::mergeVector(src,
+    grid_split_merge_detail::MergeImpl<VecTraits<DstType>::cn, Policy>::mergeArray(src,
                                                                                    shrinkPtr(dst),
                                                                                    WithOutMask(),
                                                                                    rows, cols,
                                                                                    StreamAccessor::getStream(stream));
 }
 
-template <class Policy, typename VecType, typename DstType>
-__host__ void gridMergeVector_(const std::vector<VecType>& src, const GlobPtrSz<DstType>& dst, Stream& stream = Stream::Null())
+template <class Policy, class ArrayType, size_t ArraySize, typename DstType>
+__host__ void gridMergeArray_(const std::array<ArrayType, ArraySize>& src, const GlobPtrSz<DstType>& dst, Stream& stream = Stream::Null())
 {
     CV_Assert( VecTraits<DstType>::cn == src.size() );
 
@@ -195,7 +195,7 @@ __host__ void gridMergeVector_(const std::vector<VecType>& src, const GlobPtrSz<
 
     CV_Assert( getRows(dst) == rows && getCols(dst) == cols );
 
-    grid_split_merge_detail::MergeImpl<VecTraits<DstType>::cn, Policy>::mergeVector(src,
+    grid_split_merge_detail::MergeImpl<VecTraits<DstType>::cn, Policy>::mergeArray(src,
                                                                                    shrinkPtr(dst),
                                                                                    WithOutMask(),
                                                                                    rows, cols,
@@ -596,28 +596,28 @@ __host__ void gridMerge(const SrcPtrTuple& src, const GlobPtrSz<DstType>& dst, S
     gridMerge_<DefaultSplitMergePolicy>(src, dst, stream);
 }
 
-template <typename VecType, typename DstType, class MaskPtr>
-__host__ void gridMergeVector(const std::vector<VecType>& src, GpuMat_<DstType>& dst, const MaskPtr& mask, Stream& stream = Stream::Null())
+template <class ArrayType, size_t ArraySize, typename DstType, class MaskPtr>
+__host__ void gridMergeArray(const std::array<ArrayType, ArraySize>& src, GpuMat_<DstType>& dst, const MaskPtr& mask, Stream& stream = Stream::Null())
 {
-    gridMergeVector_<DefaultSplitMergePolicy>(src, dst, mask, stream);
+    gridMergeArray_<DefaultSplitMergePolicy>(src, dst, mask, stream);
 }
 
-template <typename VecType, typename DstType, class MaskPtr>
-__host__ void gridMerge(const std::vector<VecType>& src, const GlobPtrSz<DstType>& dst, const MaskPtr& mask, Stream& stream = Stream::Null())
+template <class ArrayType, size_t ArraySize, typename DstType, class MaskPtr>
+__host__ void gridMerge(const std::array<ArrayType, ArraySize>& src, const GlobPtrSz<DstType>& dst, const MaskPtr& mask, Stream& stream = Stream::Null())
 {
-    gridMergeVector_<DefaultSplitMergePolicy>(src, dst, mask, stream);
+    gridMergeArray_<DefaultSplitMergePolicy>(src, dst, mask, stream);
 }
 
-template <typename VecType, typename DstType>
-__host__ void gridMerge(const std::vector<VecType>& src, GpuMat_<DstType>& dst, Stream& stream = Stream::Null())
+template <class ArrayType, size_t ArraySize, typename DstType>
+__host__ void gridMerge(const std::array<ArrayType, ArraySize>& src, GpuMat_<DstType>& dst, Stream& stream = Stream::Null())
 {
-    gridMergeVector_<DefaultSplitMergePolicy>(src, dst, stream);
+    gridMergeArray_<DefaultSplitMergePolicy>(src, dst, stream);
 }
 
-template <typename VecType, typename DstType>
-__host__ void gridMerge(const std::vector<VecType>& src, const GlobPtrSz<DstType>& dst, Stream& stream = Stream::Null())
+template <class ArrayType, size_t ArraySize, typename DstType>
+__host__ void gridMerge(const std::array<ArrayType, ArraySize>& src, const GlobPtrSz<DstType>& dst, Stream& stream = Stream::Null())
 {
-    gridMergeVector_<DefaultSplitMergePolicy>(src, dst, stream);
+    gridMergeArray_<DefaultSplitMergePolicy>(src, dst, stream);
 }
 
 template <class SrcPtr, typename DstType, class MaskPtr>

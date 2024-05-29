@@ -67,7 +67,7 @@ namespace
     {
         static void call(const GpuMat* src, GpuMat& dst, Stream& stream)
         {
-            const std::vector<GlobPtrSz<T>> d_src = {globPtr<T>(src[0]), globPtr<T>(src[1])};
+            const std::array<GlobPtrSz<T>, 2> d_src = {globPtr<T>(src[0]), globPtr<T>(src[1])};
             gridMerge(d_src,
                     globPtr<typename MakeVec<T, 2>::type>(dst),
                     stream);
@@ -78,7 +78,7 @@ namespace
     {
         static void call(const GpuMat* src, GpuMat& dst, Stream& stream)
         {
-            const std::vector<GlobPtrSz<T>> d_src = {globPtr<T>(src[0]), globPtr<T>(src[1]), globPtr<T>(src[2])};
+            const std::array<GlobPtrSz<T>, 3> d_src = {globPtr<T>(src[0]), globPtr<T>(src[1]), globPtr<T>(src[2])};
             gridMerge(d_src,
                     globPtr<typename MakeVec<T, 3>::type>(dst),
                     stream);
@@ -89,7 +89,7 @@ namespace
     {
         static void call(const GpuMat* src, GpuMat& dst, Stream& stream)
         {
-            const std::vector<GlobPtrSz<T> > d_src = {globPtr<T>(src[0]), globPtr<T>(src[1]), globPtr<T>(src[2]), globPtr<T>(src[3])};
+            const std::array<GlobPtrSz<T>, 4 > d_src = {globPtr<T>(src[0]), globPtr<T>(src[1]), globPtr<T>(src[2]), globPtr<T>(src[3])};
             gridMerge(d_src,
                     globPtr<typename MakeVec<T, 4>::type>(dst),
                     stream);
