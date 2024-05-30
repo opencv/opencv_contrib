@@ -157,27 +157,46 @@ namespace grid_split_merge_detail
     template <class Policy> struct MergeImpl<2, Policy>
     {
         template <class SrcPtrTuple, typename DstType, class MaskPtr>
-        __host__ static void merge(const SrcPtrTuple& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+        __host__ static void mergeTuple(const SrcPtrTuple& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
             mergeC2<Policy>(get<0>(src), get<1>(src), dst, mask, rows, cols, stream);
         }
+
+        template <class SrcPtrArray, typename DstType, class MaskPtr>
+        __host__ static void mergeArray(const SrcPtrArray& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+        {
+            mergeC2<Policy>(src[0], src[1], dst, mask, rows, cols, stream);
+        }
+
     };
 
     template <class Policy> struct MergeImpl<3, Policy>
     {
         template <class SrcPtrTuple, typename DstType, class MaskPtr>
-        __host__ static void merge(const SrcPtrTuple& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+        __host__ static void mergeTuple(const SrcPtrTuple& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
             mergeC3<Policy>(get<0>(src), get<1>(src), get<2>(src), dst, mask, rows, cols, stream);
+        }
+
+        template <class SrcPtrArray, typename DstType, class MaskPtr>
+        __host__ static void mergeArray(const SrcPtrArray& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+        {
+            mergeC3<Policy>(src[0], src[1], src[2], dst, mask, rows, cols, stream);
         }
     };
 
     template <class Policy> struct MergeImpl<4, Policy>
     {
         template <class SrcPtrTuple, typename DstType, class MaskPtr>
-        __host__ static void merge(const SrcPtrTuple& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+        __host__ static void mergeTuple(const SrcPtrTuple& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
             mergeC4<Policy>(get<0>(src), get<1>(src), get<2>(src), get<3>(src), dst, mask, rows, cols, stream);
+        }
+
+        template <class SrcPtrArray, typename DstType, class MaskPtr>
+        __host__ static void mergeArray(const SrcPtrArray& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+        {
+            mergeC4<Policy>(src[0], src[1], src[2], src[3], dst, mask, rows, cols, stream);
         }
     };
 

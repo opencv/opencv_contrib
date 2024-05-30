@@ -179,6 +179,23 @@ namespace grid_transform_detail
         dst(y, x) = saturate_cast<DstType>(op(src1(y, x), src2(y, x)));
     }
 
+    // transformSimple, 2 outputs
+    // The overloads are added for polar_cart.cu to compute magnitude and phase with single call
+    // the previous implementation with touple causes cuda namespace clash. See https://github.com/opencv/opencv_contrib/issues/3690
+    template <class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class BinOp1, class BinOp2, class MaskPtr>
+    __global__ void transformSimple(const SrcPtr1 src1, const SrcPtr2 src2, GlobPtr<DstType1> dst1, GlobPtr<DstType2> dst2,
+                                    const BinOp1 op1, const BinOp2 op2, const MaskPtr mask, const int rows, const int cols)
+    {
+        const int x = blockIdx.x * blockDim.x + threadIdx.x;
+        const int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= cols || y >= rows || !mask(y, x))
+            return;
+
+        dst1(y, x) = saturate_cast<DstType1>(op1(src1(y, x), src2(y, x)));
+        dst2(y, x) = saturate_cast<DstType2>(op2(src1(y, x), src2(y, x)));
+    }
+
     // transformSmart
 
     template <int SHIFT, typename SrcType, typename DstType, class UnOp, class MaskPtr>
@@ -248,6 +265,52 @@ namespace grid_transform_detail
         }
     }
 
+    // transformSmart, 2 outputs
+    // The overloads are added for polar_cart.cu to compute magnitude and phase with single call
+    // the previous implementation with touple causes cuda namespace clash. See https://github.com/opencv/opencv_contrib/issues/3690
+    template <int SHIFT, typename SrcType1, typename SrcType2, typename DstType1, typename DstType2, class BinOp1, class BinOp2, class MaskPtr>
+    __global__ void transformSmart(const GlobPtr<SrcType1> src1_, const GlobPtr<SrcType2> src2_,
+                                   GlobPtr<DstType1> dst1_, GlobPtr<DstType2> dst2_,
+                                   const BinOp1 op1, const BinOp2 op2, const MaskPtr mask, const int rows, const int cols)
+    {
+        typedef typename MakeVec<SrcType1, SHIFT>::type read_type1;
+        typedef typename MakeVec<SrcType2, SHIFT>::type read_type2;
+        typedef typename MakeVec<DstType1, SHIFT>::type write_type1;
+        typedef typename MakeVec<DstType2, SHIFT>::type write_type2;
+
+        const int x = blockIdx.x * blockDim.x + threadIdx.x;
+        const int y = blockIdx.y * blockDim.y + threadIdx.y;
+        const int x_shifted = x * SHIFT;
+
+        if (y < rows)
+        {
+            const SrcType1* src1 = src1_.row(y);
+            const SrcType2* src2 = src2_.row(y);
+            DstType1* dst1 = dst1_.row(y);
+            DstType2* dst2 = dst2_.row(y);
+
+            if (x_shifted + SHIFT - 1 < cols)
+            {
+                const read_type1 src1_n_el = ((const read_type1*)src1)[x];
+                const read_type2 src2_n_el = ((const read_type2*)src2)[x];
+
+                OpUnroller<SHIFT>::unroll(src1_n_el, src2_n_el, ((write_type1*)dst1)[x], op1, mask, x_shifted, y);
+                OpUnroller<SHIFT>::unroll(src1_n_el, src2_n_el, ((write_type2*)dst2)[x], op2, mask, x_shifted, y);
+            }
+            else
+            {
+                for (int real_x = x_shifted; real_x < cols; ++real_x)
+                {
+                    if (mask(y, real_x))
+                    {
+                        dst1[real_x] = op1(src1[real_x], src2[real_x]);
+                        dst2[real_x] = op2(src1[real_x], src2[real_x]);
+                    }
+                }
+            }
+        }
+    }
+
     // TransformDispatcher
 
     template <bool UseSmart, class Policy> struct TransformDispatcher;
@@ -274,6 +337,20 @@ namespace grid_transform_detail
             const dim3 grid(divUp(cols, block.x), divUp(rows, block.y));
 
             transformSimple<<<grid, block, 0, stream>>>(src1, src2, dst, op, mask, rows, cols);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+
+            if (stream == 0)
+                CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
+        }
+
+        template <class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class BinOp1, class BinOp2, class MaskPtr>
+        __host__ static void call(const SrcPtr1& src1, const SrcPtr2& src2, const GlobPtr<DstType1>& dst1, const GlobPtr<DstType2>& dst2,
+                                  const BinOp1& op1, const BinOp2& op2, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+        {
+            const dim3 block(Policy::block_size_x, Policy::block_size_y);
+            const dim3 grid(divUp(cols, block.x), divUp(rows, block.y));
+
+            transformSimple<<<grid, block, 0, stream>>>(src1, src2, dst1, dst2, op1, op2, mask, rows, cols);
             CV_CUDEV_SAFE_CALL( cudaGetLastError() );
 
             if (stream == 0)
@@ -336,6 +413,33 @@ namespace grid_transform_detail
             if (stream == 0)
                 CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
         }
+
+        template <typename SrcType1, typename SrcType2, typename DstType1, typename DstType2, class BinOp1, class BinOp2, class MaskPtr>
+        __host__ static void call(const GlobPtr<SrcType1>& src1, const GlobPtr<SrcType2>& src2,
+                                  const GlobPtr<DstType1>& dst1, const GlobPtr<DstType2>& dst2,
+                                  const BinOp1& op1, const BinOp2& op2, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+        {
+            if (Policy::shift == 1 ||
+                !isAligned(src1.data, Policy::shift * sizeof(SrcType1))  || !isAligned(src1.step, Policy::shift * sizeof(SrcType1)) ||
+                !isAligned(src2.data, Policy::shift * sizeof(SrcType2))  || !isAligned(src2.step, Policy::shift * sizeof(SrcType2)) ||
+                !isAligned(dst1.data,  Policy::shift * sizeof(DstType1)) || !isAligned(dst1.step,  Policy::shift * sizeof(DstType1))||
+                !isAligned(dst2.data,  Policy::shift * sizeof(DstType2)) || !isAligned(dst2.step,  Policy::shift * sizeof(DstType2))
+            )
+            {
+                TransformDispatcher<false, Policy>::call(src1, src2, dst1, dst2, op1, op2, mask, rows, cols, stream);
+                return;
+            }
+
+            const dim3 block(Policy::block_size_x, Policy::block_size_y);
+            const dim3 grid(divUp(cols, block.x * Policy::shift), divUp(rows, block.y));
+
+            transformSmart<Policy::shift><<<grid, block, 0, stream>>>(src1, src2, dst1, dst2, op1, op2, mask, rows, cols);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+
+            if (stream == 0)
+                CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
+        }
+
     };
 
     template <class Policy, class SrcPtr, typename DstType, class UnOp, class MaskPtr>
@@ -350,6 +454,13 @@ namespace grid_transform_detail
         TransformDispatcher<false, Policy>::call(src1, src2, dst, op, mask, rows, cols, stream);
     }
 
+    template <class Policy, class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class BinOp1, class BinOp2, class MaskPtr>
+    __host__ void transform_binary(const SrcPtr1& src1, const SrcPtr2& src2, const GlobPtr<DstType1>& dst1, const GlobPtr<DstType2>& dst2,
+                                   const BinOp1& op1, const BinOp2& op2, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+    {
+        TransformDispatcher<false, Policy>::call(src1, src2, dst1, dst2, op1, op2, mask, rows, cols, stream);
+    }
+
     template <class Policy, typename SrcType, typename DstType, class UnOp, class MaskPtr>
     __host__ void transform_unary(const GlobPtr<SrcType>& src, const GlobPtr<DstType>& dst, const UnOp& op, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
@@ -360,6 +471,15 @@ namespace grid_transform_detail
     __host__ void transform_binary(const GlobPtr<SrcType1>& src1, const GlobPtr<SrcType2>& src2, const GlobPtr<DstType>& dst, const BinOp& op, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
         TransformDispatcher<VecTraits<SrcType1>::cn == 1 && VecTraits<SrcType2>::cn == 1 && VecTraits<DstType>::cn == 1 && Policy::shift != 1, Policy>::call(src1, src2, dst, op, mask, rows, cols, stream);
+    }
+
+    template <class Policy, typename SrcType1, typename SrcType2, typename DstType1, typename DstType2, class BinOp1, class BinOp2, class MaskPtr>
+    __host__ void transform_binary(const GlobPtr<SrcType1>& src1, const GlobPtr<SrcType2>& src2, const GlobPtr<DstType1>& dst1, const GlobPtr<DstType2>& dst2,
+                                   const BinOp1& op1, const BinOp2& op2, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
+    {
+        TransformDispatcher<VecTraits<SrcType1>::cn == 1 && VecTraits<SrcType2>::cn == 1 &&
+                            VecTraits<DstType1>::cn == 1 && VecTraits<DstType2>::cn == 1 &&
+                            Policy::shift != 1, Policy>::call(src1, src2, dst1, dst2, op1, op2, mask, rows, cols, stream);
     }
 
     // transform_tuple
