@@ -180,7 +180,8 @@ namespace grid_transform_detail
     }
 
     // transformSimple, 2 outputs
-
+    // The overloads are added for polar_cart.cu to compute magnitude and phase with single call
+    // the previous implementation with touple causes cuda namespace clash. See https://github.com/opencv/opencv_contrib/issues/3690
     template <class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class BinOp1, class BinOp2, class MaskPtr>
     __global__ void transformSimple(const SrcPtr1 src1, const SrcPtr2 src2, GlobPtr<DstType1> dst1, GlobPtr<DstType2> dst2,
                                     const BinOp1 op1, const BinOp2 op2, const MaskPtr mask, const int rows, const int cols)
@@ -265,7 +266,8 @@ namespace grid_transform_detail
     }
 
     // transformSmart, 2 outputs
-
+    // The overloads are added for polar_cart.cu to compute magnitude and phase with single call
+    // the previous implementation with touple causes cuda namespace clash. See https://github.com/opencv/opencv_contrib/issues/3690
     template <int SHIFT, typename SrcType1, typename SrcType2, typename DstType1, typename DstType2, class BinOp1, class BinOp2, class MaskPtr>
     __global__ void transformSmart(const GlobPtr<SrcType1> src1_, const GlobPtr<SrcType2> src2_,
                                    GlobPtr<DstType1> dst1_, GlobPtr<DstType2> dst2_,
