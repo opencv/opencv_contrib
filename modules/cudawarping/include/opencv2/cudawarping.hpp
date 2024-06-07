@@ -70,6 +70,8 @@ namespace cv { namespace cuda {
 @param ymap Y values. Only CV_32FC1 type is supported.
 @param interpolation Interpolation method (see resize ). INTER_NEAREST , INTER_LINEAR and
 INTER_CUBIC are supported for now.
+The extra flag WARP_RELATIVE_MAP can be ORed to the interpolation method
+(e.g. INTER_LINEAR | WARP_RELATIVE_MAP)
 @param borderMode Pixel extrapolation method (see borderInterpolate ). BORDER_REFLECT101 ,
 BORDER_REPLICATE , BORDER_CONSTANT , BORDER_REFLECT and BORDER_WRAP are supported for now.
 @param borderValue Value used in case of a constant border. By default, it is 0.
@@ -78,7 +80,10 @@ BORDER_REPLICATE , BORDER_CONSTANT , BORDER_REFLECT and BORDER_WRAP are supporte
 The function transforms the source image using the specified map:
 
 \f[\texttt{dst} (x,y) =  \texttt{src} (xmap(x,y), ymap(x,y))\f]
-\f[\texttt{dst} (x,y) =  \texttt{src} (x+map_x(x,y),y+map_y(x,y))\f] with WARP_RELATIVE_MAP
+
+with the WARP_RELATIVE_MAP flag :
+
+\f[\texttt{dst} (x,y) =  \texttt{src} (x+map_x(x,y),y+map_y(x,y))\f]
 
 Values of pixels with non-integer coordinates are computed using the bilinear interpolation.
 
@@ -102,8 +107,6 @@ Either dsize or both fx and fy must be non-zero.
 \f[\texttt{(double)dsize.height/src.rows}\f]
 @param interpolation Interpolation method. INTER_NEAREST , INTER_LINEAR and INTER_CUBIC are
 supported for now.
-The extra flag WARP_RELATIVE_MAP that can be ORed to the interpolation method
-(e.g. INTER_LINEAR | WARP_RELATIVE_MAP)
 @param stream Stream for the asynchronous version.
 
 @sa resize
