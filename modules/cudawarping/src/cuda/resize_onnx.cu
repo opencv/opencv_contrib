@@ -50,13 +50,18 @@
 
 namespace cv { namespace cuda { namespace device {
 
-    __device__ __host__ __forceinline__ int clamp(int x, int lo, int hi)
+    __device__ __forceinline__ int clamp(int x, int lo, int hi)
     {
         return x < lo ? lo : hi < x ? hi : x;
     }
 
-    template <typename T, int cn>
-    using TypeVecT = typename TypeVec<T, cn>::vec_type;
+    template <typename T>
+    __device__ __forceinline__ T* ptr(PtrStepb const& src, int y)
+    { return reinterpret_cast<T*>(src.data + y * src.step); }
+
+    template <typename T>
+    __device__ __forceinline__ T& at(PtrStepb const& src, int y, int x)
+    { return ptr<T>(src, y)[x]; }
 
     struct LinearCoeff
     {
@@ -65,9 +70,7 @@ namespace cv { namespace cuda { namespace device {
         LinearCoeff(float) {}
 
         __device__ __forceinline__ float at(float x) const
-        {
-            return __saturatef(1.f - ::fabsf(x));
-        }
+        { return __saturatef(1.f - ::fabsf(x)); }
     };
 
     struct CubicCoeff
@@ -93,28 +96,19 @@ namespace cv { namespace cuda { namespace device {
 
     //==================== sampler ====================//
 
-    template <typename T>
     struct SamplerBase
     {
-        PtrStep<T> src;
+        PtrStepb src;
         PtrStepSzb dst;
         int row1, col1;
 
-        // discard const on dst
-        __device__ __forceinline__  T* dst_ptr(int dy) const
-        { return reinterpret_cast<T*>(dst.data + dy * dst.step); }
-
-        __device__ __forceinline__ T& dst_at(int dy, int dx) const
-        { return dst_ptr(dy)[dx]; }
-
         SamplerBase(PtrStepSzb const& S, PtrStepSzb const& D)
-            : src(reinterpret_cast<T*>(S.data), S.step)
-            , dst(D), row1(S.rows - 1), col1(S.cols - 1)
+            : src(S), dst(D), row1(S.rows - 1), col1(S.cols - 1)
         {}
     };
 
-    template <typename T, typename Coeff>
-    struct AntiBase : public SamplerBase<T>
+    template <typename Coeff>
+    struct AntiBase : public SamplerBase
     {
         static_assert(Coeff::ksize % 2 == 0, "");
 
@@ -124,7 +118,7 @@ namespace cv { namespace cuda { namespace device {
 
         AntiBase(PtrStepSzb const& S, PtrStepSzb const& D,
             Point2f const& scale, float A)
-            : SamplerBase<T>(S, D), coeff(A)
+            : SamplerBase(S, D), coeff(A)
         {
             int const khalf = Coeff::ksize / 2;
             xscale = std::min(scale.x, 1.f);
@@ -139,19 +133,19 @@ namespace cv { namespace cuda { namespace device {
     ////////// nearest neighbor //////////
 
     template <typename T>
-    struct NearestVec : public SamplerBase<T>
+    struct NearestVec : public SamplerBase
     {
-        using SamplerBase<T>::SamplerBase;
+        using SamplerBase::SamplerBase;
 
         __device__ void to(int sx, int sy, int dx, int dy) const
         {
             sx = clamp(sx, 0, col1);
             sy = clamp(sy, 0, row1);
-            dst_at(dy, dx) = src(sy, sx);
+            at<T>(dst, dy, dx) = at<T>(src, sy, sx);
         }
     };
 
-    struct NearestSize : public SamplerBase<uchar>
+    struct NearestSize : public SamplerBase
     {
         size_t esz;
 
@@ -163,8 +157,8 @@ namespace cv { namespace cuda { namespace device {
         {
             sx = clamp(sx, 0, col1);
             sy = clamp(sy, 0, row1);
-            uchar const* S = src.ptr(sy) + sx * esz;
-            uchar      * D = dst_ptr(dy) + dx * esz;
+            uchar const* S = ptr<uchar>(src, sy) + sx * esz;
+            uchar      * D = ptr<uchar>(dst, dy) + dx * esz;
             for (size_t i = 0; i < esz; ++i)
                 D[i] = S[i];
         }
@@ -172,10 +166,12 @@ namespace cv { namespace cuda { namespace device {
 
     ////////// anti-alias brute force //////////
 
-    template <typename T, typename W, typename Coeff>
-    struct AntiVec : public AntiBase<T, Coeff>
+    template <typename T1, typename W1, int cn, typename Coeff>
+    struct AntiVec : public AntiBase<Coeff>
     {
-        using AntiBase<T, Coeff>::AntiBase;
+        using AntiBase<Coeff>::AntiBase;
+        using T = typename TypeVec<T1, cn>::vec_type;
+        using W = typename TypeVec<W1, cn>::vec_type;
 
         __device__ void to(float fx, float fy, int dx, int dy) const
         {
@@ -188,7 +184,7 @@ namespace cv { namespace cuda { namespace device {
                 float wline = 0;
                 W sline = VecTraits<W>::all(0);
                 int sy = clamp(iy + h, 0, row1);
-                T const* S = src.ptr(sy);
+                T const* S = ptr<T>(src, sy);
                 for (int w = xstart; w < xend; ++w)
                 {
                     int sx = clamp(ix + w, 0, col1);
@@ -200,18 +196,18 @@ namespace cv { namespace cuda { namespace device {
                 weight += u * wline;
                 sumval += u * sline;
             }
-            dst_at(dy, dx) = saturate_cast<T>(sumval / weight);
+            at<T>(dst, dy, dx) = saturate_cast<T>(sumval / weight);
         }
     };
 
     template <typename T, typename W, typename Coeff>
-    struct AntiCn : public AntiBase<T, Coeff>
+    struct AntiCn : public AntiBase<Coeff>
     {
         int cn;
 
         AntiCn(PtrStepSzb const& S, PtrStepSzb const& D,
             Point2f const& scale, float A, int _cn)
-            : AntiBase<T, Coeff>(S, D, scale, A), cn(_cn)
+            : AntiBase<Coeff>(S, D, scale, A), cn(_cn)
         {}
 
         __device__ void to(float fx, float fy, int dx, int dy) const
@@ -220,13 +216,13 @@ namespace cv { namespace cuda { namespace device {
             float rx = fx - ix, ry = fy - iy;
             float weight = 0;
             W sumval = 0;
-            T* D = dst_ptr(dy) + dx * cn;
+            T* D = ptr<T>(dst, dy) + dx * cn;
             for (int h = ystart; h < yend; ++h)
             {
                 float wline = 0;
                 W sline = 0;
                 int sy = clamp(iy + h, 0, row1);
-                T const* S = src.ptr(sy);
+                T const* S = ptr<T>(src, sy);
                 for (int w = xstart; w < xend; ++w)
                 {
                     int sx = clamp(ix + w, 0, col1) * cn;
@@ -246,7 +242,7 @@ namespace cv { namespace cuda { namespace device {
                 {
                     W sline = 0;
                     int sy = clamp(iy + h, 0, row1);
-                    T const* S = src.ptr(sy) + i;
+                    T const* S = ptr<T>(src, sy) + i;
                     for (int w = xstart; w < xend; ++w)
                     {
                         int sx = clamp(ix + w, 0, col1) * cn;
@@ -263,10 +259,12 @@ namespace cv { namespace cuda { namespace device {
 
     ////////// bi-linear //////////
 
-    template <typename T, typename W>
-    struct LinearVec : public SamplerBase<T>
+    template <typename T1, typename W1, int cn>
+    struct LinearVec : public SamplerBase
     {
-        using SamplerBase<T>::SamplerBase;
+        using SamplerBase::SamplerBase;
+        using T = typename TypeVec<T1, cn>::vec_type;
+        using W = typename TypeVec<W1, cn>::vec_type;
 
         __device__ void to(float fx, float fy, int dx, int dy) const
         {
@@ -277,20 +275,22 @@ namespace cv { namespace cuda { namespace device {
             int y0 = ::max(iy, 0);
             int x1 = ::min(ix + 1, col1);
             int y1 = ::min(iy + 1, row1);
-            W s0 = saturate_cast<W>(src(y0, x0)), s1 = saturate_cast<W>(src(y0, x1));
-            W s2 = saturate_cast<W>(src(y1, x0)), s3 = saturate_cast<W>(src(y1, x1));
+            W s0 = saturate_cast<W>(at<T>(src, y0, x0));
+            W s1 = saturate_cast<W>(at<T>(src, y0, x1));
+            W s2 = saturate_cast<W>(at<T>(src, y1, x0));
+            W s3 = saturate_cast<W>(at<T>(src, y1, x1));
             W val = (u0 * v0) * s0 + (u1 * v0) * s1 + (u0 * v1) * s2 + (u1 * v1) * s3;
-            dst_at(dy, dx) = saturate_cast<T>(val);
+            at<T>(dst, dy, dx) = saturate_cast<T>(val);
         }
     };
 
     template <typename T, typename W>
-    struct LinearCn : public SamplerBase<T>
+    struct LinearCn : public SamplerBase
     {
         int cn;
 
         LinearCn(PtrStepSzb const& S, PtrStepSzb const& D, int _cn)
-            : SamplerBase<T>(S, D), cn(_cn)
+            : SamplerBase(S, D), cn(_cn)
         {}
 
         __device__ void to(float fx, float fy, int dx, int dy) const
@@ -303,11 +303,11 @@ namespace cv { namespace cuda { namespace device {
             int x1 = ::min(ix + 1, col1);
             int y1 = ::min(iy + 1, row1);
             W coeff[4] = {u0 * v0, u1 * v0, u0 * v1, u1 * v1};
-            T const* S0 = src.ptr(y0) + x0 * cn;
-            T const* S1 = src.ptr(y0) + x1 * cn;
-            T const* S2 = src.ptr(y1) + x0 * cn;
-            T const* S3 = src.ptr(y1) + x1 * cn;
-            T      * D  = dst_ptr(dy) + dx * cn;
+            T const* S0 = ptr<T>(src, y0) + x0 * cn;
+            T const* S1 = ptr<T>(src, y0) + x1 * cn;
+            T const* S2 = ptr<T>(src, y1) + x0 * cn;
+            T const* S3 = ptr<T>(src, y1) + x1 * cn;
+            T      * D  = ptr<T>(dst, dy) + dx * cn;
             for (int i = 0; i < cn; ++i)
             {
                 D[i] = saturate_cast<T>(coeff[0] * S0[i]
@@ -316,21 +316,23 @@ namespace cv { namespace cuda { namespace device {
         }
     };
 
-    template <typename T, typename W>
-    using LinearAntiVec = AntiVec<T, W, LinearCoeff>;
+    template <typename T1, typename W1, int cn>
+    using LinearAntiVec = AntiVec<T1, W1, cn, LinearCoeff>;
 
     template <typename T, typename W>
     using LinearAntiCn = AntiCn<T, W, LinearCoeff>;
 
     ////////// bi-cubic //////////
 
-    template <typename T, typename W>
-    struct CubicVec : public SamplerBase<T>
+    template <typename T1, typename W1, int cn>
+    struct CubicVec : public SamplerBase
     {
         CubicCoeff cubic;
+        using T = typename TypeVec<T1, cn>::vec_type;
+        using W = typename TypeVec<W1, cn>::vec_type;
 
         CubicVec(PtrStepSzb const& S, PtrStepSzb const& D, float A)
-            : SamplerBase<T>(S, D), cubic(A)
+            : SamplerBase(S, D), cubic(A)
         {}
 
         __device__ void to(float fx, float fy, int dx, int dy) const
@@ -350,24 +352,24 @@ namespace cv { namespace cuda { namespace device {
             for (int y = ystart; y <= ylimit; ++y)
             {
                 int yoffest = clamp(y, 0, row1);
-                T const* S = src.ptr(yoffest);
+                T const* S = ptr<T>(src, yoffest);
                 W sline = VecTraits<W>::all(0);
                 for (int x = 0; x < 4; ++x)
                     sline += xcoeff[x] * saturate_cast<W>(S[xoffset[x]]);
                 sumval += sline * cubic.at(y - fy);
             }
-            dst_at(dy, dx) = saturate_cast<T>(sumval);
+            at<T>(dst, dy, dx) = saturate_cast<T>(sumval);
         }
     };
 
     template <typename T, typename W>
-    struct CubicCn : public SamplerBase<T>
+    struct CubicCn : public SamplerBase
     {
         CubicCoeff cubic;
         int cn;
 
         CubicCn(PtrStepSzb const& S, PtrStepSzb const& D, float A, int _cn)
-            : SamplerBase<T>(S, D), cubic(A), cn(_cn)
+            : SamplerBase(S, D), cubic(A), cn(_cn)
         {}
 
         __device__ void to(float fx, float fy, int dx, int dy) const
@@ -388,13 +390,13 @@ namespace cv { namespace cuda { namespace device {
                 yoffset[y - ystart] = clamp(y, 0, row1);
                 ycoeff[y - ystart] = cubic.at(y - fy);
             }
-            T* D = dst_ptr(dy) + dx * cn;
+            T* D = ptr<T>(dst, dy) + dx * cn;
             for (int i = 0; i < cn; ++i)
             {
                 W sumval = 0;
                 for (int y = 0; y < 4; ++y)
                 {
-                    T const* S = src.ptr(yoffset[y]) + i;
+                    T const* S = ptr<T>(src, yoffset[y]) + i;
                     W sline = 0;
                     for (int x = 0; x < 4; ++x)
                         sline += xcoeff[x] * S[xoffset[x]];
@@ -405,8 +407,8 @@ namespace cv { namespace cuda { namespace device {
         }
     };
 
-    template <typename T, typename W>
-    using CubicAntiVec = AntiVec<T, W, CubicCoeff>;
+    template <typename T1, typename W1, int cn>
+    using CubicAntiVec = AntiVec<T1, W1, cn, CubicCoeff>;
 
     template <typename T, typename W>
     using CubicAntiCn = AntiCn<T, W, CubicCoeff>;
@@ -508,20 +510,15 @@ namespace cv { namespace cuda { namespace device {
         dim3 block(32, 8);
         dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
         if (cn == 1)
-            sampleKernel<<<block, grid, 0, stream>>>(M,
-                LinearVec<T, W>(src, dst));
+            sampleKernel<<<block, grid, 0, stream>>>(M, LinearVec<T, W, 1>(src, dst));
         else if (cn == 2)
-            sampleKernel<<<block, grid, 0, stream>>>(M,
-                LinearVec<TypeVecT<T, 2>, TypeVecT<W, 2>>(src, dst));
+            sampleKernel<<<block, grid, 0, stream>>>(M, LinearVec<T, W, 2>(src, dst));
         else if (cn == 3)
-            sampleKernel<<<block, grid, 0, stream>>>(M,
-                LinearVec<TypeVecT<T, 3>, TypeVecT<W, 3>>(src, dst));
+            sampleKernel<<<block, grid, 0, stream>>>(M, LinearVec<T, W, 3>(src, dst));
         else if (cn == 4)
-            sampleKernel<<<block, grid, 0, stream>>>(M,
-                LinearVec<TypeVecT<T, 4>, TypeVecT<W, 4>>(src, dst));
+            sampleKernel<<<block, grid, 0, stream>>>(M, LinearVec<T, W, 4>(src, dst));
         else
-            sampleKernel<<<block, grid, 0, stream>>>(M,
-                LinearCn<T, W>(src, dst, cn));
+            sampleKernel<<<block, grid, 0, stream>>>(M, LinearCn<T, W>(src, dst, cn));
     }
 
     template <typename T, typename W>
@@ -531,20 +528,15 @@ namespace cv { namespace cuda { namespace device {
         dim3 block(32, 8);
         dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
         if (cn == 1)
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, LinearAntiVec<T, W>(src, dst, scale, 0));
+            sampleKernel<<<block, grid, 0, stream>>>(M, LinearAntiVec<T, W, 1>(src, dst, scale, 0));
         else if (cn == 2)
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, LinearAntiVec<TypeVecT<T, 2>, TypeVecT<W, 2>>(src, dst, scale, 0));
+            sampleKernel<<<block, grid, 0, stream>>>(M, LinearAntiVec<T, W, 2>(src, dst, scale, 0));
         else if (cn == 3)
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, LinearAntiVec<TypeVecT<T, 3>, TypeVecT<W, 3>>(src, dst, scale, 0));
+            sampleKernel<<<block, grid, 0, stream>>>(M, LinearAntiVec<T, W, 3>(src, dst, scale, 0));
         else if (cn == 4)
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, LinearAntiVec<TypeVecT<T, 4>, TypeVecT<W, 4>>(src, dst, scale, 0));
+            sampleKernel<<<block, grid, 0, stream>>>(M, LinearAntiVec<T, W, 4>(src, dst, scale, 0));
         else
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, LinearAntiCn<T, W>(src, dst, scale, 0, cn));
+            sampleKernel<<<block, grid, 0, stream>>>(M, LinearAntiCn<T, W>(src, dst, scale, 0, cn));
     }
 
     //==================== cubic  ====================//
@@ -556,50 +548,38 @@ namespace cv { namespace cuda { namespace device {
         dim3 block(32, 8);
         dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
         if (cn == 1)
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, CubicVec<T, W>(src, dst, A));
+            sampleKernel<<<block, grid, 0, stream>>>(M, CubicVec<T, W, 1>(src, dst, A));
         else if (cn == 2)
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, CubicVec<TypeVecT<T, 2>, TypeVecT<W, 2>>(src, dst, A));
+            sampleKernel<<<block, grid, 0, stream>>>(M, CubicVec<T, W, 2>(src, dst, A));
         else if (cn == 3)
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, CubicVec<TypeVecT<T, 3>, TypeVecT<W, 3>>(src, dst, A));
+            sampleKernel<<<block, grid, 0, stream>>>(M, CubicVec<T, W, 3>(src, dst, A));
         else if (cn == 4)
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, CubicVec<TypeVecT<T, 4>, TypeVecT<W, 4>>(src, dst, A));
+            sampleKernel<<<block, grid, 0, stream>>>(M, CubicVec<T, W, 4>(src, dst, A));
         else
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, CubicCn<T, W>(src, dst, A, cn));
+            sampleKernel<<<block, grid, 0, stream>>>(M, CubicCn<T, W>(src, dst, A, cn));
     }
 
     template <typename T, typename W>
-    void cubicAntiDispatch(int cn, float A,
-        PtrStepSzb const& src, PtrStepSzb const& dst,
+    void cubicAntiDispatch(int cn, float A, PtrStepSzb const& src, PtrStepSzb const& dst,
         Matx22f const& M, Point2f const& scale, cudaStream_t stream)
     {
         dim3 block(32, 8);
         dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
         if (cn == 1)
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, CubicAntiVec<T, W>(src, dst, scale, A));
+            sampleKernel<<<block, grid, 0, stream>>>(M, CubicAntiVec<T, W, 1>(src, dst, scale, A));
         else if (cn == 2)
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, CubicAntiVec<TypeVecT<T, 2>, TypeVecT<W, 2>>(src, dst, scale, A));
+            sampleKernel<<<block, grid, 0, stream>>>(M, CubicAntiVec<T, W, 2>(src, dst, scale, A));
         else if (cn == 3)
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, CubicAntiVec<TypeVecT<T, 3>, TypeVecT<W, 3>>(src, dst, scale, A));
+            sampleKernel<<<block, grid, 0, stream>>>(M, CubicAntiVec<T, W, 3>(src, dst, scale, A));
         else if (cn == 4)
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, CubicAntiVec<TypeVecT<T, 4>, TypeVecT<W, 4>>(src, dst, scale, A));
+            sampleKernel<<<block, grid, 0, stream>>>(M, CubicAntiVec<T, W, 4>(src, dst, scale, A));
         else
-            sampleKernel<<<block, grid, 0, stream>>>(
-                M, CubicAntiCn<T, W>(src, dst, scale, A, cn));
+            sampleKernel<<<block, grid, 0, stream>>>(M, CubicAntiCn<T, W>(src, dst, scale, A, cn));
     }
 
 template <typename T, typename W>
-void resizeOnnx(int cn, float A,
-    PtrStepSzb const& src, PtrStepSzb const& dst, Matx22f const& M,
-    Point2f const& scale, int interpolation, cudaStream_t stream)
+void resizeOnnx(int cn, float A, PtrStepSzb const& src, PtrStepSzb const& dst,
+    Matx22f const& M, Point2f const& scale, int interpolation, cudaStream_t stream)
 {
     int sampler = interpolation & INTER_SAMPLER_MASK;
     int antialias = interpolation & INTER_ANTIALIAS_MASK;

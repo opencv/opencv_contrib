@@ -56,13 +56,14 @@ void resizeOnnx(InputArray /*_src*/, OutputArray /*_dst*/,
 namespace cv { namespace cuda { namespace device
 {
 template <typename T>
-void resize(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
+void resize(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff,
+    const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
 
 template <typename T, typename W>
 void resizeOnnx(int cn, float A, PtrStepSzb const& src, PtrStepSzb const& dst,
     Matx22f const& M, Point2f const& scale, int interpolation, cudaStream_t stream);
 
-void resizeOnnxNN(size_t elemSize,PtrStepSzb const& src, PtrStepSzb const& dst,
+void resizeOnnxNN(size_t elemSize, PtrStepSzb const& src, PtrStepSzb const& dst,
     Matx22f const& M, int mode, cudaStream_t stream);
 }}}
 
