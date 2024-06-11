@@ -141,7 +141,7 @@ struct CubeSpheresScene : Scene
         Range range(0, frame.rows);
         parallel_for_(range, RenderInvoker<CubeSpheresScene>(frame, pose, reproj, depthFactor));
 
-        return std::move(frame);
+        return static_cast<Mat>(frame);
     }
 
     std::vector<Affine3f> getPoses() override
@@ -237,7 +237,7 @@ struct RotatingScene : Scene
         Range range(0, frame.rows);
         parallel_for_(range, RenderInvoker<RotatingScene>(frame, pose, reproj, depthFactor));
 
-        return std::move(frame);
+        return static_cast<Mat>(frame);
     }
 
     std::vector<Affine3f> getPoses() override

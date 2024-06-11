@@ -226,15 +226,15 @@ static Mat solveLinearEquation(const Mat_<float>& img, Mat_<float>& W_h_, Mat_<f
     Eigen::Map<const Eigen::VectorXf> tin(img_t.ptr<float>(), img_t.rows*img_t.cols);
     Eigen::VectorXf x = cg.solve(tin);
 
-    Mat_<float> tout(img.rows, img.cols);
-    tout.forEach(
+    Mat tout(img.rows, img.cols, CV_32FC1);
+    tout.forEach<float>(
         [&](float &pixel, const int * position) -> void
         {
             pixel = x(position[1]*img.rows + position[0]);
         }
     );
 
-    return std::move(tout);
+    return tout;
 }
 
 static Mat_<float> tsmooth(const Mat_<float>& src, float lambda=0.01f, float sigma=3.0f, float sharpness=0.001f)

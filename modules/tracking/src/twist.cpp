@@ -9,7 +9,7 @@ namespace detail
 inline namespace tracking
 {
 
-void getInteractionMatrix(const cv::Mat& uv, const cv::Mat& depths, const cv::Mat& K, cv::Mat& J)
+void computeInteractionMatrix(const cv::Mat& uv, const cv::Mat& depths, const cv::Mat& K, cv::Mat& J)
 {
     CV_Assert(uv.cols == depths.cols);
     CV_Assert(depths.type() == CV_32F);
@@ -64,7 +64,7 @@ cv::Vec6d computeTwist(const cv::Mat& uv, const cv::Mat& duv, const cv::Mat& dep
     CV_Assert(uv.cols * 2 == duv.rows);
 
     cv::Mat J;
-    getInteractionMatrix(uv, depths, K, J);
+    computeInteractionMatrix(uv, depths, K, J);
     cv::Mat Jinv;
     cv::invert(J, Jinv, cv::DECOMP_SVD);
     cv::Mat twist = Jinv * duv;

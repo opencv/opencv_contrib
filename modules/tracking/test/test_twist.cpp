@@ -39,7 +39,7 @@ TEST_F(TwistTest, TestInteractionMatrix)
     cv::Mat uv = cv::Mat(2, 1, CV_32F, {1.0f, 1.0f});
     cv::Mat depth = cv::Mat(1, 1, CV_32F, {2.0f});
 
-    getInteractionMatrix(uv, depth, K, J);
+    computeInteractionMatrix(uv, depth, K, J);
     ASSERT_EQ(J.cols, 6);
     ASSERT_EQ(J.rows, 2);
     float expected[2][6] = {{-0.5f, 0.0f, 0.5f, 1.0f, -2.0f, 1.0f},
@@ -87,7 +87,7 @@ TEST_F(TwistTest, TestComputeWithNonZeroPixelVelocities)
     float duv_data[] = {1.0f, 2.0f, 1.0f, 3.0f, 1.0f, 4.0f};
     cv::Mat duv = cv::Mat(6, 1, CV_32F, duv_data);
 
-    getInteractionMatrix(uv, depth, K, J);
+    computeInteractionMatrix(uv, depth, K, J);
     ASSERT_EQ(J.cols, 6);
     ASSERT_EQ(J.rows, 6);
     float expected_jac[6][6] = {{-1.0f, 0.0f, 1.0f, 1.0f, -2.0f, 1.0f},

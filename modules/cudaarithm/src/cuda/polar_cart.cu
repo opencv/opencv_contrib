@@ -133,23 +133,9 @@ void cv::cuda::cartToPolar(InputArray _x, InputArray _y, OutputArray _mag, Outpu
     GpuMat_<float> anglec(angle.reshape(1));
 
     if (angleInDegrees)
-    {
-        gridTransformTuple(zipPtr(xc, yc),
-                           tie(magc, anglec),
-                           make_tuple(
-                               binaryTupleAdapter<0, 1>(magnitude_func<float>()),
-                               binaryTupleAdapter<0, 1>(direction_func<float, true>())),
-                           stream);
-    }
+        gridTransformBinary(xc, yc, magc, anglec, magnitude_func<float>(), direction_func<float, true>(), stream);
     else
-    {
-        gridTransformTuple(zipPtr(xc, yc),
-                           tie(magc, anglec),
-                           make_tuple(
-                               binaryTupleAdapter<0, 1>(magnitude_func<float>()),
-                               binaryTupleAdapter<0, 1>(direction_func<float, false>())),
-                           stream);
-    }
+        gridTransformBinary(xc, yc, magc, anglec, magnitude_func<float>(), direction_func<float, false>(), stream);
 
     syncOutput(mag, _mag, stream);
     syncOutput(angle, _angle, stream);

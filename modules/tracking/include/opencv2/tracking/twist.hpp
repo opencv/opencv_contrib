@@ -16,7 +16,7 @@ inline namespace tracking
  * @brief Compute the camera twist from a set of 2D pixel locations, their
  * velocities, depth values and intrinsic parameters of the camera. The pixel
  * velocities are usually obtained from optical flow algorithms, both dense and
- * sparse flow can be used to compute the flow between images and duv computed by
+ * sparse flow can be used to compute the flow between images and \p duv computed by
  * dividing the flow by the time interval between the images.
  *
  * @param uv 2xN matrix of 2D pixel locations
@@ -30,9 +30,10 @@ CV_EXPORTS cv::Vec6d computeTwist(const cv::Mat& uv, const cv::Mat& duv, const c
                                   const cv::Mat& K);
 
 /**
- * @brief Compute the interaction matrix for a set of 2D pixels. This is usually
+ * @brief Compute the interaction matrix ( @cite Hutchinson1996ATO @cite chaumette:inria-00350283
+ * @cite chaumette:inria-00350638 ) for a set of 2D pixels. This is usually
  * used in visual servoing applications to command a robot to move at desired pixel
- * locations/velocities. By inverting this matrix one can estimate camera spatial
+ * locations/velocities. By inverting this matrix, one can estimate camera spatial
  * velocity i.e., the twist.
  *
  * @param uv 2xN matrix of 2D pixel locations
@@ -41,8 +42,8 @@ CV_EXPORTS cv::Vec6d computeTwist(const cv::Mat& uv, const cv::Mat& duv, const c
  * @param J 2Nx6 interaction matrix
  *
  */
-CV_EXPORTS void getInteractionMatrix(const cv::Mat& uv, const cv::Mat& depths, const cv::Mat& K,
-                                     cv::Mat& J);
+CV_EXPORTS void computeInteractionMatrix(const cv::Mat& uv, const cv::Mat& depths, const cv::Mat& K,
+                                         cv::Mat& J);
 
 //! @}
 

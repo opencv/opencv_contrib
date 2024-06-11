@@ -588,6 +588,7 @@ public:
         cam->setDebugDisplayEnabled(true);
         cam->setNearClipDistance(1e-9);
         cam->setFarClipDistance(zFar);
+        cam->getFrustumExtents(); // force update
 
         _setCameraIntrinsics(cam, K, imsize);
 
