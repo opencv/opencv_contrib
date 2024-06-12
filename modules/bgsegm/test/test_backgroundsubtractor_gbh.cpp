@@ -11,7 +11,9 @@ class CV_BackgroundSubtractorTest : public cvtest::BaseTest
 {
 public:
     CV_BackgroundSubtractorTest();
+    void setMatType(int _mtype){ mtype = _mtype; }
 protected:
+    int mtype;
     void run(int);
 };
 
@@ -29,11 +31,9 @@ void CV_BackgroundSubtractorTest::run(int)
 {
     int code = cvtest::TS::OK;
     RNG& rng = ts->get_rng();
-    int type = ((unsigned int)rng)%7;  //!< pick a random type, 0 - 6, defined in types_c.h
-    int channels = 1 + ((unsigned int)rng)%4;  //!< random number of channels from 1 to 4.
-    int channelsAndType = CV_MAKETYPE(type,channels);
-    int width = 2 + ((unsigned int)rng)%98; //!< Mat will be 2 to 100 in width and height
-    int height = 2 + ((unsigned int)rng)%98;
+    int depth = CV_MAT_DEPTH(mtype);
+    int width  = 64;
+    int height = 64;
 
     Ptr<BackgroundSubtractorGMG> fgbg = createBackgroundSubtractorGMG();
     Mat fgmask;
@@ -57,39 +57,39 @@ void CV_BackgroundSubtractorTest::run(int)
      * Max value for simulated images picked randomly in upper half of type range
      * Min value for simulated images picked randomly in lower half of type range
      */
-    if (type == CV_8U)
+    if (depth == CV_8U)
     {
         uchar half = UCHAR_MAX/2;
         maxd = (unsigned char)rng.uniform(half+32, UCHAR_MAX);
         mind = (unsigned char)rng.uniform(0, half-32);
     }
-    else if (type == CV_8S)
+    else if (depth == CV_8S)
     {
         maxd = (char)rng.uniform(32, CHAR_MAX);
         mind = (char)rng.uniform(CHAR_MIN, -32);
     }
-    else if (type == CV_16U)
+    else if (depth == CV_16U)
     {
         ushort half = USHRT_MAX/2;
         maxd = (unsigned int)rng.uniform(half+32, USHRT_MAX);
         mind = (unsigned int)rng.uniform(0, half-32);
     }
-    else if (type == CV_16S)
+    else if (depth == CV_16S)
     {
         maxd = rng.uniform(32, SHRT_MAX);
         mind = rng.uniform(SHRT_MIN, -32);
     }
-    else if (type == CV_32S)
+    else if (depth == CV_32S)
     {
         maxd = rng.uniform(32, INT_MAX);
         mind = rng.uniform(INT_MIN, -32);
     }
-    else if (type == CV_32F)
+    else if (depth == CV_32F)
     {
         maxd = rng.uniform(32.0f, FLT_MAX);
         mind = rng.uniform(-FLT_MAX, -32.0f);
     }
-    else if (type == CV_64F)
+    else if (depth == CV_64F)
     {
         maxd = rng.uniform(32.0, DBL_MAX);
         mind = rng.uniform(-DBL_MAX, -32.0);
@@ -98,7 +98,7 @@ void CV_BackgroundSubtractorTest::run(int)
     fgbg->setMinVal(mind);
     fgbg->setMaxVal(maxd);
 
-    Mat simImage = Mat::zeros(height, width, channelsAndType);
+    Mat simImage = Mat::zeros(height, width, mtype);
     int numLearningFrames = 120;
     for (int i = 0; i < numLearningFrames; ++i)
     {
@@ -132,6 +132,19 @@ void CV_BackgroundSubtractorTest::run(int)
 
 }
 
-TEST(VIDEO_BGSUBGMG, accuracy) { CV_BackgroundSubtractorTest test; test.safe_run(); }
+typedef testing::TestWithParam<std::tuple<perf::MatDepth,int>> bgsubgmg_allTypes;
+TEST_P(bgsubgmg_allTypes, accuracy)
+{
+    const int mtype = CV_MAKETYPE(get<0>(GetParam()), get<1>(GetParam()));
+    CV_BackgroundSubtractorTest test;
+    test.setMatType(mtype);
+    test.safe_run();
+}
+
+INSTANTIATE_TEST_CASE_P(/**/,
+                        bgsubgmg_allTypes,
+                        testing::Combine(
+                            testing::Values(CV_8U, CV_8S, CV_16U, CV_16S, CV_32S, CV_32F, CV_64F),
+                            testing::Values(1,2,3,4)));
 
 }} // namespace
