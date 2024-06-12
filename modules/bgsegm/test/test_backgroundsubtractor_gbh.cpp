@@ -29,8 +29,10 @@ void CV_BackgroundSubtractorTest::run(int)
 {
     int code = cvtest::TS::OK;
     RNG& rng = ts->get_rng();
-    int type = ((unsigned int)rng)%7;  //!< pick a random type, 0 - 6, defined in types_c.h
-    int channels = 1 + ((unsigned int)rng)%4;  //!< random number of channels from 1 to 4.
+    int type = ((unsigned int)rng) % 3;
+    type = (type == 0) ? CV_8U : (type == 1) ? CV_16U : CV_32F; // 8U, 16U, 32F
+    int channels = ((unsigned int)rng)%3;
+    channels = (channels == 2) ? 4 : channels; // 1, 3, 4
     int channelsAndType = CV_MAKETYPE(type,channels);
     int width = 2 + ((unsigned int)rng)%98; //!< Mat will be 2 to 100 in width and height
     int height = 2 + ((unsigned int)rng)%98;
