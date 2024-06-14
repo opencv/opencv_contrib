@@ -269,7 +269,7 @@ CUDA_TEST_P(RemapRelative, RemapRelative_Validity)
     cv::Mat dstRelative;
     gDstRelative.download(dstRelative);
 
-    EXPECT_MAT_NEAR(dstAbsolute, dstRelative, dstAbsolute.depth() == CV_32F ? 1e-3 : 1.0);
+    EXPECT_MAT_NEAR(dstAbsolute, dstRelative, (dstAbsolute.depth() == CV_32F) ? 1e-3 : 1.0);
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_RemapRelative, RemapRelative, testing::Combine(
