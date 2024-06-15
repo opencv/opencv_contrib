@@ -492,8 +492,7 @@ namespace cv { namespace cuda { namespace device {
         if (mode == INTER_NEAREST_PREFER_CEIL)
             offset = +0.5f;
 
-        if (mode == INTER_NEAREST_PREFER_FLOOR ||
-            mode == INTER_NEAREST_CEIL)
+        if (mode == INTER_NEAREST_PREFER_FLOOR || mode == INTER_NEAREST_CEIL)
             nnByRound<RoundUp>(elemSize, src, dst, M, offset, stream);
         else
             nnByRound<RoundDown>(elemSize, src, dst, M, offset, stream);

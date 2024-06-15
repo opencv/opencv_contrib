@@ -339,7 +339,7 @@ CUDA_TEST_P(ResizeOnnx, Accuracy)
 
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeOnnx, Combine(
     ALL_DEVICES,
-    Values(CV_8U, CV_8S, CV_16U, CV_16S, CV_32F),
+    Values(CV_8U, CV_8S, CV_16U, CV_16S, CV_32S, CV_32F, CV_64F),
     Values(0.4, 0.27, 1.6),
     Values(0.5, 0.71, 2.7),
     Values((int)(INTER_LINEAR), (int)(INTER_CUBIC)),
@@ -347,7 +347,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeOnnx, Combine(
 
 INSTANTIATE_TEST_CASE_P(CUDA_Warping_Antialias, ResizeOnnx, Combine(
     ALL_DEVICES,
-    Values(CV_8U, CV_8S, CV_16U, CV_16S, CV_32F),
+    Values(CV_8U, CV_8S, CV_16U, CV_16S, CV_32S, CV_32F, CV_64F),
     Values(0.4, 0.27, 1.6),
     Values(0.5, 0.71, 2.7),
     Values(
@@ -368,5 +368,4 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping_Nearest, ResizeOnnx, Combine(
     WHOLE_SUBMAT));
 
 }} // namespace
-
 #endif // HAVE_CUDA
