@@ -339,24 +339,22 @@ namespace cv { namespace cuda { namespace device {
         {
             int xstart = __float2int_rd(fx) - 1;
             int ystart = __float2int_rd(fy) - 1;
-            int xlimit = xstart + 3;
-            int ylimit = ystart + 3;
             int xoffset[4];
-            float xcoeff[4];
-            for (int x = xstart; x <= xlimit; ++x)
+            W1 xcoeff[4];
+            for (int x = 0; x < 4; ++x, ++xstart)
             {
-                xoffset[x - xstart] = clamp(x, 0, col1);
-                xcoeff[x - xstart] = cubic.at(x - fx);
+                xoffset[x] = clamp(xstart, 0, col1);
+                xcoeff [x] = cubic.at(xstart - fx);
             }
             W sumval = VecTraits<W>::all(0);
-            for (int y = ystart; y <= ylimit; ++y)
+            for (int y = 0; y < 4; ++y, ++ystart)
             {
-                int yoffest = clamp(y, 0, row1);
+                int yoffest = clamp(ystart, 0, row1);
                 T const* S = ptr<T>(src, yoffest);
                 W sline = VecTraits<W>::all(0);
                 for (int x = 0; x < 4; ++x)
                     sline += xcoeff[x] * saturate_cast<W>(S[xoffset[x]]);
-                sumval += sline * cubic.at(y - fy);
+                sumval += sline * cubic.at(ystart - fy);
             }
             at<T>(dst, dy, dx) = saturate_cast<T>(sumval);
         }
@@ -376,19 +374,17 @@ namespace cv { namespace cuda { namespace device {
         {
             int xstart = __float2int_rd(fx) - 1;
             int ystart = __float2int_rd(fy) - 1;
-            int xlimit = xstart + 3;
-            int ylimit = ystart + 3;
             int xoffset[4], yoffset[4];
             W xcoeff[4], ycoeff[4];
-            for (int x = xstart; x <= xlimit; ++x)
+            for (int x = 0; x < 4; ++x, ++xstart)
             {
-                xoffset[x - xstart] = clamp(x, 0, col1) * cn;
-                xcoeff[x - xstart] = cubic.at(x - fx);
+                xoffset[x] = clamp(xstart, 0, col1) * cn;
+                xcoeff [x] = cubic.at(xstart - fx);
             }
-            for (int y = ystart; y <= ylimit; ++y)
+            for (int y = 0; y < 4; ++y, ++ystart)
             {
-                yoffset[y - ystart] = clamp(y, 0, row1);
-                ycoeff[y - ystart] = cubic.at(y - fy);
+                yoffset[y] = clamp(ystart, 0, row1);
+                ycoeff [y] = cubic.at(ystart - fy);
             }
             T* D = ptr<T>(dst, dy) + dx * cn;
             for (int i = 0; i < cn; ++i)
@@ -509,15 +505,15 @@ namespace cv { namespace cuda { namespace device {
         dim3 block(32, 8);
         dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
         if (cn == 1)
-            sampleKernel<<<block, grid, 0, stream>>>(M, LinearVec<T, W, 1>(src, dst));
+            sampleKernel<<<grid, block, 0, stream>>>(M, LinearVec<T, W, 1>(src, dst));
         else if (cn == 2)
-            sampleKernel<<<block, grid, 0, stream>>>(M, LinearVec<T, W, 2>(src, dst));
+            sampleKernel<<<grid, block, 0, stream>>>(M, LinearVec<T, W, 2>(src, dst));
         else if (cn == 3)
-            sampleKernel<<<block, grid, 0, stream>>>(M, LinearVec<T, W, 3>(src, dst));
+            sampleKernel<<<grid, block, 0, stream>>>(M, LinearVec<T, W, 3>(src, dst));
         else if (cn == 4)
-            sampleKernel<<<block, grid, 0, stream>>>(M, LinearVec<T, W, 4>(src, dst));
+            sampleKernel<<<grid, block, 0, stream>>>(M, LinearVec<T, W, 4>(src, dst));
         else
-            sampleKernel<<<block, grid, 0, stream>>>(M, LinearCn<T, W>(src, dst, cn));
+            sampleKernel<<<grid, block, 0, stream>>>(M, LinearCn<T, W>(src, dst, cn));
     }
 
     template <typename T, typename W>
@@ -527,15 +523,15 @@ namespace cv { namespace cuda { namespace device {
         dim3 block(32, 8);
         dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
         if (cn == 1)
-            sampleKernel<<<block, grid, 0, stream>>>(M, LinearAntiVec<T, W, 1>(src, dst, scale, 0));
+            sampleKernel<<<grid, block, 0, stream>>>(M, LinearAntiVec<T, W, 1>(src, dst, scale, 0));
         else if (cn == 2)
-            sampleKernel<<<block, grid, 0, stream>>>(M, LinearAntiVec<T, W, 2>(src, dst, scale, 0));
+            sampleKernel<<<grid, block, 0, stream>>>(M, LinearAntiVec<T, W, 2>(src, dst, scale, 0));
         else if (cn == 3)
-            sampleKernel<<<block, grid, 0, stream>>>(M, LinearAntiVec<T, W, 3>(src, dst, scale, 0));
+            sampleKernel<<<grid, block, 0, stream>>>(M, LinearAntiVec<T, W, 3>(src, dst, scale, 0));
         else if (cn == 4)
-            sampleKernel<<<block, grid, 0, stream>>>(M, LinearAntiVec<T, W, 4>(src, dst, scale, 0));
+            sampleKernel<<<grid, block, 0, stream>>>(M, LinearAntiVec<T, W, 4>(src, dst, scale, 0));
         else
-            sampleKernel<<<block, grid, 0, stream>>>(M, LinearAntiCn<T, W>(src, dst, scale, 0, cn));
+            sampleKernel<<<grid, block, 0, stream>>>(M, LinearAntiCn<T, W>(src, dst, scale, 0, cn));
     }
 
     //==================== cubic  ====================//
@@ -547,15 +543,15 @@ namespace cv { namespace cuda { namespace device {
         dim3 block(32, 8);
         dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
         if (cn == 1)
-            sampleKernel<<<block, grid, 0, stream>>>(M, CubicVec<T, W, 1>(src, dst, A));
+            sampleKernel<<<grid, block, 0, stream>>>(M, CubicVec<T, W, 1>(src, dst, A));
         else if (cn == 2)
-            sampleKernel<<<block, grid, 0, stream>>>(M, CubicVec<T, W, 2>(src, dst, A));
+            sampleKernel<<<grid, block, 0, stream>>>(M, CubicVec<T, W, 2>(src, dst, A));
         else if (cn == 3)
-            sampleKernel<<<block, grid, 0, stream>>>(M, CubicVec<T, W, 3>(src, dst, A));
+            sampleKernel<<<grid, block, 0, stream>>>(M, CubicVec<T, W, 3>(src, dst, A));
         else if (cn == 4)
-            sampleKernel<<<block, grid, 0, stream>>>(M, CubicVec<T, W, 4>(src, dst, A));
+            sampleKernel<<<grid, block, 0, stream>>>(M, CubicVec<T, W, 4>(src, dst, A));
         else
-            sampleKernel<<<block, grid, 0, stream>>>(M, CubicCn<T, W>(src, dst, A, cn));
+            sampleKernel<<<grid, block, 0, stream>>>(M, CubicCn<T, W>(src, dst, A, cn));
     }
 
     template <typename T, typename W>
@@ -565,15 +561,15 @@ namespace cv { namespace cuda { namespace device {
         dim3 block(32, 8);
         dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
         if (cn == 1)
-            sampleKernel<<<block, grid, 0, stream>>>(M, CubicAntiVec<T, W, 1>(src, dst, scale, A));
+            sampleKernel<<<grid, block, 0, stream>>>(M, CubicAntiVec<T, W, 1>(src, dst, scale, A));
         else if (cn == 2)
-            sampleKernel<<<block, grid, 0, stream>>>(M, CubicAntiVec<T, W, 2>(src, dst, scale, A));
+            sampleKernel<<<grid, block, 0, stream>>>(M, CubicAntiVec<T, W, 2>(src, dst, scale, A));
         else if (cn == 3)
-            sampleKernel<<<block, grid, 0, stream>>>(M, CubicAntiVec<T, W, 3>(src, dst, scale, A));
+            sampleKernel<<<grid, block, 0, stream>>>(M, CubicAntiVec<T, W, 3>(src, dst, scale, A));
         else if (cn == 4)
-            sampleKernel<<<block, grid, 0, stream>>>(M, CubicAntiVec<T, W, 4>(src, dst, scale, A));
+            sampleKernel<<<grid, block, 0, stream>>>(M, CubicAntiVec<T, W, 4>(src, dst, scale, A));
         else
-            sampleKernel<<<block, grid, 0, stream>>>(M, CubicAntiCn<T, W>(src, dst, scale, A, cn));
+            sampleKernel<<<grid, block, 0, stream>>>(M, CubicAntiCn<T, W>(src, dst, scale, A, cn));
     }
 
 template <typename T, typename W>

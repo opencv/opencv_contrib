@@ -230,9 +230,9 @@ PERF_TEST_P(Sz_Depth_Cn_Scale, ResizeOnnxLinearAntialias,
             Combine(CUDA_TYPICAL_MAT_SIZES,
                     Values(CV_8U, CV_16U, CV_32F),
                     CUDA_CHANNELS_1_3_4,
-                    Values(0.2, 0.1, 0.05)))
+                    Values(0.8, 0.5, 0.3)))
 {
-    declare.time(1.0);
+    declare.time(10.0);
 
     const cv::Size size = GET_PARAM(0);
     const int depth = GET_PARAM(1);
