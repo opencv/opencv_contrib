@@ -70,9 +70,9 @@ public:
         void write(FileStorage& fs) const;
     };
 
-    /** @brief Detects edges in a grayscale image and prepares them to detect lines and ellipses.
+    /** @brief Detects edges in a grayscale or color image and prepares them to detect lines and ellipses.
 
-    @param src 8-bit, single-channel, grayscale input image.
+    @param src 8-bit, single-channel or color input image.
     */
     CV_WRAP virtual void detectEdges(InputArray src) = 0;
 
