@@ -2765,6 +2765,47 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Phase, testing::Combine(
     testing::Values(AngleInDegrees(false), AngleInDegrees(true)),
     WHOLE_SUBMAT));
 
+PARAM_TEST_CASE(PhaseInterleaved, cv::cuda::DeviceInfo, cv::Size, AngleInDegrees, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    bool angleInDegrees;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        angleInDegrees = GET_PARAM(2);
+        useRoi = GET_PARAM(3);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(PhaseInterleaved, Accuracy)
+{
+    cv::Mat x = randomMat(size, CV_32FC1);
+    cv::Mat y = randomMat(size, CV_32FC1);
+    cv::Mat xy;
+    std::vector<cv::Mat> xyChannels = {x, y};
+    cv::merge(xyChannels, xy);
+
+    cv::cuda::GpuMat dst = createMat(size, CV_32FC1, useRoi);
+    cv::cuda::phase(loadMat(xy, useRoi), dst, angleInDegrees);
+
+    cv::Mat dst_gold;
+    cv::phase(x, y, dst_gold, angleInDegrees);
+
+    EXPECT_MAT_NEAR(dst_gold, dst, angleInDegrees ? 1e-2 : 1e-3);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, PhaseInterleaved, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    testing::Values(AngleInDegrees(false), AngleInDegrees(true)),
+    WHOLE_SUBMAT));
+
 ////////////////////////////////////////////////////////////////////////////////
 // CartToPolar
 
@@ -2804,6 +2845,97 @@ CUDA_TEST_P(CartToPolar, Accuracy)
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, CartToPolar, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    testing::Values(AngleInDegrees(false), AngleInDegrees(true)),
+    WHOLE_SUBMAT));
+
+PARAM_TEST_CASE(CartToPolarInterleavedXY, cv::cuda::DeviceInfo, cv::Size, AngleInDegrees, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    bool angleInDegrees;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        angleInDegrees = GET_PARAM(2);
+        useRoi = GET_PARAM(3);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(CartToPolarInterleavedXY, Accuracy)
+{
+    cv::Mat x = randomMat(size, CV_32FC1);
+    cv::Mat y = randomMat(size, CV_32FC1);
+    cv::Mat xy;
+    std::vector<cv::Mat> xyChannels = {x, y};
+    cv::merge(xyChannels, xy);
+
+    cv::cuda::GpuMat mag = createMat(size, CV_32FC1, useRoi);
+    cv::cuda::GpuMat angle = createMat(size, CV_32FC1, useRoi);
+    cv::cuda::cartToPolar(loadMat(xy, useRoi), mag, angle, angleInDegrees);
+
+    cv::Mat mag_gold;
+    cv::Mat angle_gold;
+    cv::cartToPolar(x, y, mag_gold, angle_gold, angleInDegrees);
+
+    EXPECT_MAT_NEAR(mag_gold, mag, 1e-4);
+    EXPECT_MAT_NEAR(angle_gold, angle, angleInDegrees ? 1e-2 : 1e-3);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, CartToPolarInterleavedXY, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    testing::Values(AngleInDegrees(false), AngleInDegrees(true)),
+    WHOLE_SUBMAT));
+
+PARAM_TEST_CASE(CartToPolarInterleavedXYMagAngle, cv::cuda::DeviceInfo, cv::Size, AngleInDegrees, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    bool angleInDegrees;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        angleInDegrees = GET_PARAM(2);
+        useRoi = GET_PARAM(3);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(CartToPolarInterleavedXYMagAngle, Accuracy)
+{
+    cv::Mat x = randomMat(size, CV_32FC1);
+    cv::Mat y = randomMat(size, CV_32FC1);
+    cv::Mat xy;
+    std::vector<cv::Mat> xyChannels = {x, y};
+    cv::merge(xyChannels, xy);
+
+    cv::cuda::GpuMat magAngle = createMat(size, CV_32FC2, useRoi);
+    cv::cuda::cartToPolar(loadMat(xy, useRoi), magAngle, angleInDegrees);
+    std::vector<cv::cuda::GpuMat> magAngleChannels;
+    cv::cuda::split(magAngle, magAngleChannels);
+    cv::cuda::GpuMat& mag = magAngleChannels[0];
+    cv::cuda::GpuMat& angle = magAngleChannels[1];
+
+    cv::Mat mag_gold;
+    cv::Mat angle_gold;
+    cv::cartToPolar(x, y, mag_gold, angle_gold, angleInDegrees);
+
+    EXPECT_MAT_NEAR(mag_gold, mag, 1e-4);
+    EXPECT_MAT_NEAR(angle_gold, angle, angleInDegrees ? 1e-2 : 1e-3);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, CartToPolarInterleavedXYMagAngle, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     testing::Values(AngleInDegrees(false), AngleInDegrees(true)),
@@ -2851,6 +2983,105 @@ CUDA_TEST_P(PolarToCart, Accuracy)
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, PolarToCart, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    testing::Values(CV_32FC1, CV_64FC1),
+    testing::Values(AngleInDegrees(false), AngleInDegrees(true)),
+    WHOLE_SUBMAT));
+
+PARAM_TEST_CASE(PolarToCartInterleaveXY, cv::cuda::DeviceInfo, cv::Size, MatType, AngleInDegrees, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int type;
+    bool angleInDegrees;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        type = GET_PARAM(2);
+        angleInDegrees = GET_PARAM(3);
+        useRoi = GET_PARAM(4);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(PolarToCartInterleaveXY, Accuracy)
+{
+    cv::Mat magnitude = randomMat(size, type);
+    cv::Mat angle = randomMat(size, type);
+    const double tol = (type == CV_32FC1 ? 1.6e-4 : 1e-4) * (angleInDegrees ? 1.0 : 19.47);
+
+    cv::cuda::GpuMat xy = createMat(size, CV_MAKETYPE(CV_MAT_DEPTH(type), 2), useRoi);
+    cv::cuda::polarToCart(loadMat(magnitude, useRoi), loadMat(angle, useRoi), xy, angleInDegrees);
+    std::vector<cv::cuda::GpuMat> xyChannels;
+    cv::cuda::split(xy, xyChannels);
+    cv::cuda::GpuMat& x = xyChannels[0];
+    cv::cuda::GpuMat& y = xyChannels[1];
+
+    cv::Mat x_gold;
+    cv::Mat y_gold;
+    cv::polarToCart(magnitude, angle, x_gold, y_gold, angleInDegrees);
+
+    EXPECT_MAT_NEAR(x_gold, x, tol);
+    EXPECT_MAT_NEAR(y_gold, y, tol);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, PolarToCartInterleaveXY, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    testing::Values(CV_32FC1, CV_64FC1),
+    testing::Values(AngleInDegrees(false), AngleInDegrees(true)),
+    WHOLE_SUBMAT));
+
+PARAM_TEST_CASE(PolarToCartInterleaveMagAngleXY, cv::cuda::DeviceInfo, cv::Size, MatType, AngleInDegrees, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int type;
+    bool angleInDegrees;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        type = GET_PARAM(2);
+        angleInDegrees = GET_PARAM(3);
+        useRoi = GET_PARAM(4);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(PolarToCartInterleaveMagAngleXY, Accuracy)
+{
+    cv::Mat magnitude = randomMat(size, type);
+    cv::Mat angle = randomMat(size, type);
+    std::vector<cv::Mat> magAngleChannels = {magnitude, angle};
+    cv::Mat magAngle;
+    cv::merge(magAngleChannels, magAngle);
+    const double tol = (type == CV_32FC1 ? 1.6e-4 : 1e-4) * (angleInDegrees ? 1.0 : 19.47);
+
+    cv::cuda::GpuMat xy = createMat(size, CV_MAKETYPE(CV_MAT_DEPTH(type), 2), useRoi);
+    cv::cuda::polarToCart(loadMat(magAngle, useRoi), xy, angleInDegrees);
+    std::vector<cv::cuda::GpuMat> xyChannels;
+    cv::cuda::split(xy, xyChannels);
+    cv::cuda::GpuMat& x = xyChannels[0];
+    cv::cuda::GpuMat& y = xyChannels[1];
+
+    cv::Mat x_gold;
+    cv::Mat y_gold;
+    cv::polarToCart(magnitude, angle, x_gold, y_gold, angleInDegrees);
+
+    EXPECT_MAT_NEAR(x_gold, x, tol);
+    EXPECT_MAT_NEAR(y_gold, y, tol);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, PolarToCartInterleaveMagAngleXY, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     testing::Values(CV_32FC1, CV_64FC1),
