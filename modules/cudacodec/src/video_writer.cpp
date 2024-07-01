@@ -97,7 +97,8 @@ FFmpegVideoWriter::~FFmpegVideoWriter() {
 
 void FFmpegVideoWriter::onEncoded(const std::vector<std::vector<uint8_t>>& vPacket) {
     for (auto& packet : vPacket) {
-        Mat wrappedPacket(1, packet.size(), CV_8UC1, (void*)packet.data());
+        CV_Assert(packet.size() <= std::numeric_limits<int>::max());
+        Mat wrappedPacket(1, static_cast<int>(packet.size()), CV_8UC1, (void*)packet.data());
         writer.write(wrappedPacket);
     }
 }
@@ -199,7 +200,7 @@ VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallback>& encoderCallBack_, c
     CV_Assert(colorFormat != ColorFormat::UNDEFINED);
     surfaceFormat = EncBufferFormat(colorFormat);
     if (surfaceFormat == NV_ENC_BUFFER_FORMAT_UNDEFINED) {
-        String msg = cv::format("Unsupported input surface format: %i", colorFormat);
+        String msg = cv::format("Unsupported input surface format: %i", static_cast<int>(colorFormat));
         CV_LOG_WARNING(NULL, msg);
         CV_Error(Error::StsUnsupportedFormat, msg);
     }
