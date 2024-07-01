@@ -43,6 +43,7 @@
 #define __OPENCV_RANDOMPATTERN_HPP__
 
 #include "opencv2/features2d.hpp"
+#include "opencv2/xfeatures2d.hpp"
 #include "opencv2/highgui.hpp"
 
 namespace cv { namespace randpattern {
@@ -79,8 +80,8 @@ public:
     */
     RandomPatternCornerFinder(float patternWidth, float patternHeight,
         int nminiMatch = 20, int depth = CV_32F, int verbose = 0, int showExtraction = 0,
-        Ptr<FeatureDetector> detector = AKAZE::create(AKAZE::DESCRIPTOR_MLDB, 0, 3, 0.005f),
-        Ptr<DescriptorExtractor> descriptor = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,0, 3, 0.005f),
+        Ptr<FeatureDetector> detector = xfeatures2d::AKAZE::create(xfeatures2d::AKAZE::DESCRIPTOR_MLDB, 0, 3, 0.005f),
+        Ptr<DescriptorExtractor> descriptor = xfeatures2d::AKAZE::create(xfeatures2d::AKAZE::DESCRIPTOR_MLDB,0, 3, 0.005f),
         Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-L1"));
 
     /* @brief Load pattern image and compute features for pattern

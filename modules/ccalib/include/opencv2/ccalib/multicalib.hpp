@@ -132,8 +132,8 @@ public:
     MultiCameraCalibration(int cameraType, int nCameras, const std::string& fileName, float patternWidth,
         float patternHeight, int verbose = 0, int showExtration = 0, int nMiniMatches = 20, int flags = 0,
         TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 200, 1e-7),
-        Ptr<FeatureDetector> detector = AKAZE::create(AKAZE::DESCRIPTOR_MLDB, 0, 3, 0.006f),
-        Ptr<DescriptorExtractor> descriptor = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,0, 3, 0.006f),
+        Ptr<FeatureDetector> detector = xfeatures2d::AKAZE::create(xfeatures2d::AKAZE::DESCRIPTOR_MLDB, 0, 3, 0.006f),
+        Ptr<DescriptorExtractor> descriptor = xfeatures2d::AKAZE::create(xfeatures2d::AKAZE::DESCRIPTOR_MLDB,0, 3, 0.006f),
         Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-L1"));
 
     /* @brief load images
