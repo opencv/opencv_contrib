@@ -386,28 +386,38 @@ namespace
         const int cn = CV_MAT_CN(srcType);
         const int ddepth = CV_MAT_DEPTH(dstType);
 
-        Mat rowKernel = _rowKernel.getMat();
-        Mat columnKernel = _columnKernel.getMat();
+        CV_Assert( _rowKernel.empty() || _rowKernel.isMat() );
+        CV_Assert( _columnKernel.empty() || _columnKernel.isMat() );
+        Mat rowKernel = _rowKernel.empty() ? cv::Mat() : _rowKernel.getMat();
+        Mat columnKernel = _columnKernel.empty() ? cv::Mat() : _columnKernel.getMat();
 
         CV_Assert( sdepth <= CV_64F && cn <= 4 );
-        CV_Assert( rowKernel.channels() == 1 );
-        CV_Assert( columnKernel.channels() == 1 );
+        CV_Assert( rowKernel.empty() || rowKernel.channels() == 1 );
+        CV_Assert( columnKernel.empty() || columnKernel.channels() == 1 );
         CV_Assert( rowBorderMode == BORDER_REFLECT101 || rowBorderMode == BORDER_REPLICATE || rowBorderMode == BORDER_CONSTANT || rowBorderMode == BORDER_REFLECT || rowBorderMode == BORDER_WRAP );
         CV_Assert( columnBorderMode == BORDER_REFLECT101 || columnBorderMode == BORDER_REPLICATE || columnBorderMode == BORDER_CONSTANT || columnBorderMode == BORDER_REFLECT || columnBorderMode == BORDER_WRAP );
 
         Mat kernel32F;
 
-        rowKernel.convertTo(kernel32F, CV_32F);
-        rowKernel_.upload(kernel32F.reshape(1, 1));
+        if (!rowKernel.empty())
+        {
+            rowKernel.convertTo(kernel32F, CV_32F);
+            rowKernel_.upload(kernel32F.reshape(1, 1));
+        }
 
-        columnKernel.convertTo(kernel32F, CV_32F);
-        columnKernel_.upload(kernel32F.reshape(1, 1));
+        if (!columnKernel.empty())
+        {
+            columnKernel.convertTo(kernel32F, CV_32F);
+            columnKernel_.upload(kernel32F.reshape(1, 1));
+        }
 
-        CV_Assert( rowKernel_.cols > 0 && rowKernel_.cols <= 32 );
-        CV_Assert( columnKernel_.cols > 0 && columnKernel_.cols <= 32 );
+        CV_Assert( rowKernel_.empty() || (rowKernel_.cols > 0 && rowKernel_.cols <= 32 ));
+        CV_Assert( columnKernel_.empty() || (columnKernel_.cols > 0 && columnKernel_.cols <= 32 ));
 
-        normalizeAnchor(anchor_.x, rowKernel_.cols);
-        normalizeAnchor(anchor_.y, columnKernel_.cols);
+        if (!rowKernel_.empty())
+          normalizeAnchor(anchor_.x, rowKernel_.cols);
+        if (!columnKernel_.empty())
+          normalizeAnchor(anchor_.y, columnKernel_.cols);
 
         bufType_ = CV_MAKE_TYPE(CV_32F, cn);
 
@@ -426,15 +436,45 @@ namespace
         _dst.create(src.size(), dstType_);
         GpuMat dst = _dst.getGpuMat();
 
-        ensureSizeIsEnough(src.size(), bufType_, buf_);
+        const bool isInPlace = (src.data == dst.data);
+        const bool hasRowKernel = !rowKernel_.empty();
+        const bool hasColKernel = !columnKernel_.empty();
+        const bool hasSingleKernel = (hasRowKernel ^ hasColKernel);
+        const bool needsSrcAdaptation = !hasRowKernel &&  hasColKernel && (srcType_ != bufType_);
+        const bool needsDstAdaptation =  hasRowKernel && !hasColKernel && (dstType_ != bufType_);
+        const bool needsBufForIntermediateStorage = (hasRowKernel && hasColKernel) || (hasSingleKernel && isInPlace);
+        const bool needsBuf = needsSrcAdaptation || needsDstAdaptation || needsBufForIntermediateStorage;
+        if (needsBuf)
+            ensureSizeIsEnough(src.size(), bufType_, buf_);
+
+        if (needsSrcAdaptation)
+            src.convertTo(buf_, bufType_, _stream);
+        GpuMat& srcAdapted = needsSrcAdaptation ? buf_ : src;
 
         DeviceInfo devInfo;
         const int cc = devInfo.majorVersion() * 10 + devInfo.minorVersion();
 
         cudaStream_t stream = StreamAccessor::getStream(_stream);
 
-        rowFilter_(src, buf_, rowKernel_.ptr<float>(), rowKernel_.cols, anchor_.x, rowBorderMode_, cc, stream);
-        columnFilter_(buf_, dst, columnKernel_.ptr<float>(), columnKernel_.cols, anchor_.y, columnBorderMode_, cc, stream);
+        if (!hasRowKernel && !hasColKernel && !isInPlace)
+            srcAdapted.convertTo(dst, dstType_, _stream);
+        else if (hasRowKernel || hasColKernel)
+        {
+            GpuMat& rowFilterSrc = srcAdapted;
+            GpuMat& rowFilterDst = !hasRowKernel ? srcAdapted : needsBuf ? buf_ : dst;
+            GpuMat& colFilterSrc = hasColKernel && needsBuf ? buf_ : srcAdapted;
+            GpuMat& colFilterTo = dst;
+
+            if (hasRowKernel)
+                rowFilter_(rowFilterSrc, rowFilterDst, rowKernel_.ptr<float>(), rowKernel_.cols, anchor_.x, rowBorderMode_, cc, stream);
+            else if (hasColKernel && (needsBufForIntermediateStorage && !needsSrcAdaptation))
+                rowFilterSrc.convertTo(buf_, bufType_, _stream);
+
+            if (hasColKernel)
+                columnFilter_(colFilterSrc, colFilterTo, columnKernel_.ptr<float>(), columnKernel_.cols, anchor_.y, columnBorderMode_, cc, stream);
+            else if (needsBuf)
+                buf_.convertTo(dst, dstType_, _stream);
+        }
     }
 }
 

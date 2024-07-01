@@ -281,6 +281,86 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilter, testing::Combine(
                     BorderType(cv::BORDER_REFLECT)),
     WHOLE_SUBMAT));
 
+PARAM_TEST_CASE(SeparableLinearFilterWithEmptyKernels, cv::cuda::DeviceInfo, MatDepth, Channels, MatDepth, bool, bool, bool)
+{
+    cv::cuda::DeviceInfo devInfo;
+    bool inPlace;
+    bool useRowKernel;
+    bool useColKernel;
+
+    cv::Size size;
+    int srcDepth;
+    int cn;
+    int dstDepth;
+    cv::Size ksize;
+    cv::Point anchor;
+    int borderType;
+    int srcType;
+    int dstType;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        srcDepth = GET_PARAM(1);
+        cn = GET_PARAM(2);
+        dstDepth = GET_PARAM(3);
+        inPlace = GET_PARAM(4);
+        useRowKernel = GET_PARAM(5);
+        useColKernel = GET_PARAM(6);
+
+        size = cv::Size(640, 480);
+        ksize = cv::Size(3, 1);
+        anchor = cv::Point(-1, -1);
+        borderType = cv::BORDER_REPLICATE;
+
+        cv::cuda::setDevice(devInfo.deviceID());
+
+        srcType = CV_MAKE_TYPE(srcDepth, cn);
+        dstType = CV_MAKE_TYPE(dstDepth, cn);
+    }
+};
+
+CUDA_TEST_P(SeparableLinearFilterWithEmptyKernels, Accuracy)
+{
+    cv::Mat src = randomMat(size, srcType);
+    cv::Mat rowKernel = (cv::Mat_<float>(ksize) << -1, 0, 1);
+    cv::Mat colKernel = rowKernel.t();
+    cv::Mat oneKernel = cv::Mat::ones(cv::Size(1, 1), CV_32FC1);
+    cv::Mat noKernel = cv::Mat();
+
+    cv::Ptr<cv::cuda::Filter> sepFilterDummyKernels =
+        cv::cuda::createSeparableLinearFilter(srcType, dstType,
+            useRowKernel ? rowKernel : oneKernel,
+            useColKernel ? colKernel : oneKernel,
+            cv::Point(-1, -1), cv::BORDER_REPLICATE, cv::BORDER_REPLICATE);
+
+    cv::Ptr<cv::cuda::Filter> sepFilterEmptyKernels =
+        cv::cuda::createSeparableLinearFilter(srcType, dstType,
+            useRowKernel ? rowKernel : noKernel,
+            useColKernel ? colKernel : noKernel,
+            cv::Point(-1, -1), cv::BORDER_REPLICATE, cv::BORDER_REPLICATE);
+
+    cv::cuda::GpuMat src_sep_dummyK = loadMat(src);
+    cv::cuda::GpuMat dst_sep_dummyK = inPlace ? src_sep_dummyK : cv::cuda::GpuMat();
+    cv::cuda::GpuMat src_sep_emptyK = loadMat(src);
+    cv::cuda::GpuMat dst_sep_emptyK = inPlace ? src_sep_emptyK : cv::cuda::GpuMat();
+
+    sepFilterDummyKernels->apply(src_sep_dummyK, dst_sep_dummyK);
+    sepFilterEmptyKernels->apply(src_sep_emptyK, dst_sep_emptyK);
+
+    EXPECT_MAT_NEAR(dst_sep_dummyK, dst_sep_emptyK, src.depth() < CV_32F ? 1.0 : 1e-2);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilterWithEmptyKernels, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(MatDepth(CV_8U), MatDepth(CV_16U), MatDepth(CV_16S), MatDepth(CV_32F)),
+    IMAGE_CHANNELS,
+    testing::Values(MatDepth(CV_8U), MatDepth(CV_16U), MatDepth(CV_16S), MatDepth(CV_32F)),
+    testing::Values(false, true),//in-place
+    testing::Values(false, true),//use row kernel
+    testing::Values(false, true)//use col kernel
+    ));
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Sobel
 
