@@ -377,6 +377,7 @@ EdgeDrawingImpl::~EdgeDrawingImpl()
 
 void EdgeDrawingImpl::detectEdges(InputArray src)
 {
+    CV_Assert(!src.empty() && src.type() == CV_8UC1 && src.type() == CV_8UC3);
     gradThresh = params.GradientThresholdValue;
     anchorThresh = params.AnchorThresholdValue;
     op = params.EdgeDetectionOperator;
@@ -6142,13 +6143,13 @@ void EdgeDrawingImpl::validateEdgeSegments()
 
     // Compute np: # of segment pieces
     np = 0;
-    for (int i = 0; i < segments.size(); i++) {
+    for (int i = 0; i < (int)segments.size(); i++) {
         int len = (int)segments[i].size();
         np += (len * (len - 1)) / 2;
     }
 
     // Validate segments
-    for (int i = 0; i < segments.size(); i++) {
+    for (int i = 0; i < (int)segments.size(); i++) {
         testSegment(i, 0, (int)segments[i].size() - 1);
     }
 
@@ -6219,16 +6220,16 @@ void EdgeDrawingImpl::testSegment(int i, int index1, int index2)
 //----------------------------------------------------------------------------------------------
 // After the validation of the edge segments, extracts the valid ones
 // In other words, updates the valid segments' pixel arrays and their lengths
-// 
+//
 void EdgeDrawingImpl::extractNewSegments()
 {
     vector< vector<Point> > validSegments;
 
-    for (int i = 0; i < segments.size(); i++) {
+    for (int i = 0; i < (int)segments.size(); i++) {
         int start = 0;
-        while (start < segments[i].size()) {
+        while (start < (int)segments[i].size()) {
 
-            while (start < segments[i].size()) {
+            while (start < (int)segments[i].size()) {
                 int r = segments[i][start].y;
                 int c = segments[i][start].x;
 
@@ -6237,7 +6238,7 @@ void EdgeDrawingImpl::extractNewSegments()
             }
 
             int end = start + 1;
-            while (end < segments[i].size()) {
+            while (end < (int)segments[i].size()) {
                 int r = segments[i][end].y;
                 int c = segments[i][end].x;
 
@@ -6275,11 +6276,11 @@ void EdgeDrawingImpl::extractNewSegments()
 void EdgeDrawingImpl::fixEdgeSegments(std::vector<std::vector<cv::Point>> map)
 {
     /// First fix one pixel problems: There are four cases
-    for (int i = 0; i < map.size(); i++) {
+    for (int i = 0; i < (int)map.size(); i++) {
         int cp = (int)map[i].size() - 2;  // Current pixel index
         int n2 = 0;  // next next pixel index
 
-        while (n2 < map[i].size()) {
+        while (n2 < (int)map[i].size()) {
             int n1 = cp + 1; // next pixel
 
             cp = cp % map[i].size(); // Roll back to the beginning
