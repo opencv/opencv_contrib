@@ -13,15 +13,15 @@
 #define ANCHOR_PIXEL  254
 #define EDGE_PIXEL    255
 
-#define LEFT  1
-#define RIGHT 2
-#define UP    3
-#define DOWN  4
+#define ED_LEFT  1
+#define ED_RIGHT 2
+#define ED_UP    3
+#define ED_DOWN  4
 
-#define SOUTH_SOUTH 0
-#define SOUTH_EAST 1
-#define EAST_SOUTH 2
-#define EAST_EAST 3
+#define ED_SOUTH_SOUTH 0
+#define ED_SOUTH_EAST 1
+#define ED_EAST_SOUTH 2
+#define ED_EAST_EAST 3
 
 // Circular arc, circle thresholds
 #define VERY_SHORT_ARC_ERROR     0.40  // Used for very short arcs (>= CANDIDATE_CIRCLE_RATIO1 && < CANDIDATE_CIRCLE_RATIO2)
@@ -37,7 +37,7 @@
 // Ellipse thresholds
 #define CANDIDATE_ELLIPSE_RATIO  0.50  // 50% -- If 50% of the ellipse is detected, it may be candidate for validation
 #define ELLIPSE_ERROR            1.50  // Used for ellipses. (used to be 1.65 for what reason?)
-#define MAX_GRAD_VALUE 128*256
+#define ED_MAX_GRAD_VALUE 128*256
 
 using namespace std;
 using namespace cv;

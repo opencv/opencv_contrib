@@ -92,6 +92,9 @@ void ComputeGradientBody::operator() (const Range& range) const
     }
 }
 
+// Look up table size for fast color space conversion
+#define LUT_SIZE (1024*4096)
+
 class EdgeDrawingImpl : public EdgeDrawing
 {
 public:
@@ -126,15 +129,41 @@ protected:
     Mat smoothImage;
     uchar *edgeImg;   // pointer to edge image data
     uchar *smoothImg; // pointer to smoothed image data
-    int segmentNos;
     Mat srcImage;
 
+    int op;           // edge detection operator
+    int gradThresh;   // gradient threshold
+    int anchorThresh; // anchor point threshold
     double divForTestSegment;
     double* dH;
     int* grads;
     int np;
 
 private:
+    uchar* L_Img;
+    uchar* a_Img;
+    uchar* b_Img;
+
+    uchar* smooth_L;
+    uchar* smooth_a;
+    uchar* smooth_b;
+
+    std::vector<std::vector<cv::Point>> segments;
+
+    static double LUT1[LUT_SIZE + 1];
+    static double LUT2[LUT_SIZE + 1];
+    static bool LUT_Initialized;
+
+    void MyRGB2LabFast();
+    void ComputeGradientMapByDiZenzo();
+    void smoothChannel(uchar* src, uchar* smooth, double sigma);
+    void validateEdgeSegments();
+    void testSegment(int i, int index1, int index2);
+    void extractNewSegments();
+
+    static void fixEdgeSegments(std::vector<std::vector<cv::Point>> map);
+    static void InitColorEDLib();
+
     void ComputeGradient();
     void ComputeAnchorPoints();
     void JoinAnchorPointsUsingSortedAnchors();
@@ -153,10 +182,7 @@ private:
     uchar *dirImg;    // pointer to direction image data
     ushort *gradImg;   // pointer to gradient image data
 
-    int op;           // edge detection operator
-    int gradThresh;   // gradient threshold
-    int anchorThresh; // anchor point threshold
-
+    int segmentNos;
     std::vector<EDLineSegment> lines;
     int linesNo;
     int min_line_len;
@@ -338,8 +364,8 @@ EdgeDrawingImpl::EdgeDrawingImpl()
 {
     params = EdgeDrawing::Params();
     nfa = new NFALUT(1, 1/2, 1, 1);
-    dH = new double[MAX_GRAD_VALUE];
-    grads = new int[MAX_GRAD_VALUE];
+    dH = new double[ED_MAX_GRAD_VALUE];
+    grads = new int[ED_MAX_GRAD_VALUE];
 }
 
 EdgeDrawingImpl::~EdgeDrawingImpl()
@@ -351,7 +377,7 @@ EdgeDrawingImpl::~EdgeDrawingImpl()
 
 void EdgeDrawingImpl::detectEdges(InputArray src)
 {
-    CV_Assert(!src.empty() && src.type() == CV_8UC1);
+    CV_Assert(!src.empty() && (src.type() == CV_8UC1 || src.type() == CV_8UC3));
     gradThresh = params.GradientThresholdValue;
     anchorThresh = params.AnchorThresholdValue;
     op = params.EdgeDetectionOperator;
@@ -377,58 +403,153 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
     height = srcImage.rows;
     width = srcImage.cols;
 
-    edgeImage = Mat(height, width, CV_8UC1, Scalar(0)); // initialize edge Image
+    edgeImage = Mat(height, width, CV_8UC1, Scalar(0));
     gradImage = Mat(height, width, CV_16UC1); // gradImage contains short values
     dirImage = Mat(height, width, CV_8UC1);
-
-    if (params.Sigma < 1.0)
-        smoothImage = srcImage;
-    else if (params.Sigma == 1.0)
-        GaussianBlur(srcImage, smoothImage, Size(5, 5), params.Sigma);
-    else
-        GaussianBlur(srcImage, smoothImage, Size(), params.Sigma); // calculate kernel from sigma
-
-    // Assign Pointers from Mat's data
-    smoothImg = smoothImage.data;
-    gradImg = (ushort*)gradImage.data;
     edgeImg = edgeImage.data;
+    gradImg = (ushort*)gradImage.data;
     dirImg = dirImage.data;
 
-    if (params.PFmode)
+    if (srcImage.type() == CV_8UC1)
     {
-        memset(dH, 0, sizeof(double) * MAX_GRAD_VALUE);
-        memset(grads, 0, sizeof(int) * MAX_GRAD_VALUE);
-    }
+        if (params.Sigma < 1.0)
+            smoothImage = srcImage;
+        else if (params.Sigma == 1.0)
+            GaussianBlur(srcImage, smoothImage, Size(5, 5), params.Sigma);
+        else
+            GaussianBlur(srcImage, smoothImage, Size(), params.Sigma); // calculate kernel from sigma
 
-    ComputeGradient();                    // COMPUTE GRADIENT & EDGE DIRECTION MAPS
-    ComputeAnchorPoints();                // COMPUTE ANCHORS
-    JoinAnchorPointsUsingSortedAnchors(); // JOIN ANCHORS
+        smoothImg = smoothImage.data;
 
-    if (params.PFmode)
-    {
-        // Compute probability function H
-        int size = (width - 2) * (height - 2);
-
-        for (int i = MAX_GRAD_VALUE - 1; i > 0; i--)
-            grads[i - 1] += grads[i];
-
-        for (int i = 0; i < MAX_GRAD_VALUE; i++)
-            dH[i] = (double)grads[i] / ((double)size);
-
-        divForTestSegment = 2.25; // Some magic number :-)
-        memset(edgeImg, 0, width * height); // clear edge image
-        np = 0;
-        for (int i = 0; i < segmentNos; i++)
+        if (params.PFmode)
         {
-            int len = (int)segmentPoints[i].size();
-            np += (len * (len - 1)) / 2;
+            memset(dH, 0, sizeof(double) * ED_MAX_GRAD_VALUE);
+            memset(grads, 0, sizeof(int) * ED_MAX_GRAD_VALUE);
         }
 
-        // Validate segments
-        for (int i = 0; i < segmentNos; i++)
-            TestSegment(i, 0, (int)segmentPoints[i].size() - 1);
+        ComputeGradient();                    // COMPUTE GRADIENT & EDGE DIRECTION MAPS
+        ComputeAnchorPoints();                // COMPUTE ANCHORS
+        JoinAnchorPointsUsingSortedAnchors(); // JOIN ANCHORS
 
-        ExtractNewSegments();
+        if (params.PFmode)
+        {
+            // Compute probability function H
+            int size = (width - 2) * (height - 2);
+
+            for (int i = ED_MAX_GRAD_VALUE - 1; i > 0; i--)
+                grads[i - 1] += grads[i];
+
+            for (int i = 0; i < ED_MAX_GRAD_VALUE; i++)
+                dH[i] = (double)grads[i] / ((double)size);
+
+            divForTestSegment = 2.25; // Some magic number :-)
+            memset(edgeImg, 0, width * height); // clear edge image
+            np = 0;
+            for (int i = 0; i < segmentNos; i++)
+            {
+                int len = (int)segmentPoints[i].size();
+                np += (len * (len - 1)) / 2;
+            }
+
+            // Validate segments
+            for (int i = 0; i < segmentNos; i++)
+                TestSegment(i, 0, (int)segmentPoints[i].size() - 1);
+
+            ExtractNewSegments();
+        }
+    }
+    else
+    {
+        gradImg = (ushort*)gradImage.data;
+
+        // Allocate space for L*a*b color space
+        L_Img = new uchar[width * height];
+        a_Img = new uchar[width * height];
+        b_Img = new uchar[width * height];
+
+        // Convert RGB2Lab
+        MyRGB2LabFast();
+
+        // Allocate space for smooth channels
+        smooth_L = new uchar[width * height];
+        smooth_a = new uchar[width * height];
+        smooth_b = new uchar[width * height];
+
+        // Smooth Channels
+        smoothChannel(L_Img, smooth_L, params.Sigma);
+        smoothChannel(a_Img, smooth_a, params.Sigma);
+        smoothChannel(b_Img, smooth_b, params.Sigma);
+
+        ComputeGradientMapByDiZenzo();        // Compute Gradient & Edge Direction Maps
+
+        // Compute anchors with the user supplied parameters
+        anchorThresh = 0; // anchorThresh used as zero while computing anchor points if selectStableAnchors set.
+        // Finding higher number of anchors is OK, because we have following validation steps in selectStableAnchors.
+        ComputeAnchorPoints();                // COMPUTE ANCHORS
+        anchorThresh = params.AnchorThresholdValue; // set it to its initial argument value for further anchor validation.
+        anchorPoints.clear(); // considering validation step below, it should constructed again.
+
+        for (int i = 1; i < height - 1; i++) {
+            for (int j = 1; j < width - 1; j++) {
+                if (edgeImg[i * width + j] != ANCHOR_PIXEL) continue;
+
+                // Take only "stable" anchors
+                // 0 degree edge
+                if (edgeImg[i * width + j - 1] && edgeImg[i * width + j + 1]) {
+                    int diff1 = gradImg[i * width + j] - gradImg[(i - 1) * width + j];
+                    int diff2 = gradImg[i * width + j] - gradImg[(i + 1) * width + j];
+                    if (diff1 >= anchorThresh && diff2 >= anchorThresh) edgeImg[i * width + j] = 255;
+
+                    continue;
+                }
+
+                  // 90 degree edge
+                if (edgeImg[(i - 1) * width + j] && edgeImg[(i + 1) * width + j]) {
+                    int diff1 = gradImg[i * width + j] - gradImg[i * width + j - 1];
+                    int diff2 = gradImg[i * width + j] - gradImg[i * width + j + 1];
+                    if (diff1 >= anchorThresh && diff2 >= anchorThresh) edgeImg[i * width + j] = 255;
+
+                    continue;
+                }
+
+                  // 135 degree diagonal
+                if (edgeImg[(i - 1) * width + j - 1] && edgeImg[(i + 1) * width + j + 1]) {
+                    int diff1 = gradImg[i * width + j] - gradImg[(i - 1) * width + j + 1];
+                    int diff2 = gradImg[i * width + j] - gradImg[(i + 1) * width + j - 1];
+                    if (diff1 >= anchorThresh && diff2 >= anchorThresh) edgeImg[i * width + j] = 255;
+                    continue;
+                }
+
+                  // 45 degree diagonal
+                if (edgeImg[(i - 1) * width + j + 1] && edgeImg[(i + 1) * width + j - 1]) {
+                    int diff1 = gradImg[i * width + j] - gradImg[(i - 1) * width + j - 1];
+                    int diff2 = gradImg[i * width + j] - gradImg[(i + 1) * width + j + 1];
+                    if (diff1 >= anchorThresh && diff2 >= anchorThresh) edgeImg[i * width + j] = 255;
+                }
+            }
+        }
+
+        for (int i = 0; i < width * height; i++)
+            if (edgeImg[i] == ANCHOR_PIXEL)
+                edgeImg[i] = 0;
+            else if (edgeImg[i] == 255) {
+                edgeImg[i] = ANCHOR_PIXEL;
+                int y = i / width;
+                int x = i % width;
+                anchorPoints.push_back(Point(x, y)); // push validated anchor point to vector
+            }
+
+        anchorNos = (int)anchorPoints.size(); // get # of anchor pixels
+
+        JoinAnchorPointsUsingSortedAnchors(); // JOIN ANCHORS
+
+        // Fix 1 pixel errors in the edge map
+        fixEdgeSegments(segments);
+
+        // clean space
+        delete[] L_Img;
+        delete[] a_Img;
+        delete[] b_Img;
     }
 }
 
@@ -562,24 +683,24 @@ void EdgeDrawingImpl::JoinAnchorPointsUsingSortedAnchors()
         {
             stack[++top].r = i;
             stack[top].c = j;
-            stack[top].dir = DOWN;
+            stack[top].dir = ED_DOWN;
             stack[top].parent = 0;
 
             stack[++top].r = i;
             stack[top].c = j;
-            stack[top].dir = UP;
+            stack[top].dir = ED_UP;
             stack[top].parent = 0;
         }
         else
         {
             stack[++top].r = i;
             stack[top].c = j;
-            stack[top].dir = RIGHT;
+            stack[top].dir = ED_RIGHT;
             stack[top].parent = 0;
 
             stack[++top].r = i;
             stack[top].c = j;
-            stack[top].dir = LEFT;
+            stack[top].dir = ED_LEFT;
             stack[top].parent = 0;
         }
 
@@ -609,7 +730,7 @@ StartOfWhile:
             len++;
             chainLen++;
 
-            if (dir == LEFT)
+            if (dir == ED_LEFT)
             {
                 while (dirImg[r * width + c] == EDGE_HORIZONTAL)
                 {
@@ -680,12 +801,12 @@ StartOfWhile:
 
                 stack[++top].r = r;
                 stack[top].c = c;
-                stack[top].dir = DOWN;
+                stack[top].dir = ED_DOWN;
                 stack[top].parent = noChains;
 
                 stack[++top].r = r;
                 stack[top].c = c;
-                stack[top].dir = UP;
+                stack[top].dir = ED_UP;
                 stack[top].parent = noChains;
 
                 len--;
@@ -695,7 +816,7 @@ StartOfWhile:
                 chains[parent].children[0] = noChains;
                 noChains++;
             }
-            else if (dir == RIGHT)
+            else if (dir == ED_RIGHT)
             {
                 while (dirImg[r * width + c] == EDGE_HORIZONTAL)
                 {
@@ -766,12 +887,12 @@ StartOfWhile:
 
                 stack[++top].r = r;
                 stack[top].c = c;
-                stack[top].dir = DOWN;  // Go down
+                stack[top].dir = ED_DOWN;  // Go down
                 stack[top].parent = noChains;
 
                 stack[++top].r = r;
                 stack[top].c = c;
-                stack[top].dir = UP;   // Go up
+                stack[top].dir = ED_UP;   // Go up
                 stack[top].parent = noChains;
 
                 len--;
@@ -782,7 +903,7 @@ StartOfWhile:
                 noChains++;
 
             }
-            else if (dir == UP)
+            else if (dir == ED_UP)
             {
                 while (dirImg[r * width + c] == EDGE_VERTICAL)
                 {
@@ -853,12 +974,12 @@ StartOfWhile:
 
                 stack[++top].r = r;
                 stack[top].c = c;
-                stack[top].dir = RIGHT;
+                stack[top].dir = ED_RIGHT;
                 stack[top].parent = noChains;
 
                 stack[++top].r = r;
                 stack[top].c = c;
-                stack[top].dir = LEFT;
+                stack[top].dir = ED_LEFT;
                 stack[top].parent = noChains;
 
                 len--;
@@ -939,12 +1060,12 @@ StartOfWhile:
 
                 stack[++top].r = r;
                 stack[top].c = c;
-                stack[top].dir = RIGHT;
+                stack[top].dir = ED_RIGHT;
                 stack[top].parent = noChains;
 
                 stack[++top].r = r;
                 stack[top].c = c;
-                stack[top].dir = LEFT;
+                stack[top].dir = ED_LEFT;
                 stack[top].parent = noChains;
 
                 len--;
@@ -1318,7 +1439,7 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
 
     JoinCollinearLines();
 
-    if (params.NFAValidation)
+    if (params.NFAValidation && srcImage.channels() < 3)
         ValidateLineSegments();
 
     // Delete redundant space from lines
@@ -2037,7 +2158,7 @@ double EdgeDrawingImpl::ComputeMinDistanceBetweenTwoLines(EDLineSegment* ls1, ED
     double dy = ls1->sy - ls2->sy;
     double d = sqrt(dx * dx + dy * dy);
     double min = d;
-    int which = SOUTH_SOUTH;
+    int which = ED_SOUTH_SOUTH;
 
     dx = ls1->sx - ls2->ex;
     dy = ls1->sy - ls2->ey;
@@ -2045,7 +2166,7 @@ double EdgeDrawingImpl::ComputeMinDistanceBetweenTwoLines(EDLineSegment* ls1, ED
     if (d < min)
     {
         min = d;
-        which = SOUTH_EAST;
+        which = ED_SOUTH_EAST;
     }
 
     dx = ls1->ex - ls2->sx;
@@ -2054,7 +2175,7 @@ double EdgeDrawingImpl::ComputeMinDistanceBetweenTwoLines(EDLineSegment* ls1, ED
     if (d < min)
     {
         min = d;
-        which = EAST_SOUTH;
+        which = ED_EAST_SOUTH;
     }
 
     dx = ls1->ex - ls2->ex;
@@ -2063,7 +2184,7 @@ double EdgeDrawingImpl::ComputeMinDistanceBetweenTwoLines(EDLineSegment* ls1, ED
     if (d < min)
     {
         min = d;
-        which = EAST_EAST;
+        which = ED_EAST_EAST;
     }
 
     if (pwhich)
@@ -3297,12 +3418,24 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
                            // This produces less false positives, but occationally misses on some valid circles
             }
         out:
-            // compute gx & gy
-            int com1 = smoothImg[(r + 1) * width + c + 1] - smoothImg[(r - 1) * width + c - 1];
-            int com2 = smoothImg[(r - 1) * width + c + 1] - smoothImg[(r + 1) * width + c - 1];
+            int com1, com2, gx, gy;
+            if (srcImage.channels() > 1)
+            {
+                com1 = smooth_L[(r + 1) * width + c + 1] - smooth_L[(r - 1) * width + c - 1];
+                com2 = smooth_L[(r - 1) * width + c + 1] - smooth_L[(r + 1) * width + c - 1];
 
-            int gx = com1 + com2 + smoothImg[r * width + c + 1] - smoothImg[r * width + c - 1];
-            int gy = com1 - com2 + smoothImg[(r + 1) * width + c] - smoothImg[(r - 1) * width + c];
+                gx = com1 + com2 + smooth_L[r * width + c + 1] - smooth_L[r * width + c - 1];
+                gy = com1 - com2 + smooth_L[(r + 1) * width + c] - smooth_L[(r - 1) * width + c];
+            }
+            else
+            {
+                com1 = smoothImg[(r + 1) * width + c + 1] - smoothImg[(r - 1) * width + c - 1];
+                com2 = smoothImg[(r - 1) * width + c + 1] - smoothImg[(r + 1) * width + c - 1];
+
+                gx = com1 + com2 + smoothImg[r * width + c + 1] - smoothImg[r * width + c - 1];
+                gy = com1 - com2 + smoothImg[(r + 1) * width + c] - smoothImg[(r - 1) * width + c];
+            }
+
             double pixelAngle = nfa->myAtan2((double)gx, (double)-gy);
 
             double derivX, derivY;
@@ -3778,7 +3911,7 @@ void EdgeDrawingImpl::JoinArcs1()
                             EX = arcs[CandidateArcNo].sx;
                             EY = arcs[CandidateArcNo].sy;
                             break;
-                        } //end-switch
+                        }
 
                         break; // Do not look at the other candidates
                     }
@@ -5744,6 +5877,496 @@ void EdgeDrawingImpl::ROTATE(double** a, int i, int j, int k, int l, double tau,
     a[i][j] = g - s * (h + g * tau);
     a[k][l] = h + s * (g - h * tau);
 }
+
+void EdgeDrawingImpl::MyRGB2LabFast()
+{
+    const uchar* blueImg;
+    const uchar* greenImg;
+    const uchar* redImg;
+
+    // split channels (OpenCV uses BGR)
+    vector<Mat> bgr(3);
+    split(srcImage, bgr);
+    blueImg = bgr[0].data;
+    greenImg = bgr[1].data;
+    redImg = bgr[2].data;
+
+    // Inialize LUTs if necessary
+    if (!LUT_Initialized)
+        InitColorEDLib();
+
+    // First RGB 2 XYZ
+    double red, green, blue;
+    double x, y, z;
+
+    // Space for temp. allocation
+    double* L = new double[width * height];
+    double* a = new double[width * height];
+    double* b = new double[width * height];
+
+    for (int i = 0; i < width * height; i++) {
+        red = redImg[i] / 255.0;
+        green = greenImg[i] / 255.0;
+        blue = blueImg[i] / 255.0;
+
+        red = LUT1[(int)(red * LUT_SIZE + 0.5)];
+        green = LUT1[(int)(green * LUT_SIZE + 0.5)];
+        blue = LUT1[(int)(blue * LUT_SIZE + 0.5)];
+
+        red = red * 100;
+        green = green * 100;
+        blue = blue * 100;
+
+        //Observer. = 2°, Illuminant = D65
+        x = red * 0.4124564 + green * 0.3575761 + blue * 0.1804375;
+        y = red * 0.2126729 + green * 0.7151522 + blue * 0.0721750;
+        z = red * 0.0193339 + green * 0.1191920 + blue * 0.9503041;
+
+        // Now xyz 2 Lab
+        double refX = 95.047;
+        double refY = 100.000;
+        double refZ = 108.883;
+
+        x = x / refX;          //ref_X =  95.047   Observer= 2°, Illuminant= D65
+        y = y / refY;          //ref_Y = 100.000
+        z = z / refZ;          //ref_Z = 108.883
+
+        x = LUT2[(int)(x * LUT_SIZE + 0.5)];
+        y = LUT2[(int)(y * LUT_SIZE + 0.5)];
+        z = LUT2[(int)(z * LUT_SIZE + 0.5)];
+
+        L[i] = (116.0 * y) - 16;
+        a[i] = 500 * (x / y);
+        b[i] = 200 * (y - z);
+    }
+
+    // Scale L to [0-255]
+    double min = 1e10;
+    double max = -1e10;
+    for (int i = 0; i < width * height; i++) {
+        if (L[i] < min) min = L[i];
+        else if (L[i] > max) max = L[i];
+    }
+
+    double scale = 255.0 / (max - min);
+    for (int i = 0; i < width * height; i++) { L_Img[i] = (uchar)((L[i] - min) * scale); }
+
+    // Scale a to [0-255]
+    min = 1e10;
+    max = -1e10;
+    for (int i = 0; i < width * height; i++) {
+        if (a[i] < min) min = a[i];
+        else if (a[i] > max) max = a[i];
+    }
+
+    scale = 255.0 / (max - min);
+    for (int i = 0; i < width * height; i++) { a_Img[i] = (uchar)((a[i] - min) * scale); }
+
+    // Scale b to [0-255]
+    min = 1e10;
+    max = -1e10;
+    for (int i = 0; i < width * height; i++) {
+        if (b[i] < min) min = b[i];
+        else if (b[i] > max) max = b[i];
+    }
+
+    scale = 255.0 / (max - min);
+    for (int i = 0; i < width * height; i++) { b_Img[i] = (uchar)((b[i] - min) * scale); }
+
+
+    // clean space
+    delete[] L;
+    delete[] a;
+    delete[] b;
+}
+
+void EdgeDrawingImpl::ComputeGradientMapByDiZenzo()
+{
+    int max = 0;
+
+    for (int i = 1; i < height - 1; i++) {
+        for (int j = 1; j < width - 1; j++) {
+
+            int com1, com2, gxCh1, gxCh2, gxCh3, gyCh1, gyCh2, gyCh3;
+
+            if(params.EdgeDetectionOperator == PREWITT)
+            {
+                // Prewitt for channel1
+                com1 = smooth_L[(i + 1) * width + j + 1] - smooth_L[(i - 1) * width + j - 1];
+                com2 = smooth_L[(i - 1) * width + j + 1] - smooth_L[(i + 1) * width + j - 1];
+
+                gxCh1 = com1 + com2 + (smooth_L[i * width + j + 1] - smooth_L[i * width + j - 1]);
+                gyCh1 = com1 - com2 + (smooth_L[(i + 1) * width + j] - smooth_L[(i - 1) * width + j]);
+
+                // Prewitt for channel2
+                com1 = smooth_a[(i + 1) * width + j + 1] - smooth_a[(i - 1) * width + j - 1];
+                com2 = smooth_a[(i - 1) * width + j + 1] - smooth_a[(i + 1) * width + j - 1];
+
+                gxCh2 = com1 + com2 + (smooth_a[i * width + j + 1] - smooth_a[i * width + j - 1]);
+                gyCh2 = com1 - com2 + (smooth_a[(i + 1) * width + j] - smooth_a[(i - 1) * width + j]);
+
+                // Prewitt for channel3
+                com1 = smooth_b[(i + 1) * width + j + 1] - smooth_b[(i - 1) * width + j - 1];
+                com2 = smooth_b[(i - 1) * width + j + 1] - smooth_b[(i + 1) * width + j - 1];
+
+                gxCh3 = com1 + com2 + (smooth_b[i * width + j + 1] - smooth_b[i * width + j - 1]);
+                gyCh3 = com1 - com2 + (smooth_b[(i + 1) * width + j] - smooth_b[(i - 1) * width + j]);
+            }
+            else
+            {
+                // Sobel for channel1
+                com1 = smooth_L[(i + 1) * width + j + 1] - smooth_L[(i - 1) * width + j - 1];
+                com2 = smooth_L[(i - 1) * width + j + 1] - smooth_L[(i + 1) * width + j - 1];
+
+                gxCh1 = com1 + com2 + 2 * (smooth_L[i * width + j + 1] - smooth_L[i * width + j - 1]);
+                gyCh1 = com1 - com2 + 2 * (smooth_L[(i + 1) * width + j] - smooth_L[(i - 1) * width + j]);
+
+                // Sobel for channel2
+                com1 = smooth_a[(i + 1) * width + j + 1] - smooth_a[(i - 1) * width + j - 1];
+                com2 = smooth_a[(i - 1) * width + j + 1] - smooth_a[(i + 1) * width + j - 1];
+
+                gxCh2 = com1 + com2 + 2 * (smooth_a[i * width + j + 1] - smooth_a[i * width + j - 1]);
+                gyCh2 = com1 - com2 + 2 * (smooth_a[(i + 1) * width + j] - smooth_a[(i - 1) * width + j]);
+
+                // Sobel for channel3
+                com1 = smooth_b[(i + 1) * width + j + 1] - smooth_b[(i - 1) * width + j - 1];
+                com2 = smooth_b[(i - 1) * width + j + 1] - smooth_b[(i + 1) * width + j - 1];
+
+                gxCh3 = com1 + com2 + 2 * (smooth_b[i * width + j + 1] - smooth_b[i * width + j - 1]);
+                gyCh3 = com1 - com2 + 2 * (smooth_b[(i + 1) * width + j] - smooth_b[(i - 1) * width + j]);
+            }
+
+            int gxx = gxCh1 * gxCh1 + gxCh2 * gxCh2 + gxCh3 * gxCh3;
+            int gyy = gyCh1 * gyCh1 + gyCh2 * gyCh2 + gyCh3 * gyCh3;
+            int gxy = gxCh1 * gyCh1 + gxCh2 * gyCh2 + gxCh3 * gyCh3;
+
+#if 1
+            // Di Zenzo's formulas from Gonzales & Woods - Page 337
+            double theta = atan2(2.0 * gxy, (double)(gxx - gyy)) / 2; // Gradient Direction
+            int grad = (int)(sqrt(((gxx + gyy) + (gxx - gyy) * cos(2 * theta) + 2 * gxy * sin(2 * theta)) / 2.0) + 0.5); // Gradient Magnitude
+#else
+            // Koschan & Abidi - 2005 - Signal Processing Magazine
+            double theta = atan2(2.0 * gxy, (double)(gxx - gyy)) / 2; // Gradient Direction
+
+            double cosTheta = cos(theta);
+            double sinTheta = sin(theta);
+            int grad = (int)(sqrt(gxx * cosTheta * cosTheta + 2 * gxy * sinTheta * cosTheta + gyy * sinTheta * sinTheta) + 0.5); // Gradient Magnitude
+#endif
+
+            // Gradient is perpendicular to the edge passing through the pixel
+            if (theta >= -3.14159 / 4 && theta <= 3.14159 / 4)
+                dirImg[i * width + j] = EDGE_VERTICAL;
+            else
+                dirImg[i * width + j] = EDGE_HORIZONTAL;
+
+            gradImg[i * width + j] = (ushort)grad;
+
+            if (grad > max)
+                max = grad;
+        }
+    }
+
+    // Scale the gradient values to 0-255
+    double scale = 255.0 / max;
+    for (int i = 0; i < width * height; i++)
+        gradImg[i] = (ushort)(gradImg[i] * scale);
+}
+
+void EdgeDrawingImpl::smoothChannel(uchar* src, uchar* smooth, double sigma)
+{
+    Mat _src = Mat(height, width, CV_8UC1, src);
+    Mat smoothed = Mat(height, width, CV_8UC1, smooth);
+
+    if (sigma == 1.0)
+        GaussianBlur(_src, smoothed, Size(5, 5), 1);
+    else if (sigma == 1.5)
+        GaussianBlur(_src, smoothed, Size(7, 7), 1.5);  // seems to be better?
+    else
+        GaussianBlur(_src, smoothed, Size(), sigma);
+}
+
+
+//--------------------------------------------------------------------------------------------------------------------
+// Validate the edge segments using the Helmholtz principle (for color images) channel1, channel2 and channel3 images
+//
+void EdgeDrawingImpl::validateEdgeSegments()
+{
+    memset(dH, 0, sizeof(double) * ED_MAX_GRAD_VALUE);
+    memset(edgeImg, 0, width * height); // clear edge image
+
+    // Compute the gradient
+    memset(gradImg, 0, sizeof(short) * width * height); // reset gradient Image pixels to zero
+    memset(grads, 0, sizeof(int) * ED_MAX_GRAD_VALUE);
+
+    for (int i = 1; i < height - 1; i++) {
+        for (int j = 1; j < width - 1; j++) {
+            // Gradient for channel1
+            int com1 = smooth_L[(i + 1) * width + j + 1] - smooth_L[(i - 1) * width + j - 1];
+            int com2 = smooth_L[(i - 1) * width + j + 1] - smooth_L[(i + 1) * width + j - 1];
+
+            int gxCh1 = abs(com1 + com2 + (smooth_L[i * width + j + 1] - smooth_L[i * width + j - 1]));
+            int gyCh1 = abs(com1 - com2 + (smooth_L[(i + 1) * width + j] - smooth_L[(i - 1) * width + j]));
+            int ch1Grad = gxCh1 + gyCh1;
+
+            // Gradient for channel2
+            com1 = smooth_a[(i + 1) * width + j + 1] - smooth_a[(i - 1) * width + j - 1];
+            com2 = smooth_a[(i - 1) * width + j + 1] - smooth_a[(i + 1) * width + j - 1];
+
+            int gxCh2 = abs(com1 + com2 + (smooth_a[i * width + j + 1] - smooth_a[i * width + j - 1]));
+            int gyCh2 = abs(com1 - com2 + (smooth_a[(i + 1) * width + j] - smooth_a[(i - 1) * width + j]));
+            int ch2Grad = gxCh2 + gyCh2;
+
+            // Gradient for channel3
+            com1 = smooth_b[(i + 1) * width + j + 1] - smooth_b[(i - 1) * width + j - 1];
+            com2 = smooth_b[(i - 1) * width + j + 1] - smooth_b[(i + 1) * width + j - 1];
+
+            int gxCh3 = abs(com1 + com2 + (smooth_b[i * width + j + 1] - smooth_b[i * width + j - 1]));
+            int gyCh3 = abs(com1 - com2 + (smooth_b[(i + 1) * width + j] - smooth_b[(i - 1) * width + j]));
+            int ch3Grad = gxCh3 + gyCh3;
+
+            // Take average
+            int grad = (ch1Grad + ch2Grad + ch3Grad + 2) / 3;
+
+            gradImg[i * width + j] = (ushort)grad;
+            grads[grad]++;
+        }
+    }
+
+    // Compute probability function H
+    int size = (width - 2) * (height - 2);
+
+    for (int i = ED_MAX_GRAD_VALUE - 1; i > 0; i--)
+        grads[i - 1] += grads[i];
+
+    for (int i = 0; i < ED_MAX_GRAD_VALUE; i++)
+        dH[i] = (double)grads[i] / ((double)size);
+
+    // Compute np: # of segment pieces
+    np = 0;
+    for (int i = 0; i < (int)segments.size(); i++) {
+        int len = (int)segments[i].size();
+        np += (len * (len - 1)) / 2;
+    }
+
+    // Validate segments
+    for (int i = 0; i < (int)segments.size(); i++) {
+        testSegment(i, 0, (int)segments[i].size() - 1);
+    }
+
+    // clear space
+    delete[] grads;
+}
+
+
+//----------------------------------------------------------------------------------
+// Resursive validation using half of the pixels as suggested by DMM algorithm
+// We take pixels at Nyquist distance, i.e., 2 (as suggested by DMM)
+//
+void EdgeDrawingImpl::testSegment(int i, int index1, int index2)
+{
+    int chainLen = index2 - index1 + 1;
+    if (chainLen < params.MinPathLength)
+        return;
+
+    // Test from index1 to index2. If OK, then we are done. Otherwise, split into two and
+    // recursively test the left & right halves
+
+    // First find the min. gradient along the segment
+    int minGrad = 1 << 30;
+    int minGradIndex = 0;
+    for (int k = index1; k <= index2; k++) {
+        int r = segments[i][k].y;
+        int c = segments[i][k].x;
+        if (gradImg[r * width + c] < minGrad) { minGrad = gradImg[r * width + c]; minGradIndex = k; }
+    }
+
+    // Compute nfa
+    double nfa_val = NFA(dH[minGrad], (int)(chainLen / divForTestSegment));
+
+    if (nfa_val <= 1.0) {
+        for (int k = index1; k <= index2; k++) {
+            int r = segments[i][k].y;
+            int c = segments[i][k].x;
+
+            edgeImg[r * width + c] = 255;
+        }
+
+        return;
+    }
+
+    // Split into two halves. We divide at the point where the gradient is the minimum
+    int end = minGradIndex - 1;
+    while (end > index1) {
+        int r = segments[i][end].y;
+        int c = segments[i][end].x;
+
+        if (gradImg[r * width + c] <= minGrad) end--;
+        else break;
+    }
+
+    int start = minGradIndex + 1;
+    while (start < index2) {
+        int r = segments[i][start].y;
+        int c = segments[i][start].x;
+
+        if (gradImg[r * width + c] <= minGrad) start++;
+        else break;
+    }
+
+    testSegment(i, index1, end);
+    testSegment(i, start, index2);
+}
+
+//----------------------------------------------------------------------------------------------
+// After the validation of the edge segments, extracts the valid ones
+// In other words, updates the valid segments' pixel arrays and their lengths
+//
+void EdgeDrawingImpl::extractNewSegments()
+{
+    vector< vector<Point> > validSegments;
+
+    for (int i = 0; i < (int)segments.size(); i++) {
+        int start = 0;
+        while (start < (int)segments[i].size()) {
+
+            while (start < (int)segments[i].size()) {
+                int r = segments[i][start].y;
+                int c = segments[i][start].x;
+
+                if (edgeImg[r * width + c]) break;
+                start++;
+            }
+
+            int end = start + 1;
+            while (end < (int)segments[i].size()) {
+                int r = segments[i][end].y;
+                int c = segments[i][end].x;
+
+                if (edgeImg[r * width + c] == 0) break;
+                end++;
+            }
+
+            int len = end - start;
+            if (len >= 10) {
+                // A new segment. Accepted only only long enough (whatever that means)
+                //segments[noSegments].pixels = &map->segments[i].pixels[start];
+                //segments[noSegments].noPixels = len;
+                vector<Point> subVec(&segments[i][start], &segments[i][end - 1]);
+                validSegments.push_back(subVec);
+            }
+
+            start = end + 1;
+        }
+    }
+
+    // Update
+    segments = validSegments;
+}
+
+//---------------------------------------------------------
+// Fix edge segments having one or two pixel fluctuations
+// An example one pixel problem getting fixed:
+//  x
+// x x --> xxx
+//
+// An example two pixel problem getting fixed:
+//  xx
+// x  x --> xxxx
+//
+void EdgeDrawingImpl::fixEdgeSegments(std::vector<std::vector<cv::Point>> map)
+{
+    /// First fix one pixel problems: There are four cases
+    for (int i = 0; i < (int)map.size(); i++) {
+        int cp = (int)map[i].size() - 2;  // Current pixel index
+        int n2 = 0;  // next next pixel index
+
+        while (n2 < (int)map[i].size()) {
+            int n1 = cp + 1; // next pixel
+
+            cp = cp % map[i].size(); // Roll back to the beginning
+            n1 = n1 % map[i].size(); // Roll back to the beginning
+
+            int r = map[i][cp].y;
+            int c = map[i][cp].x;
+
+            int r1 = map[i][n1].y;
+            int c1 = map[i][n1].x;
+
+            int r2 = map[i][n2].y;
+            int c2 = map[i][n2].x;
+
+            // 4 cases to fix
+            if (r2 == r - 2 && c2 == c) {
+                if (c1 != c) {
+                    map[i][n1].x = c;
+                }
+
+                cp = n2;
+                n2 += 2;
+
+            }
+            else if (r2 == r + 2 && c2 == c) {
+                if (c1 != c) {
+                    map[i][n1].x = c;
+                }
+
+                cp = n2;
+                n2 += 2;
+
+            }
+            else if (r2 == r && c2 == c - 2) {
+                if (r1 != r) {
+                    map[i][n1].y = r;
+                }
+
+                cp = n2;
+                n2 += 2;
+
+            }
+            else if (r2 == r && c2 == c + 2) {
+                if (r1 != r) {
+                    map[i][n1].y = r;
+                }
+
+                cp = n2;
+                n2 += 2;
+
+            }
+            else {
+                cp++;
+                n2++;
+            }
+        }
+    }
+}
+
+void EdgeDrawingImpl::InitColorEDLib()
+{
+    if (LUT_Initialized)
+        return;
+
+    double inc = 1.0 / LUT_SIZE;
+    for (int i = 0; i <= LUT_SIZE; i++) {
+        double d = i * inc;
+
+        if (d >= 0.04045) LUT1[i] = pow(((d + 0.055) / 1.055), 2.4);
+        else              LUT1[i] = d / 12.92;
+    }
+
+    inc = 1.0 / LUT_SIZE;
+    for (int i = 0; i <= LUT_SIZE; i++) {
+        double d = i * inc;
+
+        if (d > 0.008856) LUT2[i] = pow(d, 1.0 / 3.0);
+        else              LUT2[i] = (7.787 * d) + (16.0 / 116.0);
+    }
+
+    LUT_Initialized = true;
+}
+
+bool EdgeDrawingImpl::LUT_Initialized = false;
+double EdgeDrawingImpl::LUT1[LUT_SIZE + 1] = { 0 };
+double EdgeDrawingImpl::LUT2[LUT_SIZE + 1] = { 0 };
 
 } // namespace cv
 } // namespace ximgproc
