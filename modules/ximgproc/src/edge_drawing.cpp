@@ -161,7 +161,7 @@ private:
     void testSegment(int i, int index1, int index2);
     void extractNewSegments();
 
-    static void fixEdgeSegments(std::vector<std::vector<cv::Point>> map, int noPixels);
+    static void fixEdgeSegments(std::vector<std::vector<cv::Point>> map);
     static void InitColorEDLib();
 
     void ComputeGradient();
@@ -482,7 +482,7 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
         ComputeGradientMapByDiZenzo();        // Compute Gradient & Edge Direction Maps
 
         // Compute anchors with the user supplied parameters
-        anchorThresh = 0; // anchorThresh used as zero while computing anchor points if selectStableAnchors set. 
+        anchorThresh = 0; // anchorThresh used as zero while computing anchor points if selectStableAnchors set.
         // Finding higher number of anchors is OK, because we have following validation steps in selectStableAnchors.
         ComputeAnchorPoints();                // COMPUTE ANCHORS
         anchorThresh = params.AnchorThresholdValue; // set it to its initial argument value for further anchor validation.
@@ -543,7 +543,7 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
         JoinAnchorPointsUsingSortedAnchors(); // JOIN ANCHORS
 
         // Fix 1 pixel errors in the edge map
-        fixEdgeSegments(segments, 1);
+        fixEdgeSegments(segments);
 
         // clean space
         delete[] L_Img;
@@ -6052,15 +6052,16 @@ void EdgeDrawingImpl::ComputeGradientMapByDiZenzo()
             int grad = (int)(sqrt(gxx * cosTheta * cosTheta + 2 * gxy * sinTheta * cosTheta + gyy * sinTheta * sinTheta) + 0.5); // Gradient Magnitude
 #endif
 
-            // Gradient is perpendicular to the edge passing through the pixel	
+            // Gradient is perpendicular to the edge passing through the pixel
             if (theta >= -3.14159 / 4 && theta <= 3.14159 / 4)
                 dirImg[i * width + j] = EDGE_VERTICAL;
             else
                 dirImg[i * width + j] = EDGE_HORIZONTAL;
 
-            gradImg[i * width + j] = grad;
-            if (grad > max) max = grad;
+            gradImg[i * width + j] = (ushort)grad;
 
+            if (grad > max)
+                max = grad;
         }
     }
 
@@ -6072,15 +6073,15 @@ void EdgeDrawingImpl::ComputeGradientMapByDiZenzo()
 
 void EdgeDrawingImpl::smoothChannel(uchar* src, uchar* smooth, double sigma)
 {
-    Mat srcImage = Mat(height, width, CV_8UC1, src);
-    Mat smoothImage = Mat(height, width, CV_8UC1, smooth);
+    Mat _src = Mat(height, width, CV_8UC1, src);
+    Mat smoothed = Mat(height, width, CV_8UC1, smooth);
 
     if (sigma == 1.0)
-        GaussianBlur(srcImage, smoothImage, Size(5, 5), 1);
+        GaussianBlur(_src, smoothed, Size(5, 5), 1);
     else if (sigma == 1.5)
-        GaussianBlur(srcImage, smoothImage, Size(7, 7), 1.5);  // seems to be better?
+        GaussianBlur(_src, smoothed, Size(7, 7), 1.5);  // seems to be better?
     else
-        GaussianBlur(srcImage, smoothImage, Size(), sigma);
+        GaussianBlur(_src, smoothed, Size(), sigma);
 }
 
 
@@ -6090,13 +6091,10 @@ void EdgeDrawingImpl::smoothChannel(uchar* src, uchar* smooth, double sigma)
 void EdgeDrawingImpl::validateEdgeSegments()
 {
     memset(dH, 0, sizeof(double) * ED_MAX_GRAD_VALUE);
-
     memset(edgeImg, 0, width * height); // clear edge image
 
     // Compute the gradient
     memset(gradImg, 0, sizeof(short) * width * height); // reset gradient Image pixels to zero
-
-    int* grads = new int[ED_MAX_GRAD_VALUE];
     memset(grads, 0, sizeof(int) * ED_MAX_GRAD_VALUE);
 
     for (int i = 1; i < height - 1; i++) {
@@ -6135,7 +6133,6 @@ void EdgeDrawingImpl::validateEdgeSegments()
 
     // Compute probability function H
     int size = (width - 2) * (height - 2);
-    //  size -= grads[0];
 
     for (int i = ED_MAX_GRAD_VALUE - 1; i > 0; i--)
         grads[i - 1] += grads[i];
@@ -6170,7 +6167,7 @@ void EdgeDrawingImpl::testSegment(int i, int index1, int index2)
     if (chainLen < params.MinPathLength)
         return;
 
-    // Test from index1 to index2. If OK, then we are done. Otherwise, split into two and 
+    // Test from index1 to index2. If OK, then we are done. Otherwise, split into two and
     // recursively test the left & right halves
 
     // First find the min. gradient along the segment
@@ -6182,10 +6179,10 @@ void EdgeDrawingImpl::testSegment(int i, int index1, int index2)
         if (gradImg[r * width + c] < minGrad) { minGrad = gradImg[r * width + c]; minGradIndex = k; }
     }
 
-      // Compute nfa
-    double nfa = NFA(dH[minGrad], (int)(chainLen / divForTestSegment));
+    // Compute nfa
+    double nfa_val = NFA(dH[minGrad], (int)(chainLen / divForTestSegment));
 
-    if (nfa <= 1.0) {
+    if (nfa_val <= 1.0) {
         for (int k = index1; k <= index2; k++) {
             int r = segments[i][k].y;
             int c = segments[i][k].x;
@@ -6275,7 +6272,7 @@ void EdgeDrawingImpl::extractNewSegments()
 //  xx
 // x  x --> xxxx
 //
-void EdgeDrawingImpl::fixEdgeSegments(std::vector<std::vector<cv::Point>> map, int noPixels)
+void EdgeDrawingImpl::fixEdgeSegments(std::vector<std::vector<cv::Point>> map)
 {
     /// First fix one pixel problems: There are four cases
     for (int i = 0; i < map.size(); i++) {
