@@ -16,18 +16,9 @@ import cv2 as cv
 import random as rng
 import sys
 
-rng.seed(12345)
+def EdgeDrawingDemo(src, convert_to_gray):
 
-def main():
-    try:
-        fn = sys.argv[1]
-    except IndexError:
-        fn = 'board.jpg'
-
-    src = cv.imread(cv.samples.findFile(fn))
-    gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
-    cv.imshow("source", src)
-
+    rng.seed(12345)
     ssrc = src.copy()*0
     lsrc = src.copy()
     esrc = src.copy()
@@ -43,9 +34,16 @@ def main():
 
     ed.setParams(EDParams)
 
+    if convert_to_gray:
+        img_to_detect = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
+    else:
+        img_to_detect = src
+
+    cv.imshow("source image", img_to_detect)
+
     # Detect edges
     # you should call this before detectLines() and detectEllipses()
-    ed.detectEdges(gray)
+    ed.detectEdges(img_to_detect)
 
     segments = ed.getSegments()
     lines = ed.detectLines()
@@ -78,11 +76,21 @@ def main():
             cv.ellipse(esrc, center, axes, angle,0, 360, color, 2, cv.LINE_AA)
 
     cv.imshow("detected circles and ellipses", esrc)
-    cv.waitKey(0)
-    print('Done')
+    print('Press any key to swich color conversion code. Press Esc to exit.')
 
 
 if __name__ == '__main__':
     print(__doc__)
-    main()
+    try:
+        fn = sys.argv[1]
+    except IndexError:
+        fn = 'board.jpg'
+    src = cv.imread(cv.samples.findFile(fn))
+
+    convert_to_gray = True
+    key = 0
+    while key is not 27:
+        EdgeDrawingDemo(src, convert_to_gray)
+        key = cv.waitKey()
+        convert_to_gray = not convert_to_gray
     cv.destroyAllWindows()

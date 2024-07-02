@@ -13,15 +13,15 @@
 #define ANCHOR_PIXEL  254
 #define EDGE_PIXEL    255
 
-#define LEFT  1
-#define RIGHT 2
-#define UP    3
-#define DOWN  4
+#define ED_LEFT  1
+#define ED_RIGHT 2
+#define ED_UP    3
+#define ED_DOWN  4
 
-#define SOUTH_SOUTH 0
-#define SOUTH_EAST 1
-#define EAST_SOUTH 2
-#define EAST_EAST 3
+#define ED_SOUTH_SOUTH 0
+#define ED_SOUTH_EAST 1
+#define ED_EAST_SOUTH 2
+#define ED_EAST_EAST 3
 
 // Circular arc, circle thresholds
 #define VERY_SHORT_ARC_ERROR     0.40  // Used for very short arcs (>= CANDIDATE_CIRCLE_RATIO1 && < CANDIDATE_CIRCLE_RATIO2)
@@ -37,7 +37,7 @@
 // Ellipse thresholds
 #define CANDIDATE_ELLIPSE_RATIO  0.50  // 50% -- If 50% of the ellipse is detected, it may be candidate for validation
 #define ELLIPSE_ERROR            1.50  // Used for ellipses. (used to be 1.65 for what reason?)
-#define MAX_GRAD_VALUE 128*256
+#define ED_MAX_GRAD_VALUE 128*256
 
 using namespace std;
 using namespace cv;
@@ -220,18 +220,19 @@ struct mEllipse {
 // Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0
 //
 struct EllipseEquation {
-	double coeff[7];  // coeff[1] = A
+    static constexpr int COEFF_SIZE = 7;
+    double coeff[COEFF_SIZE];  // coeff[1] = A
 
-	EllipseEquation() {
-		for (int i = 0; i<7; i++) coeff[i] = 0;
-	}
+    // Constructor using an initialization list
+    EllipseEquation() : coeff{} {}
 
-	double A() { return coeff[1]; }
-	double B() { return coeff[2]; }
-	double C() { return coeff[3]; }
-	double D() { return coeff[4]; }
-	double E() { return coeff[5]; }
-	double F() { return coeff[6]; }
+    // Accessor functions marked as const
+    double A() const { return coeff[1]; }
+    double B() const { return coeff[2]; }
+    double C() const { return coeff[3]; }
+    double D() const { return coeff[4]; }
+    double E() const { return coeff[5]; }
+    double F() const { return coeff[6]; }
 };
 
 // ================================ CIRCLES ================================
