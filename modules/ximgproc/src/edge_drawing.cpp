@@ -6126,7 +6126,7 @@ void EdgeDrawingImpl::validateEdgeSegments()
             // Take average
             int grad = (ch1Grad + ch2Grad + ch3Grad + 2) / 3;
 
-            gradImg[i * width + j] = grad;
+            gradImg[i * width + j] = (ushort)grad;
             grads[grad]++;
         }
     }
