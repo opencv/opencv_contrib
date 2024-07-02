@@ -377,7 +377,7 @@ EdgeDrawingImpl::~EdgeDrawingImpl()
 
 void EdgeDrawingImpl::detectEdges(InputArray src)
 {
-    CV_Assert(!src.empty() && src.type() == CV_8UC1 || src.type() == CV_8UC3);
+    CV_Assert(!src.empty() && (src.type() == CV_8UC1 || src.type() == CV_8UC3));
     gradThresh = params.GradientThresholdValue;
     anchorThresh = params.AnchorThresholdValue;
     op = params.EdgeDetectionOperator;
