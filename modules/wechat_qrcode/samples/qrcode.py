@@ -22,7 +22,7 @@ try:
 except:
     print("---------------------------------------------------------------")
     print("Failed to initialize WeChatQRCode.")
-    print("Please, download 'detector.*' and 'sr.*' from")
+    print("Please, download 'detect.*' and 'sr.*' from")
     print("https://github.com/WeChatCV/opencv_3rdparty/tree/wechat_qrcode")
     print("and put them into the current directory.")
     print("---------------------------------------------------------------")
