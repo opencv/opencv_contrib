@@ -208,8 +208,15 @@ public:
     /** @brief Callback function to signal that the encoded bitstream for one or more frames is ready.
 
     @param vPacket The raw bitstream for one or more frames.
+    @param pts Presentation timestamps for each frame in vPacket using the FPS time base.  e.g. fps = 25, pts = 3, presentation time = 3/25 seconds.
     */
-    virtual void onEncoded(const std::vector<std::vector<uint8_t>>& vPacket) = 0;
+    virtual void onEncoded(const std::vector<std::vector<uint8_t>>& vPacket, const std::vector<uint64_t>& pts) = 0;
+
+    /** @brief Set the GOP pattern used by the encoder.
+
+     @param frameIntervalP Specify the GOP pattern as follows : \p frameIntervalP = 0: I, 1 : IPP, 2 : IBP, 3 : IBBP.
+    */
+    virtual bool setFrameIntervalP(const int frameIntervalP) = 0;
 
     /** @brief Callback function to that the encoding has finished.
     * */
