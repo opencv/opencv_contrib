@@ -142,12 +142,14 @@ CV_EXPORTS_W Ptr<Filter> createLaplacianFilter(int srcType, int dstType, int ksi
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Separable Linear Filter
 
-/** @brief Creates a separable linear filter.
+/** @brief Creates a separable linear filter. In-place processing is supported.
 
 @param srcType Source array type.
 @param dstType Destination array type.
 @param rowKernel Horizontal filter coefficients. Support kernels with size \<= 32 .
+noArray() is supported to ignore the row filtering.
 @param columnKernel Vertical filter coefficients. Support kernels with size \<= 32 .
+noArray() is supported to ignore the column filtering.
 @param anchor Anchor position within the kernel. Negative values mean that anchor is positioned at
 the aperture center.
 @param rowBorderMode Pixel extrapolation method in the vertical direction For details, see
