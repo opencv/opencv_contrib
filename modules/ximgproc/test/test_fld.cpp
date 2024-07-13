@@ -297,6 +297,29 @@ TEST_F(ximgproc_ED, ManySmallCircles)
     EXPECT_EQ(ellipses.size(), ellipses_size);
 }
 
+TEST_F(ximgproc_ED, ManySmallCirclesPF)
+{
+    string picture_name = "cv/imgproc/beads.jpg";
+
+    string filename = cvtest::TS::ptr()->get_data_path() + picture_name;
+    test_image = imread(filename, IMREAD_GRAYSCALE);
+    EXPECT_FALSE(test_image.empty()) << "Invalid test image: " << filename;
+
+    detector->params.PFmode = true;
+    vector<Vec6d> ellipses;
+    detector->detectEdges(test_image);
+    detector->detectEllipses(ellipses);
+    detector->detectLines(lines);
+
+    size_t segments_size = 2717;
+    size_t lines_size = 6060;
+    size_t ellipses_size = 2447;
+    EXPECT_EQ(detector->getSegments().size(), segments_size);
+    EXPECT_GE(lines.size(), lines_size);
+    EXPECT_LE(lines.size(), lines_size + 2);
+    EXPECT_EQ(ellipses.size(), ellipses_size);
+}
+
 TEST_F(ximgproc_ED, ManySmallCirclesColor)
 {
     string picture_name = "cv/imgproc/beads.jpg";
@@ -305,13 +328,14 @@ TEST_F(ximgproc_ED, ManySmallCirclesColor)
     test_image = imread(filename, IMREAD_COLOR);
     EXPECT_FALSE(test_image.empty()) << "Invalid test image: " << filename;
 
+    detector->params.MinLineLength = 10;
     vector<Vec6d> ellipses;
     detector->detectEdges(test_image);
     detector->detectEllipses(ellipses);
     detector->detectLines(lines);
     detector->detectEllipses(ellipses);
     size_t segments_size = 6230;
-    size_t lines_size = 13715;
+    size_t lines_size = 11133;
     size_t ellipses_size = 2431;
     EXPECT_EQ(detector->getSegments().size(), segments_size);
     EXPECT_GE(lines.size(), lines_size);

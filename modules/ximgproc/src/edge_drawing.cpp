@@ -384,6 +384,9 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
     if (anchorThresh < 0)
         anchorThresh = 0;
 
+    if (params.MinPathLength < 3)
+        params.MinPathLength = 3;
+
     segmentNos = 0;
     anchorNos = 0;
     anchorPoints.clear();
@@ -1390,7 +1393,7 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
     max_distance_between_two_lines = params.MaxDistanceBetweenTwoLines;
     max_error = params.MaxErrorThreshold;
 
-    if (min_line_len == -1) // If no initial value given, compute it
+    if (min_line_len < 0) // If no initial value given, compute it
         min_line_len = ComputeMinLineLength();
 
     if (min_line_len < 9) // avoids small line segments in the result. Might be deleted!
