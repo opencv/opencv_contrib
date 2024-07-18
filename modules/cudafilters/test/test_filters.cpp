@@ -43,6 +43,7 @@
 #include "test_precomp.hpp"
 
 #ifdef HAVE_CUDA
+#include "../src/cuda/wavelet_matrix_feature_support_checks.h"
 
 namespace opencv_test { namespace {
 
@@ -279,6 +280,86 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilter, testing::Combine(
                     BorderType(cv::BORDER_CONSTANT),
                     BorderType(cv::BORDER_REFLECT)),
     WHOLE_SUBMAT));
+
+PARAM_TEST_CASE(SeparableLinearFilterWithEmptyKernels, cv::cuda::DeviceInfo, MatDepth, Channels, MatDepth, bool, bool, bool)
+{
+    cv::cuda::DeviceInfo devInfo;
+    bool inPlace;
+    bool useRowKernel;
+    bool useColKernel;
+
+    cv::Size size;
+    int srcDepth;
+    int cn;
+    int dstDepth;
+    cv::Size ksize;
+    cv::Point anchor;
+    int borderType;
+    int srcType;
+    int dstType;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        srcDepth = GET_PARAM(1);
+        cn = GET_PARAM(2);
+        dstDepth = GET_PARAM(3);
+        inPlace = GET_PARAM(4);
+        useRowKernel = GET_PARAM(5);
+        useColKernel = GET_PARAM(6);
+
+        size = cv::Size(640, 480);
+        ksize = cv::Size(3, 1);
+        anchor = cv::Point(-1, -1);
+        borderType = cv::BORDER_REPLICATE;
+
+        cv::cuda::setDevice(devInfo.deviceID());
+
+        srcType = CV_MAKE_TYPE(srcDepth, cn);
+        dstType = CV_MAKE_TYPE(dstDepth, cn);
+    }
+};
+
+CUDA_TEST_P(SeparableLinearFilterWithEmptyKernels, Accuracy)
+{
+    cv::Mat src = randomMat(size, srcType);
+    cv::Mat rowKernel = (cv::Mat_<float>(ksize) << -1, 0, 1);
+    cv::Mat colKernel = rowKernel.t();
+    cv::Mat oneKernel = cv::Mat::ones(cv::Size(1, 1), CV_32FC1);
+    cv::Mat noKernel = cv::Mat();
+
+    cv::Ptr<cv::cuda::Filter> sepFilterDummyKernels =
+        cv::cuda::createSeparableLinearFilter(srcType, dstType,
+            useRowKernel ? rowKernel : oneKernel,
+            useColKernel ? colKernel : oneKernel,
+            cv::Point(-1, -1), cv::BORDER_REPLICATE, cv::BORDER_REPLICATE);
+
+    cv::Ptr<cv::cuda::Filter> sepFilterEmptyKernels =
+        cv::cuda::createSeparableLinearFilter(srcType, dstType,
+            useRowKernel ? rowKernel : noKernel,
+            useColKernel ? colKernel : noKernel,
+            cv::Point(-1, -1), cv::BORDER_REPLICATE, cv::BORDER_REPLICATE);
+
+    cv::cuda::GpuMat src_sep_dummyK = loadMat(src);
+    cv::cuda::GpuMat dst_sep_dummyK = inPlace ? src_sep_dummyK : cv::cuda::GpuMat();
+    cv::cuda::GpuMat src_sep_emptyK = loadMat(src);
+    cv::cuda::GpuMat dst_sep_emptyK = inPlace ? src_sep_emptyK : cv::cuda::GpuMat();
+
+    sepFilterDummyKernels->apply(src_sep_dummyK, dst_sep_dummyK);
+    sepFilterEmptyKernels->apply(src_sep_emptyK, dst_sep_emptyK);
+
+    EXPECT_MAT_NEAR(dst_sep_dummyK, dst_sep_emptyK, src.depth() < CV_32F ? 1.0 : 1e-2);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilterWithEmptyKernels, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(MatDepth(CV_8U), MatDepth(CV_16U), MatDepth(CV_16S), MatDepth(CV_32F)),
+    IMAGE_CHANNELS,
+    testing::Values(MatDepth(CV_8U), MatDepth(CV_16U), MatDepth(CV_16S), MatDepth(CV_32F)),
+    testing::Values(false, true),//in-place
+    testing::Values(false, true),//use row kernel
+    testing::Values(false, true)//use col kernel
+    ));
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Sobel
@@ -647,7 +728,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, MorphEx, testing::Combine(
 // Median
 
 
-PARAM_TEST_CASE(Median, cv::cuda::DeviceInfo, cv::Size, MatDepth,  KernelSize, UseRoi)
+PARAM_TEST_CASE(Median, cv::cuda::DeviceInfo, cv::Size, MatType, KernelSize, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
@@ -681,7 +762,7 @@ CUDA_TEST_P(Median, Accuracy)
     cv::Mat dst_gold;
     cv::medianBlur(src,dst_gold,kernel);
 
-    cv::Rect rect(kernel+1,0,src.cols-(2*kernel+1),src.rows);
+    cv::Rect rect(kernel/2, kernel/2, src.cols-(kernel-1), src.rows-(kernel-1));
     cv::Mat dst_gold_no_border = dst_gold(rect);
     cv::cuda::GpuMat dst_no_border = cv::cuda::GpuMat(dst, rect);
 
@@ -703,6 +784,17 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, Median, testing::Combine(
     WHOLE_SUBMAT)
     );
 
-}} // namespace
+INSTANTIATE_TEST_CASE_P(CUDA_Filters_Median_HDR, Median, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    testing::Values(
+        MatType(CV_8UC3), MatType(CV_8UC4),
+        MatType(CV_16U), MatType(CV_16UC3), MatType(CV_16UC4),
+        MatType(CV_32F), MatType(CV_32FC3), MatType(CV_32FC4)),
+    testing::Values(KernelSize(3), KernelSize(5)),
+    WHOLE_SUBMAT)
+    );
 
+
+}} // namespace
 #endif // HAVE_CUDA

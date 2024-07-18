@@ -102,11 +102,11 @@ struct MACEImpl CV_FINAL : MACE {
         Mat complexInput;
         merge(input, 2, complexInput);
 
-        Mat_<Vec2d> dftImg(IMGSIZE*2, IMGSIZE*2, 0.0);
+        Mat dftImg(IMGSIZE*2, IMGSIZE*2, CV_64FC2, 0.0);
         complexInput.copyTo(dftImg(Rect(0,0,IMGSIZE,IMGSIZE)));
 
         dft(dftImg, dftImg);
-        return std::move(dftImg);
+        return dftImg;
     }
 
 

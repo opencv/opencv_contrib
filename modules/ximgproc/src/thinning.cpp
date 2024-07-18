@@ -96,6 +96,10 @@ static void thinningIteration(Mat img, int iter, int thinningType){
     Mat marker = Mat::zeros(img.size(), CV_8UC1);
     int rows = img.rows;
     int cols = img.cols;
+    marker.col(0).setTo(1);
+    marker.col(cols - 1).setTo(1);
+    marker.row(0).setTo(1);
+    marker.row(rows - 1).setTo(1);
 
     if(thinningType == THINNING_ZHANGSUEN){
         marker.forEach<uchar>([=](uchar& value, const int postion[]) {
@@ -133,6 +137,7 @@ static void thinningIteration(Mat img, int iter, int thinningType){
             //int m1 = iter == 0 ? (p2 * p4 * p6) : (p2 * p4 * p8);
             //int m2 = iter == 0 ? (p4 * p6 * p8) : (p2 * p6 * p8);
             //if (A == 1 && (B >= 2 && B <= 6) && m1 == 0 && m2 == 0) value = 0;
+            // else value = 1;
         });
     }
     if(thinningType == THINNING_GUOHALL){
@@ -170,6 +175,7 @@ static void thinningIteration(Mat img, int iter, int thinningType){
             //int N  = N1 < N2 ? N1 : N2;
             //int m  = iter == 0 ? ((p6 | p7 | (!p9)) & p8) : ((p2 | p3 | (!p5)) & p4);
             //if ((C == 1) && ((N >= 2) && ((N <= 3)) & (m == 0))) value = 0;
+            // else value = 1;
         });
     }
 
@@ -183,16 +189,17 @@ void thinning(InputArray input, OutputArray output, int thinningType){
     // Enforce the range of the input image to be in between 0 - 255
     processed /= 255;
 
-    Mat prev = Mat::zeros(processed.size(), CV_8UC1);
+    Mat prev = processed.clone();
     Mat diff;
 
     do {
         thinningIteration(processed, 0, thinningType);
         thinningIteration(processed, 1, thinningType);
         absdiff(processed, prev, diff);
+        if (!hasNonZero(diff)) break;
         processed.copyTo(prev);
     }
-    while (countNonZero(diff) > 0);
+    while (true);
 
     processed *= 255;
 

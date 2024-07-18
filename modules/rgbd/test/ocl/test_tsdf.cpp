@@ -143,7 +143,7 @@ struct SemisphereScene : Scene
         Range range(0, frame.rows);
         parallel_for_(range, RenderInvoker<SemisphereScene>(frame, pose, reproj, depthFactor, onlySemisphere));
 
-        return std::move(frame);
+        return static_cast<Mat>(frame);
     }
 
     std::vector<Affine3f> getPoses() override
