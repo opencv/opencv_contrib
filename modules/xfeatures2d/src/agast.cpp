@@ -8014,12 +8014,12 @@ public:
     void setNonmaxSuppression(bool f) CV_OVERRIDE { nonmaxSuppression = f; }
     bool getNonmaxSuppression() const CV_OVERRIDE { return nonmaxSuppression; }
 
-    void setType(DetectorType type_) CV_OVERRIDE{ type = type_; }
-    DetectorType getType() const CV_OVERRIDE{ return type; }
+    void setType(int type_) CV_OVERRIDE{ type = type_; }
+    int getType() const CV_OVERRIDE{ return type; }
 
     int threshold;
     bool nonmaxSuppression;
-    DetectorType type;
+    int type;
 };
 
 Ptr<AgastFeatureDetector> AgastFeatureDetector::create( int threshold, bool nonmaxSuppression, AgastFeatureDetector::DetectorType type )

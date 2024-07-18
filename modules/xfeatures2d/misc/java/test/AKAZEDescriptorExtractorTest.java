@@ -44,13 +44,13 @@ public class AKAZEDescriptorExtractorTest extends OpenCVTestCase {
 
         extractor.read(filename);
 
-        // assertEquals(4, extractor.getDescriptorType());
+        assertEquals(4, extractor.getDescriptorType());
         assertEquals(2, extractor.getDescriptorChannels());
         assertEquals(32, extractor.getDescriptorSize());
         assertEquals(0.125, extractor.getThreshold());
         assertEquals(3, extractor.getNOctaves());
         assertEquals(5, extractor.getNOctaveLayers());
-        // assertEquals(2, extractor.getDiffusivity());
+        assertEquals(2, extractor.getDiffusivity());
     }
 
     public void testWriteYml() {

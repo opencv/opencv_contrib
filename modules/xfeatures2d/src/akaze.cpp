@@ -81,8 +81,8 @@ namespace xfeatures2d
 
         }
 
-        void setDescriptorType(DescriptorType dtype) CV_OVERRIDE{ descriptor = dtype; }
-        DescriptorType getDescriptorType() const CV_OVERRIDE{ return descriptor; }
+        void setDescriptorType(int dtype) CV_OVERRIDE{ descriptor = dtype; }
+        int getDescriptorType() const CV_OVERRIDE{ return descriptor; }
 
         void setDescriptorSize(int dsize) CV_OVERRIDE { descriptor_size = dsize; }
         int getDescriptorSize() const CV_OVERRIDE { return descriptor_size; }
@@ -99,8 +99,8 @@ namespace xfeatures2d
         void setNOctaveLayers(int octaveLayers_) CV_OVERRIDE { sublevels = octaveLayers_; }
         int getNOctaveLayers() const CV_OVERRIDE { return sublevels; }
 
-        void setDiffusivity(KAZE::DiffusivityType diff_) CV_OVERRIDE{ diffusivity = diff_; }
-        KAZE::DiffusivityType getDiffusivity() const CV_OVERRIDE{ return diffusivity; }
+        void setDiffusivity(int diff_) CV_OVERRIDE{ diffusivity = diff_; }
+        int getDiffusivity() const CV_OVERRIDE{ return diffusivity; }
 
         void setMaxPoints(int max_points_) CV_OVERRIDE { max_points = max_points_; }
         int getMaxPoints() const CV_OVERRIDE { return max_points; }
@@ -252,13 +252,13 @@ namespace xfeatures2d
                 max_points = (int)fn["max_points"];
         }
 
-        DescriptorType descriptor;
+        int descriptor;
         int descriptor_channels;
         int descriptor_size;
         float threshold;
         int octaves;
         int sublevels;
-        KAZE::DiffusivityType diffusivity;
+        int diffusivity;
         int max_points;
     };
 

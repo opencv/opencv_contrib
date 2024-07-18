@@ -46,7 +46,7 @@ public class AGASTFeatureDetectorTest extends OpenCVTestCase {
 
         assertEquals(11, detector.getThreshold());
         assertEquals(false, detector.getNonmaxSuppression());
-        // assertEquals(2, detector.getType());
+        assertEquals(2, detector.getType());
     }
 
     public void testReadYml() {
@@ -57,7 +57,7 @@ public class AGASTFeatureDetectorTest extends OpenCVTestCase {
 
         assertEquals(11, detector.getThreshold());
         assertEquals(false, detector.getNonmaxSuppression());
-        // assertEquals(2, detector.getType());
+        assertEquals(2, detector.getType());
     }
 
     public void testWrite() {

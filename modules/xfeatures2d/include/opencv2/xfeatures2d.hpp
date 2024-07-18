@@ -1285,10 +1285,11 @@ public:
 class CV_EXPORTS_W AgastFeatureDetector : public Feature2D
 {
 public:
-    enum DetectorType
+    enum //DetectorType
     {
         AGAST_5_8 = 0, AGAST_7_12d = 1, AGAST_7_12s = 2, OAST_9_16 = 3,
     };
+    typedef int DetectorType;
 
     enum
     {
@@ -1305,8 +1306,8 @@ public:
     CV_WRAP virtual void setNonmaxSuppression(bool f) = 0;
     CV_WRAP virtual bool getNonmaxSuppression() const = 0;
 
-    CV_WRAP virtual void setType(AgastFeatureDetector::DetectorType type) = 0;
-    CV_WRAP virtual AgastFeatureDetector::DetectorType getType() const = 0;
+    CV_WRAP virtual void setType(int type) = 0;
+    CV_WRAP virtual int getType() const = 0;
     CV_WRAP virtual String getDefaultName() const CV_OVERRIDE;
 };
 
@@ -1339,13 +1340,14 @@ F. Alcantarilla, Adrien Bartoli and Andrew J. Davison. In European Conference on
 class CV_EXPORTS_W KAZE : public Feature2D
 {
 public:
-    enum DiffusivityType
+    enum //DiffusivityType
     {
         DIFF_PM_G1 = 0,
         DIFF_PM_G2 = 1,
         DIFF_WEICKERT = 2,
         DIFF_CHARBONNIER = 3
     };
+    typedef int DiffusivityType;
 
     /** @brief The KAZE constructor
 
@@ -1377,8 +1379,8 @@ public:
     CV_WRAP virtual void setNOctaveLayers(int octaveLayers) = 0;
     CV_WRAP virtual int getNOctaveLayers() const = 0;
 
-    CV_WRAP virtual void setDiffusivity(KAZE::DiffusivityType diff) = 0;
-    CV_WRAP virtual KAZE::DiffusivityType getDiffusivity() const = 0;
+    CV_WRAP virtual void setDiffusivity(int diff) = 0;
+    CV_WRAP virtual int getDiffusivity() const = 0;
     CV_WRAP virtual String getDefaultName() const CV_OVERRIDE;
 };
 
@@ -1402,13 +1404,14 @@ class CV_EXPORTS_W AKAZE : public Feature2D
 {
 public:
     // AKAZE descriptor type
-    enum DescriptorType
+    enum //DescriptorType
     {
         DESCRIPTOR_KAZE_UPRIGHT = 2, ///< Upright descriptors, not invariant to rotation
         DESCRIPTOR_KAZE = 3,
         DESCRIPTOR_MLDB_UPRIGHT = 4, ///< Upright descriptors, not invariant to rotation
         DESCRIPTOR_MLDB = 5
     };
+    typedef int DescriptorType;
 
     /** @brief The AKAZE constructor
 
@@ -1431,8 +1434,8 @@ public:
                                      int nOctaveLayers = 4, KAZE::DiffusivityType diffusivity = KAZE::DIFF_PM_G2,
                                      int max_points = -1);
 
-    CV_WRAP virtual void setDescriptorType(AKAZE::DescriptorType dtype) = 0;
-    CV_WRAP virtual AKAZE::DescriptorType getDescriptorType() const = 0;
+    CV_WRAP virtual void setDescriptorType(int dtype) = 0;
+    CV_WRAP virtual int getDescriptorType() const = 0;
 
     CV_WRAP virtual void setDescriptorSize(int dsize) = 0;
     CV_WRAP virtual int getDescriptorSize() const = 0;
@@ -1449,8 +1452,8 @@ public:
     CV_WRAP virtual void setNOctaveLayers(int octaveLayers) = 0;
     CV_WRAP virtual int getNOctaveLayers() const = 0;
 
-    CV_WRAP virtual void setDiffusivity(KAZE::DiffusivityType diff) = 0;
-    CV_WRAP virtual KAZE::DiffusivityType getDiffusivity() const = 0;
+    CV_WRAP virtual void setDiffusivity(int diff) = 0;
+    CV_WRAP virtual int getDiffusivity() const = 0;
     CV_WRAP virtual String getDefaultName() const CV_OVERRIDE;
 
     CV_WRAP virtual void setMaxPoints(int max_points) = 0;

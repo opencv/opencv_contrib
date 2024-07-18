@@ -86,8 +86,8 @@ namespace xfeatures2d
         void setNOctaveLayers(int octaveLayers_) CV_OVERRIDE { sublevels = octaveLayers_; }
         int getNOctaveLayers() const CV_OVERRIDE { return sublevels; }
 
-        void setDiffusivity(KAZE::DiffusivityType diff_) CV_OVERRIDE{ diffusivity = diff_; }
-        KAZE::DiffusivityType getDiffusivity() const CV_OVERRIDE{ return diffusivity; }
+        void setDiffusivity(int diff_) CV_OVERRIDE{ diffusivity = diff_; }
+        int getDiffusivity() const CV_OVERRIDE{ return diffusivity; }
 
         // returns the descriptor size in bytes
         int descriptorSize() const CV_OVERRIDE
@@ -196,7 +196,7 @@ namespace xfeatures2d
         float threshold;
         int octaves;
         int sublevels;
-        KAZE::DiffusivityType diffusivity;
+        int diffusivity;
     };
 
     Ptr<KAZE> KAZE::create(bool extended, bool upright,
