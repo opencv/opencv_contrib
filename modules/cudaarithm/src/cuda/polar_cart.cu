@@ -52,8 +52,10 @@
 #include "opencv2/cudev.hpp"
 #include "opencv2/core/private.cuda.hpp"
 
-using namespace cv;
-using namespace cv::cuda;
+//do not use implicit cv::cuda to avoid clash of tuples from ::cuda::std
+/*using namespace cv;
+using namespace cv::cuda;*/
+
 using namespace cv::cudev;
 
 void cv::cuda::magnitude(InputArray _x, InputArray _y, OutputArray _dst, Stream& stream)
@@ -161,7 +163,7 @@ void cv::cuda::cartToPolar(InputArray _xy, OutputArray _mag, OutputArray _angle,
     {
         gridTransformTuple(globPtr<float2>(xy),
                            tie(magc, anglec),
-                           make_tuple(
+                           tie(
                                magnitude_interleaved_func<float2>(),
                                direction_interleaved_func<float2, true>()),
                            stream);
@@ -170,7 +172,7 @@ void cv::cuda::cartToPolar(InputArray _xy, OutputArray _mag, OutputArray _angle,
     {
         gridTransformTuple(globPtr<float2>(xy),
                            tie(magc, anglec),
-                           make_tuple(
+                           tie(
                                magnitude_interleaved_func<float2>(),
                                direction_interleaved_func<float2, false>()),
                            stream);
