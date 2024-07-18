@@ -622,7 +622,8 @@ template <typename T> struct magnitude_func : binary_function<T, T, typename fun
 template <typename T2> struct magnitude_interleaved_func : unary_function<T2, typename VecTraits<T2>::elem_type>
 {
     typedef typename VecTraits<T2>::elem_type T;
-    __device__ __forceinline__ typename T operator ()(typename TypeTraits<T2>::parameter_type ab) const
+    typedef typename TypeTraits<T2>::parameter_type parameter_type;
+    __device__ __forceinline__ T operator ()(parameter_type ab) const
     {
         sqrt_func<typename functional_detail::FloatType<T>::type> f;
         return f(ab.x * ab.x + ab.y * ab.y);
@@ -640,7 +641,8 @@ template <typename T> struct magnitude_sqr_func : binary_function<T, T, typename
 template <typename T2> struct magnitude_sqr_interleaved_func : unary_function<T2, typename VecTraits<T2>::elem_type>
 {
     typedef typename VecTraits<T2>::elem_type T;
-    __device__ __forceinline__ typename T operator ()(typename TypeTraits<T2>::parameter_type ab) const
+    typedef typename TypeTraits<T2>::parameter_type parameter_type;
+    __device__ __forceinline__ T operator ()(parameter_type ab) const
     {
         return ab.x * ab.x + ab.y * ab.y;
     }
