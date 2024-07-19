@@ -96,7 +96,7 @@ Source Code
 -----------
 
 You may also find the source code in `samples/cpp/tutorial_code/ml/non_linear_svms` folder of the OpenCV source library or
-[download it from here](https://github.com/opencv/opencv/tree/5.x/samples/cpp/tutorial_code/ml/non_linear_svms/non_linear_svms.cpp).
+[download it from here](https://github.com/opencv/opencv_contrib/tree/5.x/modules/ml/samples/non_linear_svms.cpp).
 
 @add_toggle_cpp
 -   **Downloadable code**: Click
@@ -108,7 +108,7 @@ You may also find the source code in `samples/cpp/tutorial_code/ml/non_linear_sv
 
 @add_toggle_java
 -   **Downloadable code**: Click
-    [here](https://github.com/opencv/opencv/tree/5.x/samples/java/tutorial_code/ml/non_linear_svms/NonLinearSVMsDemo.java)
+    [here](https://github.com/opencv/opencv_contrib/tree/5.x/modules/ml/samples/java/tutorial_code/ml/non_linear_svms/NonLinearSVMsDemo.java)
 
 -   **Code at glance:**
     @include samples/java/tutorial_code/ml/non_linear_svms/NonLinearSVMsDemo.java
@@ -116,7 +116,7 @@ You may also find the source code in `samples/cpp/tutorial_code/ml/non_linear_sv
 
 @add_toggle_python
 -   **Downloadable code**: Click
-    [here](https://github.com/opencv/opencv/tree/5.x/samples/python/tutorial_code/ml/non_linear_svms/non_linear_svms.py)
+    [here](https://github.com/opencv/opencv_contrib/tree/5.x/modules/ml/samples/python/tutorial_code/ml/non_linear_svms/non_linear_svms.py)
 
 -   **Code at glance:**
     @include samples/python/tutorial_code/ml/non_linear_svms/non_linear_svms.py
