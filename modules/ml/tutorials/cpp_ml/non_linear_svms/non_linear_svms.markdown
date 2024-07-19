@@ -95,8 +95,8 @@ account these rules:
 Source Code
 -----------
 
-You may also find the source code in `samples/cpp/tutorial_code/ml/non_linear_svms` folder of the OpenCV source library or
-[download it from here](https://github.com/opencv/opencv_contrib/tree/5.x/modules/ml/samples/non_linear_svms.cpp).
+You may also find the source code in `ml/samples` folder of the OpenCV source library or
+[download it from here](https://github.com/opencv/opencv_contrib/tree/5.x/modules/ml/samples).
 
 @add_toggle_cpp
 -   **Downloadable code**: Click
