@@ -52,7 +52,7 @@ http://www.robesafe.com/personal/pablo.alcantarilla/papers/Alcantarilla12eccv.pd
 
 namespace cv
 {
-namespace xfeatures2d 
+namespace xfeatures2d
 {
 
     class KAZE_Impl CV_FINAL : public KAZE

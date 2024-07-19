@@ -58,7 +58,7 @@ the use of this software, even if advised of the possibility of such damage.
     This section describes the following matching strategies:
         - GMS: Grid-based Motion Statistics, @cite Bian2017gms
         - LOGOS: Local geometric support for high-outlier spatial verification, @cite Lowry2018LOGOSLG
-    
+
     @defgroup xfeatures2d_category Object Categorization
 
     This section describes approaches based on local 2D features and used to categorize objects.
@@ -1298,7 +1298,7 @@ public:
 
     CV_WRAP static Ptr<AgastFeatureDetector> create( int threshold=10,
                                                      bool nonmaxSuppression=true,
-                                                     AgastFeatureDetector::DetectorType type = AgastFeatureDetector::OAST_9_16);
+                                                     int type = AgastFeatureDetector::OAST_9_16);
 
     CV_WRAP virtual void setThreshold(int threshold) = 0;
     CV_WRAP virtual int getThreshold() const = 0;
@@ -1362,7 +1362,7 @@ public:
     CV_WRAP static Ptr<KAZE> create(bool extended=false, bool upright=false,
                                     float threshold = 0.001f,
                                     int nOctaves = 4, int nOctaveLayers = 4,
-                                    KAZE::DiffusivityType diffusivity = KAZE::DIFF_PM_G2);
+                                    int diffusivity = KAZE::DIFF_PM_G2);
 
     CV_WRAP virtual void setExtended(bool extended) = 0;
     CV_WRAP virtual bool getExtended() const = 0;
@@ -1428,10 +1428,10 @@ public:
     more features, then the features with highest response are returned.
     Negative value means no limitation.
      */
-    CV_WRAP static Ptr<AKAZE> create(AKAZE::DescriptorType descriptor_type = AKAZE::DESCRIPTOR_MLDB,
+    CV_WRAP static Ptr<AKAZE> create(int descriptor_type = AKAZE::DESCRIPTOR_MLDB,
                                      int descriptor_size = 0, int descriptor_channels = 3,
                                      float threshold = 0.001f, int nOctaves = 4,
-                                     int nOctaveLayers = 4, KAZE::DiffusivityType diffusivity = KAZE::DIFF_PM_G2,
+                                     int nOctaveLayers = 4, int diffusivity = KAZE::DIFF_PM_G2,
                                      int max_points = -1);
 
     CV_WRAP virtual void setDescriptorType(int dtype) = 0;
