@@ -161,20 +161,22 @@ void cv::cuda::cartToPolar(InputArray _xy, OutputArray _mag, OutputArray _angle,
 
     if (angleInDegrees)
     {
+        auto f1 = magnitude_interleaved_func<float2>();
+        auto f2 = direction_interleaved_func<float2, true>();
+        cv::cudev::tuple<decltype(f1), decltype(f2)> f12 = cv::cudev::make_tuple(f1, f2);
         gridTransformTuple(globPtr<float2>(xy),
                            tie(magc, anglec),
-                           tie(
-                               magnitude_interleaved_func<float2>(),
-                               direction_interleaved_func<float2, true>()),
+                           f12,
                            stream);
     }
     else
     {
+        auto f1 = magnitude_interleaved_func<float2>();
+        auto f2 = direction_interleaved_func<float2, false>();
+        cv::cudev::tuple<decltype(f1), decltype(f2)> f12 = cv::cudev::make_tuple(f1, f2);
         gridTransformTuple(globPtr<float2>(xy),
                            tie(magc, anglec),
-                           tie(
-                               magnitude_interleaved_func<float2>(),
-                               direction_interleaved_func<float2, false>()),
+                           f12,
                            stream);
     }
 
