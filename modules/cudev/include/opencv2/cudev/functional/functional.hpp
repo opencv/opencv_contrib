@@ -619,11 +619,32 @@ template <typename T> struct magnitude_func : binary_function<T, T, typename fun
     }
 };
 
+template <typename T2> struct magnitude_interleaved_func : unary_function<T2, typename VecTraits<T2>::elem_type>
+{
+    typedef typename VecTraits<T2>::elem_type T;
+    typedef typename TypeTraits<T2>::parameter_type parameter_type;
+    __device__ __forceinline__ T operator ()(parameter_type ab) const
+    {
+        sqrt_func<typename functional_detail::FloatType<T>::type> f;
+        return f(ab.x * ab.x + ab.y * ab.y);
+    }
+};
+
 template <typename T> struct magnitude_sqr_func : binary_function<T, T, typename functional_detail::FloatType<T>::type>
 {
     __device__ __forceinline__ typename functional_detail::FloatType<T>::type operator ()(typename TypeTraits<T>::parameter_type a, typename TypeTraits<T>::parameter_type b) const
     {
         return a * a + b * b;
+    }
+};
+
+template <typename T2> struct magnitude_sqr_interleaved_func : unary_function<T2, typename VecTraits<T2>::elem_type>
+{
+    typedef typename VecTraits<T2>::elem_type T;
+    typedef typename TypeTraits<T2>::parameter_type parameter_type;
+    __device__ __forceinline__ T operator ()(parameter_type ab) const
+    {
+        return ab.x * ab.x + ab.y * ab.y;
     }
 };
 
@@ -640,6 +661,35 @@ template <typename T, bool angleInDegrees> struct direction_func : binary_functi
             angle *= (180.0f / CV_PI_F);
 
         return saturate_cast<T>(angle);
+    }
+};
+
+template <typename T2, bool angleInDegrees> struct direction_interleaved_func : unary_function<T2, typename VecTraits<T2>::elem_type>
+{
+    typedef typename VecTraits<T2>::elem_type T;
+    __device__ T operator ()(T2 xy) const
+    {
+        atan2_func<T> f;
+        typename atan2_func<T>::result_type angle = f(xy.y, xy.x);
+
+        angle += (angle < 0) * (2.0f * CV_PI_F);
+
+        if (angleInDegrees)
+            angle *= (180.0f / CV_PI_F);
+
+        return saturate_cast<T>(angle);
+    }
+};
+
+template <typename T2, bool angleInDegrees> struct magnitude_direction_interleaved_func : unary_function<T2, typename VecTraits<T2>::elem_type>
+{
+    typedef typename VecTraits<T2>::elem_type T;
+    __device__ T2 operator ()(T2 xy) const
+    {
+        const T mag = magnitude_interleaved_func<T2>()(xy);
+        const T angle = direction_interleaved_func<T2, angleInDegrees>()(xy);
+        const T2 magAngle = {saturate_cast<T>(mag), saturate_cast<T>(angle)};
+        return magAngle;
     }
 };
 
