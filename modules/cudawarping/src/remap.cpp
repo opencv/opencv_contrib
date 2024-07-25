@@ -54,7 +54,7 @@ namespace cv { namespace cuda { namespace device
     {
         template <typename T>
         void remap_gpu(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst,
-                       int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
+                       int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20, bool isRelative);
     }
 }}}
 
@@ -62,8 +62,11 @@ void cv::cuda::remap(InputArray _src, OutputArray _dst, InputArray _xmap, InputA
 {
     using namespace cv::cuda::device::imgproc;
 
+    const bool hasRelativeFlag = ((interpolation & WARP_RELATIVE_MAP) != 0);
+    interpolation &= ~WARP_RELATIVE_MAP;
+
     typedef void (*func_t)(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation,
-        int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
+        int borderMode, const float* borderValue, cudaStream_t stream, bool cc20, bool isRelative);
     static const func_t funcs[6][4] =
     {
         {remap_gpu<uchar>      , 0 /*remap_gpu<uchar2>*/ , remap_gpu<uchar3>     , remap_gpu<uchar4>     },
@@ -98,7 +101,7 @@ void cv::cuda::remap(InputArray _src, OutputArray _dst, InputArray _xmap, InputA
     src.locateROI(wholeSize, ofs);
 
     func(src, PtrStepSzb(wholeSize.height, wholeSize.width, src.datastart, src.step), ofs.x, ofs.y, xmap, ymap,
-        dst, interpolation, borderMode, borderValueFloat.val, StreamAccessor::getStream(stream), deviceSupports(FEATURE_SET_COMPUTE_20));
+        dst, interpolation, borderMode, borderValueFloat.val, StreamAccessor::getStream(stream), deviceSupports(FEATURE_SET_COMPUTE_20), hasRelativeFlag);
 }
 
 #endif // HAVE_CUDA

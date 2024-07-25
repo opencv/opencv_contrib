@@ -204,5 +204,82 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, RemapOutOfScope, testing::Combine(
         testing::Values(BorderType(cv::BORDER_CONSTANT)),
         WHOLE_SUBMAT));
 
+PARAM_TEST_CASE(RemapRelative, cv::cuda::DeviceInfo, MatType, Interpolation, BorderType)
+{
+    cv::cuda::DeviceInfo devInfo;
+    int type;
+    int interpolation;
+    int borderType;
+
+    cv::cuda::GpuMat gSrc;
+    cv::cuda::GpuMat gMapRelativeX32F;
+    cv::cuda::GpuMat gMapRelativeY32F;
+    cv::cuda::GpuMat gMapAbsoluteX32F;
+    cv::cuda::GpuMat gMapAbsoluteY32F;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        type = GET_PARAM(1);
+        interpolation = GET_PARAM(2);
+        borderType = GET_PARAM(3);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+
+        const int nChannels = CV_MAT_CN(type);
+        const cv::Size size(127, 61);
+        cv::Mat data64FC1(1, size.area()*nChannels, CV_64FC1);
+        data64FC1.forEach<double>([&](double& pixel, const int* position) {pixel = static_cast<double>(position[1]);});
+
+        cv::Mat src;
+        data64FC1.reshape(nChannels, size.height).convertTo(src, type);
+
+        cv::Mat mapRelativeX32F(size, CV_32FC1);
+        mapRelativeX32F.setTo(cv::Scalar::all(-0.33));
+
+        cv::Mat mapRelativeY32F(size, CV_32FC1);
+        mapRelativeY32F.setTo(cv::Scalar::all(-0.33));
+
+        cv::Mat mapAbsoluteX32F = mapRelativeX32F.clone();
+        mapAbsoluteX32F.forEach<float>([&](float& pixel, const int* position) {
+            pixel += static_cast<float>(position[1]);
+        });
+
+        cv::Mat mapAbsoluteY32F = mapRelativeY32F.clone();
+        mapAbsoluteY32F.forEach<float>([&](float& pixel, const int* position) {
+            pixel += static_cast<float>(position[0]);
+        });
+
+        gSrc.upload(src);
+        gMapRelativeX32F.upload(mapRelativeX32F);
+        gMapRelativeY32F.upload(mapRelativeY32F);
+        gMapAbsoluteX32F.upload(mapAbsoluteX32F);
+        gMapAbsoluteY32F.upload(mapAbsoluteY32F);
+    }
+};
+CUDA_TEST_P(RemapRelative, RemapRelative_Validity)
+{
+    cv::cuda::GpuMat gDstAbsolute;
+    cv::cuda::remap(gSrc, gDstAbsolute, gMapAbsoluteX32F, gMapAbsoluteY32F, interpolation, borderType);
+    cv::cuda::GpuMat gDstRelative;
+    cv::cuda::remap(gSrc, gDstRelative, gMapRelativeX32F, gMapRelativeY32F, interpolation | WARP_RELATIVE_MAP, borderType);
+
+    cv::Mat dstAbsolute;
+    gDstAbsolute.download(dstAbsolute);
+    cv::Mat dstRelative;
+    gDstRelative.download(dstRelative);
+
+    EXPECT_MAT_NEAR(dstAbsolute, dstRelative, (dstAbsolute.depth() == CV_32F) ? 1e-3 : 1.0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_RemapRelative, RemapRelative, testing::Combine(
+        ALL_DEVICES,
+        testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4),
+                        MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4),
+                        MatType(CV_16SC1), MatType(CV_16SC3), MatType(CV_16SC4),
+                        MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+        testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC)),
+        testing::Values(BorderType(cv::BORDER_REFLECT101), BorderType(cv::BORDER_REPLICATE), BorderType(cv::BORDER_CONSTANT))));
+
 }} // namespace
 #endif // HAVE_CUDA
