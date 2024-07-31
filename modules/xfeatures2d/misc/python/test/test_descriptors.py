@@ -24,7 +24,7 @@ class matchLOGOS_test(NewOpenCVTests):
     def test_basic(self):
 
         frame = self.get_sample('python/images/baboon.png', cv.IMREAD_COLOR)
-        detector = cv.AKAZE_create(threshold = 0.003)
+        detector = cv.xfeatures2d.AKAZE_create(threshold = 0.003)
 
         keypoints1, descrs1 = detector.detectAndCompute(frame, None)
         keypoints2, descrs2 = detector.detectAndCompute(frame, None)

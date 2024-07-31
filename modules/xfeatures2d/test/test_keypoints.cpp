@@ -143,4 +143,31 @@ TEST(Features2d_Detector_Keypoints_TBMRDetector, validation)
     test.safe_run();
 }
 
+TEST(Features2d_Detector_Keypoints_BRISK, validation)
+{
+    CV_FeatureDetectorKeypointsTest test(BRISK::create());
+    test.safe_run();
+}
+
+TEST(Features2d_Detector_Keypoints_AGAST, validation)
+{
+    CV_FeatureDetectorKeypointsTest test(AgastFeatureDetector::create());
+    test.safe_run();
+}
+
+TEST(Features2d_Detector_Keypoints_KAZE, validation)
+{
+    CV_FeatureDetectorKeypointsTest test(KAZE::create());
+    test.safe_run();
+}
+
+TEST(Features2d_Detector_Keypoints_AKAZE, validation)
+{
+    CV_FeatureDetectorKeypointsTest test_kaze(AKAZE::create(AKAZE::DESCRIPTOR_KAZE));
+    test_kaze.safe_run();
+
+    CV_FeatureDetectorKeypointsTest test_mldb(AKAZE::create(AKAZE::DESCRIPTOR_MLDB));
+    test_mldb.safe_run();
+}
+
 }} // namespace
