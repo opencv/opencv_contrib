@@ -107,7 +107,7 @@ void FourccToChromaFormat(const int pixelFormat, ChromaFormat &chromaFormat, int
 }
 
 static
-int StartCodeLen(unsigned char* data, const int sz) {
+int StartCodeLen(unsigned char* data, const size_t sz) {
     if (sz >= 3 && data[0] == 0 && data[1] == 0 && data[2] == 1)
         return 3;
     else if (sz >= 4 && data[0] == 0 && data[1] == 0 && data[2] == 0 && data[3] == 1)
@@ -116,7 +116,8 @@ int StartCodeLen(unsigned char* data, const int sz) {
         return 0;
 }
 
-bool ParamSetsExist(unsigned char* parameterSets, const int szParameterSets, unsigned char* data, const int szData) {
+static
+bool ParamSetsExist(unsigned char* parameterSets, const size_t szParameterSets, unsigned char* data, const size_t szData) {
     const int paramSetStartCodeLen = StartCodeLen(parameterSets, szParameterSets);
     const int packetStartCodeLen = StartCodeLen(data, szData);
     // weak test to see if the parameter set has already been included in the RTP stream
@@ -144,11 +145,11 @@ cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname,
     if (cap.retrieve(tmpExtraData, codecExtradataIndex) && tmpExtraData.total())
         extraData = tmpExtraData.clone();
 
-    int codec = (int)cap.get(CAP_PROP_FOURCC);
-    int pixelFormat = (int)cap.get(CAP_PROP_CODEC_PIXEL_FORMAT);
+    int codec = static_cast<int>(cap.get(CAP_PROP_FOURCC));
+    int pixelFormat = static_cast<int>(cap.get(CAP_PROP_CODEC_PIXEL_FORMAT));
     format_.codec = FourccToCodec(codec);
-    format_.height = cap.get(CAP_PROP_FRAME_HEIGHT);
-    format_.width = cap.get(CAP_PROP_FRAME_WIDTH);
+    format_.height = static_cast<int>(cap.get(CAP_PROP_FRAME_HEIGHT));
+    format_.width = static_cast<int>(cap.get(CAP_PROP_FRAME_WIDTH));
     format_.displayArea = Rect(0, 0, format_.width, format_.height);
     format_.valid = false;
     format_.fps = cap.get(CAP_PROP_FPS);
@@ -200,7 +201,8 @@ bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** dat
         {
             const size_t nBytesToTrimFromData = format_.codec == Codec::MPEG4 ? 3 : 0;
             const size_t newSz = extraData.total() + *size - nBytesToTrimFromData;
-            dataWithHeader = Mat(1, newSz, CV_8UC1);
+            CV_Assert(newSz <= std::numeric_limits<int>::max());
+            dataWithHeader = Mat(1, static_cast<int>(newSz), CV_8UC1);
             memcpy(dataWithHeader.data, extraData.data, extraData.total());
             memcpy(dataWithHeader.data + extraData.total(), (*data) + nBytesToTrimFromData, *size - nBytesToTrimFromData);
             *data = dataWithHeader.data;

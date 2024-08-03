@@ -566,6 +566,8 @@ void NvEncoder::WaitForCompletionEvent(int iEvent)
         NVENC_THROW_ERROR("Failed to encode frame", NV_ENC_ERR_GENERIC);
     }
 #endif
+#else
+    CV_UNUSED(iEvent);
 #endif
 }
 

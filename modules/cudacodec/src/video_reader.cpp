@@ -56,6 +56,8 @@ void cv::cudacodec::MapHist(const GpuMat&, Mat&) { throw_no_cuda(); }
 
 void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const bool videoFullRangeFlag, cudaStream_t stream);
 bool ValidColorFormat(const ColorFormat colorFormat);
+void cvtFromNv12(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const ColorFormat colorFormat, const bool videoFullRangeFlag,
+    Stream stream);
 
 void cvtFromNv12(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const ColorFormat colorFormat, const bool videoFullRangeFlag,
     Stream stream)
@@ -68,24 +70,25 @@ void cvtFromNv12(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int he
         outFrame.create(height, width, CV_8UC3);
         Npp8u* pSrc[2] = { decodedFrame.data, &decodedFrame.data[decodedFrame.step * height] };
         NppiSize oSizeROI = { width,height };
+        CV_Assert(decodedFrame.step <= std::numeric_limits<int>::max() && outFrame.step <= std::numeric_limits<int>::max());
 #if (CUDART_VERSION < 10010)
         cv::cuda::NppStreamHandler h(stream);
         if (videoFullRangeFlag)
-            nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI));
+            nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R(pSrc, static_cast<int>(decodedFrame.step), outFrame.data, static_cast<int>(outFrame.step), oSizeROI));
         else {
-            nppSafeCall(nppiNV12ToBGR_8u_P2C3R(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI));
+            nppSafeCall(nppiNV12ToBGR_8u_P2C3R(pSrc, static_cast<int>(decodedFrame.step), outFrame.data, static_cast<int>(outFrame.step), oSizeROI));
         }
 #elif (CUDART_VERSION >= 10010)
         NppStreamContext nppStreamCtx;
         nppSafeCall(nppGetStreamContext(&nppStreamCtx));
         nppStreamCtx.hStream = StreamAccessor::getStream(stream);
         if (videoFullRangeFlag)
-            nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
+            nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R_Ctx(pSrc, static_cast<int>(decodedFrame.step), outFrame.data, static_cast<int>(outFrame.step), oSizeROI, nppStreamCtx));
         else {
 #if (CUDART_VERSION < 11000)
-            nppSafeCall(nppiNV12ToBGR_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
+            nppSafeCall(nppiNV12ToBGR_8u_P2C3R_Ctx(pSrc, static_cast<int>(decodedFrame.step), outFrame.data, static_cast<int>(outFrame.step), oSizeROI, nppStreamCtx));
 #else
-            nppSafeCall(nppiNV12ToBGR_709CSC_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
+            nppSafeCall(nppiNV12ToBGR_709CSC_8u_P2C3R_Ctx(pSrc, static_cast<int>(decodedFrame.step), outFrame.data, static_cast<int>(outFrame.step), oSizeROI, nppStreamCtx));
 #endif
         }
 #endif
@@ -129,10 +132,11 @@ namespace
 
         bool set(const ColorFormat colorFormat_) CV_OVERRIDE;
 
-        bool get(const VideoReaderProps propertyId, double& propertyVal) const CV_OVERRIDE;
-        bool getVideoReaderProps(const VideoReaderProps propertyId, double& propertyValOut, double propertyValIn) const CV_OVERRIDE;
+        bool get(const VideoReaderProps propertyId, size_t& propertyVal) const CV_OVERRIDE;
 
         bool get(const int propertyId, double& propertyVal) const CV_OVERRIDE;
+
+        bool rawPackageHasKeyFrame(const size_t idx) const CV_OVERRIDE;
 
     private:
         bool skipFrame();
@@ -335,8 +339,9 @@ namespace
             if (idx >= rawPacketsBaseIdx && idx < rawPacketsBaseIdx + rawPackets.size()) {
                 if (!frame.isMat())
                     CV_Error(Error::StsUnsupportedFormat, "Raw data is stored on the host and must be retrieved using a cv::Mat");
-                const size_t i = idx - rawPacketsBaseIdx;
-                Mat tmp(1, rawPackets.at(i).Size(), CV_8UC1, const_cast<unsigned char*>(rawPackets.at(i).Data()), rawPackets.at(i).Size());
+                const size_t i = idx - static_cast<size_t>(rawPacketsBaseIdx);
+                CV_Assert(rawPackets.at(i).Size() <= std::numeric_limits<int>::max());
+                Mat tmp(1, static_cast<int>(rawPackets.at(i).Size()), CV_8UC1, const_cast<unsigned char*>(rawPackets.at(i).Data()), rawPackets.at(i).Size());
                 frame.getMatRef() = tmp;
             }
         }
@@ -348,6 +353,8 @@ namespace
         case VideoReaderProps::PROP_RAW_MODE :
             videoSource_->SetRawMode(static_cast<bool>(propertyVal));
             return true;
+        default:
+            break;
         }
         return false;
     }
@@ -373,7 +380,7 @@ namespace
         return true;
     }
 
-    bool VideoReaderImpl::get(const VideoReaderProps propertyId, double& propertyVal) const {
+    bool VideoReaderImpl::get(const VideoReaderProps propertyId, size_t& propertyVal) const {
         switch (propertyId)
         {
         case VideoReaderProps::PROP_DECODED_FRAME_IDX:
@@ -395,15 +402,6 @@ namespace
         case VideoReaderProps::PROP_RAW_MODE:
             propertyVal = videoSource_->RawModeEnabled();
             return true;
-        case VideoReaderProps::PROP_LRF_HAS_KEY_FRAME: {
-            const int iPacket = propertyVal - rawPacketsBaseIdx;
-            if (videoSource_->RawModeEnabled() && iPacket >= 0 && iPacket < rawPackets.size()) {
-                propertyVal = rawPackets.at(iPacket).ContainsKeyFrame();
-                return true;
-            }
-            else
-                break;
-        }
         case VideoReaderProps::PROP_ALLOW_FRAME_DROP:
             propertyVal = videoParser_->allowFrameDrops();
             return true;
@@ -411,7 +409,7 @@ namespace
             propertyVal = videoParser_->udpSource();
             return true;
         case VideoReaderProps::PROP_COLOR_FORMAT:
-            propertyVal = static_cast<double>(colorFormat);
+            propertyVal = static_cast<size_t>(colorFormat);
             return true;
         default:
             break;
@@ -419,11 +417,13 @@ namespace
         return false;
     }
 
-    bool VideoReaderImpl::getVideoReaderProps(const VideoReaderProps propertyId, double& propertyValOut, double propertyValIn) const {
-        double propertyValInOut = propertyValIn;
-        const bool ret = get(propertyId, propertyValInOut);
-        propertyValOut = propertyValInOut;
-        return ret;
+    bool VideoReaderImpl::rawPackageHasKeyFrame(const size_t idx) const {
+        if (idx < rawPacketsBaseIdx) return false;
+        const size_t iPacket = idx - rawPacketsBaseIdx;
+        if (videoSource_->RawModeEnabled() && iPacket < rawPackets.size())
+            return rawPackets.at(iPacket).ContainsKeyFrame();
+        else
+            return false;
     }
 
     bool VideoReaderImpl::get(const int propertyId, double& propertyVal) const {
