@@ -1,60 +1,60 @@
-## Repository for OpenCV's extra modules
+# V4D OpenCV Module: A Library for Fast Graphical Applications with OpenCV
 
-This repository is intended for the development of so-called "extra" modules,
-contributed functionality. New modules quite often do not have stable API,
-and they are not well-tested. Thus, they shouldn't be released as a part of the
-official OpenCV distribution, since the library maintains binary compatibility,
-and tries to provide decent performance and stability.
+The V4D OpenCV module is a library that integrates **OpenCV** functionalities with **V4D**, a framework for creating fast graphical applications with *multiple-context rendering* and *parallel execution*. It enables users to perform and visualize various tasks on video inputs and outputs using OpenCV functions and classes, such as image processing, computer vision, and machine learning.
 
-So, all the new modules should be developed separately, and published in the
-`opencv_contrib` repository at first. Later, when the module matures and gains
-popularity, it is moved to the central OpenCV repository, and the development team
-provides production-quality support for this module.
+## Overview
 
-### How to build OpenCV with extra modules
+The V4D OpenCV module allows users to perform image processing, computer vision, and machine learning tasks on video inputs and outputs using OpenCV functions and classes, and to visualize the results using V4D contexts such as **OpenGL**, **NanoVG**, and **ImGui**.
 
-You can build OpenCV, so it will include the modules from this repository. Contrib modules are under constant development and it is recommended to use them alongside the master branch or latest releases of OpenCV.
+The V4D OpenCV module uses a graph-based pipelining approach to *parallelize the execution* of different tasks on multiple instances of V4D as workers. The graph is inferred from the context calls in the `setup`, `infer`, and `teardown` functions of the `Plan` class. Each context call emits a graph node that contains the functor, the l-value references to the parameters, and the underlying context it needs active when being called. After the graph has been inferred from the plan, V4D executes the graph in parallel using multiple instances of Plan as workers. Each worker has its own instance of Plan and therefore its own graph. This way, data races are only possible if a global variable or a static member of the plan is accessed. For such shared variables, there are synchronization facilities that V4D provides, such as `Global::registerShared`, `Global::safe_copy`, and `Global::Scope` structures.
 
-Here is the CMake command for you:
+The V4D OpenCV module also supports *conditional branching* in the graph based on some predicates. The `branch()` and `endbranch()` methods of the V4D object can be used to create conditional branches in the graph based on some predicates. The `branch()` method takes a predicate as the first argument, and optionally some l-value references as the following arguments. The predicate defines the condition for branching, and the references define the dependencies of the condition. Note that the arguments of an `endbranch()` call must match exactly the corresponding `branch()` call or they won't be associated. The V4D API also provides some predefined branch predicates, such as `always_`, `isTrue_`, `isFalse_`, `and_`, and `or_`. These predicates can be used to control the execution flow of the graph nodes based on some boolean conditions. The `always_` predicate always returns true, the `isTrue_` predicate returns the value of a boolean reference, the `isFalse_` predicate returns the negation of a boolean reference, the `and_` predicate returns the logical and of two boolean references, and the `or_` predicate returns the logical or of two boolean references.
 
-```
-$ cd <opencv_build_directory>
-$ cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules <opencv_source_directory>
-$ make -j5
-```
+The V4D OpenCV module also provides some helper functions and classes that simplify the usage of the OpenCV functions and classes, such as `makeCaptureSource`, `makeWriterSink`, `colorConvert`, and `Global::Scope`. These helper functions and classes can be used to create and manipulate sources, sinks, colors, and locks using OpenCV objects.
 
-As the result, OpenCV will be built in the `<opencv_build_directory>` with all
-modules from `opencv_contrib` repository. If you don't want all of the modules,
-use CMake's `BUILD_opencv_*` options. Like in this example:
+## Advantages
 
-```
-$ cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -DBUILD_opencv_legacy=OFF <opencv_source_directory>
-```
+- Light-weight and unencumbered by *QT* or *GTK* licenses: The V4D OpenCV module does not depend on any heavy or restrictive GUI libraries, such as QT or GTK. It only uses *GLEW* and *GLFW3* as dependencies for OpenGL, which are light-weight and have permissive licenses. This makes the V4D OpenCV module more portable and flexible for different platforms and applications.
+- Vector graphics using *NanoVG*: The V4D OpenCV module allows users to draw vector graphics using the NanoVG library, which is a small and fast library for high-quality antialiased vector graphics. NanoVG provides methods for creating and manipulating paths, shapes, colors, gradients, fonts, and text.
+- GUI based on *ImGui*: The V4D OpenCV module allows users to create a user interface using the ImGui library, which is a fast and lightweight library for immediate mode graphical user interfaces. ImGui provides methods for creating and manipulating widgets, such as buttons, sliders, checkboxes, menus, and dialogs.
+- Hardware acceleration: The V4D OpenCV module supports hardware acceleration where possible, such as CL-GL interop, VAAPI, and CL-VAAPI interop. This means that the V4D OpenCV module can use the GPU to perform some operations on the video frames, such as processing, rendering, capturing, writing, and displaying. This can improve the performance and efficiency of the graphical applications. The V4D OpenCV module can also run almost entirely on the GPU, given that the driver features are available. The V4D OpenCV module detects, enables, and uses the hardware acceleration transparently, without requiring any user intervention or configuration.
+- No more *highgui*: The V4D OpenCV module replaces the highgui module of OpenCV, which is a module for displaying images and basic user interface. The highgui module has some limitations, such as heavy dependencies, licenses, and platform-specific issues. The V4D OpenCV module provides a more powerful and flexible alternative to the highgui module, by using V4D and its multiple contexts.
 
-If you also want to build the samples from the "samples" folder of each module, also include the "-DBUILD_EXAMPLES=ON" option.
+## Requirements
 
-If you prefer using the GUI version of CMake (cmake-gui), then, you can add `opencv_contrib` modules within `opencv` core by doing the following:
+- **C++20**: The V4D OpenCV module requires C++20 as the minimum standard for compiling and running the graphical applications.
+- **OpenGL 3.2 Core (optionally Compat)/OpenGL ES 3.0**: The V4D OpenCV module requires OpenGL 3.2 Core or OpenGL ES 3.0 as the minimum version for rendering the video frames. Optionally, the V4D OpenCV module can also use OpenGL 3.2 Compat, which provides some backward compatibility with older OpenGL versions.
+- **OpenCL 1.2 (optional)**: The V4D OpenCV module can optionally use OpenCL 1.2 as the minimum version for performing OpenCV algorithms on the video frames using the GPU.
+- **cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions (optional)**: The V4D OpenCV module can optionally use some OpenCL extensions that enable interoperability with OpenGL and VAAPI. The cl_khr_gl_sharing extension allows sharing of OpenGL objects, such as textures and buffers, with OpenCL. The cl_intel_va_api_media_sharing extension allows sharing of VAAPI objects, such as surfaces and contexts, with OpenCL. These extensions are not required, but they can improve the performance and efficiency of the graphical applications.
 
-1. Start cmake-gui.
+## Dependencies
 
-2. Select the opencv source code folder and the folder where binaries will be built (the 2 upper forms of the interface).
+The V4D OpenCV module depends on some external libraries that provide some functionalities for the graphical applications, such as *OpenGL*, *GLFW3*, *NanoVG*, and *ImGui*. These dependencies are listed below:
 
-3. Press the `configure` button. You will see all the opencv build parameters in the central interface.
+- **OpenCV 4.x**: The V4D OpenCV module depends on OpenCV 4.x as the main library for image processing, computer vision, and machine learning. The V4D OpenCV module works with the mainline OpenCV 4.x, but it also has a fork that provides some additional features, such as VAAPI support and CL-VAAPI interop.
+- **GLEW**: The V4D OpenCV module depends on GLEW as the library for loading and managing OpenGL extensions. GLEW provides a cross-platform way to access the OpenGL functions and constants that are defined by the extensions.
+- **GLFW3**: The V4D OpenCV module depends on GLFW3 as the library for creating and managing windows and contexts for OpenGL. GLFW3 provides a simple and portable way to create and manage windows and contexts for OpenGL.
+- **NanoVG**: The V4D OpenCV module depends on NanoVG as the library for drawing vector graphics using OpenGL. NanoVG is a small and fast library that provides high-quality antialiased vector graphics. NanoVG supports various shapes, colors, gradients, fonts, and text, and integrates well with the framebuffer context of the V4D OpenCV module.
+- **ImGui**: The V4D OpenCV module depends on ImGui as the library for creating user interfaces using OpenGL. ImGui is a fast and lightweight library that provides immediate mode graphical user interfaces. ImGui supports various widgets, such as buttons, sliders, checkboxes, menus, and dialogs, and integrates well with the framebuffer context of the V4D OpenCV module.
 
-4. Browse the parameters and look for the form called `OPENCV_EXTRA_MODULES_PATH` (use the search form to focus rapidly on it).
+## The V4D-Context Abstraction and Multi-Context Rendering
 
-5. Complete this `OPENCV_EXTRA_MODULES_PATH` by the proper pathname to the `<opencv_contrib>/modules` value using its browse button.
+Most sub-systems of V4D abstract their resource handles as "contexts". Examples are *OpenGL*, *NanoGUI*, *ImGUI*, *OpenCL*, and *VAAPI*. Though of course NanoGUI- and ImGUI-contexts are based on OpenGL-context, which means V4D uses multiple OpenGL-contexts for rendering. Actually, through a dedicated context call (`gl()`) more OpenGL-instances may be instanced. Each of these OpenGL-contexts has a framebuffer bound to it with the same shared texture attached to it. The orchestration of (easily dozens or even hundreds of) OpenGL-contexts is called *multi-context rendering*. There are two reasons why V4D does multi-context rendering.
 
-6. Press the `configure` button followed by the `generate` button (the first time, you will be asked which makefile style to use).
+1. Every OpenGL-context has its own separate state, which is necessary because usually OpenGL frameworks assume exclusive access to the state-machine. By using multiple OpenGL contexts, frameworks can be used side-by-side.
+2. Parallel rendering to multiple contexts can be highly beneficial to performance, depending on the use-case (see *many-cubes_demo*).
 
-7. Build the `opencv` core with the method you chose (make and make install if you chose Unix makefile at step 6).
+*Note*: There is another shared texture in V4D's abstraction of a framebuffer, but that is used to transfer frames from the workers to the main V4D instance (on the main thread).
 
-8. To run, linker flags to contrib modules will need to be added to use them in your code/IDE. For example to use the aruco module, "-lopencv_aruco" flag will be added.
+## Types of V4D-Contexts
 
-### Update the repository documentation
+The V4D OpenCV module supports various types of V4D-contexts that allow users to perform different operations on the video frames using different libraries and frameworks. The types of V4D-contexts are listed below:
 
-In order to keep a clean overview containing all contributed modules, the following files need to be created/adapted:
-
-1. Update the README.md file under the modules folder. Here, you add your model with a single-line description.
-
-2. Add a README.md inside your own module folder. This README explains which functionality (separate functions) is available, links to the corresponding samples, and explains in somewhat more detail what the module is expected to do. If any extra requirements are needed to build the module without problems, add them here also.
+- The **FrameBufferContext** is the main context that holds the framebuffer that is displayed in the window or the offscreen buffer. It also provides methods for copying to and from the framebuffer, such as `copyTo()`, `copyFrom()`. It also provides access to the OpenGL texture and the OpenCL context that are associated with the framebuffer. The `fb()` method of the V4D object can be used to emit a graph node that performs some operation on the framebuffer, such as drawing, blending, or filtering. The `fb()` method takes a stateless lambda as the first argument, and optionally some l-value references as the following arguments. The lambda defines the operation to be performed on the framebuffer, and the references define the dependencies or outputs of the operation.
+- The **SourceContext** is the context that handles the video input from a source, such as a file, a camera, or a network stream. The `capture()` method of the V4D object can be used to emit a graph node that performs some operation on the source buffer, such as processing, converting, or copying. The `capture()` method takes a stateless lambda as the first argument, and optionally some l-value references as the following arguments. The lambda defines the operation to be performed on the source buffer, and the references define the dependencies or outputs of the operation.
+- The **SinkContext** is the context that handles the video output to a sink, such as a file, a screen, or a network stream. The `write()` method of the V4D object can be used to emit a graph node that performs some operation on the sink buffer, such as processing, converting, or copying. The `write()` method takes a stateless lambda as the first argument, and optionally some l-value references as the following arguments. The lambda defines the operation to be performed on the sink buffer, and the references define the dependencies or outputs of the operation.
+- The **NanoVGContext** is the context that allows users to draw vector graphics using the NanoVG library. It provides methods for creating and manipulating paths, shapes, colors, gradients, fonts, and text. The `nvg()` method of the V4D object can be used to emit a graph node that performs some drawing operation using the NanoVG context, such as creating a path, filling a shape, or rendering text. The `nvg()` method takes a stateless lambda as the first argument, and optionally some l-value references as the following arguments. The lambda defines the drawing operation to be performed using the NanoVG context, and the references define the dependencies or outputs of the operation.
+- The **ImGuiContext** is the context that allows users to create a user interface using the *ImGui* library. It provides methods for creating and manipulating widgets, such as buttons, sliders, checkboxes, menus, and dialogs. It also provides access to the *ImGui* context that is associated with the framebuffer. The `imgui()` method of the *V4D* object can be used to emit a graph node that performs some user interface operation using the *ImGui* context, such as creating a widget, handling an input, or displaying a message. The `imgui()` method takes a stateless lambda as the first argument, and optionally some l-value references as the following arguments. The lambda defines the user interface operation to be performed using the *ImGui* context, and the references define the dependencies or outputs of the operation. Note that `imgui()` can only be called from `Plan::gui`, which is executed on the main thread.
+- The **OnceContext** is the context that allows users to perform some operation only once, such as initializing some data structures, loading some resources, or printing some information. The `once()` method of the *V4D* object can be used to emit a graph node that performs some operation only once, such as initializing some data structures, loading some resources, or printing some information. The `once()` method takes a stateless lambda as the first argument, and optionally some l-value references as the following arguments. The lambda defines the operation to be performed only once, and the references define the dependencies or outputs of the operation.
+- The **PlainContext** is the context that allows users to perform some operation without any specific context, such as setting some parameters, creating some data structures, or calling some functions. The `plain()` method of the *V4D* object can be used to emit a graph node that performs some operation without any specific context, such as setting some parameters, creating some data structures, or calling some functions. The `plain()` method takes a stateless lambda as the first argument, and optionally some l-value references as the following arguments. The lambda defines the operation to be performed without any specific context, and the references define the dependencies or outputs of the operation.
+- The **GLContext** is the context that allows users to perform some operation using the *OpenGL* context, such as creating and manipulating textures, buffers, shaders, and programs. The `gl()` method of the *V4D* object can be used to emit a graph node that performs some operation using the *OpenGL* context, such as creating and manipulating textures, buffers, shaders, and programs. The `gl()` method takes a stateless lambda as the first argument, and optionally some l-value references as the following arguments. The lambda defines the operation to be performed using the *OpenGL* context, and the references define the dependencies or outputs of the operation.
