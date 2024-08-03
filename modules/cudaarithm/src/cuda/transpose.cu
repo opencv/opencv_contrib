@@ -56,40 +56,136 @@ using namespace cv;
 using namespace cv::cuda;
 using namespace cv::cudev;
 
+#define USE_NPP_STREAM_CONTEXT (NPP_VERSION >= (10 * 1000 + 1 * 100 + 0))
+
+namespace
+{
+  template <int DEPTH> struct NppTransposeFunc
+  {
+    typedef typename NPPTypeTraits<DEPTH>::npp_type npp_type;
+
+    typedef NppStatus (*func_t)(const npp_type* pSrc, int srcStep, npp_type* pDst, int dstStep, NppiSize srcSize);
+    #if USE_NPP_STREAM_CONTEXT
+    typedef NppStatus (*func_ctx_t)(const npp_type* pSrc, int srcStep, npp_type* pDst, int dstStep, NppiSize srcSize, NppStreamContext stream);
+    #endif
+  };
+
+  template <int DEPTH, typename NppTransposeFunc<DEPTH>::func_t func> struct NppTranspose
+  {
+    typedef typename NppTransposeFunc<DEPTH>::npp_type npp_type;
+
+    static void call(const cv::cuda::GpuMat& src, cv::cuda::GpuMat& dst, cudaStream_t stream)
+    {
+      NppiSize srcsz;
+      srcsz.height = src.rows;
+      srcsz.width = src.cols;
+
+      cv::cuda::NppStreamHandler h(stream);
+
+      nppSafeCall( func(src.ptr<npp_type>(), static_cast<int>(src.step), dst.ptr<npp_type>(), static_cast<int>(dst.step), srcsz) );
+
+      if (stream == 0)
+        cudaSafeCall( cudaDeviceSynchronize() );
+    }
+  };
+
+  #if USE_NPP_STREAM_CONTEXT
+  template <int DEPTH, typename NppTransposeFunc<DEPTH>::func_ctx_t func> struct NppTransposeCtx
+  {
+    typedef typename NppTransposeFunc<DEPTH>::npp_type npp_type;
+
+    static void call(const cv::cuda::GpuMat& src, cv::cuda::GpuMat& dst, cudaStream_t stream)
+    {
+      NppiSize srcsz;
+      srcsz.height = src.rows;
+      srcsz.width = src.cols;
+
+      NppStreamContext ctx;
+      nppSafeCall( nppGetStreamContext(&ctx) );
+      ctx.hStream = stream;
+
+      nppSafeCall( func(src.ptr<npp_type>(), static_cast<int>(src.step), dst.ptr<npp_type>(), static_cast<int>(dst.step), srcsz, ctx) );
+    }
+  };
+  #endif
+}
+
 void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
 {
     GpuMat src = getInputMat(_src, stream);
 
+    const int srcType = src.type();
     const size_t elemSize = src.elemSize();
-
-    CV_Assert( elemSize == 1 || elemSize == 4 || elemSize == 8 );
 
     GpuMat dst = getOutputMat(_dst, src.cols, src.rows, src.type(), stream);
 
-    if (elemSize == 1)
+    const bool isSupported =
+      (elemSize == 1) || (elemSize == 2) || (elemSize == 3) || (elemSize == 4) ||
+      (elemSize == 6) || (elemSize == 8) || (elemSize == 12) || (elemSize == 16);
+
+    if (!isSupported)
+        CV_Error(Error::StsUnsupportedFormat, "");
+    else if (src.empty())
+        CV_Error(Error::StsBadArg, "image is empty");
+
+    if ((src.rows == 1) && (src.cols == 1))
+        src.copyTo(dst, stream);
+    else if (src.rows == 1)
+        src.reshape(0, src.cols).copyTo(dst, stream);
+    else if ((src.cols == 1) && src.isContinuous())
+        src.reshape(0, src.cols).copyTo(dst, stream);
+    else
     {
-        NppStreamHandler h(StreamAccessor::getStream(stream));
+        #if USE_NPP_STREAM_CONTEXT
+        constexpr const bool useNppStreamCtx = true;
+        #else
+        constexpr const bool useNppStreamCtx = false;
+        #endif
+        cudaStream_t _stream = StreamAccessor::getStream(stream);
 
-        NppiSize sz;
-        sz.width  = src.cols;
-        sz.height = src.rows;
+        if (!_stream || !useNppStreamCtx)
+        {
+          typedef void (*func_t)(const cv::cuda::GpuMat& src, cv::cuda::GpuMat& dst, cudaStream_t stream);
+          //if no direct mapping exists between DEPTH+CHANNELS and the nppiTranspose supported type, we use a nppiTranspose of a similar elemSize
+          static const func_t funcs[8][4] = {
+            {NppTranspose<CV_8U,  nppiTranspose_8u_C1R>::call,  NppTranspose<CV_16U, nppiTranspose_16u_C1R>::call, NppTranspose<CV_8U, nppiTranspose_8u_C3R>::call,   NppTranspose<CV_8U, nppiTranspose_8u_C4R>::call},
+            {NppTranspose<CV_8U,  nppiTranspose_8u_C1R>::call,  NppTranspose<CV_16U, nppiTranspose_16u_C1R>::call, NppTranspose<CV_8U, nppiTranspose_8u_C3R>::call,   NppTranspose<CV_8U, nppiTranspose_8u_C4R>::call},
+            {NppTranspose<CV_16U, nppiTranspose_16u_C1R>::call, NppTranspose<CV_32S, nppiTranspose_32s_C1R>::call, NppTranspose<CV_16U, nppiTranspose_16u_C3R>::call, NppTranspose<CV_16U, nppiTranspose_16u_C4R>::call},
+            {NppTranspose<CV_16S, nppiTranspose_16s_C1R>::call, NppTranspose<CV_32S, nppiTranspose_32s_C1R>::call, NppTranspose<CV_16S, nppiTranspose_16s_C3R>::call, NppTranspose<CV_16S, nppiTranspose_16s_C4R>::call},
+            {NppTranspose<CV_32S, nppiTranspose_32s_C1R>::call, NppTranspose<CV_16S, nppiTranspose_16s_C4R>::call, NppTranspose<CV_32S, nppiTranspose_32s_C3R>::call, NppTranspose<CV_32S, nppiTranspose_32s_C4R>::call},
+            {NppTranspose<CV_32F, nppiTranspose_32f_C1R>::call, NppTranspose<CV_16S, nppiTranspose_16s_C4R>::call, NppTranspose<CV_32F, nppiTranspose_32f_C3R>::call, NppTranspose<CV_32F, nppiTranspose_32f_C4R>::call},
+            {NppTranspose<CV_16S, nppiTranspose_16s_C4R>::call, NppTranspose<CV_32S, nppiTranspose_32s_C4R>::call, nullptr, nullptr},
+            {NppTranspose<CV_16U, nppiTranspose_16u_C1R>::call, NppTranspose<CV_32S, nppiTranspose_32s_C1R>::call, NppTranspose<CV_16U, nppiTranspose_16u_C3R>::call, NppTranspose<CV_16U, nppiTranspose_16u_C4R>::call}
+          };
+          
+          const func_t func = funcs[src.depth()][src.channels() - 1];
+          CV_Assert(func != nullptr);
 
-        nppSafeCall( nppiTranspose_8u_C1R(src.ptr<Npp8u>(), static_cast<int>(src.step),
-            dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
+          func(src, dst, _stream);
+        }//end if (!_stream || !useNppStreamCtx)
+        else//if ((_stream != 0) && useNppStreamCtx)
+        {
+          #if USE_NPP_STREAM_CONTEXT
+          typedef void (*func_t)(const cv::cuda::GpuMat& src, cv::cuda::GpuMat& dst, cudaStream_t stream);
+          //if no direct mapping exists between DEPTH+CHANNELS and the nppiTranspose supported type, we use a nppiTranspose of a similar elemSize
+          static const func_t funcs[8][4] = {
+            {NppTransposeCtx<CV_8U,  nppiTranspose_8u_C1R_Ctx>::call,  NppTransposeCtx<CV_16U, nppiTranspose_16u_C1R_Ctx>::call, NppTransposeCtx<CV_8U,  nppiTranspose_8u_C3R_Ctx>::call,  NppTransposeCtx<CV_8U, nppiTranspose_8u_C4R_Ctx>::call},
+            {NppTransposeCtx<CV_8U,  nppiTranspose_8u_C1R_Ctx>::call,  NppTransposeCtx<CV_16U, nppiTranspose_16u_C1R_Ctx>::call, NppTransposeCtx<CV_8U,  nppiTranspose_8u_C3R_Ctx>::call,  NppTransposeCtx<CV_8U, nppiTranspose_8u_C4R_Ctx>::call},
+            {NppTransposeCtx<CV_16U, nppiTranspose_16u_C1R_Ctx>::call, NppTransposeCtx<CV_32S, nppiTranspose_32s_C1R_Ctx>::call, NppTransposeCtx<CV_16U, nppiTranspose_16u_C3R_Ctx>::call, NppTransposeCtx<CV_16U, nppiTranspose_16u_C4R_Ctx>::call},
+            {NppTransposeCtx<CV_16S, nppiTranspose_16s_C1R_Ctx>::call, NppTransposeCtx<CV_32S, nppiTranspose_32s_C1R_Ctx>::call, NppTransposeCtx<CV_16S, nppiTranspose_16s_C3R_Ctx>::call, NppTransposeCtx<CV_16S, nppiTranspose_16s_C4R_Ctx>::call},
+            {NppTransposeCtx<CV_32S, nppiTranspose_32s_C1R_Ctx>::call, NppTransposeCtx<CV_16S, nppiTranspose_16s_C4R_Ctx>::call, NppTransposeCtx<CV_32S, nppiTranspose_32s_C3R_Ctx>::call, NppTransposeCtx<CV_32S, nppiTranspose_32s_C4R_Ctx>::call},
+            {NppTransposeCtx<CV_32F, nppiTranspose_32f_C1R_Ctx>::call, NppTransposeCtx<CV_16S, nppiTranspose_16s_C4R_Ctx>::call, NppTransposeCtx<CV_32F, nppiTranspose_32f_C3R_Ctx>::call, NppTransposeCtx<CV_32F, nppiTranspose_32f_C4R_Ctx>::call},
+            {NppTransposeCtx<CV_16S, nppiTranspose_16s_C4R_Ctx>::call, NppTransposeCtx<CV_32S, nppiTranspose_32s_C4R_Ctx>::call, nullptr, nullptr},
+            {NppTransposeCtx<CV_16U, nppiTranspose_16u_C1R_Ctx>::call, NppTransposeCtx<CV_32S, nppiTranspose_32s_C1R_Ctx>::call, NppTransposeCtx<CV_16U, nppiTranspose_16u_C3R_Ctx>::call, NppTransposeCtx<CV_16U, nppiTranspose_16u_C4R_Ctx>::call}
+          };
 
-        if (!stream)
-            CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
-    }
-    else if (elemSize == 4)
-    {
-        gridTranspose(globPtr<int>(src), globPtr<int>(dst), stream);
-    }
-    else // if (elemSize == 8)
-    {
-        gridTranspose(globPtr<double>(src), globPtr<double>(dst), stream);
-    }
+          const func_t func = funcs[src.depth()][src.channels() - 1];
+          CV_Assert(func != nullptr);
 
-    syncOutput(dst, _dst, stream);
+          func(src, dst, _stream);
+          #endif
+        }//end if ((_stream != 0) && useNppStreamCtx)
+    }//end if
 }
 
 #endif
