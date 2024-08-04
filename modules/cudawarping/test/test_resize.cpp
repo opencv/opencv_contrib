@@ -301,7 +301,7 @@ PARAM_TEST_CASE(ResizeOnnx, cv::cuda::DeviceInfo, MatType, double, double, int, 
     void random_roi(int type)
     {
         Size srcSize, dstSize;
-        int minSize = min(fx, fy) < 1.0 ? 10 : 1;
+        int minSize = min(fx, fy) < 1.0 ? 16 : 1;
         while (dstSize.empty())
         {
             srcSize = randomSize(minSize, 129);
@@ -322,10 +322,13 @@ CUDA_TEST_P(ResizeOnnx, Accuracy)
     for (int cn = 1; cn <= 6; ++cn)
     {
         int type = CV_MAKETYPE(depth, cn);
+        float A = static_cast<float>(randomDouble(-1.0, -0.1));
         random_roi(type);
 
-        cv::resizeOnnx(src_roi, dst_roi, dst_roi.size(), Point2d(fx, fy), interpolation);
-        cv::cuda::resizeOnnx(gsrc_roi, gdst_roi, dst_roi.size(), Point2d(fx, fy), interpolation);
+        cv::resizeOnnx(src_roi, dst_roi,
+            dst_roi.size(), Point2d(fx, fy), interpolation, A);
+        cv::cuda::resizeOnnx(gsrc_roi, gdst_roi,
+            dst_roi.size(), Point2d(fx, fy), interpolation, A);
 
         gdst.download(host);
         host_roi = host(dst_loc);
@@ -367,5 +370,17 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping_Nearest, ResizeOnnx, Combine(
         (int)(INTER_NEAREST | INTER_NEAREST_FLOOR)),
     WHOLE_SUBMAT));
 
+INSTANTIATE_TEST_CASE_P(CUDA_Warping_ExcludeOutside, ResizeOnnx, Combine(
+    ALL_DEVICES,
+    Values(CV_8U, CV_8S, CV_16U, CV_16S, CV_32S, CV_32F, CV_64F),
+    Values(0.4, 0.27, 1.6),
+    Values(0.5, 0.71, 2.7),
+    Values(
+        (int)(                   INTER_CUBIC | INTER_EXCLUDE_OUTSIDE),
+        (int)(INTER_ANTIALIAS |  INTER_CUBIC | INTER_EXCLUDE_OUTSIDE),
+        (int)(INTER_ANTIALIAS | INTER_LINEAR | INTER_EXCLUDE_OUTSIDE)),
+    Values(1, 16)));
+
 }} // namespace
+
 #endif // HAVE_CUDA

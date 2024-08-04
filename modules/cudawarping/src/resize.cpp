@@ -44,12 +44,13 @@
 
 #if !defined HAVE_CUDA || defined(CUDA_DISABLER)
 
-void cv::cuda::resize(InputArray, OutputArray, Size, double, double, int, Stream&) { throw_no_cuda(); }
+void cv::cuda::resize(InputArray /*src*/, OutputArray /*dst*/, Size /*dsize*/,
+    double /*fx*/, double /*fy*/, int /*interpolation*/, Stream& /*stream*/)
+{ throw_no_cuda(); }
 
-void resizeOnnx(InputArray /*_src*/, OutputArray /*_dst*/,
-    Size /*dsize*/, Point2d /*scale*/, int /*interpolation*/,
-    float /*cubicCoeff*/, Rect2d const& /*roi*/, Stream& /*stream*/)
-    { throw_no_cuda(); }
+void cv::cuda::resizeOnnx(InputArray /*src*/, OutputArray /*dst*/, Size /*dsize*/,
+    Point2d /*scale*/, int /*interpolation*/, float /*cubicCoeff*/, Stream& /*stream*/)
+{ throw_no_cuda(); }
 
 #else // HAVE_CUDA
 
@@ -69,7 +70,7 @@ void resizeOnnxNN(size_t elemSize, PtrStepSzb const& src, PtrStepSzb const& dst,
 
 namespace cv
 {
-static Vec2f interCoordinate(int coordinate, int dst, int src, double scale, double start, double end)
+static Vec2f interCoordinate(int coordinate, int dst, int src, double scale)
 {
     float a, b;
     if (coordinate == INTER_HALF_PIXEL
@@ -95,22 +96,6 @@ static Vec2f interCoordinate(int coordinate, int dst, int src, double scale, dou
     {
         a = static_cast<float>(1.0 / scale);
         b = 0.f;
-    }
-    else if (coordinate == INTER_TF_CROP_RESIZE)
-    {
-        CV_CheckGE(start, 0.0, "roi's start is out of image");
-        CV_CheckLE(end, 1.0, "roi's end   is out of image");
-        CV_CheckLT(start, end, "roi's start must be less than its end");
-        if (dst <= 1)
-        {
-            a = 0.f;
-            b = static_cast<float>(0.5 * (start + end) * (src - 1.0));
-        }
-        else
-        {
-            a = static_cast<float>((end - start) * (src - 1.0) / (src * scale - 1.0));
-            b = static_cast<float>(start * (src - 1.0));
-        }
     }
     else
         CV_Error(Error::StsBadArg, format("Unknown coordinate transformation mode %d", coordinate));
@@ -170,8 +155,8 @@ void cv::cuda::resize(InputArray _src, OutputArray _dst, Size dsize, double fx, 
 }
 
 
-void cv::cuda::resizeOnnx(InputArray _src, OutputArray _dst, Size dsize, Point2d scale,
-    int interpolation, float cubicCoeff, Rect2d const& roi, Stream& stream)
+void cv::cuda::resizeOnnx(InputArray _src, OutputArray _dst,
+    Size dsize, Point2d scale, int interpolation, float cubicCoeff, Stream& stream)
 {
     GpuMat src = _src.getGpuMat();
     Size ssize = _src.size();
@@ -210,12 +195,11 @@ void cv::cuda::resizeOnnx(InputArray _src, OutputArray _dst, Size dsize, Point2d
         coordinate == INTER_HALF_PIXEL_PYTORCH ||
         coordinate == INTER_HALF_PIXEL_SYMMETRIC ||
         coordinate == INTER_ALIGN_CORNERS ||
-        coordinate == INTER_ASYMMETRIC ||
-        coordinate == INTER_TF_CROP_RESIZE);
+        coordinate == INTER_ASYMMETRIC);
 
     _dst.create(dsize, _src.type());
     GpuMat dst = _dst.getGpuMat();
-    if (dsize == ssize && coordinate != INTER_TF_CROP_RESIZE)
+    if (dsize == ssize)
     {
         src.copyTo(dst, stream);
         return;
@@ -225,10 +209,8 @@ void cv::cuda::resizeOnnx(InputArray _src, OutputArray _dst, Size dsize, Point2d
 
     Point2f scalef = static_cast<Point2f>(scale);
     Matx22f M;
-    Vec2f xcoef = interCoordinate(
-        coordinate, dsize.width, ssize.width, scale.x, roi.x, roi.x + roi.width);
-    Vec2f ycoef = interCoordinate(
-        coordinate, dsize.height, ssize.height, scale.y, roi.y, roi.y + roi.height);
+    Vec2f xcoef = interCoordinate(coordinate, dsize.width, ssize.width, scale.x);
+    Vec2f ycoef = interCoordinate(coordinate, dsize.height, ssize.height, scale.y);
     M(0, 0) = xcoef[0];
     M(0, 1) = xcoef[1];
     M(1, 0) = ycoef[0];

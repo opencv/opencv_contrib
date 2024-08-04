@@ -117,7 +117,7 @@ CV_EXPORTS_W void resize(InputArray src, OutputArray dst, Size dsize, double fx=
 https://github.com/onnx/onnx/blob/main/docs/Operators.md#Resize
 https://github.com/onnx/onnx/blob/main/onnx/reference/ops/op_resize.py
 
-Not support `exclude_outside` and `extrapolation_value` yet.
+Not support `tf_crop_resize` yet.
 
 To get a similar result to `cv::resize`, give dsize and:
     INTER_NEAREST : ASYMMETRIC + NEAREST_FLOOR
@@ -127,19 +127,18 @@ To get a similar result to `cv::resize`, give dsize and:
 @param src input image.
 @param dst output image; it has the size dsize (when it is non-zero) or the size computed from src.size(), scale; the type of dst is the same as of src.
 @param dsize output image size; if it equals to zero, it is computed as:
- \f[\texttt{dsize = Size(int(scale.x * src.cols), int(scale.y * src.rows))}\f]
- Either dsize or scale must be non-zero.
+\f[\texttt{dsize = Size(int(scale.x * src.cols), int(scale.y * src.rows))}\f]
+Either dsize or scale must be non-zero.
 @param scale scale factor; use same definition as ONNX, if scale > 1, it's upsampling.
-@param interpolation interpolation / coordiante, see #InterpolationFlags and #ResizeONNXFlags
-@param cubicCoeff cubic sampling coeff; range \f[[-1.0, 0)\f]
-@param roi crop region; if provided, the rois' coordinates are normalized in the coordinate system of the input image; it only takes effect with INTER_TF_CROP_RESIZE (ONNX tf_crop_and_resize)
+@param interpolation interpolation flags, see #InterpolationFlags and #ResizeONNXFlags
+@param cubicCoeff cubic sampling coefficient, range \f[[-1.0, 0)\f]
 @param stream Stream for the asynchronous version.
 
 @sa resize, resizeOnnx
  */
 CV_EXPORTS_W void resizeOnnx(InputArray src, OutputArray dst, Size dsize,
-    Point2d scale = Point2d(), int interpolation = INTER_LINEAR | INTER_HALF_PIXEL,
-    float cubicCoeff = -0.75f, Rect2d const& roi = Rect2d(), Stream& stream = Stream::Null());
+    Point2d scale = Point2d(), int interpolation = INTER_LINEAR,
+    float cubicCoeff = -0.75f, Stream& stream = Stream::Null());
 
 /** @brief Applies an affine transformation to an image.
 
