@@ -180,24 +180,24 @@ namespace cv { namespace cuda { namespace device {
             float rx = fx - ix, ry = fy - iy;
             W1 weight = 0;
             W sumval = VecTraits<W>::all(0);
-            for (int h = ystart; h < yend; ++h)
+            for (int h = this->ystart; h < this->yend; ++h)
             {
                 W1 wline = 0;
                 W sline = VecTraits<W>::all(0);
-                int sy = clamp(iy + h, 0, row1);
-                T const* S = ptr<T>(src, sy);
-                for (int w = xstart; w < xend; ++w)
+                int sy = clamp(iy + h, 0, this->row1);
+                T const* S = ptr<T>(this->src, sy);
+                for (int w = this->xstart; w < this->xend; ++w)
                 {
-                    int sx = clamp(ix + w, 0, col1);
-                    W1 t = coeff.at((w - rx) * xscale);
+                    int sx = clamp(ix + w, 0, this->col1);
+                    W1 t = this->coeff.at((w - rx) * this->xscale);
                     wline += t;
                     sline += t * saturate_cast<W>(S[sx]);
                 }
-                W1 u = coeff.at((h - ry) * yscale);
+                W1 u = this->coeff.at((h - ry) * this->yscale);
                 weight += u * wline;
                 sumval += u * sline;
             }
-            at<T>(dst, dy, dx) = saturate_cast<T>(sumval / weight);
+            at<T>(this->dst, dy, dx) = saturate_cast<T>(sumval / weight);
         }
     };
 
@@ -216,20 +216,20 @@ namespace cv { namespace cuda { namespace device {
             int ix = __float2int_rd(fx), iy = __float2int_rd(fy);
             float rx = fx - ix, ry = fy - iy;
             W weight = 0, sumval = 0;
-            T* D = ptr<T>(dst, dy) + dx * cn;
-            for (int h = ystart; h < yend; ++h)
+            T* D = ptr<T>(this->dst, dy) + dx * cn;
+            for (int h = this->ystart; h < this->yend; ++h)
             {
                 W wline = 0, sline = 0;
-                int sy = clamp(iy + h, 0, row1);
-                T const* S = ptr<T>(src, sy);
-                for (int w = xstart; w < xend; ++w)
+                int sy = clamp(iy + h, 0, this->row1);
+                T const* S = ptr<T>(this->src, sy);
+                for (int w = this->xstart; w < this->xend; ++w)
                 {
-                    int sx = clamp(ix + w, 0, col1) * cn;
-                    W t = coeff.at((w - rx) * xscale);
+                    int sx = clamp(ix + w, 0, this->col1) * cn;
+                    W t = this->coeff.at((w - rx) * this->xscale);
                     wline += t;
                     sline += t * S[sx];
                 }
-                W u = coeff.at((h - ry) * yscale);
+                W u = this->coeff.at((h - ry) * this->yscale);
                 weight += u * wline;
                 sumval += u * sline;
             }
@@ -237,18 +237,18 @@ namespace cv { namespace cuda { namespace device {
             for (int i = 1; i < cn; ++i)
             {
                 sumval = 0;
-                for (int h = ystart; h < yend; ++h)
+                for (int h = this->ystart; h < this->yend; ++h)
                 {
                     W sline = 0;
-                    int sy = clamp(iy + h, 0, row1);
-                    T const* S = ptr<T>(src, sy) + i;
-                    for (int w = xstart; w < xend; ++w)
+                    int sy = clamp(iy + h, 0, this->row1);
+                    T const* S = ptr<T>(this->src, sy) + i;
+                    for (int w = this->xstart; w < this->xend; ++w)
                     {
-                        int sx = clamp(ix + w, 0, col1) * cn;
-                        W t = coeff.at((w - rx) * xscale);
+                        int sx = clamp(ix + w, 0, this->col1) * cn;
+                        W t = this->coeff.at((w - rx) * this->xscale);
                         sline += t * S[sx];
                     }
-                    W u = coeff.at((h - ry) * yscale);
+                    W u = this->coeff.at((h - ry) * this->yscale);
                     sumval += u * sline;
                 }
                 D[i] = saturate_cast<T>(sumval / weight);
@@ -269,28 +269,28 @@ namespace cv { namespace cuda { namespace device {
             float rx = fx - ix, ry = fy - iy;
             W1 weight = 0;
             W sumval = VecTraits<W>::all(0);
-            for (int h = ystart; h < yend; ++h)
+            for (int h = this->ystart; h < this->yend; ++h)
             {
                 int sy = iy + h;
-                if (static_cast<unsigned>(sy) > static_cast<unsigned>(row1))
+                if (static_cast<unsigned>(sy) > static_cast<unsigned>(this->row1))
                     continue;
                 W1 wline = 0;
                 W sline = VecTraits<W>::all(0);
-                T const* S = ptr<T>(src, sy);
-                for (int w = xstart; w < xend; ++w)
+                T const* S = ptr<T>(this->src, sy);
+                for (int w = this->xstart; w < this->xend; ++w)
                 {
                     int sx = ix + w;
-                    if (static_cast<unsigned>(sx) > static_cast<unsigned>(col1))
+                    if (static_cast<unsigned>(sx) > static_cast<unsigned>(this->col1))
                         continue;
-                    W1 t = coeff.at((w - rx) * xscale);
+                    W1 t = this->coeff.at((w - rx) * this->xscale);
                     wline += t;
                     sline += t * saturate_cast<W>(S[sx]);
                 }
-                W1 u = coeff.at((h - ry) * yscale);
+                W1 u = this->coeff.at((h - ry) * this->yscale);
                 weight += u * wline;
                 sumval += u * sline;
             }
-            at<T>(dst, dy, dx) = saturate_cast<T>(sumval / weight);
+            at<T>(this->dst, dy, dx) = saturate_cast<T>(sumval / weight);
         }
     };
 
@@ -309,25 +309,25 @@ namespace cv { namespace cuda { namespace device {
             int ix = __float2int_rd(fx), iy = __float2int_rd(fy);
             float rx = fx - ix, ry = fy - iy;
             W weight = 0, sumval = 0;
-            T* D = ptr<T>(dst, dy) + dx * cn;
-            for (int h = ystart; h < yend; ++h)
+            T* D = ptr<T>(this->dst, dy) + dx * cn;
+            for (int h = this->ystart; h < this->yend; ++h)
             {
                 int sy = iy + h;
-                if (static_cast<unsigned>(sy) > static_cast<unsigned>(row1))
+                if (static_cast<unsigned>(sy) > static_cast<unsigned>(this->row1))
                     continue;
                 W wline = 0, sline = 0;
-                T const* S = ptr<T>(src, sy);
-                for (int w = xstart; w < xend; ++w)
+                T const* S = ptr<T>(this->src, sy);
+                for (int w = this->xstart; w < this->xend; ++w)
                 {
                     int sx = ix + w;
-                    if (static_cast<unsigned>(sx) > static_cast<unsigned>(col1))
+                    if (static_cast<unsigned>(sx) > static_cast<unsigned>(this->col1))
                         continue;
                     sx = sx * cn;
-                    W t = coeff.at((w - rx) * xscale);
+                    W t = this->coeff.at((w - rx) * this->xscale);
                     wline += t;
                     sline += t * S[sx];
                 }
-                W u = coeff.at((h - ry) * yscale);
+                W u = this->coeff.at((h - ry) * this->yscale);
                 weight += u * wline;
                 sumval += u * sline;
             }
@@ -335,23 +335,23 @@ namespace cv { namespace cuda { namespace device {
             for (int i = 1; i < cn; ++i)
             {
                 sumval = 0;
-                for (int h = ystart; h < yend; ++h)
+                for (int h = this->ystart; h < this->yend; ++h)
                 {
                     int sy = iy + h;
-                    if (static_cast<unsigned>(sy) > static_cast<unsigned>(row1))
+                    if (static_cast<unsigned>(sy) > static_cast<unsigned>(this->row1))
                         continue;
                     W sline = 0;
-                    T const* S = ptr<T>(src, sy) + i;
-                    for (int w = xstart; w < xend; ++w)
+                    T const* S = ptr<T>(this->src, sy) + i;
+                    for (int w = this->xstart; w < this->xend; ++w)
                     {
                         int sx = ix + w;
-                        if (static_cast<unsigned>(sx) > static_cast<unsigned>(col1))
+                        if (static_cast<unsigned>(sx) > static_cast<unsigned>(this->col1))
                             continue;
                         sx = sx * cn;
-                        W t = coeff.at((w - rx) * xscale);
+                        W t = this->coeff.at((w - rx) * this->xscale);
                         sline += t * S[sx];
                     }
-                    W u = coeff.at((h - ry) * yscale);
+                    W u = this->coeff.at((h - ry) * this->yscale);
                     sumval += u * sline;
                 }
                 D[i] = saturate_cast<T>(sumval / weight);
