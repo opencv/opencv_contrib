@@ -86,7 +86,9 @@ protected:
         {
             const KeyPoint& kp = keypoints[i];
 
-            if(!r.contains(kp.pt))
+            // Workaround for https://github.com/opencv/opencv/issues/26016
+            // To keep its behaviour, kp.pt casts to Point_<int>.
+            if(!r.contains(Point_<int>(kp.pt)))
             {
                 ts->printf(cvtest::TS::LOG, "KeyPoint::pt is out of image (x=%f, y=%f).\n", kp.pt.x, kp.pt.y);
                 ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_OUTPUT);

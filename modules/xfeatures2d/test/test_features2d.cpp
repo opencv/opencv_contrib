@@ -438,7 +438,9 @@ protected:
 
                 for(size_t k=0; k<points.size(); ++k)
                 {
-                    if ( !whiteArea.contains(points[k]) )
+                    // Workaround for https://github.com/opencv/opencv/issues/26016
+                    // To keep its behaviour, points casts to Point_<int>.
+                    if ( !whiteArea.contains(Point_<int>(points[k])) )
                     {
                         ts->printf(cvtest::TS::LOG, "The feature point is outside of the mask.");
                         ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_OUTPUT);
