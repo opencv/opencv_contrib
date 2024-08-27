@@ -16,7 +16,9 @@ static std::vector<int> getSilhoutteVertices(const Size& imsize, const std::vect
     Mat_<int> img1(imsize, 0);
     Rect img_rect({0, 0}, imsize);
     for (int i = 0; i < pts2d.rows; i++) {
-        if (img_rect.contains(pts2d(i))) {
+        // Workaround for https://github.com/opencv/opencv/issues/26016
+        // To keep its behaviour, pts2d casts to Point_<int>.
+        if (img_rect.contains(Point_<int>(pts2d(i)))) {
             img1(pts2d(i)) = i + 1;
         }
     }
@@ -132,7 +134,10 @@ static void sampleControlPoints(int num, Contour3DSampler& sampler, const Rect& 
         auto pt2d = sampler.current2D();
 
         // skip points too close to border
-        if (!roi.contains(pt2d))
+        //
+        // Workaround for https://github.com/opencv/opencv/issues/26016
+        // To keep its behaviour, pt2d casts to Point_<int>.
+        if (!roi.contains(Point_<int>(pt2d)))
             continue;
 
         opts3d.push_back(sampler.current3D());

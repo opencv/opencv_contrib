@@ -47,7 +47,9 @@ void divideIntoTriangles(Rect rect, vector<Point2f> &points, vector< vector<int>
         pt[0] = Point2f(triangle[0], triangle[1]);
         pt[1] = Point2f(triangle[2], triangle[3]);
         pt[2] = Point2f(triangle[4], triangle[5]);
-        if ( rect.contains(pt[0]) && rect.contains(pt[1]) && rect.contains(pt[2])){
+        // Workaround for https://github.com/opencv/opencv/issues/26016
+        // To keep its behaviour, pt casts to Point_<int>.
+        if ( rect.contains(Point_<int>(pt[0])) && rect.contains(Point_<int>(pt[1])) && rect.contains(Point_<int>(pt[2]))){
             for(int j = 0; j < 3; j++)
                 for(size_t k = 0; k < points.size(); k++)
                     if(abs(pt[j].x - points[k].x) < 1.0 && abs(pt[j].y - points[k].y) < 1)
