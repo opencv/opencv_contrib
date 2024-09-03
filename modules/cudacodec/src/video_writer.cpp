@@ -53,6 +53,10 @@ Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const C
 
 #else // !defined HAVE_NVCUVENC
 
+#if defined(WIN32)  // remove when FFmpeg wrapper includes PR25874
+#define WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE
+#endif
+
 NV_ENC_BUFFER_FORMAT EncBufferFormat(const ColorFormat colorFormat);
 int NChannels(const ColorFormat colorFormat);
 GUID CodecGuid(const Codec codec);
@@ -72,8 +76,9 @@ class FFmpegVideoWriter : public EncoderCallback
 public:
     FFmpegVideoWriter(const String& fileName, const Codec codec, const int fps, const Size sz, const int idrPeriod);
     ~FFmpegVideoWriter();
-    void onEncoded(const std::vector<std::vector<uint8_t>>& vPacket);
+    void onEncoded(const std::vector<std::vector<uint8_t>>& vPacket, const std::vector<uint64_t>& pts);
     void onEncodingFinished();
+    bool setFrameIntervalP(const int frameIntervalP);
 private:
     cv::VideoWriter writer;
 };
@@ -95,21 +100,32 @@ FFmpegVideoWriter::~FFmpegVideoWriter() {
     onEncodingFinished();
 }
 
-void FFmpegVideoWriter::onEncoded(const std::vector<std::vector<uint8_t>>& vPacket) {
-    for (auto& packet : vPacket) {
+void FFmpegVideoWriter::onEncoded(const std::vector<std::vector<uint8_t>>& vPacket, const std::vector<uint64_t>& pts) {
+    CV_Assert(vPacket.size() == pts.size());
+    for (int i = 0; i < vPacket.size(); i++){
+        std::vector<uint8_t> packet = vPacket.at(i);
         Mat wrappedPacket(1, packet.size(), CV_8UC1, (void*)packet.data());
+        const double ptsDouble = static_cast<double>(pts.at(i));
+        CV_Assert(static_cast<uint64_t>(ptsDouble) == pts.at(i));
+#if !defined(WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE)
+        CV_Assert(writer.set(VIDEOWRITER_PROP_PTS, ptsDouble));
+#endif
         writer.write(wrappedPacket);
     }
 }
 
+bool FFmpegVideoWriter::setFrameIntervalP(const int frameIntervalP) {
+    return writer.set(VIDEOWRITER_PROP_DTS_DELAY, static_cast<double>(frameIntervalP - 1));
+}
 
 class RawVideoWriter : public EncoderCallback
 {
 public:
     RawVideoWriter(const String fileName);
     ~RawVideoWriter();
-    void onEncoded(const std::vector<std::vector<uint8_t>>& vPacket);
+    void onEncoded(const std::vector<std::vector<uint8_t>>& vPacket, const std::vector<uint64_t>& pts);
     void onEncodingFinished();
+    bool setFrameIntervalP(const int) { return false;}
 private:
     std::ofstream fpOut;
 };
@@ -128,7 +144,7 @@ RawVideoWriter::~RawVideoWriter() {
     onEncodingFinished();
 }
 
-void RawVideoWriter::onEncoded(const std::vector<std::vector<uint8_t>>& vPacket) {
+void RawVideoWriter::onEncoded(const std::vector<std::vector<uint8_t>>& vPacket, const std::vector<uint64_t>&) {
     for (auto& packet : vPacket)
         fpOut.write(reinterpret_cast<const char*>(packet.data()), packet.size());
 }
@@ -208,8 +224,9 @@ VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallback>& encoderCallBack_, c
 }
 
 void VideoWriterImpl::release() {
-    pEnc->EndEncode(vPacket);
-    encoderCallback->onEncoded(vPacket);
+    std::vector<uint64_t> pts;
+    pEnc->EndEncode(vPacket, pts);
+    encoderCallback->onEncoded(vPacket, pts);
     encoderCallback->onEncodingFinished();
 }
 
@@ -316,6 +333,11 @@ void VideoWriterImpl::InitializeEncoder(const GUID codec, const double fps)
     initializeParams.encodeConfig->rcParams.maxBitRate = encoderParams.maxBitRate;
     initializeParams.encodeConfig->rcParams.targetQuality = encoderParams.targetQuality;
     initializeParams.encodeConfig->gopLength = encoderParams.gopLength;
+#if !defined(WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE)
+    if (initializeParams.encodeConfig->frameIntervalP > 1) {
+        CV_Assert(encoderCallback->setFrameIntervalP(initializeParams.encodeConfig->frameIntervalP));
+    }
+#endif
     if (codec == NV_ENC_CODEC_H264_GUID)
         initializeParams.encodeConfig->encodeCodecConfig.h264Config.idrPeriod = encoderParams.idrPeriod;
     else if (codec == NV_ENC_CODEC_HEVC_GUID)
@@ -383,8 +405,9 @@ void VideoWriterImpl::CopyToNvSurface(const InputArray src)
 void VideoWriterImpl::write(const InputArray frame) {
     CV_Assert(frame.channels() == nSrcChannels);
     CopyToNvSurface(frame);
-    pEnc->EncodeFrame(vPacket);
-    encoderCallback->onEncoded(vPacket);
+    std::vector<uint64_t> pts;
+    pEnc->EncodeFrame(vPacket, pts);
+    encoderCallback->onEncoded(vPacket, pts);
 };
 
 EncoderParams VideoWriterImpl::getEncoderParams() const {

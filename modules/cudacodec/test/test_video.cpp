@@ -650,6 +650,9 @@ struct TransCode : testing::TestWithParam<cv::cuda::DeviceInfo>
     }
 };
 
+#if defined(WIN32)  // remove when FFmpeg wrapper includes PR25874
+#define WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE
+#endif
 
 CUDA_TEST_P(TransCode, H264ToH265)
 {
@@ -691,6 +694,10 @@ CUDA_TEST_P(TransCode, H264ToH265)
         for (int i = 0; i < nFrames; ++i) {
             cap >> frame;
             ASSERT_FALSE(frame.empty());
+#if !defined(WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE)
+            const int pts = static_cast<int>(cap.get(CAP_PROP_PTS));
+            ASSERT_EQ(i, pts > 0 ? pts : 0); // FFmpeg back end returns dts if pts is zero.
+#endif
         }
     }
     ASSERT_EQ(0, remove(outputFile.c_str()));
@@ -773,6 +780,10 @@ CUDA_TEST_P(Write, Writer)
         for (int i = 0; i < nFrames; ++i) {
             cap >> frame;
             ASSERT_FALSE(frame.empty());
+#if !defined(WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE)
+            const int pts = static_cast<int>(cap.get(CAP_PROP_PTS));
+            ASSERT_EQ(i, pts > 0 ? pts : 0); // FFmpeg back end returns dts if pts is zero.
+#endif
         }
     }
     ASSERT_EQ(0, remove(outputFile.c_str()));
@@ -867,6 +878,10 @@ CUDA_TEST_P(EncoderParams, Writer)
                 const bool keyFrameActual = capRaw.get(CAP_PROP_LRF_HAS_KEY_FRAME) == 1.0;
                 const bool keyFrameReference = i % idrPeriod == 0;
                 ASSERT_EQ(keyFrameActual, keyFrameReference);
+#if !defined(WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE)
+                const int pts = static_cast<int>(cap.get(CAP_PROP_PTS));
+                ASSERT_EQ(i, pts > 0 ? pts : 0); // FFmpeg back end returns dts if pts is zero.
+#endif
             }
         }
     }
