@@ -103,3 +103,33 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 - **xobjdetect**: Boosted 2D Object Detection -- Uses a Waldboost cascade and local binary patterns computed as integral features for 2D object detection.
 
 - **xphoto**: Extra Computational Photography -- Additional photo processing algorithms: Color balance / Denoising / Inpainting.
+
+- **cudaarithm**: GPU-accelerated operations for image processing and computer vision -- Arithmetic operations / Bitwise operations / Logical operations.
+
+- **cudabgsegm**: GPU-accelerated algorithms for background segmentation in videos and images -- mixture-of-gaussian background subtractor / MOG2 background subtractor.
+
+- **cudacodec**: GPU-accelerated video encoding and decoding functionality -- grabbing the next frame from a video file or camera / writing frames to a video file.
+
+- **cudafeatures2d**: GPU-accelerated algorithms for feature detection and description in images --  Feature detection using the FAST method / Detector and descriptor extractor.
+
+- **cudafilters**: GPU-accelerated algorithms for image filtering -- normalized 2D box filter / Specified filter to an image.
+
+- **cudaimgproc**: GPU-accelerated algorithms for image processing and computer vision -- common interface for all CUDA filters / detecting edges in images / computing the connected components of a binary image.
+
+- **cudalegacy**: CUDA-accelerated computer vision algorithms -- discriminates between foreground and background pixels / ackground/foreground segmentation algorithm / optical flow between two images.
+
+- **cudaobjdetect**: GPU-accelerated algorithms for object detection in images and videos -- object detection using Haar cascades and LBP cascades / Histogram of Oriented Gradients (HOG) algorithm for object detection.
+
+- **cudaoptflow**: GPU-accelerated algorithms for optical flow computation in images and videos -- optical flow for two images using the Brox et al / computes a dense optical flow.
+
+- **cudastereo**: GPU-accelerated algorithms for stereo correspondence computation in images and videos.
+
+- **cudawarping**: GPU-accelerated algorithms for image warping and geometric transformations --  builds transformation maps for affine transformation / transformation maps for perspective transformation / generic geometrical transformation to an image / resizes an image / rotates an image around the origin.
+
+- **cudev**: CUDA-accelerated functions and classes for computer vision and image processing -- global memory location on the CUDA device / 2D CUDA device memory pointer.
+
+- **img_hash**: computing hash values for images -- average / block / perceptual hash value of an image.
+
+- **superres**: upscaling or improving the details of images using deep learning algorithms -- deep learning algorithms for upscaling images /  super-resolution algorithms.
+
+- **videostab**: video stabilization.
