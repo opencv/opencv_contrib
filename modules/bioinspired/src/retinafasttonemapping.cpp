@@ -107,7 +107,7 @@ public:
 
         // basic error check
         if (nbPixels <= 0)
-        throw cv::Exception(-1, "Bad retina size setup : size height and with must be superior to zero", "RetinaImpl::setup", "retinafasttonemapping.cpp", 0);
+            CV_Error(cv::Error::StsError, "Bad retina size setup : size height and with must be superior to zero");
 
         // resize buffers
         _inputBuffer.resize(nbPixels*3); // buffer supports gray images but also 3 channels color buffers... (larger is better...)
@@ -222,7 +222,7 @@ bool _convertCvMat2ValarrayBuffer(InputArray inputMat, std::valarray<float> &out
     const Mat inputMatToConvert=inputMat.getMat();
     // first check input consistency
     if (inputMatToConvert.empty())
-        throw cv::Exception(-1, "RetinaImpl cannot be applied, input buffer is empty", "RetinaImpl::run", "RetinaImpl.h", 0);
+        CV_Error(cv::Error::StsError, "RetinaImpl cannot be applied, input buffer is empty");
 
     // retreive color mode from image input
     int imageNumberOfChannels = inputMatToConvert.channels();

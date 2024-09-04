@@ -82,7 +82,7 @@ Ptr<TrackerContribFeature> TrackerContribFeature::create( const String& trackerF
     return Ptr<TrackerFeatureLBP>( new TrackerFeatureLBP() );
   }
 
-  CV_Error( -1, "Tracker feature type not supported" );
+  CV_Error( cv::Error::StsError, "Tracker feature type not supported" );
 }
 
 String TrackerContribFeature::getClassName() const
