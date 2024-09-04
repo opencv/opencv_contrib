@@ -190,7 +190,6 @@ class digits_test(NewOpenCVTests):
           [ 0,  0,  0,  0,  0,  0,  0,  0, 47,  0],
           [ 0,  1,  0,  1,  0,  0,  0,  0,  1, 45]]
 
-        ass = cv.norm(confusionMatrixes[1] - confusionSVM, cv.NORM_L1)
         self.assertLess(cv.norm(confusionMatrixes[0] - confusionKNN, cv.NORM_L1), normEps)
         self.assertLess(cv.norm(confusionMatrixes[1] - confusionSVM, cv.NORM_L1), normEps)
 
