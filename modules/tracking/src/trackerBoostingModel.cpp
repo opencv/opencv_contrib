@@ -90,7 +90,7 @@ void TrackerBoostingModel::responseToConfidenceMap( const std::vector<Mat>& resp
 {
   if( currentSample.empty() )
   {
-    CV_Error( -1, "The samples in Model estimation are empty" );
+    CV_Error( cv::Error::StsError, "The samples in Model estimation are empty" );
   }
 
   for ( size_t i = 0; i < currentSample.size(); i++ )

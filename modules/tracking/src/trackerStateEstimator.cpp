@@ -59,7 +59,7 @@ Ptr<TrackerStateEstimator> TrackerStateEstimator::create( const String& trackeSt
     //return Ptr<TrackerStateEstimatorMILBoosting>( new TrackerStateEstimatorMILBoosting() );
   }
 
-  CV_Error( -1, "Tracker state estimator type not supported" );
+  CV_Error( cv::Error::StsError, "Tracker state estimator type not supported" );
 }
 
 

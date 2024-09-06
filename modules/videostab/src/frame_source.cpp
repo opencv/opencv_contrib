@@ -68,7 +68,7 @@ public:
         vc.release();
         vc.open(path_);
         if (!vc.isOpened())
-            CV_Error(0, "can't open file: " + path_);
+            CV_Error(cv::Error::StsError, "can't open file: " + path_);
 #else
         CV_Error(Error::StsNotImplemented, "OpenCV has been compiled without video I/O support");
 #endif
