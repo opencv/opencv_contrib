@@ -338,9 +338,12 @@ public:
         double lp = score_segmentation( beam[0].segmentation, out_sequence );
 
         // fill other (dummy) output parameters
-        component_rects->push_back(Rect(0,0,src.cols,src.rows));
-        component_texts->push_back(out_sequence);
-        component_confidences->push_back((float)exp(lp));
+        if (component_rects != NULL)
+            component_rects->push_back(Rect(0,0,src.cols,src.rows));
+        if (component_texts != NULL)
+            component_texts->push_back(out_sequence);
+        if (component_confidences != NULL)
+            component_confidences->push_back((float)exp(lp));
 
         return;
     }
