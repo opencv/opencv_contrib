@@ -20,10 +20,10 @@ public:
 
     static cv::Ptr<cv::dnn::Layer> create(cv::dnn::LayerParams& params);
 
-    virtual bool getMemoryShapes(const std::vector<std::vector<int> > &inputs,
+    virtual bool getMemoryShapes(const std::vector<MatShape> &inputs,
                                  const int,
-                                 std::vector<std::vector<int> > &outputs,
-                                 std::vector<std::vector<int> > &) const CV_OVERRIDE;
+                                 std::vector<MatShape> &outputs,
+                                 std::vector<MatShape> &) const CV_OVERRIDE;
 
     virtual void forward(cv::InputArrayOfArrays inputs_arr,
                          cv::OutputArrayOfArrays outputs_arr,
@@ -308,10 +308,10 @@ cv::Ptr<cv::dnn::Layer> DepthToSpace::create(cv::dnn::LayerParams &params)
     return cv::Ptr<cv::dnn::Layer>(new DepthToSpace(params));
 }
 
-bool DepthToSpace::getMemoryShapes(const std::vector <std::vector<int>> &inputs,
-        const int, std::vector <std::vector<int>> &outputs, std::vector <std::vector<int>> &) const
+bool DepthToSpace::getMemoryShapes(const std::vector <MatShape> &inputs,
+        const int, std::vector <MatShape> &outputs, std::vector <MatShape> &) const
 {
-    std::vector<int> outShape(4);
+    MatShape outShape;
 
     int scale;
     if( inputs[0][1] == 4 || inputs[0][1] == 9 || inputs[0][1] == 16 ) //Only one image channel
