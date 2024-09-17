@@ -336,11 +336,11 @@ bool DepthToSpace::getMemoryShapes(const std::vector <MatShape> &inpShapes,
 void DepthToSpace::forward(cv::InputArrayOfArrays inputs_arr, cv::OutputArrayOfArrays outputs_arr,
     cv::OutputArrayOfArrays)
 {
-    std::vector <cv::Mat> inputs, outputs;
-    inputs_arr.getMatVector(inputs);
-    outputs_arr.getMatVector(outputs);
-    cv::Mat &inp = inputs[0];
-    cv::Mat &out = outputs[0];
+    std::vector <cv::Mat> inputs_, outputs_;
+    inputs_arr.getMatVector(inputs_);
+    outputs_arr.getMatVector(outputs_);
+    cv::Mat &inp = inputs_[0];
+    cv::Mat &out = outputs_[0];
     const float *inpData = (float *) inp.data;
     float *outData = (float *) out.data;
 
