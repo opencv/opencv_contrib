@@ -75,7 +75,7 @@ void SegEngineGPU::cvtImgSpace(Ptr<UChar4Image> inimg, Ptr<Float4Image> outimg)
 
     dim3 blockSize(HFS_BLOCK_DIM, HFS_BLOCK_DIM);
     dim3 gridSize = getGridSize(img_size, blockSize);
-    cvtImgSpaceDevice << <gridSize, blockSize >> >(inimg_ptr, img_size, outimg_ptr);
+    cvtImgSpaceDevice <<<gridSize, blockSize >>>(inimg_ptr, img_size, outimg_ptr);
 }
 
 void SegEngineGPU::initClusterCenters()
@@ -85,7 +85,7 @@ void SegEngineGPU::initClusterCenters()
 
     dim3 blockSize(HFS_BLOCK_DIM, HFS_BLOCK_DIM);
     dim3 gridSize = getGridSize(map_size, blockSize);
-    initClusterCentersDevice << <gridSize, blockSize >> >
+    initClusterCentersDevice <<<gridSize, blockSize >>>
         (img_ptr, map_size, img_size, spixel_size, spixel_list);
 }
 
@@ -98,7 +98,7 @@ void SegEngineGPU::findCenterAssociation()
     dim3 blockSize(HFS_BLOCK_DIM, HFS_BLOCK_DIM);
     dim3 gridSize = getGridSize(img_size, blockSize);
 
-    findCenterAssociationDevice << <gridSize, blockSize >> >
+    findCenterAssociationDevice <<<gridSize, blockSize >>>
         (img_ptr, spixel_list, map_size, img_size,
             spixel_size, slic_settings.coh_weight,
             max_xy_dist, max_color_dist, idx_ptr);
@@ -116,13 +116,13 @@ void SegEngineGPU::updateClusterCenter()
     dim3 blockSize(HFS_BLOCK_DIM, HFS_BLOCK_DIM);
     dim3 gridSize(map_size.x, map_size.y, no_grid_per_center);
 
-    updateClusterCenterDevice << <gridSize, blockSize >> >
+    updateClusterCenterDevice <<<gridSize, blockSize >>>
         (img_ptr, idx_ptr, map_size, img_size,
             spixel_size, no_blocks_per_line, accum_map_ptr);
 
     dim3 gridSize2(map_size.x, map_size.y);
 
-    finalizeReductionResultDevice << <gridSize2, blockSize >> >
+    finalizeReductionResultDevice <<<gridSize2, blockSize >>>
         (accum_map_ptr, map_size, no_grid_per_center, spixel_list_ptr);
 }
 
@@ -134,13 +134,13 @@ void SegEngineGPU::enforceConnectivity()
     dim3 blockSize(HFS_BLOCK_DIM, HFS_BLOCK_DIM);
     dim3 gridSize = getGridSize(img_size, blockSize);
 
-    enforceConnectivityDevice << <gridSize, blockSize >> >
+    enforceConnectivityDevice <<<gridSize, blockSize >>>
         (idx_ptr, img_size, tmp_idx_ptr);
-    enforceConnectivityDevice << <gridSize, blockSize >> >
+    enforceConnectivityDevice <<<gridSize, blockSize >>>
         (tmp_idx_ptr, img_size, idx_ptr);
-    enforceConnectivityDevice1_2 << <gridSize, blockSize >> >
+    enforceConnectivityDevice1_2 <<<gridSize, blockSize >>>
         (idx_ptr, img_size, tmp_idx_ptr);
-    enforceConnectivityDevice1_2 << <gridSize, blockSize >> >
+    enforceConnectivityDevice1_2 <<<gridSize, blockSize >>>
         (tmp_idx_ptr, img_size, idx_ptr);
 }
 

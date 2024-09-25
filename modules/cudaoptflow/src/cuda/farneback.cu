@@ -74,7 +74,7 @@ namespace cv { namespace cuda { namespace device { namespace optflow_farneback
         {
             extern __shared__ float smem[];
             volatile float *row = smem + tx;
-            int xWarped = ::min(::max(x, 0), width - 1);
+            int xWarped = std::min(std::max(x, 0), width - 1);
 
             row[0] = src(y, xWarped) * c_g[0];
             row[bdx] = 0.f;
@@ -82,8 +82,8 @@ namespace cv { namespace cuda { namespace device { namespace optflow_farneback
 
             for (int k = 1; k <= polyN; ++k)
             {
-                float t0 = src(::max(y - k, 0), xWarped);
-                float t1 = src(::min(y + k, height - 1), xWarped);
+                float t0 = src(std::max(y - k, 0), xWarped);
+                float t1 = src(std::min(y + k, height - 1), xWarped);
 
                 row[0] += c_g[k] * (t0 + t1);
                 row[bdx] += c_xg[k] * (t1 - t0);
@@ -224,10 +224,10 @@ namespace cv { namespace cuda { namespace device { namespace optflow_farneback
             r3 += r6*dy + r5*dx;
 
             float scale =
-                    c_border[::min(x, BORDER_SIZE)] *
-                    c_border[::min(y, BORDER_SIZE)] *
-                    c_border[::min(width - x - 1, BORDER_SIZE)] *
-                    c_border[::min(height - y - 1, BORDER_SIZE)];
+                    c_border[std::min(x, BORDER_SIZE)] *
+                    c_border[std::min(y, BORDER_SIZE)] *
+                    c_border[std::min(width - x - 1, BORDER_SIZE)] *
+                    c_border[std::min(height - y - 1, BORDER_SIZE)];
 
             r2 *= scale; r3 *= scale; r4 *= scale;
             r5 *= scale; r6 *= scale;
@@ -316,11 +316,11 @@ namespace cv { namespace cuda { namespace device { namespace optflow_farneback
             for (int i = tx; i < bdx + 2*ksizeHalf; i += bdx)
             {
                 int xExt = int(bx * bdx) + i - ksizeHalf;
-                xExt = ::min(::max(xExt, 0), width - 1);
+                xExt = std::min(std::max(xExt, 0), width - 1);
 
                 row[i] = src(y, xExt);
                 for (int j = 1; j <= ksizeHalf; ++j)
-                    row[i] += src(::max(y - j, 0), xExt) + src(::min(y + j, height - 1), xExt);
+                    row[i] += src(std::max(y - j, 0), xExt) + src(std::min(y + j, height - 1), xExt);
             }
 
             if (x < width)
@@ -372,7 +372,7 @@ namespace cv { namespace cuda { namespace device { namespace optflow_farneback
             for (int i = tx; i < bdx + 2*ksizeHalf; i += bdx)
             {
                 int xExt = int(bx * bdx) + i - ksizeHalf;
-                xExt = ::min(::max(xExt, 0), width - 1);
+                xExt = std::min(std::max(xExt, 0), width - 1);
 
                 #pragma unroll
                 for (int k = 0; k < 5; ++k)
@@ -382,8 +382,8 @@ namespace cv { namespace cuda { namespace device { namespace optflow_farneback
                     #pragma unroll
                     for (int k = 0; k < 5; ++k)
                         row[k*smw + i] +=
-                                src(k*height + ::max(y - j, 0), xExt) +
-                                src(k*height + ::min(y + j, height - 1), xExt);
+                                src(k*height + std::max(y - j, 0), xExt) +
+                                src(k*height + std::min(y + j, height - 1), xExt);
             }
 
             if (x < width)
