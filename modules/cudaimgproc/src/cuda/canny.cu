@@ -368,7 +368,7 @@ namespace canny
         while (s_counter > 0 && s_counter <= stack_size - blockDim.x)
         {
             const int subTaskIdx = threadIdx.x >> 3;
-            const int portion = std::min(s_counter, (int)(blockDim.x >> 3));
+            const int portion = ::min(s_counter, blockDim.x >> 3);
 
             if (subTaskIdx < portion)
                 pos = s_st[s_counter - 1 - subTaskIdx];
