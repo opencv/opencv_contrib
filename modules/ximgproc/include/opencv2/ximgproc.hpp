@@ -83,18 +83,42 @@
 
     @defgroup ximgproc_fast_line_detector Fast line detector
 
-    @defgroup ximgproc_edge_drawing EdgeDrawing
+    @defgroup ximgproc_edge_drawing Edge Drawing
 
-    EDGE DRAWING LIBRARY FOR GEOMETRIC FEATURE EXTRACTION AND VALIDATION
+    Edge Drawing (ED) algorithm for geometric feature extraction and validation.
 
-    Edge Drawing (ED) algorithm is an proactive approach on edge detection problem. In contrast to many other existing edge detection algorithms which follow a subtractive
-    approach (i.e. after applying gradient filters onto an image eliminating pixels w.r.t. several rules, e.g. non-maximal suppression and hysteresis in Canny), ED algorithm
-    works via an additive strategy, i.e. it picks edge pixels one by one, hence the name Edge Drawing. Then we process those random shaped edge segments to extract higher level
-    edge features, i.e. lines, circles, ellipses, etc. The popular method of extraction edge pixels from the thresholded gradient magnitudes is non-maximal supression that tests
-    every pixel whether it has the maximum gradient response along its gradient direction and eliminates if it does not. However, this method does not check status of the
-    neighboring pixels, and therefore might result low quality (in terms of edge continuity, smoothness, thinness, localization) edge segments. Instead of non-maximal supression,
-    ED points a set of edge pixels and join them by maximizing the total gradient response of edge segments. Therefore it can extract high quality edge segments without need for
-    an additional hysteresis step.
+    The Edge Drawing (ED) algorithm is a proactive approach to the edge detection problem.
+    In contrast to many existing edge detection algorithms, which follow a subtractive
+    approach (i.e., applying gradient filters and eliminating pixels based on several rules,
+    such as non-maximal suppression and hysteresis in the Canny Edge Detector), the ED algorithm
+    operates via an additive strategy. It selects edge pixels one by one and connects them,
+    hence the name Edge Drawing.
+
+    ED offers several key advantages:
+
+    1. **Additive Strategy**: Instead of eliminating non-edge pixels after gradient filtering,
+    ED incrementally builds up edge segments by selecting and connecting pixels based on
+    their gradient response. This differs from traditional methods, which rely on
+    non-maximal suppression and hysteresis to filter out non-edge pixels.
+
+    2. **Edge Pixel Selection**: ED selects edge pixels by analyzing their local gradient
+    response, while also considering neighboring pixels. This results in smoother and
+    more continuous edge segments, as ED aims to maximize the overall gradient strength
+    along the edge segment.
+
+    3. **Edge Segment Formation**: Traditional methods, such as non-maximal suppression,
+    check whether a pixel has the maximum gradient response along its gradient direction,
+    eliminating it otherwise. However, this approach doesn't consider neighboring pixels,
+    often resulting in lower-quality edge segments. ED, on the other hand, joins a set of
+    edge pixels together by maximizing the total gradient response of the segment, leading
+    to high-quality, well-localized edges.
+
+    4. **Higher-Level Feature Extraction**: After forming edge segments, ED enables the
+    extraction of higher-level geometric features such as lines, circles, ellipses, and
+    other shapes, making it useful for tasks involving geometric feature extraction and validation.
+
+    The ED algorithm produces continuous, smooth, and localized edge segments, making it ideal
+    for applications requiring precise edge detection and geometric shape analysis.
 
     @defgroup ximgproc_fourier Fourier descriptors
 
