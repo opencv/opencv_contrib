@@ -3,14 +3,9 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "precomp.hpp"
-#include "cuda/moments.cuh"
 
 using namespace cv;
 using namespace cv::cuda;
-
-int cv::cuda::numMoments(const MomentsOrder order) {
-    return order == MomentsOrder::FIRST_ORDER_MOMENTS ? device::imgproc::n1 : order == MomentsOrder::SECOND_ORDER_MOMENTS ? device::imgproc::n12 : device::imgproc::n123;
-}
 
 template<typename T>
 cv::Moments convertSpatialMomentsT(Mat spatialMoments, const MomentsOrder order) {
@@ -32,9 +27,16 @@ cv::Moments cv::cuda::convertSpatialMoments(Mat spatialMoments, const MomentsOrd
 }
 
 #if !defined (HAVE_CUDA) || defined (CUDA_DISABLER)
+    int cv::cuda::numMoments(MomentsOrder) { throw_no_cuda(); return 0; }
     Moments cv::cuda::moments(InputArray src, const bool binary, const MomentsOrder order, const int momentsType) { throw_no_cuda(); }
-    void spatialMoments(InputArray src, OutputArray moments, const bool binary, const MomentsOrder order, const int momentsType, Stream& stream) { throw_no_cuda(); }
+    void cv::cuda::spatialMoments(InputArray src, OutputArray moments, const bool binary, const MomentsOrder order, const int momentsType, Stream& stream) { throw_no_cuda(); }
 #else /* !defined (HAVE_CUDA) */
+
+#include "cuda/moments.cuh"
+
+int cv::cuda::numMoments(const MomentsOrder order) {
+    return order == MomentsOrder::FIRST_ORDER_MOMENTS ? device::imgproc::n1 : order == MomentsOrder::SECOND_ORDER_MOMENTS ? device::imgproc::n12 : device::imgproc::n123;
+}
 
 namespace cv { namespace cuda { namespace device { namespace imgproc {
         template <typename TSrc, typename TMoments>

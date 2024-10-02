@@ -69,8 +69,10 @@ void cv::cuda::countNonZero(InputArray, OutputArray, Stream&) { throw_no_cuda();
 
 void cv::cuda::reduce(InputArray, OutputArray, int, int, int, Stream&) { throw_no_cuda(); }
 
-void cv::cuda::meanStdDev(InputArray, Scalar&, Scalar&) { throw_no_cuda(); }
+void cv::cuda::meanStdDev(InputArray, OutputArray, InputArray, Stream&) { throw_no_cuda(); }
 void cv::cuda::meanStdDev(InputArray, OutputArray, Stream&) { throw_no_cuda(); }
+void cv::cuda::meanStdDev(InputArray, Scalar&, Scalar&, InputArray) { throw_no_cuda(); }
+void cv::cuda::meanStdDev(InputArray, Scalar&, Scalar&) { throw_no_cuda(); }
 
 void cv::cuda::rectStdDev(InputArray, InputArray, OutputArray, Rect, Stream&) { throw_no_cuda(); }
 

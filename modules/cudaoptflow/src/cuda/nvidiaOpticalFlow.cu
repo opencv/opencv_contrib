@@ -90,7 +90,7 @@ void FlowUpsample(void* srcDevPtr, uint32_t nSrcWidth, uint32_t nSrcPitch, uint3
 
         dim3 blockDim(BLOCKDIM_X, BLOCKDIM_Y);
         dim3 gridDim((nDstWidth + blockDim.x - 1) / blockDim.x, (nDstHeight + blockDim.y - 1) / blockDim.y);
-        NearestNeighborFlowKernel << <gridDim, blockDim >> > (0, srcDevPtr, nSrcWidth, nSrcPitch, nSrcHeight,
+        NearestNeighborFlowKernel <<<gridDim, blockDim >>> (0, srcDevPtr, nSrcWidth, nSrcPitch, nSrcHeight,
             0, dstDevPtr, nDstWidth, nDstPitch, nDstHeight,
             nScaleFactor);
 

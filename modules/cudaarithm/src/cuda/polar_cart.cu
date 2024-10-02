@@ -289,9 +289,9 @@ namespace
         const T scale = angleInDegrees ? static_cast<T>(CV_PI / 180.0) : static_cast<T>(1.0);
 
         if (mag.empty())
-            polarToCartImpl_<T, false> << <grid, block, 0, stream >> >(mag, angle, x, y, scale);
+            polarToCartImpl_<T, false> <<<grid, block, 0, stream >>>(mag, angle, x, y, scale);
         else
-            polarToCartImpl_<T, true> << <grid, block, 0, stream >> >(mag, angle, x, y, scale);
+            polarToCartImpl_<T, true> <<<grid, block, 0, stream >>>(mag, angle, x, y, scale);
     }
 
     template <typename T>
@@ -305,9 +305,9 @@ namespace
         const T scale = angleInDegrees ? static_cast<T>(CV_PI / 180.0) : static_cast<T>(1.0);
 
         if (mag.empty())
-            polarToCartDstInterleavedImpl_<T, false> << <grid, block, 0, stream >> >(mag, angle, xy, scale);
+            polarToCartDstInterleavedImpl_<T, false> <<<grid, block, 0, stream >>>(mag, angle, xy, scale);
         else
-            polarToCartDstInterleavedImpl_<T, true> << <grid, block, 0, stream >> >(mag, angle, xy, scale);
+            polarToCartDstInterleavedImpl_<T, true> <<<grid, block, 0, stream >>>(mag, angle, xy, scale);
     }
 
     template <typename T>
@@ -320,7 +320,7 @@ namespace
 
         const T scale = angleInDegrees ? static_cast<T>(CV_PI / 180.0) : static_cast<T>(1.0);
 
-        polarToCartInterleavedImpl_<T> << <grid, block, 0, stream >> >(magAngle, xy, scale);
+        polarToCartInterleavedImpl_<T> <<<grid, block, 0, stream >>>(magAngle, xy, scale);
     }
 }
 

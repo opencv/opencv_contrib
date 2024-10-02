@@ -428,7 +428,7 @@ namespace canny
             cudaSafeCall( cudaMemsetAsync(d_counter, 0, sizeof(int), stream) );
 
             const dim3 block(128);
-            const dim3 grid(::min(count, 65535u), divUp(count, 65535), 1);
+            const dim3 grid(std::min(count, 65535), divUp(count, 65535), 1);
 
             edgesHysteresisGlobalKernel<<<grid, block, 0, stream>>>(map, st1, st2, d_counter, count);
             cudaSafeCall( cudaGetLastError() );
@@ -439,7 +439,7 @@ namespace canny
             cudaSafeCall( cudaMemcpyAsync(&count, d_counter, sizeof(int), cudaMemcpyDeviceToHost, stream) );
             cudaSafeCall( cudaStreamSynchronize(stream) );
 
-            count = min(count, map.cols * map.rows);
+            count = std::min(count, map.cols * map.rows);
 
             //std::swap(st1, st2);
             short2* tmp = st1;

@@ -51,7 +51,7 @@ void cv::cuda::cvtColor(InputArray, OutputArray, int, int, Stream&) { throw_no_c
 
 void cv::cuda::demosaicing(InputArray, OutputArray, int, int, Stream&) { throw_no_cuda(); }
 
-void cv::cuda::swapChannels(InputOutputArray, const int[], Stream&) { throw_no_cuda(); }
+void cv::cuda::swapChannels(InputOutputArray, const int[4], Stream&) { throw_no_cuda(); }
 
 void cv::cuda::gammaCorrection(InputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
 
