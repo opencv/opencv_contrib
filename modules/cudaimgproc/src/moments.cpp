@@ -27,8 +27,9 @@ cv::Moments cv::cuda::convertSpatialMoments(Mat spatialMoments, const MomentsOrd
 }
 
 #if !defined (HAVE_CUDA) || defined (CUDA_DISABLER)
+    int cv::cuda::numMoments(MomentsOrder) { throw_no_cuda(); return 0; }
     Moments cv::cuda::moments(InputArray src, const bool binary, const MomentsOrder order, const int momentsType) { throw_no_cuda(); }
-    void spatialMoments(InputArray src, OutputArray moments, const bool binary, const MomentsOrder order, const int momentsType, Stream& stream) { throw_no_cuda(); }
+    void cv::cuda::spatialMoments(InputArray src, OutputArray moments, const bool binary, const MomentsOrder order, const int momentsType, Stream& stream) { throw_no_cuda(); }
 #else /* !defined (HAVE_CUDA) */
 
 #include "cuda/moments.cuh"

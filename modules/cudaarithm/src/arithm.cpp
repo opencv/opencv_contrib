@@ -54,6 +54,8 @@ void cv::cuda::mulAndScaleSpectrums(InputArray, InputArray, OutputArray, int, fl
 
 void cv::cuda::dft(InputArray, OutputArray, Size, int, Stream&) { throw_no_cuda(); }
 
+Ptr<DFT> cv::cuda::createDFT(Size, int) { throw_no_cuda(); return Ptr<DFT>(); }
+
 Ptr<Convolution> cv::cuda::createConvolution(Size) { throw_no_cuda(); return Ptr<Convolution>(); }
 
 #else /* !defined (HAVE_CUDA) */
