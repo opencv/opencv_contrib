@@ -48,6 +48,7 @@ using namespace cv::cuda;
 #if !defined (HAVE_CUDA) || defined (CUDA_DISABLER)
 
 void cv::cuda::calcHist(InputArray, OutputArray, Stream&) { throw_no_cuda(); }
+void cv::cuda::calcHist(InputArray, InputArray, OutputArray, Stream&) { throw_no_cuda(); }
 
 void cv::cuda::equalizeHist(InputArray, OutputArray, Stream&) { throw_no_cuda(); }
 
