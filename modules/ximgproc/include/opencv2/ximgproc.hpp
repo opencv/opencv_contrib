@@ -1,38 +1,6 @@
-/*
- *  By downloading, copying, installing or using the software you agree to this license.
- *  If you do not agree to this license, do not download, install,
- *  copy or use the software.
- *
- *
- *  License Agreement
- *  For Open Source Computer Vision Library
- *  (3 - clause BSD License)
- *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met :
- *
- *  * Redistributions of source code must retain the above copyright notice,
- *  this list of conditions and the following disclaimer.
- *
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and / or other materials provided with the distribution.
- *
- *  * Neither the names of the copyright holders nor the names of the contributors
- *  may be used to endorse or promote products derived from this software
- *  without specific prior written permission.
- *
- *  This software is provided by the copyright holders and contributors "as is" and
- *  any express or implied warranties, including, but not limited to, the implied
- *  warranties of merchantability and fitness for a particular purpose are disclaimed.
- *  In no event shall copyright holders or contributors be liable for any direct,
- *  indirect, incidental, special, exemplary, or consequential damages
- *  (including, but not limited to, procurement of substitute goods or services;
- *  loss of use, data, or profits; or business interruption) however caused
- *  and on any theory of liability, whether in contract, strict liability,
- *  or tort(including negligence or otherwise) arising in any way out of
- *  the use of this software, even if advised of the possibility of such damage.
- */
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
 #ifndef __OPENCV_XIMGPROC_HPP__
 #define __OPENCV_XIMGPROC_HPP__
@@ -68,6 +36,8 @@
 /**
 @defgroup ximgproc Extended Image Processing
 @{
+    @defgroup ximgproc_binarization Binarization
+
     @defgroup ximgproc_edge Structured forests for fast edge detection
 
     This module contains implementations of modern structured edge detection algorithms,
@@ -124,7 +94,7 @@ namespace cv
 namespace ximgproc
 {
 
-//! @addtogroup ximgproc
+//! @addtogroup ximgproc_binarization
 //! @{
 
 enum ThinningTypes{
@@ -179,15 +149,20 @@ CV_EXPORTS_W void niBlackThreshold( InputArray _src, OutputArray _dst,
                                     int blockSize, double k, int binarizationMethod = BINARIZATION_NIBLACK,
                                     double r = 128 );
 
-/** @brief Applies a binary blob thinning operation, to achieve a skeletization of the input image.
+/** @brief Performs binary image thinning to obtain a skeletonized representation of the input image.
 
-The function transforms a binary blob image into a skeletized form using the technique of Zhang-Suen.
+This function applies a thinning algorithm, reducing the binary blobs in the input image to a skeletal form.
+By default, it uses the Zhang-Suen technique, which iteratively removes pixels from the boundaries of the blobs
+while preserving the overall structure and connectivity of the objects.
 
-@param src Source 8-bit single-channel image, containing binary blobs, with blobs having 255 pixel values.
-@param dst Destination image of the same size and the same type as src. The function can work in-place.
-@param thinningType Value that defines which thinning algorithm should be used. See cv::ximgproc::ThinningTypes
- */
-CV_EXPORTS_W void thinning( InputArray src, OutputArray dst, int thinningType = THINNING_ZHANGSUEN);
+@param src Source image: an 8-bit, single-channel binary image where the blobs are represented by pixels with a value of 255 (white),
+and the background is 0 (black).
+@param dst Destination image of the same size and type as src, where the result of the thinning operation will be stored.
+This operation can be performed in-place, meaning `src` and `dst` can be the same.
+@param thinningType The thinning algorithm to apply. By default, the Zhang-Suen algorithm is used. See cv::ximgproc::ThinningTypes for other options.
+*/
+CV_EXPORTS_W void thinning(InputArray src, OutputArray dst, int thinningType = THINNING_ZHANGSUEN);
+
 
 /** @brief Performs anisotropic diffusion on an image.
 

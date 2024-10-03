@@ -6,52 +6,40 @@
 
 namespace opencv_test { namespace {
 
-static int createTestImage(Mat1b& src)
-{
-    src = Mat1b::zeros(Size(256, 256));
-    // Create a corner point that should not be affected.
-    src(0, 0) = 255;
-
-    for (int x = 50; x < src.cols - 50; x += 50)
-    {
-        cv::circle(src, Point(x, x/2), 30 + x/2, Scalar(255), 5);
-    }
-    int src_pixels = countNonZero(src);
-    EXPECT_GT(src_pixels, 0);
-    return src_pixels;
-}
-
 TEST(ximgproc_Thinning, simple_ZHANGSUEN)
 {
-    Mat1b src;
-    int src_pixels = createTestImage(src);
+    string dir = cvtest::TS::ptr()->get_data_path();
+    Mat src = imread(dir + "cv/ximgproc/sources/08.png", IMREAD_GRAYSCALE);
+    Mat dst,check_img;
 
-    Mat1b dst;
     thinning(src, dst, THINNING_ZHANGSUEN);
-    int dst_pixels = countNonZero(dst);
-    EXPECT_LE(dst_pixels, src_pixels);
-    EXPECT_EQ(dst(0, 0), 255);
 
-#if 0
-    imshow("src", src); imshow("dst", dst); waitKey();
-#endif
+    check_img = imread(dir + "cv/ximgproc/results/Thinning_ZHANGSUEN.png", IMREAD_GRAYSCALE);
+    EXPECT_EQ(0, cvtest::norm(check_img, dst, NORM_INF));
+
+    dst = ~src;
+    thinning(dst, dst, THINNING_ZHANGSUEN);
+
+    check_img = imread(dir + "cv/ximgproc/results/Thinning_inv_ZHANGSUEN.png", IMREAD_GRAYSCALE);
+    EXPECT_EQ(0, cvtest::norm(check_img, dst, NORM_INF));
 }
 
 TEST(ximgproc_Thinning, simple_GUOHALL)
 {
-    Mat1b src;
-    int src_pixels = createTestImage(src);
+    string dir = cvtest::TS::ptr()->get_data_path();
+    Mat src = imread(dir + "cv/ximgproc/sources/08.png", IMREAD_GRAYSCALE);
+    Mat dst,check_img;
 
-    Mat1b dst;
     thinning(src, dst, THINNING_GUOHALL);
-    int dst_pixels = countNonZero(dst);
-    EXPECT_LE(dst_pixels, src_pixels);
-    EXPECT_EQ(dst(0, 0), 255);
 
-#if 0
-    imshow("src", src); imshow("dst", dst); waitKey();
-#endif
+    check_img = imread(dir + "cv/ximgproc/results/Thinning_GUOHALL.png", IMREAD_GRAYSCALE);
+    EXPECT_EQ(0, cvtest::norm(check_img, dst, NORM_INF));
+
+    dst = ~src;
+    thinning(dst, dst, THINNING_GUOHALL);
+
+    check_img = imread(dir + "cv/ximgproc/results/Thinning_inv_GUOHALL.png", IMREAD_GRAYSCALE);
+    EXPECT_EQ(0, cvtest::norm(check_img, dst, NORM_INF));
 }
-
 
 }} // namespace
