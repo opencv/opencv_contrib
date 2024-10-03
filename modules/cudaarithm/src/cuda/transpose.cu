@@ -74,8 +74,13 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
         sz.width  = src.cols;
         sz.height = src.rows;
 
+#if USE_NPP_STREAM_CTX
+        nppSafeCall(nppiTranspose_8u_C1R_Ctx(src.ptr<Npp8u>(), static_cast<int>(src.step),
+            dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, h));
+#else
         nppSafeCall( nppiTranspose_8u_C1R(src.ptr<Npp8u>(), static_cast<int>(src.step),
             dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
+#endif
 
         if (!stream)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );

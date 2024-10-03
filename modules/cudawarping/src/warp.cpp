@@ -139,9 +139,15 @@ namespace
     {
         typedef typename NPPTypeTraits<DEPTH>::npp_type npp_type;
 
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*func_t)(const npp_type* pSrc, NppiSize srcSize, int srcStep, NppiRect srcRoi, npp_type* pDst,
+            int dstStep, NppiRect dstRoi, const double coeffs[][3],
+            int interpolation, NppStreamContext ctx);
+#else
         typedef NppStatus (*func_t)(const npp_type* pSrc, NppiSize srcSize, int srcStep, NppiRect srcRoi, npp_type* pDst,
                                     int dstStep, NppiRect dstRoi, const double coeffs[][3],
                                     int interpolation);
+#endif
     };
 
     template <int DEPTH, typename NppWarpFunc<DEPTH>::func_t func> struct NppWarp
@@ -170,9 +176,15 @@ namespace
 
             cv::cuda::NppStreamHandler h(stream);
 
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func(src.ptr<npp_type>(), srcsz, static_cast<int>(src.step), srcroi,
+                dst.ptr<npp_type>(), static_cast<int>(dst.step), dstroi,
+                coeffs, npp_inter[interpolation], h));
+#else
             nppSafeCall( func(src.ptr<npp_type>(), srcsz, static_cast<int>(src.step), srcroi,
                               dst.ptr<npp_type>(), static_cast<int>(dst.step), dstroi,
                               coeffs, npp_inter[interpolation]) );
+#endif
 
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
@@ -250,6 +262,24 @@ void cv::cuda::warpAffine(InputArray _src, OutputArray _dst, InputArray _M, Size
 
         static const func_t funcs[2][6][4] =
         {
+#if USE_NPP_STREAM_CTX
+            {
+                {NppWarp<CV_8U, nppiWarpAffine_8u_C1R_Ctx>::call, 0, NppWarp<CV_8U, nppiWarpAffine_8u_C3R_Ctx>::call, NppWarp<CV_8U, nppiWarpAffine_8u_C4R_Ctx>::call},
+                {0, 0, 0, 0},
+                {NppWarp<CV_16U, nppiWarpAffine_16u_C1R_Ctx>::call, 0, NppWarp<CV_16U, nppiWarpAffine_16u_C3R_Ctx>::call, NppWarp<CV_16U, nppiWarpAffine_16u_C4R_Ctx>::call},
+                {0, 0, 0, 0},
+                {NppWarp<CV_32S, nppiWarpAffine_32s_C1R_Ctx>::call, 0, NppWarp<CV_32S, nppiWarpAffine_32s_C3R_Ctx>::call, NppWarp<CV_32S, nppiWarpAffine_32s_C4R_Ctx>::call},
+                {NppWarp<CV_32F, nppiWarpAffine_32f_C1R_Ctx>::call, 0, NppWarp<CV_32F, nppiWarpAffine_32f_C3R_Ctx>::call, NppWarp<CV_32F, nppiWarpAffine_32f_C4R_Ctx>::call}
+            },
+            {
+                {NppWarp<CV_8U, nppiWarpAffineBack_8u_C1R_Ctx>::call, 0, NppWarp<CV_8U, nppiWarpAffineBack_8u_C3R_Ctx>::call, NppWarp<CV_8U, nppiWarpAffineBack_8u_C4R_Ctx>::call},
+                {0, 0, 0, 0},
+                {NppWarp<CV_16U, nppiWarpAffineBack_16u_C1R_Ctx>::call, 0, NppWarp<CV_16U, nppiWarpAffineBack_16u_C3R_Ctx>::call, NppWarp<CV_16U, nppiWarpAffineBack_16u_C4R_Ctx>::call},
+                {0, 0, 0, 0},
+                {NppWarp<CV_32S, nppiWarpAffineBack_32s_C1R_Ctx>::call, 0, NppWarp<CV_32S, nppiWarpAffineBack_32s_C3R_Ctx>::call, NppWarp<CV_32S, nppiWarpAffineBack_32s_C4R_Ctx>::call},
+                {NppWarp<CV_32F, nppiWarpAffineBack_32f_C1R_Ctx>::call, 0, NppWarp<CV_32F, nppiWarpAffineBack_32f_C3R_Ctx>::call, NppWarp<CV_32F, nppiWarpAffineBack_32f_C4R_Ctx>::call}
+            }
+#else
             {
                 {NppWarp<CV_8U, nppiWarpAffine_8u_C1R>::call, 0, NppWarp<CV_8U, nppiWarpAffine_8u_C3R>::call, NppWarp<CV_8U, nppiWarpAffine_8u_C4R>::call},
                 {0, 0, 0, 0},
@@ -266,6 +296,7 @@ void cv::cuda::warpAffine(InputArray _src, OutputArray _dst, InputArray _M, Size
                 {NppWarp<CV_32S, nppiWarpAffineBack_32s_C1R>::call, 0, NppWarp<CV_32S, nppiWarpAffineBack_32s_C3R>::call, NppWarp<CV_32S, nppiWarpAffineBack_32s_C4R>::call},
                 {NppWarp<CV_32F, nppiWarpAffineBack_32f_C1R>::call, 0, NppWarp<CV_32F, nppiWarpAffineBack_32f_C3R>::call, NppWarp<CV_32F, nppiWarpAffineBack_32f_C4R>::call}
             }
+#endif
         };
 
         dst.setTo(borderValue, stream);
@@ -389,6 +420,24 @@ void cv::cuda::warpPerspective(InputArray _src, OutputArray _dst, InputArray _M,
 
         static const func_t funcs[2][6][4] =
         {
+#if USE_NPP_STREAM_CTX
+            {
+                {NppWarp<CV_8U, nppiWarpPerspective_8u_C1R_Ctx>::call, 0, NppWarp<CV_8U, nppiWarpPerspective_8u_C3R_Ctx>::call, NppWarp<CV_8U, nppiWarpPerspective_8u_C4R_Ctx>::call},
+                {0, 0, 0, 0},
+                {NppWarp<CV_16U, nppiWarpPerspective_16u_C1R_Ctx>::call, 0, NppWarp<CV_16U, nppiWarpPerspective_16u_C3R_Ctx>::call, NppWarp<CV_16U, nppiWarpPerspective_16u_C4R_Ctx>::call},
+                {0, 0, 0, 0},
+                {NppWarp<CV_32S, nppiWarpPerspective_32s_C1R_Ctx>::call, 0, NppWarp<CV_32S, nppiWarpPerspective_32s_C3R_Ctx>::call, NppWarp<CV_32S, nppiWarpPerspective_32s_C4R_Ctx>::call},
+                {NppWarp<CV_32F, nppiWarpPerspective_32f_C1R_Ctx>::call, 0, NppWarp<CV_32F, nppiWarpPerspective_32f_C3R_Ctx>::call, NppWarp<CV_32F, nppiWarpPerspective_32f_C4R_Ctx>::call}
+            },
+            {
+                {NppWarp<CV_8U, nppiWarpPerspectiveBack_8u_C1R_Ctx>::call, 0, NppWarp<CV_8U, nppiWarpPerspectiveBack_8u_C3R_Ctx>::call, NppWarp<CV_8U, nppiWarpPerspectiveBack_8u_C4R_Ctx>::call},
+                {0, 0, 0, 0},
+                {NppWarp<CV_16U, nppiWarpPerspectiveBack_16u_C1R_Ctx>::call, 0, NppWarp<CV_16U, nppiWarpPerspectiveBack_16u_C3R_Ctx>::call, NppWarp<CV_16U, nppiWarpPerspectiveBack_16u_C4R_Ctx>::call},
+                {0, 0, 0, 0},
+                {NppWarp<CV_32S, nppiWarpPerspectiveBack_32s_C1R_Ctx>::call, 0, NppWarp<CV_32S, nppiWarpPerspectiveBack_32s_C3R_Ctx>::call, NppWarp<CV_32S, nppiWarpPerspectiveBack_32s_C4R_Ctx>::call},
+                {NppWarp<CV_32F, nppiWarpPerspectiveBack_32f_C1R_Ctx>::call, 0, NppWarp<CV_32F, nppiWarpPerspectiveBack_32f_C3R_Ctx>::call, NppWarp<CV_32F, nppiWarpPerspectiveBack_32f_C4R_Ctx>::call}
+            }
+#else
             {
                 {NppWarp<CV_8U, nppiWarpPerspective_8u_C1R>::call, 0, NppWarp<CV_8U, nppiWarpPerspective_8u_C3R>::call, NppWarp<CV_8U, nppiWarpPerspective_8u_C4R>::call},
                 {0, 0, 0, 0},
@@ -405,6 +454,7 @@ void cv::cuda::warpPerspective(InputArray _src, OutputArray _dst, InputArray _M,
                 {NppWarp<CV_32S, nppiWarpPerspectiveBack_32s_C1R>::call, 0, NppWarp<CV_32S, nppiWarpPerspectiveBack_32s_C3R>::call, NppWarp<CV_32S, nppiWarpPerspectiveBack_32s_C4R>::call},
                 {NppWarp<CV_32F, nppiWarpPerspectiveBack_32f_C1R>::call, 0, NppWarp<CV_32F, nppiWarpPerspectiveBack_32f_C3R>::call, NppWarp<CV_32F, nppiWarpPerspectiveBack_32f_C4R>::call}
             }
+#endif
         };
 
         dst.setTo(borderValue, stream);
@@ -467,9 +517,15 @@ namespace
     {
         typedef typename NPPTypeTraits<DEPTH>::npp_type npp_type;
 
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*func_t)(const npp_type* pSrc, NppiSize oSrcSize, int nSrcStep, NppiRect oSrcROI,
+            npp_type* pDst, int nDstStep, NppiRect oDstROI,
+            double nAngle, double nShiftX, double nShiftY, int eInterpolation, NppStreamContext ctx);
+#else
         typedef NppStatus (*func_t)(const npp_type* pSrc, NppiSize oSrcSize, int nSrcStep, NppiRect oSrcROI,
                                     npp_type* pDst, int nDstStep, NppiRect oDstROI,
                                     double nAngle, double nShiftX, double nShiftY, int eInterpolation);
+#endif
     };
 
     template <int DEPTH, typename NppRotateFunc<DEPTH>::func_t func> struct NppRotate
@@ -495,8 +551,13 @@ namespace
             dstroi.height = dst.rows;
             dstroi.width = dst.cols;
 
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func(src.ptr<npp_type>(), srcsz, static_cast<int>(src.step), srcroi,
+                dst.ptr<npp_type>(), static_cast<int>(dst.step), dstroi, angle, xShift, yShift, npp_inter[interpolation], h));
+#else
             nppSafeCall( func(src.ptr<npp_type>(), srcsz, static_cast<int>(src.step), srcroi,
                 dst.ptr<npp_type>(), static_cast<int>(dst.step), dstroi, angle, xShift, yShift, npp_inter[interpolation]) );
+#endif
 
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
@@ -509,12 +570,21 @@ void cv::cuda::rotate(InputArray _src, OutputArray _dst, Size dsize, double angl
     typedef void (*func_t)(const GpuMat& src, GpuMat& dst, Size dsize, double angle, double xShift, double yShift, int interpolation, cudaStream_t stream);
     static const func_t funcs[6][4] =
     {
+#if USE_NPP_STREAM_CTX
+        {NppRotate<CV_8U, nppiRotate_8u_C1R_Ctx>::call, 0, NppRotate<CV_8U, nppiRotate_8u_C3R_Ctx>::call, NppRotate<CV_8U, nppiRotate_8u_C4R_Ctx>::call},
+        {0,0,0,0},
+        {NppRotate<CV_16U, nppiRotate_16u_C1R_Ctx>::call, 0, NppRotate<CV_16U, nppiRotate_16u_C3R_Ctx>::call, NppRotate<CV_16U, nppiRotate_16u_C4R_Ctx>::call},
+        {0,0,0,0},
+        {0,0,0,0},
+        {NppRotate<CV_32F, nppiRotate_32f_C1R_Ctx>::call, 0, NppRotate<CV_32F, nppiRotate_32f_C3R_Ctx>::call, NppRotate<CV_32F, nppiRotate_32f_C4R_Ctx>::call}
+#else
         {NppRotate<CV_8U, nppiRotate_8u_C1R>::call, 0, NppRotate<CV_8U, nppiRotate_8u_C3R>::call, NppRotate<CV_8U, nppiRotate_8u_C4R>::call},
         {0,0,0,0},
         {NppRotate<CV_16U, nppiRotate_16u_C1R>::call, 0, NppRotate<CV_16U, nppiRotate_16u_C3R>::call, NppRotate<CV_16U, nppiRotate_16u_C4R>::call},
         {0,0,0,0},
         {0,0,0,0},
         {NppRotate<CV_32F, nppiRotate_32f_C1R>::call, 0, NppRotate<CV_32F, nppiRotate_32f_C3R>::call, NppRotate<CV_32F, nppiRotate_32f_C4R>::call}
+#endif
     };
 
     GpuMat src = _src.getGpuMat();

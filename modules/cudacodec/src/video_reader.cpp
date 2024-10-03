@@ -68,25 +68,22 @@ void cvtFromNv12(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int he
         outFrame.create(height, width, CV_8UC3);
         Npp8u* pSrc[2] = { decodedFrame.data, &decodedFrame.data[decodedFrame.step * height] };
         NppiSize oSizeROI = { width,height };
-#if (CUDART_VERSION < 10010)
         cv::cuda::NppStreamHandler h(stream);
+#if USE_NPP_STREAM_CTX
+        if (videoFullRangeFlag)
+            nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, h));
+        else {
+#if (CUDART_VERSION < 11000)
+            nppSafeCall(nppiNV12ToBGR_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, h));
+#else
+            nppSafeCall(nppiNV12ToBGR_709CSC_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, h));
+#endif
+        }
+#else
         if (videoFullRangeFlag)
             nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI));
         else {
             nppSafeCall(nppiNV12ToBGR_8u_P2C3R(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI));
-        }
-#elif (CUDART_VERSION >= 10010)
-        NppStreamContext nppStreamCtx;
-        nppSafeCall(nppGetStreamContext(&nppStreamCtx));
-        nppStreamCtx.hStream = StreamAccessor::getStream(stream);
-        if (videoFullRangeFlag)
-            nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
-        else {
-#if (CUDART_VERSION < 11000)
-            nppSafeCall(nppiNV12ToBGR_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
-#else
-            nppSafeCall(nppiNV12ToBGR_709CSC_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
-#endif
         }
 #endif
     }

@@ -79,7 +79,11 @@ namespace
     {
         typedef typename NppTypeTraits<DEPTH>::npp_t npp_t;
 
-        typedef NppStatus (*func_t)(const npp_t* pSrc, int nSrcStep, npp_t* pDst, int nDstStep, NppiSize oROI, NppiAxis flip);
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus (*func_t)(const npp_t* pSrc, int nSrcStep, npp_t* pDst, int nDstStep, NppiSize oROI, NppiAxis flip, NppStreamContext ctx);
+#else
+        typedef NppStatus(*func_t)(const npp_t* pSrc, int nSrcStep, npp_t* pDst, int nDstStep, NppiSize oROI, NppiAxis flip);
+#endif
     };
 
     template <int DEPTH, typename NppMirrorFunc<DEPTH>::func_t func> struct NppMirror
@@ -94,9 +98,15 @@ namespace
             sz.width  = src.cols;
             sz.height = src.rows;
 
+#if USE_NPP_STREAM_CTX
             nppSafeCall( func(src.ptr<npp_t>(), static_cast<int>(src.step),
                 dst.ptr<npp_t>(), static_cast<int>(dst.step), sz,
-                (flipCode == 0 ? NPP_HORIZONTAL_AXIS : (flipCode > 0 ? NPP_VERTICAL_AXIS : NPP_BOTH_AXIS))) );
+                (flipCode == 0 ? NPP_HORIZONTAL_AXIS : (flipCode > 0 ? NPP_VERTICAL_AXIS : NPP_BOTH_AXIS)), h) );
+#else
+            nppSafeCall( func(src.ptr<npp_t>(), static_cast<int>(src.step),
+                dst.ptr<npp_t>(), static_cast<int>(dst.step), sz,
+                    (flipCode == 0 ? NPP_HORIZONTAL_AXIS : (flipCode > 0 ? NPP_VERTICAL_AXIS : NPP_BOTH_AXIS))) );
+#endif
 
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
@@ -107,7 +117,11 @@ namespace
     {
         typedef typename NppTypeTraits<DEPTH>::npp_t npp_t;
 
-        typedef NppStatus (*func_t)(npp_t* pSrcDst, int nSrcDstStep, NppiSize oROI, NppiAxis flip);
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus (*func_t)(npp_t* pSrcDst, int nSrcDstStep, NppiSize oROI, NppiAxis flip, NppStreamContext ctx);
+#else
+        typedef NppStatus(*func_t)(npp_t* pSrcDst, int nSrcDstStep, NppiSize oROI, NppiAxis flip);
+#endif
     };
 
     template <int DEPTH, typename NppMirrorIFunc<DEPTH>::func_t func> struct NppMirrorI
@@ -121,10 +135,15 @@ namespace
             NppiSize sz;
             sz.width  = srcDst.cols;
             sz.height = srcDst.rows;
-
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func(srcDst.ptr<npp_t>(), static_cast<int>(srcDst.step),
+                sz,
+                (flipCode == 0 ? NPP_HORIZONTAL_AXIS : (flipCode > 0 ? NPP_VERTICAL_AXIS : NPP_BOTH_AXIS)), h) );
+#else
             nppSafeCall( func(srcDst.ptr<npp_t>(), static_cast<int>(srcDst.step),
                 sz,
                 (flipCode == 0 ? NPP_HORIZONTAL_AXIS : (flipCode > 0 ? NPP_VERTICAL_AXIS : NPP_BOTH_AXIS))) );
+#endif
 
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
@@ -137,23 +156,41 @@ void cv::cuda::flip(InputArray _src, OutputArray _dst, int flipCode, Stream& str
     typedef void (*func_t)(const GpuMat& src, GpuMat& dst, int flipCode, cudaStream_t stream);
     static const func_t funcs[6][4] =
     {
-        {NppMirror<CV_8U, nppiMirror_8u_C1R>::call, 0, NppMirror<CV_8U, nppiMirror_8u_C3R>::call, NppMirror<CV_8U, nppiMirror_8u_C4R>::call},
+#if USE_NPP_STREAM_CTX
+        {NppMirror<CV_8U, nppiMirror_8u_C1R_Ctx>::call, 0, NppMirror<CV_8U, nppiMirror_8u_C3R_Ctx>::call, NppMirror<CV_8U, nppiMirror_8u_C4R_Ctx>::call},
+        {0,0,0,0},
+        {NppMirror<CV_16U, nppiMirror_16u_C1R_Ctx>::call, 0, NppMirror<CV_16U, nppiMirror_16u_C3R_Ctx>::call, NppMirror<CV_16U, nppiMirror_16u_C4R_Ctx>::call},
+        {0,0,0,0},
+        {NppMirror<CV_32S, nppiMirror_32s_C1R_Ctx>::call, 0, NppMirror<CV_32S, nppiMirror_32s_C3R_Ctx>::call, NppMirror<CV_32S, nppiMirror_32s_C4R_Ctx>::call},
+        {NppMirror<CV_32F, nppiMirror_32f_C1R_Ctx>::call, 0, NppMirror<CV_32F, nppiMirror_32f_C3R_Ctx>::call, NppMirror<CV_32F, nppiMirror_32f_C4R_Ctx>::call}
+#else
+        { NppMirror<CV_8U, nppiMirror_8u_C1R>::call, 0, NppMirror<CV_8U, nppiMirror_8u_C3R>::call, NppMirror<CV_8U, nppiMirror_8u_C4R>::call },
         {0,0,0,0},
         {NppMirror<CV_16U, nppiMirror_16u_C1R>::call, 0, NppMirror<CV_16U, nppiMirror_16u_C3R>::call, NppMirror<CV_16U, nppiMirror_16u_C4R>::call},
         {0,0,0,0},
         {NppMirror<CV_32S, nppiMirror_32s_C1R>::call, 0, NppMirror<CV_32S, nppiMirror_32s_C3R>::call, NppMirror<CV_32S, nppiMirror_32s_C4R>::call},
         {NppMirror<CV_32F, nppiMirror_32f_C1R>::call, 0, NppMirror<CV_32F, nppiMirror_32f_C3R>::call, NppMirror<CV_32F, nppiMirror_32f_C4R>::call}
+#endif
     };
 
     typedef void (*ifunc_t)(GpuMat& srcDst, int flipCode, cudaStream_t stream);
     static const ifunc_t ifuncs[6][4] =
     {
-        {NppMirrorI<CV_8U, nppiMirror_8u_C1IR>::call, 0, NppMirrorI<CV_8U, nppiMirror_8u_C3IR>::call, NppMirrorI<CV_8U, nppiMirror_8u_C4IR>::call},
+#if USE_NPP_STREAM_CTX
+        {NppMirrorI<CV_8U, nppiMirror_8u_C1IR_Ctx>::call, 0, NppMirrorI<CV_8U, nppiMirror_8u_C3IR_Ctx>::call, NppMirrorI<CV_8U, nppiMirror_8u_C4IR_Ctx>::call},
+        {0,0,0,0},
+        {NppMirrorI<CV_16U, nppiMirror_16u_C1IR_Ctx>::call, 0, NppMirrorI<CV_16U, nppiMirror_16u_C3IR_Ctx>::call, NppMirrorI<CV_16U, nppiMirror_16u_C4IR_Ctx>::call},
+        {0,0,0,0},
+        {NppMirrorI<CV_32S, nppiMirror_32s_C1IR_Ctx>::call, 0, NppMirrorI<CV_32S, nppiMirror_32s_C3IR_Ctx>::call, NppMirrorI<CV_32S, nppiMirror_32s_C4IR_Ctx>::call},
+        {NppMirrorI<CV_32F, nppiMirror_32f_C1IR_Ctx>::call, 0, NppMirrorI<CV_32F, nppiMirror_32f_C3IR_Ctx>::call, NppMirrorI<CV_32F, nppiMirror_32f_C4IR_Ctx>::call}
+#else
+        { NppMirrorI<CV_8U, nppiMirror_8u_C1IR>::call, 0, NppMirrorI<CV_8U, nppiMirror_8u_C3IR>::call, NppMirrorI<CV_8U, nppiMirror_8u_C4IR>::call },
         {0,0,0,0},
         {NppMirrorI<CV_16U, nppiMirror_16u_C1IR>::call, 0, NppMirrorI<CV_16U, nppiMirror_16u_C3IR>::call, NppMirrorI<CV_16U, nppiMirror_16u_C4IR>::call},
         {0,0,0,0},
         {NppMirrorI<CV_32S, nppiMirror_32s_C1IR>::call, 0, NppMirrorI<CV_32S, nppiMirror_32s_C3IR>::call, NppMirrorI<CV_32S, nppiMirror_32s_C4IR>::call},
         {NppMirrorI<CV_32F, nppiMirror_32f_C1IR>::call, 0, NppMirrorI<CV_32F, nppiMirror_32f_C3IR>::call, NppMirrorI<CV_32F, nppiMirror_32f_C4IR>::call}
+#endif
     };
 
     GpuMat src = getInputMat(_src, stream);
