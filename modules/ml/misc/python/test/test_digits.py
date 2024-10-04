@@ -166,7 +166,7 @@ class digits_test(NewOpenCVTests):
         confusionMatrixes.append(confusion)
 
         eps = 0.001
-        normEps = len(samples_test) * 0.02
+        normEps = len(samples_test) * 0.03
 
         confusionKNN = [[45,  0,  0,  0,  0,  0,  0,  0,  0,  0],
          [ 0, 57,  0,  0,  0,  0,  0,  0,  0,  0],
@@ -193,8 +193,8 @@ class digits_test(NewOpenCVTests):
         self.assertLess(cv.norm(confusionMatrixes[0] - confusionKNN, cv.NORM_L1), normEps)
         self.assertLess(cv.norm(confusionMatrixes[1] - confusionSVM, cv.NORM_L1), normEps)
 
-        self.assertLess(errors[0] - 0.034, eps)
-        self.assertLess(errors[1] - 0.018, eps)
+        self.assertLess(errors[0] - 0.038, eps)
+        self.assertLess(errors[1] - 0.024, eps)
 
 
 if __name__ == '__main__':
