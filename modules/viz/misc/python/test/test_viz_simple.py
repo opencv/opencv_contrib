@@ -179,7 +179,7 @@ class viz_test(NewOpenCVTests):
     def test_viz_show_cloud_masked(self):
         dragon_cloud,_,_  = cv.viz.readCloud(self.find_file("viz/dragon.ply"))
 
-        qnan =  np.NAN
+        qnan =  np.nan
         for idx in range(dragon_cloud.shape[0]):
             if idx % 15 != 0:
                 dragon_cloud[idx,:] = qnan

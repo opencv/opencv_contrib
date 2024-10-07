@@ -76,6 +76,10 @@ bool cv::cudacodec::detail::RawVideoSourceWrapper::get(const int propertyId, dou
     return source_->get(propertyId, propertyVal);
 }
 
+int cv::cudacodec::detail::RawVideoSourceWrapper::getFirstFrameIdx() const {
+    return source_->getFirstFrameIdx();
+}
+
 void cv::cudacodec::detail::RawVideoSourceWrapper::start()
 {
     stop_ = false;

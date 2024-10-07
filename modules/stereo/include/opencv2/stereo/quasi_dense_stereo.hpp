@@ -18,6 +18,7 @@ namespace cv
 {
 namespace stereo
 {
+
 /** \addtogroup stereo
  *  @{
  */
@@ -190,9 +191,8 @@ public:
     CV_PROP_RW PropagationParameters Param;
 };
 
-} //namespace cv
-} //namespace stereo
-
 /** @}*/
 
+} //namespace cv
+} //namespace stereo
 #endif // __OPENCV_QUASI_DENSE_STEREO_H__

@@ -504,7 +504,7 @@ namespace cv { namespace cuda { namespace device
                 CV_Error(cv::Error::StsBadArg, "Unsupported window size");
 
             cudaSafeCall( cudaMemset2DAsync(disp.data, disp.step, 0, disp.cols, disp.rows, stream) );
-            cudaSafeCall( cudaMemset2DAsync(minSSD_buf.data, minSSD_buf.step, 0xFF, minSSD_buf.cols * minSSD_buf.elemSize(), disp.rows, stream) );
+            cudaSafeCall( cudaMemset2DAsync(minSSD_buf.data, minSSD_buf.step, 0xFF, minSSD_buf.cols * minSSD_buf.elemSize(), minSSD_buf.rows, stream) );
 
             size_t minssd_step = minSSD_buf.step/minSSD_buf.elemSize();
             callers[winsz2](left, right, disp, maxdisp, uniquenessRatio, minSSD_buf.data, minssd_step, left.cols, left.rows, stream);

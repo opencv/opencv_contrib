@@ -65,12 +65,13 @@
 #include "ximgproc/find_ellipses.hpp"
 
 
-/** @defgroup ximgproc Extended Image Processing
-  @{
+/**
+@defgroup ximgproc Extended Image Processing
+@{
     @defgroup ximgproc_edge Structured forests for fast edge detection
 
-This module contains implementations of modern structured edge detection algorithms,
-i.e. algorithms which somehow takes into account pixel affinities in natural images.
+    This module contains implementations of modern structured edge detection algorithms,
+    i.e. algorithms which somehow takes into account pixel affinities in natural images.
 
     @defgroup ximgproc_edgeboxes EdgeBoxes
 
@@ -84,16 +85,16 @@ i.e. algorithms which somehow takes into account pixel affinities in natural ima
 
     @defgroup ximgproc_edge_drawing EdgeDrawing
 
-EDGE DRAWING LIBRARY FOR GEOMETRIC FEATURE EXTRACTION AND VALIDATION
+    EDGE DRAWING LIBRARY FOR GEOMETRIC FEATURE EXTRACTION AND VALIDATION
 
-Edge Drawing (ED) algorithm is an proactive approach on edge detection problem. In contrast to many other existing edge detection algorithms which follow a subtractive
-approach (i.e. after applying gradient filters onto an image eliminating pixels w.r.t. several rules, e.g. non-maximal suppression and hysteresis in Canny), ED algorithm
-works via an additive strategy, i.e. it picks edge pixels one by one, hence the name Edge Drawing. Then we process those random shaped edge segments to extract higher level
-edge features, i.e. lines, circles, ellipses, etc. The popular method of extraction edge pixels from the thresholded gradient magnitudes is non-maximal supression that tests
-every pixel whether it has the maximum gradient response along its gradient direction and eliminates if it does not. However, this method does not check status of the
-neighboring pixels, and therefore might result low quality (in terms of edge continuity, smoothness, thinness, localization) edge segments. Instead of non-maximal supression,
-ED points a set of edge pixels and join them by maximizing the total gradient response of edge segments. Therefore it can extract high quality edge segments without need for
-an additional hysteresis step.
+    Edge Drawing (ED) algorithm is an proactive approach on edge detection problem. In contrast to many other existing edge detection algorithms which follow a subtractive
+    approach (i.e. after applying gradient filters onto an image eliminating pixels w.r.t. several rules, e.g. non-maximal suppression and hysteresis in Canny), ED algorithm
+    works via an additive strategy, i.e. it picks edge pixels one by one, hence the name Edge Drawing. Then we process those random shaped edge segments to extract higher level
+    edge features, i.e. lines, circles, ellipses, etc. The popular method of extraction edge pixels from the thresholded gradient magnitudes is non-maximal supression that tests
+    every pixel whether it has the maximum gradient response along its gradient direction and eliminates if it does not. However, this method does not check status of the
+    neighboring pixels, and therefore might result low quality (in terms of edge continuity, smoothness, thinness, localization) edge segments. Instead of non-maximal supression,
+    ED points a set of edge pixels and join them by maximizing the total gradient response of edge segments. Therefore it can extract high quality edge segments without need for
+    an additional hysteresis step.
 
     @defgroup ximgproc_fourier Fourier descriptors
 
@@ -115,14 +116,16 @@ an additional hysteresis step.
 
     The size of the original image is required for compatibility with the imgproc functions when the boundary handling requires that pixel outside the image boundary are
     "on".
-
-    @}
+@}
 */
 
 namespace cv
 {
 namespace ximgproc
 {
+
+//! @addtogroup ximgproc
+//! @{
 
 enum ThinningTypes{
     THINNING_ZHANGSUEN    = 0, // Thinning technique of Zhang-Suen
@@ -138,9 +141,6 @@ enum LocalBinarizationMethods{
 	BINARIZATION_WOLF = 2,    //!< Wolf's technique. See @cite Wolf2004 .
 	BINARIZATION_NICK = 3     //!< NICK technique. See @cite Khurshid2009 .
 };
-
-//! @addtogroup ximgproc
-//! @{
 
 /** @brief Performs thresholding on input images using Niblack's technique or some of the
 popular variations it inspired.

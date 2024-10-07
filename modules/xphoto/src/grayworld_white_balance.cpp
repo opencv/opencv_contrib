@@ -130,21 +130,21 @@ void calculateChannelSums(uint &sumB, uint &sumG, uint &sumR, uchar *src_data, i
         v_expand(v_max_val, v_max1, v_max2);
 
         // Calculate masks
-        v_m1 = ~(v_mul_wrap(v_max1 - v_min1, v_255) > v_mul_wrap(v_thresh, v_max1));
-        v_m2 = ~(v_mul_wrap(v_max2 - v_min2, v_255) > v_mul_wrap(v_thresh, v_max2));
+        v_m1 = v_not(v_gt(v_mul_wrap(v_sub(v_max1, v_min1), v_255), v_mul_wrap(v_thresh, v_max1)));
+        v_m2 = v_not(v_gt(v_mul_wrap(v_sub(v_max2, v_min2), v_255), v_mul_wrap(v_thresh, v_max2)));
 
         // Apply masks
-        v_iB1 = (v_iB1 & v_m1) + (v_iB2 & v_m2);
-        v_iG1 = (v_iG1 & v_m1) + (v_iG2 & v_m2);
-        v_iR1 = (v_iR1 & v_m1) + (v_iR2 & v_m2);
+        v_iB1 = v_add(v_and(v_iB1, v_m1), v_and(v_iB2, v_m2));
+        v_iG1 = v_add(v_and(v_iG1, v_m1), v_and(v_iG2, v_m2));
+        v_iR1 = v_add(v_and(v_iR1, v_m1), v_and(v_iR2, v_m2));
 
         // Split and add to the sums:
         v_expand(v_iB1, v_uint1, v_uint2);
-        v_SB += v_uint1 + v_uint2;
+        v_SB = v_add(v_SB, v_add(v_uint1, v_uint2));
         v_expand(v_iG1, v_uint1, v_uint2);
-        v_SG += v_uint1 + v_uint2;
+        v_SG = v_add(v_SG, v_add(v_uint1, v_uint2));
         v_expand(v_iR1, v_uint1, v_uint2);
-        v_SR += v_uint1 + v_uint2;
+        v_SR = v_add(v_SR, v_add(v_uint1, v_uint2));
     }
 
     sumB = v_reduce_sum(v_SB);
@@ -197,21 +197,21 @@ void calculateChannelSums(uint64 &sumB, uint64 &sumG, uint64 &sumR, ushort *src_
         v_expand(v_max_val, v_max1, v_max2);
 
         // Calculate masks
-        v_m1 = ~((v_max1 - v_min1) * v_65535 > v_thresh * v_max1);
-        v_m2 = ~((v_max2 - v_min2) * v_65535 > v_thresh * v_max2);
+        v_m1 = v_not(v_gt(v_mul(v_sub(v_max1, v_min1), v_65535), v_mul(v_thresh, v_max1)));
+        v_m2 = v_not(v_gt(v_mul(v_sub(v_max2, v_min2), v_65535), v_mul(v_thresh, v_max2)));
 
         // Apply masks
-        v_iB1 = (v_iB1 & v_m1) + (v_iB2 & v_m2);
-        v_iG1 = (v_iG1 & v_m1) + (v_iG2 & v_m2);
-        v_iR1 = (v_iR1 & v_m1) + (v_iR2 & v_m2);
+        v_iB1 = v_add(v_and(v_iB1, v_m1), v_and(v_iB2, v_m2));
+        v_iG1 = v_add(v_and(v_iG1, v_m1), v_and(v_iG2, v_m2));
+        v_iR1 = v_add(v_and(v_iR1, v_m1), v_and(v_iR2, v_m2));
 
         // Split and add to the sums:
         v_expand(v_iB1, v_u64_1, v_u64_2);
-        v_SB += v_u64_1 + v_u64_2;
+        v_SB = v_add(v_SB, v_add(v_u64_1, v_u64_2));
         v_expand(v_iG1, v_u64_1, v_u64_2);
-        v_SG += v_u64_1 + v_u64_2;
+        v_SG = v_add(v_SG, v_add(v_u64_1, v_u64_2));
         v_expand(v_iR1, v_u64_1, v_u64_2);
-        v_SR += v_u64_1 + v_u64_2;
+        v_SR = v_add(v_SR, v_add(v_u64_1, v_u64_2));
     }
 
     // Perform final reduction
@@ -282,12 +282,12 @@ void applyChannelGains(InputArray _src, OutputArray _dst, float gainB, float gai
             v_expand(v_inR, v_sR1, v_sR2);
 
             // Multiply by gains
-            v_sB1 = v_mul_wrap(v_sB1, v_gainB) >> 8;
-            v_sB2 = v_mul_wrap(v_sB2, v_gainB) >> 8;
-            v_sG1 = v_mul_wrap(v_sG1, v_gainG) >> 8;
-            v_sG2 = v_mul_wrap(v_sG2, v_gainG) >> 8;
-            v_sR1 = v_mul_wrap(v_sR1, v_gainR) >> 8;
-            v_sR2 = v_mul_wrap(v_sR2, v_gainR) >> 8;
+            v_sB1 = v_shr(v_mul_wrap(v_sB1, v_gainB), 8);
+            v_sB2 = v_shr(v_mul_wrap(v_sB2, v_gainB), 8);
+            v_sG1 = v_shr(v_mul_wrap(v_sG1, v_gainG), 8);
+            v_sG2 = v_shr(v_mul_wrap(v_sG2, v_gainG), 8);
+            v_sR1 = v_shr(v_mul_wrap(v_sR1, v_gainR), 8);
+            v_sR2 = v_shr(v_mul_wrap(v_sR2, v_gainR), 8);
 
             // Pack into vectors of v_uint8x16
             v_store_interleave(&dst_data[i], v_pack(v_sB1, v_sB2), v_pack(v_sG1, v_sG2), v_pack(v_sR1, v_sR2));
@@ -325,12 +325,12 @@ void applyChannelGains(InputArray _src, OutputArray _dst, float gainB, float gai
             v_expand(v_inR, v_sR1, v_sR2);
 
             // Multiply by scaling factors
-            v_sB1 = (v_sB1 * v_gainB) >> 16;
-            v_sB2 = (v_sB2 * v_gainB) >> 16;
-            v_sG1 = (v_sG1 * v_gainG) >> 16;
-            v_sG2 = (v_sG2 * v_gainG) >> 16;
-            v_sR1 = (v_sR1 * v_gainR) >> 16;
-            v_sR2 = (v_sR2 * v_gainR) >> 16;
+            v_sB1 = v_shr(v_mul(v_sB1, v_gainB), 16);
+            v_sB2 = v_shr(v_mul(v_sB2, v_gainB), 16);
+            v_sG1 = v_shr(v_mul(v_sG1, v_gainG), 16);
+            v_sG2 = v_shr(v_mul(v_sG2, v_gainG), 16);
+            v_sR1 = v_shr(v_mul(v_sR1, v_gainR), 16);
+            v_sR2 = v_shr(v_mul(v_sR2, v_gainR), 16);
 
             // Pack into vectors of v_uint16x8
             v_store_interleave(&dst_data[i], v_pack(v_sB1, v_sB2), v_pack(v_sG1, v_sG2), v_pack(v_sR1, v_sR2));

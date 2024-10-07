@@ -72,6 +72,8 @@ Ptr<Filter> cv::cuda::createColumnSumFilter(int, int, int, int, int, Scalar) { t
 Ptr<Filter> cv::cuda::createMedianFilter(int srcType, int _windowSize, int _partitions){ throw_no_cuda(); return Ptr<Filter>();}
 
 #else
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 
 namespace
 {
@@ -384,28 +386,38 @@ namespace
         const int cn = CV_MAT_CN(srcType);
         const int ddepth = CV_MAT_DEPTH(dstType);
 
-        Mat rowKernel = _rowKernel.getMat();
-        Mat columnKernel = _columnKernel.getMat();
+        CV_Assert( _rowKernel.empty() || _rowKernel.isMat() );
+        CV_Assert( _columnKernel.empty() || _columnKernel.isMat() );
+        Mat rowKernel = _rowKernel.empty() ? cv::Mat() : _rowKernel.getMat();
+        Mat columnKernel = _columnKernel.empty() ? cv::Mat() : _columnKernel.getMat();
 
         CV_Assert( sdepth <= CV_64F && cn <= 4 );
-        CV_Assert( rowKernel.channels() == 1 );
-        CV_Assert( columnKernel.channels() == 1 );
+        CV_Assert( rowKernel.empty() || rowKernel.channels() == 1 );
+        CV_Assert( columnKernel.empty() || columnKernel.channels() == 1 );
         CV_Assert( rowBorderMode == BORDER_REFLECT101 || rowBorderMode == BORDER_REPLICATE || rowBorderMode == BORDER_CONSTANT || rowBorderMode == BORDER_REFLECT || rowBorderMode == BORDER_WRAP );
         CV_Assert( columnBorderMode == BORDER_REFLECT101 || columnBorderMode == BORDER_REPLICATE || columnBorderMode == BORDER_CONSTANT || columnBorderMode == BORDER_REFLECT || columnBorderMode == BORDER_WRAP );
 
         Mat kernel32F;
 
-        rowKernel.convertTo(kernel32F, CV_32F);
-        rowKernel_.upload(kernel32F.reshape(1, 1));
+        if (!rowKernel.empty())
+        {
+            rowKernel.convertTo(kernel32F, CV_32F);
+            rowKernel_.upload(kernel32F.reshape(1, 1));
+        }
 
-        columnKernel.convertTo(kernel32F, CV_32F);
-        columnKernel_.upload(kernel32F.reshape(1, 1));
+        if (!columnKernel.empty())
+        {
+            columnKernel.convertTo(kernel32F, CV_32F);
+            columnKernel_.upload(kernel32F.reshape(1, 1));
+        }
 
-        CV_Assert( rowKernel_.cols > 0 && rowKernel_.cols <= 32 );
-        CV_Assert( columnKernel_.cols > 0 && columnKernel_.cols <= 32 );
+        CV_Assert( rowKernel_.empty() || (rowKernel_.cols > 0 && rowKernel_.cols <= 32 ));
+        CV_Assert( columnKernel_.empty() || (columnKernel_.cols > 0 && columnKernel_.cols <= 32 ));
 
-        normalizeAnchor(anchor_.x, rowKernel_.cols);
-        normalizeAnchor(anchor_.y, columnKernel_.cols);
+        if (!rowKernel_.empty())
+          normalizeAnchor(anchor_.x, rowKernel_.cols);
+        if (!columnKernel_.empty())
+          normalizeAnchor(anchor_.y, columnKernel_.cols);
 
         bufType_ = CV_MAKE_TYPE(CV_32F, cn);
 
@@ -424,15 +436,45 @@ namespace
         _dst.create(src.size(), dstType_);
         GpuMat dst = _dst.getGpuMat();
 
-        ensureSizeIsEnough(src.size(), bufType_, buf_);
+        const bool isInPlace = (src.data == dst.data);
+        const bool hasRowKernel = !rowKernel_.empty();
+        const bool hasColKernel = !columnKernel_.empty();
+        const bool hasSingleKernel = (hasRowKernel ^ hasColKernel);
+        const bool needsSrcAdaptation = !hasRowKernel &&  hasColKernel && (srcType_ != bufType_);
+        const bool needsDstAdaptation =  hasRowKernel && !hasColKernel && (dstType_ != bufType_);
+        const bool needsBufForIntermediateStorage = (hasRowKernel && hasColKernel) || (hasSingleKernel && isInPlace);
+        const bool needsBuf = needsSrcAdaptation || needsDstAdaptation || needsBufForIntermediateStorage;
+        if (needsBuf)
+            ensureSizeIsEnough(src.size(), bufType_, buf_);
+
+        if (needsSrcAdaptation)
+            src.convertTo(buf_, bufType_, _stream);
+        GpuMat& srcAdapted = needsSrcAdaptation ? buf_ : src;
 
         DeviceInfo devInfo;
         const int cc = devInfo.majorVersion() * 10 + devInfo.minorVersion();
 
         cudaStream_t stream = StreamAccessor::getStream(_stream);
 
-        rowFilter_(src, buf_, rowKernel_.ptr<float>(), rowKernel_.cols, anchor_.x, rowBorderMode_, cc, stream);
-        columnFilter_(buf_, dst, columnKernel_.ptr<float>(), columnKernel_.cols, anchor_.y, columnBorderMode_, cc, stream);
+        if (!hasRowKernel && !hasColKernel && !isInPlace)
+            srcAdapted.convertTo(dst, dstType_, _stream);
+        else if (hasRowKernel || hasColKernel)
+        {
+            GpuMat& rowFilterSrc = srcAdapted;
+            GpuMat& rowFilterDst = !hasRowKernel ? srcAdapted : needsBuf ? buf_ : dst;
+            GpuMat& colFilterSrc = hasColKernel && needsBuf ? buf_ : srcAdapted;
+            GpuMat& colFilterTo = dst;
+
+            if (hasRowKernel)
+                rowFilter_(rowFilterSrc, rowFilterDst, rowKernel_.ptr<float>(), rowKernel_.cols, anchor_.x, rowBorderMode_, cc, stream);
+            else if (hasColKernel && (needsBufForIntermediateStorage && !needsSrcAdaptation))
+                rowFilterSrc.convertTo(buf_, bufType_, _stream);
+
+            if (hasColKernel)
+                columnFilter_(colFilterSrc, colFilterTo, columnKernel_.ptr<float>(), columnKernel_.cols, anchor_.y, columnBorderMode_, cc, stream);
+            else if (needsBuf)
+                buf_.convertTo(dst, dstType_, _stream);
+        }
     }
 }
 
@@ -1047,12 +1089,20 @@ Ptr<Filter> cv::cuda::createColumnSumFilter(int srcType, int dstType, int ksize,
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Median Filter
 
+// The CUB library is used for the Median Filter with Wavelet Matrix,
+// which has become a standard library since CUDA 11.
+#include "cuda/wavelet_matrix_feature_support_checks.h"
 
 
 namespace cv { namespace cuda { namespace device
 {
     void medianFiltering_gpu(const PtrStepSzb src, PtrStepSzb dst, PtrStepSzi devHist,
         PtrStepSzi devCoarseHist,int kernel, int partitions, cudaStream_t stream);
+
+#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+    template<typename T>
+    void medianFiltering_wavelet_matrix_gpu(const PtrStepSz<T> src, PtrStepSz<T> dst, int radius, const int num_channels, cudaStream_t stream);
+#endif
 }}}
 
 namespace
@@ -1074,7 +1124,15 @@ namespace
     MedianFilter::MedianFilter(int srcType, int _windowSize, int _partitions) :
         windowSize(_windowSize),partitions(_partitions)
     {
-        CV_Assert( srcType == CV_8UC1 );
+#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+        CV_Assert(srcType == CV_8UC1  || srcType == CV_8UC3  || srcType == CV_8UC4
+               || srcType == CV_16UC1 || srcType == CV_16UC3 || srcType == CV_16UC4
+               || srcType == CV_32FC1 || srcType == CV_32FC3 || srcType == CV_32FC4);
+#else
+        if (srcType != CV_8UC1) {
+            CV_Error(Error::StsNotImplemented, "If CUDA version is below 10, only implementations that support CV_8UC1 are available");
+        }
+#endif
         CV_Assert(windowSize>=3);
         CV_Assert(_partitions>=1);
 
@@ -1094,6 +1152,18 @@ namespace
         // Kernel needs to be half window size
         int kernel=windowSize/2;
 
+#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+        const int depth = src.depth();
+        if (depth == CV_8U) {
+            medianFiltering_wavelet_matrix_gpu<uint8_t>(src, dst, kernel, src.channels(), StreamAccessor::getStream(_stream));
+        } else if (depth == CV_16U) {
+            medianFiltering_wavelet_matrix_gpu<uint16_t>(src, dst, kernel, src.channels(), StreamAccessor::getStream(_stream));
+        } else if (depth == CV_32F) {
+            medianFiltering_wavelet_matrix_gpu<float>(src, dst, kernel, src.channels(), StreamAccessor::getStream(_stream));
+        } else {
+            CV_Assert(depth == CV_8U || depth == CV_16U || depth == CV_32F);
+        }
+#else
         CV_Assert(kernel < src.rows);
         CV_Assert(kernel < src.cols);
 
@@ -1107,6 +1177,7 @@ namespace
         devCoarseHist.setTo(0, _stream);
 
         medianFiltering_gpu(src,dst,devHist, devCoarseHist,kernel,partitions,StreamAccessor::getStream(_stream));
+# endif
     }
 }
 

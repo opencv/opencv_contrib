@@ -18,9 +18,9 @@ public :
 };
 
 template<>
-uchar Vec3fTo<uchar>::extract()
+uint8_t Vec3fTo<uint8_t>::extract()
 {
-    return static_cast<uchar>(a[0]);
+    return static_cast<uint8_t>(a[0]);
 }
 
 template<>
@@ -30,7 +30,7 @@ cv::Vec3b Vec3fTo<cv::Vec3b>::extract()
 }
 
 template<>
-cv::Vec3f Vec3fTo<uchar>::make(int x)
+cv::Vec3f Vec3fTo<uint8_t>::make(int x)
 {
     return cv::Vec3f((a*x)/x);
 }
@@ -58,7 +58,7 @@ private:
     int dynRatio;
 
 public:
-    ParallelOilPainting<Type>(Mat& img, Mat &d, Mat &iLuminance, int r,int k) :
+    ParallelOilPainting(Mat& img, Mat &d, Mat &iLuminance, int r,int k) :
         imgSrc(img),
         dst(d),
         imgLuminance(iLuminance),
@@ -84,7 +84,7 @@ public:
                         if (y + yy >= 0 && y + yy < imgSrc.rows)
                         {
                             Type *vPtr = imgSrc.ptr<Type>(y + yy) + x - 0;
-                            uchar *uc = imgLuminance.ptr(y + yy) + x - 0;
+                            uint8_t *uc = imgLuminance.ptr(y + yy) + x - 0;
                             for (int xx = 0; xx <= halfsize; xx++, vPtr++, uc++)
                             {
                                 if (x + xx >= 0 && x + xx < imgSrc.cols)
@@ -104,7 +104,7 @@ public:
                         if (y + yy >= 0 && y + yy < imgSrc.rows)
                         {
                             Type *vPtr = imgSrc.ptr<Type>(y + yy) + x - halfsize - 1;
-                            uchar *uc = imgLuminance.ptr(y + yy) + x - halfsize - 1;
+                            uint8_t *uc = imgLuminance.ptr(y + yy) + x - halfsize - 1;
                             int xx = -halfsize - 1;
                             if (x + xx >= 0 && x + xx < imgSrc.cols)
                             {
@@ -154,10 +154,10 @@ void oilPainting(InputArray _src, OutputArray _dst, int size, int dynValue,int c
     else
         lum = src.clone();
     double dratio = 1 / double(dynValue);
-    lum.forEach<uchar>([=](uchar &pixel, const int * /*position*/) { pixel = saturate_cast<uchar>(cvRound(pixel * dratio)); });
+    lum.forEach<uint8_t>([=](uint8_t &pixel, const int * /*position*/) { pixel = saturate_cast<uint8_t>(cvRound(pixel * dratio)); });
     if (_src.type() == CV_8UC1)
     {
-        ParallelOilPainting<uchar> oilAlgo(src, dst, lum, size, dynValue);
+        ParallelOilPainting<uint8_t> oilAlgo(src, dst, lum, size, dynValue);
         parallel_for_(Range(0, src.rows), oilAlgo);
     }
     else

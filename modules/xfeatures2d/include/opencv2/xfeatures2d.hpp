@@ -46,19 +46,18 @@ the use of this software, even if advised of the possibility of such damage.
 @{
     @defgroup xfeatures2d_experiment Experimental 2D Features Algorithms
 
-This section describes experimental algorithms for 2d feature detection.
+    This section describes experimental algorithms for 2d feature detection.
 
     @defgroup xfeatures2d_nonfree Non-free 2D Features Algorithms
 
-This section describes two popular algorithms for 2d feature detection, SIFT and SURF, that are
-known to be patented. You need to set the OPENCV_ENABLE_NONFREE option in cmake to use those. Use them at your own risk.
+    This section describes two popular algorithms for 2d feature detection, SIFT and SURF, that are
+    known to be patented. You need to set the OPENCV_ENABLE_NONFREE option in cmake to use those. Use them at your own risk.
 
     @defgroup xfeatures2d_match Experimental 2D Features Matching Algorithm
 
-This section describes the following matching strategies:
-    - GMS: Grid-based Motion Statistics, @cite Bian2017gms
-    - LOGOS: Local geometric support for high-outlier spatial verification, @cite Lowry2018LOGOSLG
-
+    This section describes the following matching strategies:
+        - GMS: Grid-based Motion Statistics, @cite Bian2017gms
+        - LOGOS: Local geometric support for high-outlier spatial verification, @cite Lowry2018LOGOSLG
 @}
 */
 
@@ -1269,7 +1268,7 @@ CV_EXPORTS_W void matchGMS(const Size& size1, const Size& size2, const std::vect
  */
 CV_EXPORTS_W void matchLOGOS(const std::vector<KeyPoint>& keypoints1, const std::vector<KeyPoint>& keypoints2,
                              const std::vector<int>& nn1, const std::vector<int>& nn2,
-                             std::vector<DMatch>& matches1to2);
+                             CV_OUT std::vector<DMatch>& matches1to2);
 
 //! @}
 

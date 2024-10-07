@@ -154,6 +154,17 @@ namespace block_reduce_detail
         val = smem[tid];
     }
 
+
+    // merge
+
+    template <typename T, class Op>
+    __device__ __forceinline__ void merge(volatile T* smem, T& val, uint tid, uint delta, const Op& op)
+    {
+        T reg = smem[tid + delta];
+        smem[tid] = val = op(val, reg);
+    }
+
+#if (CUDART_VERSION < 12040)
     template <typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9,
               typename R0, typename R1, typename R2, typename R3, typename R4, typename R5, typename R6, typename R7, typename R8, typename R9>
     __device__ __forceinline__ void loadToSmem(const tuple<P0, P1, P2, P3, P4, P5, P6, P7, P8, P9>& smem,
@@ -170,15 +181,6 @@ namespace block_reduce_detail
                                                      uint tid)
     {
         For<0, tuple_size<tuple<P0, P1, P2, P3, P4, P5, P6, P7, P8, P9> >::value>::loadFromSmem(smem, val, tid);
-    }
-
-    // merge
-
-    template <typename T, class Op>
-    __device__ __forceinline__ void merge(volatile T* smem, T& val, uint tid, uint delta, const Op& op)
-    {
-        T reg = smem[tid + delta];
-        smem[tid] = val = op(val, reg);
     }
 
     template <typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9,
@@ -211,6 +213,41 @@ namespace block_reduce_detail
                                               const tuple<Op0, Op1, Op2, Op3, Op4, Op5, Op6, Op7, Op8, Op9>& op)
     {
         For<0, tuple_size<tuple<R0, R1, R2, R3, R4, R5, R6, R7, R8, R9> >::value>::mergeShfl(val, delta, width, op);
+    }
+#endif
+
+#else
+    template <typename... P, typename... R>
+    __device__ __forceinline__ void loadToSmem(const tuple<P...>& smem, const tuple<R...>& val, uint tid)
+    {
+        For<0, tuple_size<tuple<P...> >::value>::loadToSmem(smem, val, tid);
+    }
+
+    template <typename... P, typename... R>
+    __device__ __forceinline__ void loadFromSmem(const tuple<P...>& smem, const tuple<R...>& val, uint tid)
+    {
+        For<0, tuple_size<tuple<P...> >::value>::loadFromSmem(smem, val, tid);
+    }
+
+    template <typename... P, typename... R, class... Op>
+    __device__ __forceinline__ void merge(const tuple<P...>& smem, const tuple<R...>& val, uint tid, uint delta, const tuple<Op...>& op)
+    {
+        For<0, tuple_size<tuple<P...> >::value>::merge(smem, val, tid, delta, op);
+    }
+
+    // mergeShfl
+
+    template <typename T, class Op>
+    __device__ __forceinline__ void mergeShfl(T& val, uint delta, uint width, const Op& op)
+    {
+        T reg = shfl_down(val, delta, width);
+        val = op(val, reg);
+    }
+
+    template <typename... R, class... Op>
+    __device__ __forceinline__ void mergeShfl(const tuple<R...>& val, uint delta, uint width, const tuple<Op...>& op)
+    {
+        For<0, tuple_size<tuple<R...> >::value>::mergeShfl(val, delta, width, op);
     }
 #endif
 

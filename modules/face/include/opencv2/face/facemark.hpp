@@ -12,12 +12,6 @@ Mentor: Delia Passalacqua
 #ifndef __OPENCV_FACELANDMARK_HPP__
 #define __OPENCV_FACELANDMARK_HPP__
 
-/**
-@defgroup face Face Analysis
-- @ref tutorial_table_of_content_facemark
-- The Facemark API
-*/
-
 #include "opencv2/core.hpp"
 #include <vector>
 
@@ -25,6 +19,8 @@ Mentor: Delia Passalacqua
 namespace cv {
 namespace face {
 
+//! @addtogroup face
+//! @{
 
 /** @brief Abstract base class for all facemark models
 
@@ -88,6 +84,7 @@ CV_EXPORTS_W Ptr<Facemark> createFacemarkLBF();
 //! construct a Kazemi facemark detector
 CV_EXPORTS_W Ptr<Facemark> createFacemarkKazemi();
 
+//! @}
 
 } // face
 } // cv

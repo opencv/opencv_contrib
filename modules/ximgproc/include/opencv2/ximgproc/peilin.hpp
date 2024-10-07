@@ -27,6 +27,8 @@ namespace cv { namespace ximgproc {
     /** @overload */
     CV_EXPORTS_W void PeiLinNormalization ( InputArray I, OutputArray T );
 
+    //! @}
+
 }} // namespace
 
 #endif

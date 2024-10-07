@@ -83,8 +83,6 @@ public:
     double yg;
     double xb;
     double yb;
-    MatFunc toL;
-    MatFunc fromL;
     Mat M_to;
     Mat M_from;
 
@@ -108,6 +106,9 @@ public:
     */
     void bind(RGBBase_& rgbl);
 
+    virtual Mat toLFunc(Mat& /*rgb*/) const;
+
+    virtual Mat fromLFunc(Mat& /*rgbl*/, Mat dst=Mat()) const;
 private:
     virtual void setParameter() {};
 
@@ -120,10 +121,6 @@ private:
     virtual void calOperations();
 
     virtual void calLinear() {};
-
-    virtual Mat toLFunc(Mat& /*rgb*/);
-
-    virtual Mat fromLFunc(Mat& /*rgbl*/);
 };
 
 /** @brief Base of Adobe RGB color space;
@@ -136,8 +133,8 @@ public:
     double gamma;
 
 private:
-    Mat toLFunc(Mat& rgb) CV_OVERRIDE;
-    Mat fromLFunc(Mat& rgbl) CV_OVERRIDE;
+    Mat toLFunc(Mat& rgb) const CV_OVERRIDE;
+    Mat fromLFunc(Mat& rgbl, Mat dst=Mat()) const CV_OVERRIDE;
 };
 
 /** @brief Base of sRGB color space;
@@ -160,23 +157,23 @@ private:
     virtual void calLinear() CV_OVERRIDE;
     /** @brief Used by toLFunc.
     */
-    double toLFuncEW(double& x);
+    double toLFuncEW(double& x) const;
 
     /** @brief Linearization.
         @param rgb the input array, type of cv::Mat.
         @return the output array, type of cv::Mat.
     */
-    Mat toLFunc(Mat& rgb) CV_OVERRIDE;
+    Mat toLFunc(Mat& rgb) const CV_OVERRIDE;
 
     /** @brief Used by fromLFunc.
     */
-    double fromLFuncEW(double& x);
+    double fromLFuncEW(const double& x) const;
 
     /** @brief Delinearization.
         @param rgbl the input array, type of cv::Mat.
         @return the output array, type of cv::Mat.
     */
-    Mat fromLFunc(Mat& rgbl) CV_OVERRIDE;
+    Mat fromLFunc(Mat& rgbl, Mat dst=Mat()) const CV_OVERRIDE;
 };
 
 /** @brief sRGB color space.

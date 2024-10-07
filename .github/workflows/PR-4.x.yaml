@@ -15,6 +15,9 @@ jobs:
   Ubuntu2204-x64:
     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-U22.yaml@main
 
+  Ubuntu2404-x64:
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-U24.yaml@main
+
   Ubuntu2004-x64-CUDA:
     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-U20-Cuda.yaml@main
 
@@ -29,3 +32,7 @@ jobs:
 
   Linux-RISC-V-Clang:
     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-RISCV.yaml@main
+
+  openEuler2203-x64:
+    if: "${{ contains(github.event.pull_request.labels.*.name, 'category: cann') }}"
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-O22-CANN.yaml@main
