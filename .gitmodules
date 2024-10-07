@@ -7,3 +7,6 @@
 [submodule "modules/v4d/third/nanovg"]
 	path = modules/v4d/third/nanovg
 	url = https://github.com/kallaballa/nanovg
+[submodule "bgfx.cmake"]
+	path = bgfx.cmake
+	url = https://github.com/bkaradzic/bgfx.cmake.git
