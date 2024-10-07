@@ -8,5 +8,5 @@
 	path = modules/v4d/third/nanovg
 	url = https://github.com/kallaballa/nanovg
 [submodule "bgfx.cmake"]
-	path = bgfx.cmake
+	path = modules/v4d/third/bgfx.cmake
 	url = https://github.com/bkaradzic/bgfx.cmake.git
