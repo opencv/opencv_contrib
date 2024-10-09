@@ -20,10 +20,10 @@ public:
 
     static cv::Ptr<cv::dnn::Layer> create(cv::dnn::LayerParams& params);
 
-    virtual bool getMemoryShapes(const std::vector<std::vector<int> > &inputs,
+    virtual bool getMemoryShapes(const std::vector<MatShape> &inputs_,
                                  const int,
-                                 std::vector<std::vector<int> > &outputs,
-                                 std::vector<std::vector<int> > &) const CV_OVERRIDE;
+                                 std::vector<MatShape> &outputs_,
+                                 std::vector<MatShape> &) const CV_OVERRIDE;
 
     virtual void forward(cv::InputArrayOfArrays inputs_arr,
                          cv::OutputArrayOfArrays outputs_arr,
@@ -308,27 +308,27 @@ cv::Ptr<cv::dnn::Layer> DepthToSpace::create(cv::dnn::LayerParams &params)
     return cv::Ptr<cv::dnn::Layer>(new DepthToSpace(params));
 }
 
-bool DepthToSpace::getMemoryShapes(const std::vector <std::vector<int>> &inputs,
-        const int, std::vector <std::vector<int>> &outputs, std::vector <std::vector<int>> &) const
+bool DepthToSpace::getMemoryShapes(const std::vector <MatShape> &inpShapes,
+        const int, std::vector <MatShape> &outShapes, std::vector <MatShape> &) const
 {
-    std::vector<int> outShape(4);
+    MatShape outShape(4);
 
     int scale;
-    if( inputs[0][1] == 4 || inputs[0][1] == 9 || inputs[0][1] == 16 ) //Only one image channel
+    if( inpShapes[0][1] == 4 || inpShapes[0][1] == 9 || inpShapes[0][1] == 16 ) //Only one image channel
     {
-        scale = static_cast<int>(sqrt(inputs[0][1]));
+        scale = static_cast<int>(sqrt(inpShapes[0][1]));
     }
     else // Three image channels
     {
-        scale = static_cast<int>(sqrt(inputs[0][1]/3));
+        scale = static_cast<int>(sqrt(inpShapes[0][1]/3));
     }
 
-    outShape[0] = inputs[0][0];
-    outShape[1] = static_cast<int>(inputs[0][1] / pow(scale,2));
-    outShape[2] = static_cast<int>(scale * inputs[0][2]);
-    outShape[3] = static_cast<int>(scale * inputs[0][3]);
+    outShape[0] = inpShapes[0][0];
+    outShape[1] = static_cast<int>(inpShapes[0][1] / pow(scale,2));
+    outShape[2] = static_cast<int>(scale * inpShapes[0][2]);
+    outShape[3] = static_cast<int>(scale * inpShapes[0][3]);
 
-    outputs.assign(4, outShape);
+    outShapes.assign(1, outShape);
 
     return false;
 }
@@ -336,11 +336,11 @@ bool DepthToSpace::getMemoryShapes(const std::vector <std::vector<int>> &inputs,
 void DepthToSpace::forward(cv::InputArrayOfArrays inputs_arr, cv::OutputArrayOfArrays outputs_arr,
     cv::OutputArrayOfArrays)
 {
-    std::vector <cv::Mat> inputs, outputs;
-    inputs_arr.getMatVector(inputs);
-    outputs_arr.getMatVector(outputs);
-    cv::Mat &inp = inputs[0];
-    cv::Mat &out = outputs[0];
+    std::vector <cv::Mat> inputs_, outputs_;
+    inputs_arr.getMatVector(inputs_);
+    outputs_arr.getMatVector(outputs_);
+    cv::Mat &inp = inputs_[0];
+    cv::Mat &out = outputs_[0];
     const float *inpData = (float *) inp.data;
     float *outData = (float *) out.data;
 
