@@ -1,0 +1,9 @@
+{
+    "whitelist":
+    {
+        "BRISK": ["create", "getDefaultName"],
+        "AgastFeatureDetector": ["create", "setThreshold", "getThreshold", "setNonmaxSuppression", "getNonmaxSuppression", "setType", "getType", "getDefaultName"],
+        "KAZE": ["create", "setExtended", "getExtended", "setUpright", "getUpright", "setThreshold", "getThreshold", "setNOctaves", "getNOctaves", "setNOctaveLayers", "getNOctaveLayers", "setDiffusivity", "getDiffusivity", "getDefaultName"],
+        "AKAZE": ["create", "setDescriptorType", "getDescriptorType", "setDescriptorSize", "getDescriptorSize", "setDescriptorChannels", "getDescriptorChannels", "setThreshold", "getThreshold", "setNOctaves", "getNOctaves", "setNOctaveLayers", "getNOctaveLayers", "setDiffusivity", "getDiffusivity", "getDefaultName"]
+    }
+}
