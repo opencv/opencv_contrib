@@ -126,7 +126,7 @@ struct SvmParams
         C = 1;
         nu = 0;
         p = 0;
-        termCrit = TermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 1000, FLT_EPSILON );
+        termCrit = TermCriteria( cv::TermCriteria::MAX_ITER + cv::TermCriteria::EPS, 1000, FLT_EPSILON );
     }
 
     SvmParams( int _svmType, int _kernelType,

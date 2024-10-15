@@ -45,7 +45,6 @@
 #  include "opencv2/core.hpp"
 #endif
 
-#include "opencv2/core/core_c.h"
 #include <limits.h>
 
 #ifdef __cplusplus
