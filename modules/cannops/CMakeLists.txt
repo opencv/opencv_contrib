@@ -1,4 +1,4 @@
- if(IOS OR WINRT OR ANDROID OR APPLE OR WIN32 OR (NOT HAVE_CANN))
+ if(IOS OR ANDROID OR APPLE OR WIN32 OR (NOT HAVE_CANN))
    ocv_module_disable(cannops)
  endif()
 
