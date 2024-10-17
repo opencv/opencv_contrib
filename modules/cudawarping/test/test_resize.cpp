@@ -379,7 +379,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping_ExcludeOutside, ResizeOnnx, Combine(
         (int)(                   INTER_CUBIC | INTER_EXCLUDE_OUTSIDE),
         (int)(INTER_ANTIALIAS |  INTER_CUBIC | INTER_EXCLUDE_OUTSIDE),
         (int)(INTER_ANTIALIAS | INTER_LINEAR | INTER_EXCLUDE_OUTSIDE)),
-    Values(1, 16)));
+    WHOLE_SUBMAT));
 
 }} // namespace
 
