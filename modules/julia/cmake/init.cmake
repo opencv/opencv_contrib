@@ -1,4 +1,4 @@
-OCV_OPTION(WITH_JULIA         "Include Julia support (opencv_contrib)"     OFF   IF (NOT ANDROID AND NOT IOS AND NOT WINRT AND NOT WIN32))
+OCV_OPTION(WITH_JULIA         "Include Julia support (opencv_contrib)"     OFF   IF (NOT ANDROID AND NOT IOS AND NOT WIN32))
 
 ocv_assert(OPENCV_INITIAL_PASS)
 

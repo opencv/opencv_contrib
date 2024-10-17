@@ -1666,7 +1666,7 @@ XMLUnknown* XMLDocument::NewUnknown( const char* str )
 
 static FILE* callfopen( const char* filepath, const char* mode )
 {
-#if defined(_MSC_VER) && (_MSC_VER >= 1400 ) && (!defined WINCE)
+#if defined(_MSC_VER) && (_MSC_VER >= 1400 )
     FILE* fp = 0;
     errno_t err = fopen_s( &fp, filepath, mode );
     if ( err ) {
@@ -1862,17 +1862,7 @@ void XMLPrinter::Print( const char* format, ... )
     }
     else {
 #if defined(_MSC_VER) && (_MSC_VER >= 1400 )
-		#if defined(WINCE)
-		int len = 512;
-		do {
-		    len = len*2;
-		    char* str = new char[len]();
-			len = _vsnprintf(str, len, format, va);
-			delete[] str;
-		}while (len < 0);
-		#else
         int len = _vscprintf( format, va );
-		#endif
 #else
         int len = vsnprintf( 0, 0, format, va );
 #endif
@@ -1881,11 +1871,7 @@ void XMLPrinter::Print( const char* format, ... )
         va_start( va, format );
         char* p = _buffer.PushArr( len ) - 1;	// back up over the null terminator.
 #if defined(_MSC_VER) && (_MSC_VER >= 1400 )
-		#if defined(WINCE)
-		_vsnprintf( p, len+1, format, va );
-		#else
 		vsnprintf_s( p, len+1, _TRUNCATE, format, va );
-		#endif
 #else
 		vsnprintf( p, len+1, format, va );
 #endif

@@ -1,4 +1,4 @@
-OCV_OPTION(WITH_MATLAB         "Include Matlab support (opencv_contrib)"     OFF   IF (NOT ANDROID AND NOT IOS AND NOT WINRT))
+OCV_OPTION(WITH_MATLAB         "Include Matlab support (opencv_contrib)"     OFF   IF (NOT ANDROID AND NOT IOS))
 
 ocv_assert(OPENCV_INITIAL_PASS)
 
