@@ -66,7 +66,6 @@
 
 #ifdef HAVE_OPENCV_XOBJDETECT
 #  include "opencv2/xobjdetect.hpp"
-//#  include "opencv2/objdetect/objdetect_c.h"
 #endif
 
 #include "opencv2/cudalegacy/NCV.hpp"
