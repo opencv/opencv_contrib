@@ -102,10 +102,10 @@ public:
 
         // Fp32 -> Fp16
         cv::cuda::convertFp16(g_src, g_dst);
-        cv::convertFp16(src, dst);
+        src.convertTo(dst, CV_16F);
         // Fp16 -> Fp32
         cv::cuda::convertFp16(g_dst.clone(), g_dst);
-        cv::convertFp16(dst, ref);
+        dst.convertTo(ref, CV_32F);
 
         g_dst.download(dst);
         EXPECT_MAT_NEAR(dst, ref, 0.0);
@@ -128,7 +128,7 @@ public:
 
         // Fp32 -> Fp16
         cv::cuda::convertFp16(g_src, g_dst);
-        cv::convertFp16(src, ref);
+        src.convertTo(ref, CV_16F);
 
         g_dst.download(dst);
         EXPECT_MAT_NEAR(dst, ref, 0.0);

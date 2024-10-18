@@ -7,7 +7,6 @@ cv.divide
 cv.scaleAdd
 cv.addWeighted
 cv.convertScaleAbs
-cv.convertFp16
 cv.LUT
 cv.sum
 cv.countNonZero
