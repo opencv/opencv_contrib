@@ -38,6 +38,7 @@ class cudaarithm_test(NewOpenCVTests):
     def test_arithmetic(self):
         npMat1 = np.random.random((128, 128, 3)) - 0.5
         npMat2 = np.random.random((128, 128, 3)) - 0.5
+        scalar = np.random.random()
 
         cuMat1 = cv.cuda_GpuMat()
         cuMat2 = cv.cuda_GpuMat()
@@ -48,11 +49,17 @@ class cudaarithm_test(NewOpenCVTests):
         self.assertTrue(np.allclose(cv.cuda.add(cuMat1, cuMat2).download(),
                                          cv.add(npMat1, npMat2)))
 
+        self.assertTrue(np.allclose(cv.cuda.addWithScalar(cuMat1, [scalar]*3).download(),
+                                    cv.add(npMat1, scalar)))
+
         cv.cuda.add(cuMat1, cuMat2, cuMatDst)
         self.assertTrue(np.allclose(cuMatDst.download(),cv.add(npMat1, npMat2)))
 
         self.assertTrue(np.allclose(cv.cuda.subtract(cuMat1, cuMat2).download(),
                                          cv.subtract(npMat1, npMat2)))
+
+        self.assertTrue(np.allclose(cv.cuda.subtractWithScalar(cuMat1, [scalar]*3).download(),
+                                         cv.subtract(npMat1, scalar)))
 
         cv.cuda.subtract(cuMat1, cuMat2, cuMatDst)
         self.assertTrue(np.allclose(cuMatDst.download(),cv.subtract(npMat1, npMat2)))
@@ -60,11 +67,17 @@ class cudaarithm_test(NewOpenCVTests):
         self.assertTrue(np.allclose(cv.cuda.multiply(cuMat1, cuMat2).download(),
                                          cv.multiply(npMat1, npMat2)))
 
+        self.assertTrue(np.allclose(cv.cuda.multiplyWithScalar(cuMat1, [scalar]*3).download(),
+                                         cv.multiply(npMat1, scalar)))
+
         cv.cuda.multiply(cuMat1, cuMat2, cuMatDst)
         self.assertTrue(np.allclose(cuMatDst.download(),cv.multiply(npMat1, npMat2)))
 
         self.assertTrue(np.allclose(cv.cuda.divide(cuMat1, cuMat2).download(),
                                          cv.divide(npMat1, npMat2)))
+
+        self.assertTrue(np.allclose(cv.cuda.divideWithScalar(cuMat1, [scalar]*3).download(),
+                                         cv.divide(npMat1, scalar)))
 
         cv.cuda.divide(cuMat1, cuMat2, cuMatDst)
         self.assertTrue(np.allclose(cuMatDst.download(),cv.divide(npMat1, npMat2)))
@@ -72,11 +85,17 @@ class cudaarithm_test(NewOpenCVTests):
         self.assertTrue(np.allclose(cv.cuda.absdiff(cuMat1, cuMat2).download(),
                                          cv.absdiff(npMat1, npMat2)))
 
+        self.assertTrue(np.allclose(cv.cuda.absdiffWithScalar(cuMat1, [scalar]*3).download(),
+                                         cv.absdiff(npMat1, scalar)))
+
         cv.cuda.absdiff(cuMat1, cuMat2, cuMatDst)
         self.assertTrue(np.allclose(cuMatDst.download(),cv.absdiff(npMat1, npMat2)))
 
         self.assertTrue(np.allclose(cv.cuda.compare(cuMat1, cuMat2, cv.CMP_GE).download(),
                                          cv.compare(npMat1, npMat2, cv.CMP_GE)))
+
+        self.assertTrue(np.allclose(cv.cuda.compareWithScalar(cuMat1, [scalar]*3, cv.CMP_GE).download(),
+                                         cv.compare(npMat1, scalar, cv.CMP_GE)))
 
         cuMatDst1 = cv.cuda_GpuMat(cuMat1.size(),cv.CV_8UC3)
         cv.cuda.compare(cuMat1, cuMat2, cv.CMP_GE, cuMatDst1)
@@ -111,6 +130,7 @@ class cudaarithm_test(NewOpenCVTests):
     def test_logical(self):
         npMat1 = (np.random.random((128, 128)) * 255).astype(np.uint8)
         npMat2 = (np.random.random((128, 128)) * 255).astype(np.uint8)
+        scalar = np.random.random()
 
         cuMat1 = cv.cuda_GpuMat()
         cuMat2 = cv.cuda_GpuMat()
@@ -121,17 +141,26 @@ class cudaarithm_test(NewOpenCVTests):
         self.assertTrue(np.allclose(cv.cuda.bitwise_or(cuMat1, cuMat2).download(),
                                          cv.bitwise_or(npMat1, npMat2)))
 
+        self.assertTrue(np.allclose(cv.cuda.bitwise_or_with_scalar(cuMat1, scalar).download(),
+                                         cv.bitwise_or(npMat1, scalar)))
+
         cv.cuda.bitwise_or(cuMat1, cuMat2, cuMatDst)
         self.assertTrue(np.allclose(cuMatDst.download(),cv.bitwise_or(npMat1, npMat2)))
 
         self.assertTrue(np.allclose(cv.cuda.bitwise_and(cuMat1, cuMat2).download(),
                                          cv.bitwise_and(npMat1, npMat2)))
 
+        self.assertTrue(np.allclose(cv.cuda.bitwise_and_with_scalar(cuMat1, scalar).download(),
+                                         cv.bitwise_and(npMat1, scalar)))
+
         cv.cuda.bitwise_and(cuMat1, cuMat2, cuMatDst)
         self.assertTrue(np.allclose(cuMatDst.download(),cv.bitwise_and(npMat1, npMat2)))
 
         self.assertTrue(np.allclose(cv.cuda.bitwise_xor(cuMat1, cuMat2).download(),
                                          cv.bitwise_xor(npMat1, npMat2)))
+
+        self.assertTrue(np.allclose(cv.cuda.bitwise_xor_with_scalar(cuMat1, scalar).download(),
+                                         cv.bitwise_xor(npMat1, scalar)))
 
         cv.cuda.bitwise_xor(cuMat1, cuMat2, cuMatDst)
         self.assertTrue(np.allclose(cuMatDst.download(),cv.bitwise_xor(npMat1, npMat2)))
@@ -145,11 +174,17 @@ class cudaarithm_test(NewOpenCVTests):
         self.assertTrue(np.allclose(cv.cuda.min(cuMat1, cuMat2).download(),
                                          cv.min(npMat1, npMat2)))
 
+        self.assertTrue(np.allclose(cv.cuda.minWithScalar(cuMat1, scalar).download(),
+                                         cv.min(npMat1, scalar)))
+
         cv.cuda.min(cuMat1, cuMat2, cuMatDst)
         self.assertTrue(np.allclose(cuMatDst.download(),cv.min(npMat1, npMat2)))
 
         self.assertTrue(np.allclose(cv.cuda.max(cuMat1, cuMat2).download(),
                                          cv.max(npMat1, npMat2)))
+
+        self.assertTrue(np.allclose(cv.cuda.maxWithScalar(cuMat1, scalar).download(),
+                                         cv.max(npMat1, scalar)))
 
         cv.cuda.max(cuMat1, cuMat2, cuMatDst)
         self.assertTrue(np.allclose(cuMatDst.download(),cv.max(npMat1, npMat2)))
