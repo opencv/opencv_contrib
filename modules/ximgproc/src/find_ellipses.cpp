@@ -1218,9 +1218,10 @@ void EllipseDetectorImpl::getTriplets413(VVP &pi, VVP &pj, VVP &pk,
     }
 }
 
-void EllipseDetectorImpl::preProcessing(Mat1b &image, Mat1b &dp, Mat1b &dn) {
+void EllipseDetectorImpl::preProcessing(Mat1b &src, Mat1b &dp, Mat1b &dn) {
     // smooth image
-    GaussianBlur(image, image, _kernelSize, _sigma);
+    Mat image;
+    GaussianBlur(src, image, _kernelSize, _sigma);
 
     // temp variables
     Mat1b edges;// edge mask
