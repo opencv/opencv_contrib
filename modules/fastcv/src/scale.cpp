@@ -13,6 +13,7 @@ namespace fastcv {
 void resizeDownBy2(cv::InputArray _src, cv::OutputArray _dst)
 {
     INITIALIZATION_CHECK;
+
     CV_Assert(!_src.empty() && _src.type() == CV_8UC1);
     
     Mat src = _src.getMat();
@@ -38,6 +39,7 @@ void resizeDownBy2(cv::InputArray _src, cv::OutputArray _dst)
 void resizeDownBy4(cv::InputArray _src, cv::OutputArray _dst)
 {
     INITIALIZATION_CHECK;
+
     CV_Assert(!_src.empty() && _src.type() == CV_8UC1);
     
     Mat src = _src.getMat();

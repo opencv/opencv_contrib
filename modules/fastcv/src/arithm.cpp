@@ -13,6 +13,7 @@ namespace fastcv {
 void matmuls8s32(InputArray _src1, _InputArray _src2, OutputArray _dst)
 {
     INITIALIZATION_CHECK;
+
     CV_Assert(!_src1.empty() && _src1.type() == CV_8SC1);
     CV_Assert(_src1.cols() <= 131072);
     CV_Assert(_src1.step() % 8 == 0);

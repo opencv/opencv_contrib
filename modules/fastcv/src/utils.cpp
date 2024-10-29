@@ -8,7 +8,5 @@
 namespace cv {
 namespace fastcv {
 
-bool isInitialized = false;
-
 } // namespace fastcv
 } // namespace cv

@@ -13,6 +13,7 @@ namespace fastcv {
 int meanShift(InputArray _src, Rect& rect, TermCriteria termCrit)
 {
     INITIALIZATION_CHECK;
+
     CV_Assert(!_src.empty() && (_src.type() == CV_8UC1 || _src.type() == CV_32SC1 || _src.type() == CV_32FC1));
     CV_Assert(_src.cols() % 8 == 0);
     CV_Assert(_src.step() % 8 == 0);

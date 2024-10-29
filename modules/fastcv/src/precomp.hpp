@@ -33,16 +33,11 @@
 namespace cv {
 namespace fastcv {
 
-extern bool isInitialized;
-
 #define INITIALIZATION_CHECK                                                \
 {                                                                           \
-    if(!isInitialized)                                                      \
+    if (!FastCvContext::getContext().isInitialized)                         \
     {                                                                       \
-        if (fcvSetOperationMode(FASTCV_OP_CPU_PERFORMANCE) != 0)            \
-            CV_Error(cv::Error::StsBadArg, cv::format("Set mode failed!")); \
-        else                                                                \
-            isInitialized = true;                                           \
+        CV_Error(cv::Error::StsBadArg, cv::format("Set mode failed!"));     \
     }                                                                       \
     CV_INSTRUMENT_REGION();                                                 \
 }
@@ -58,6 +53,34 @@ const std::map<fcvStatus, std::string> fcvStatusStrings =
     { FASTCV_EUNSUPPORTED,  "Unsupported feature"},
     { FASTCV_EHWQDSP,       "Hardware QDSP failed to respond"},
     { FASTCV_EHWGPU,        "Hardware GPU failed to respond"},
+};
+
+struct FastCvContext
+{
+public:
+    // initialize at first call
+    // Defines a static local variable context. Variable is created only once.
+    static FastCvContext& getContext()
+    {
+        static FastCvContext context;
+        return context;
+    }
+
+    FastCvContext()
+    {
+        if (fcvSetOperationMode(FASTCV_OP_CPU_PERFORMANCE) != 0)
+        {
+            CV_LOG_WARNING(NULL, "Failed to switch FastCV operation mode");
+            isInitialized = false;
+        }
+        else
+        {
+            CV_LOG_INFO(NULL, "FastCV Operation Mode Switched");
+            isInitialized = true;
+        }
+    }
+
+    bool isInitialized;
 };
 
 } // namespace fastcv

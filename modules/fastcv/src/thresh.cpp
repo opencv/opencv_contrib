@@ -13,6 +13,7 @@ namespace fastcv {
 void thresholdRange(InputArray _src, OutputArray _dst, uint8_t lowThresh, uint8_t highThresh, uint8_t trueValue, uint8_t falseValue)
 {
     INITIALIZATION_CHECK;
+
     CV_Assert(lowThresh <= highThresh);
 
     CV_Assert(!_src.empty() && _src.type() == CV_8UC1);

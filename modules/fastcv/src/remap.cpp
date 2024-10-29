@@ -71,6 +71,7 @@ void remap(cv::InputArray _src, cv::OutputArray _dst, cv::InputArray _map1, cv::
                       int interpolation, uint8_t borderValue)
 {
     INITIALIZATION_CHECK;
+
     CV_Assert(_src.type() == CV_8UC1);
     CV_Assert(_map1.type()==CV_32FC1);
     CV_Assert(interpolation == cv::InterpolationFlags::INTER_NEAREST || interpolation == cv::InterpolationFlags::INTER_LINEAR);
@@ -108,6 +109,7 @@ void remap(cv::InputArray _src, cv::OutputArray _dst, cv::InputArray _map1, cv::
 void remapRGBA(cv::InputArray _src, cv::OutputArray _dst, cv::InputArray _map1, cv::InputArray _map2, int interpolation)
 {
     INITIALIZATION_CHECK;
+
     CV_Assert(_src.type() == CV_8UC4);
     CV_Assert(_map1.type()==CV_32FC1);
     CV_Assert(interpolation == cv::InterpolationFlags::INTER_NEAREST || interpolation == cv::InterpolationFlags::INTER_LINEAR);

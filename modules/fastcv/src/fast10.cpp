@@ -13,6 +13,7 @@ namespace fastcv {
 void FAST10(InputArray _src, InputArray _mask, OutputArray _coords, OutputArray _scores, int barrier, int border, bool nmsEnabled)
 {
     INITIALIZATION_CHECK;
+
     CV_Assert(!_src.empty() && _src.type() == CV_8UC1);
     CV_Assert(_src.cols() % 8 == 0);
     CV_Assert(_src.cols() <= 2048);

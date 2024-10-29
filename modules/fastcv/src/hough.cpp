@@ -13,6 +13,7 @@ namespace fastcv {
 void houghLines(InputArray _src, OutputArray _lines, double threshold)
 {
     INITIALIZATION_CHECK;
+
     CV_Assert(!_src.empty() && _src.type() == CV_8UC1);
     CV_Assert(_src.cols() % 8 == 0);
     CV_Assert(_src.step() % 8 == 0);

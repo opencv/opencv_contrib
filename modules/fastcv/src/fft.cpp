@@ -18,6 +18,7 @@ static bool isPow2(int x)
 void FFT(InputArray _src, OutputArray _dst)
 {
     INITIALIZATION_CHECK;
+
     CV_Assert(!_src.empty() && _src.type() == CV_8UC1);
     CV_Assert(isPow2(_src.rows()) || _src.rows() == 1);
     CV_Assert(isPow2(_src.cols()));
@@ -44,6 +45,7 @@ void FFT(InputArray _src, OutputArray _dst)
 void IFFT(InputArray _src, OutputArray _dst)
 {
     INITIALIZATION_CHECK;
+
     CV_Assert(!_src.empty() && _src.type() == CV_32FC2);
     CV_Assert(isPow2(_src.rows()) || _src.rows() == 1);
     CV_Assert(isPow2(_src.cols()));
