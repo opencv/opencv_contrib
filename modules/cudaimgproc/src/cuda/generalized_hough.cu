@@ -302,7 +302,7 @@ namespace cv { namespace cuda { namespace device
             int totalCount;
             cudaSafeCall( cudaMemcpy(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost) );
 
-            totalCount = ::min(totalCount, maxSize);
+            totalCount = std::min(totalCount, maxSize);
 
             return totalCount;
         }
@@ -812,7 +812,7 @@ namespace cv { namespace cuda { namespace device
             int totalCount;
             cudaSafeCall( cudaMemcpy(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost) );
 
-            totalCount = ::min(totalCount, maxSize);
+            totalCount = std::min(totalCount, maxSize);
 
             return totalCount;
         }

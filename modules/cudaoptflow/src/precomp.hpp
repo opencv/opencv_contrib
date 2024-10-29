@@ -52,7 +52,9 @@
 #include "opencv2/video.hpp"
 
 #include "opencv2/core/private.cuda.hpp"
+#if defined HAVE_CUDA
 #include "opencv2/core/cuda/vec_traits.hpp"
+#endif
 #include "opencv2/opencv_modules.hpp"
 
 #ifdef HAVE_OPENCV_CUDALEGACY

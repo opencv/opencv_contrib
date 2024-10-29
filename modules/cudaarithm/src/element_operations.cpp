@@ -84,8 +84,13 @@ void cv::cuda::magnitude(InputArray, InputArray, OutputArray, Stream&) { throw_n
 void cv::cuda::magnitudeSqr(InputArray, OutputArray, Stream&) { throw_no_cuda(); }
 void cv::cuda::magnitudeSqr(InputArray, InputArray, OutputArray, Stream&) { throw_no_cuda(); }
 void cv::cuda::phase(InputArray, InputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
+void cv::cuda::phase(InputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
 void cv::cuda::cartToPolar(InputArray, InputArray, OutputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
+void cv::cuda::cartToPolar(InputArray, OutputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
+void cv::cuda::cartToPolar(InputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
 void cv::cuda::polarToCart(InputArray, InputArray, OutputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
+void cv::cuda::polarToCart(InputArray, InputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
+void cv::cuda::polarToCart(InputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
 
 #else
 
