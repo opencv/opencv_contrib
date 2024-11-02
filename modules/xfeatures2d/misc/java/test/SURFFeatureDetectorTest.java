@@ -1,4 +1,4 @@
-package org.opencv.test.features2d;
+package org.opencv.test.features;
 
 import java.util.ArrayList;
 import java.util.Arrays;

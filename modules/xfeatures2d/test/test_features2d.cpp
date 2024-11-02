@@ -48,8 +48,8 @@ const string DESCRIPTOR_DIR = FEATURES2D_DIR + "/descriptor_extractors";
 const string IMAGE_FILENAME = "tsukuba.png";
 }} // namespace
 
-#include "features2d/test/test_detectors_regression.impl.hpp"
-#include "features2d/test/test_descriptors_regression.impl.hpp"
+#include "features/test/test_detectors_regression.impl.hpp"
+#include "features/test/test_descriptors_regression.impl.hpp"
 
 namespace opencv_test { namespace {
 
@@ -589,7 +589,7 @@ TEST(Features2d_SIFT_using_mask, regression)
 }
 
 #ifdef OPENCV_ENABLE_NONFREE
-TEST(DISABLED_Features2d_SURF_using_mask, regression)
+TEST(DISABLED_Features_SURF_using_mask, regression)
 {
     FeatureDetectorUsingMaskTest test(SURF::create());
     test.safe_run();

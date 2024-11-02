@@ -5,7 +5,7 @@
 
 #include "../../util/util.hpp"
 
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 
 #include "keypointselectionselector.hpp"
 #include "keypointsettingsselector.hpp"

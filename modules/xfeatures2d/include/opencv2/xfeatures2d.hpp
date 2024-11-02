@@ -39,7 +39,7 @@ the use of this software, even if advised of the possibility of such damage.
 #ifndef __OPENCV_XFEATURES2D_HPP__
 #define __OPENCV_XFEATURES2D_HPP__
 
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 #include "opencv2/xfeatures2d/nonfree.hpp"
 
 /** @defgroup xfeatures2d Extra 2D Features Framework

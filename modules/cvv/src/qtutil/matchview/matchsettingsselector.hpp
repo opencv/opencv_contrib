@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 
 #include "matchsettings.hpp"
 #include "../registerhelper.hpp"

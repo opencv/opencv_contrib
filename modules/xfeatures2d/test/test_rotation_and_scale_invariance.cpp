@@ -4,8 +4,8 @@
 
 #include "test_precomp.hpp"
 
-#include "features2d/test/test_detectors_invariance.impl.hpp" // main OpenCV repo
-#include "features2d/test/test_descriptors_invariance.impl.hpp" // main OpenCV repo
+#include "features/test/test_detectors_invariance.impl.hpp" // main OpenCV repo
+#include "features/test/test_descriptors_invariance.impl.hpp" // main OpenCV repo
 
 namespace opencv_test { namespace {
 

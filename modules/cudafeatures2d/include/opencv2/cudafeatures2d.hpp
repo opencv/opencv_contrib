@@ -48,7 +48,7 @@
 #endif
 
 #include "opencv2/core/cuda.hpp"
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 #include "opencv2/cudafilters.hpp"
 
 /**

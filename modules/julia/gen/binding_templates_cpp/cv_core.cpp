@@ -40,7 +40,7 @@ ${include_code}
 // Manual Wrapping BEGIN
 //
 
-#ifdef HAVE_OPENCV_FEATURES2D
+#ifdef HAVE_OPENCV_FEATURES
     // template <>
     // struct SuperType<cv::Feature2D>
     // {
@@ -127,7 +127,7 @@ JLCXX_MODULE cv_wrap(jlcxx::Module &mod)
     mod.set_const("CASCADE_SCALE_IMAGE", (int)cv::CASCADE_SCALE_IMAGE);
 #endif
 
-#ifdef HAVE_OPENCV_FEATURES2D
+#ifdef HAVE_OPENCV_FEATURES
     mod.add_type<cv::Feature2D>("Feature2D");
     mod.add_type<cv::SimpleBlobDetector>("SimpleBlobDetector", jlcxx::julia_base_type<cv::Feature2D>());
     mod.add_type<cv::SimpleBlobDetector::Params>("SimpleBlobDetector_Params");
@@ -139,7 +139,7 @@ JLCXX_MODULE cv_wrap(jlcxx::Module &mod)
 
     ${cpp_code}
 
-#ifdef HAVE_OPENCV_FEATURES2D
+#ifdef HAVE_OPENCV_FEATURES
 
     mod.method("jlopencv_cv_cv_Feature2D_cv_Feature2D_detect", [](cv::Ptr<cv::Feature2D> &cobj, Mat &image, Mat &mask) {vector<KeyPoint> keypoints; cobj->detect(image, keypoints, mask);  return keypoints; });
     mod.method("jlopencv_cv_cv_SimpleBlobDetector_create", [](SimpleBlobDetector_Params &parameters) { auto retval = cv::SimpleBlobDetector::create(parameters); return retval; });

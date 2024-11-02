@@ -1,4 +1,4 @@
-package org.opencv.test.features2d;
+package org.opencv.test.features;
 
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -9,7 +9,7 @@ import org.opencv.core.KeyPoint;
 import org.opencv.test.OpenCVTestCase;
 import org.opencv.test.OpenCVTestRunner;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.features2d.Feature2D;
+import org.opencv.features.Feature2D;
 
 public class BRIEFDescriptorExtractorTest extends OpenCVTestCase {
 

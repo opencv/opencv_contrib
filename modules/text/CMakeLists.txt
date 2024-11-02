@@ -5,7 +5,7 @@ if(DEBUG_opencv_text)
 endif()
 
 ocv_define_module(text
-    opencv_ml opencv_imgproc opencv_core opencv_features2d opencv_dnn
+    opencv_ml opencv_imgproc opencv_core opencv_features opencv_dnn
     ${__extra_deps}
     WRAP
       python

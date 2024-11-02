@@ -3,7 +3,7 @@
 
 #include <QCheckBox>
 
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 
 #include "matchselectionselector.hpp"
 #include "matchsettingsselector.hpp"
