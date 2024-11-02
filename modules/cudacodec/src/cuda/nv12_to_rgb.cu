@@ -179,9 +179,9 @@ void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int hei
     dim3 block(32, 8);
     dim3 grid(divUp(width, 2 * block.x), divUp(height, block.y));
     if (videoFullRangeFlag)
-        NV12_to_BGRA<true> << <grid, block, 0, stream >> > (decodedFrame.ptr<uchar>(), decodedFrame.step, outFrame.ptr<uint>(), outFrame.step, width, height);
+        NV12_to_BGRA<true> <<<grid, block, 0, stream >>> (decodedFrame.ptr<uchar>(), decodedFrame.step, outFrame.ptr<uint>(), outFrame.step, width, height);
     else
-        NV12_to_BGRA<false> << <grid, block, 0, stream >> > (decodedFrame.ptr<uchar>(), decodedFrame.step, outFrame.ptr<uint>(), outFrame.step, width, height);
+        NV12_to_BGRA<false> <<<grid, block, 0, stream >>> (decodedFrame.ptr<uchar>(), decodedFrame.step, outFrame.ptr<uint>(), outFrame.step, width, height);
     CV_CUDEV_SAFE_CALL(cudaGetLastError());
     if (stream == 0)
         CV_CUDEV_SAFE_CALL(cudaDeviceSynchronize());

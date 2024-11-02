@@ -194,7 +194,7 @@ void Magnitude::derrivativeXYGpu()
     dim3 gridSize((int)ceil((float)img_size.x / (float)blockSize.x),
         (int)ceil((float)img_size.y / (float)blockSize.y));
 
-    derrivativeXYDevice << <gridSize, blockSize >> >
+    derrivativeXYDevice <<<gridSize, blockSize >>>
         (gray_ptr, dx_ptr, dy_ptr, mag_ptr, img_size);
 }
 
@@ -209,7 +209,7 @@ void Magnitude::nonMaxSuppGpu()
     dim3 gridSize((int)ceil((float)img_size.x / (float)blockSize.x),
         (int)ceil((float)img_size.y / (float)blockSize.y));
 
-    nonMaxSuppDevice << <gridSize, blockSize >> >
+    nonMaxSuppDevice <<<gridSize, blockSize >>>
         (nms_ptr, dx_ptr, dy_ptr, mag_ptr, img_size);
 }
 
