@@ -7,29 +7,29 @@ on:
 
 jobs:
   Ubuntu2004-ARM64:
-    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-ARM64.yaml@main
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-ARM64.yaml@as/features2d_to_features
 
   Ubuntu2004-x64:
-    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-U20.yaml@main
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-U20.yaml@as/features2d_to_features
 
   Ubuntu2204-x64:
-    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-U22.yaml@main
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-U22.yaml@as/features2d_to_features
 
 # TODO:
 #   Ubuntu2404-x64:
-#     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-U24.yaml@main
+#     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-U24.yaml@as/features2d_to_features
 
   Ubuntu2004-x64-CUDA:
-    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-U20-Cuda.yaml@main
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-U20-Cuda.yaml@as/features2d_to_features
 
   Windows10-x64:
-    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-W10.yaml@main
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-W10.yaml@as/features2d_to_features
 
   macOS-ARM64:
-    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-macOS-ARM64.yaml@main
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-macOS-ARM64.yaml@as/features2d_to_features
 
   macOS-X64:
-    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-macOS-x86_64.yaml@main
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-macOS-x86_64.yaml@as/features2d_to_features
 
   Linux-RISC-V-Clang:
-    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-RISCV.yaml@main
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-RISCV.yaml@as/features2d_to_features
