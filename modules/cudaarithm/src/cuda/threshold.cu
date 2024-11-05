@@ -116,8 +116,13 @@ double cv::cuda::threshold(InputArray _src, OutputArray _dst, double thresh, dou
         sz.width  = src.cols;
         sz.height = src.rows;
 
+#if USE_NPP_STREAM_CTX
+        nppSafeCall(nppiThreshold_32f_C1R_Ctx(src.ptr<Npp32f>(), static_cast<int>(src.step),
+            dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz, static_cast<Npp32f>(thresh), NPP_CMP_GREATER, h));
+#else
         nppSafeCall( nppiThreshold_32f_C1R(src.ptr<Npp32f>(), static_cast<int>(src.step),
             dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz, static_cast<Npp32f>(thresh), NPP_CMP_GREATER) );
+#endif
 
         if (!stream)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
