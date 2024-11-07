@@ -589,7 +589,7 @@ TEST(Features2d_SIFT_using_mask, regression)
 }
 
 #ifdef OPENCV_ENABLE_NONFREE
-TEST(DISABLED_Features_SURF_using_mask, regression)
+TEST(DISABLED_Features2d_SURF_using_mask, regression)
 {
     FeatureDetectorUsingMaskTest test(SURF::create());
     test.safe_run();
