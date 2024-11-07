@@ -4,7 +4,7 @@
 */
 
 #include "opencv2/ts.hpp"
-#include "opencv2/scale.hpp"
+#include "opencv2/fastcv/scale.hpp"
 
 namespace opencv_test { namespace {
 

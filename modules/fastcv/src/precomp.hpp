@@ -11,21 +11,7 @@
 #include "opencv2/core/private.hpp"
 #include "opencv2/core/utils/logger.hpp"
 
-#include <opencv2/arithm.hpp>
-#include <opencv2/cluster.hpp>
-#include <opencv2/draw.hpp>
-#include <opencv2/fast10.hpp>
-#include <opencv2/fft.hpp>
-#include <opencv2/hough.hpp>
-#include <opencv2/moments.hpp>
-#include <opencv2/mser.hpp>
-#include <opencv2/remap.hpp>
-#include <opencv2/scale.hpp>
-#include <opencv2/shift.hpp>
-#include <opencv2/smooth.hpp>
-#include <opencv2/thresh.hpp>
-#include <opencv2/bilateralFilter.hpp>
-
+#include <opencv2/fastcv.hpp>
 #include <map>
 
 #include "fastcv.h"

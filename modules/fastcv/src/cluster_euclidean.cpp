@@ -8,7 +8,7 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef FAST_CV_FOUND
+#ifdef HAVE_FASTCV
 
 void clusterEuclidean(InputArray _points, InputArray _clusterCenters, OutputArray _newClusterCenters,
                       OutputArray _clusterSizes, OutputArray _clusterBindings, OutputArray _clusterSumDists,

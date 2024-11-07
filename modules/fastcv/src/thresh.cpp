@@ -8,7 +8,7 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef FAST_CV_FOUND
+#ifdef HAVE_FASTCV
 
 void thresholdRange(InputArray _src, OutputArray _dst, uint8_t lowThresh, uint8_t highThresh, uint8_t trueValue, uint8_t falseValue)
 {

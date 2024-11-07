@@ -8,7 +8,7 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef FAST_CV_FOUND
+#ifdef HAVE_FASTCV
 
 void matmuls8s32(InputArray _src1, _InputArray _src2, OutputArray _dst)
 {

@@ -8,15 +8,15 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef FAST_CV_FOUND
+#ifdef HAVE_FASTCV
 
 class RemapParallel : public cv::ParallelLoopBody {
 public:
-    RemapParallel(int src_type, const uint8_t* src, unsigned int srcWidth, unsigned int srcHeight, unsigned int srcStride, uint8_t* dst, 
-                unsigned int dstWidth, unsigned int dstHeight, unsigned int dstStride, const float32_t* __restrict  mapX, 
+    RemapParallel(int src_type, const uint8_t* src, unsigned int srcWidth, unsigned int srcHeight, unsigned int srcStride, uint8_t* dst,
+                unsigned int dstWidth, unsigned int dstHeight, unsigned int dstStride, const float32_t* __restrict  mapX,
                 const float32_t* __restrict mapY, uint32_t mapStride, fcvInterpolationType interpolation, uint8_t borderValue)
-                : src_type_(src_type), src_(src), srcWidth_(srcWidth), srcHeight_(srcHeight), srcStride_(srcStride), dst_(dst), dstWidth_(dstWidth), 
-                dstHeight_(dstHeight), dstStride_(dstStride), mapX_(mapX), mapY_(mapY), mapStride_(mapStride), 
+                : src_type_(src_type), src_(src), srcWidth_(srcWidth), srcHeight_(srcHeight), srcStride_(srcStride), dst_(dst), dstWidth_(dstWidth),
+                dstHeight_(dstHeight), dstStride_(dstStride), mapX_(mapX), mapY_(mapY), mapStride_(mapStride),
                 fcvInterpolation_(interpolation), borderValue_(borderValue) {}
 
     void operator()(const cv::Range& range) const override {
@@ -26,7 +26,7 @@ public:
         fcvStatus   status = FASTCV_SUCCESS;
         if(src_type_==CV_8UC1)
         {
-            status = fcvRemapu8_v2(src_ + range.start*srcStride_, srcWidth_, rangeHeight, srcStride_, dst_ + range.start*dstStride_, 
+            status = fcvRemapu8_v2(src_ + range.start*srcStride_, srcWidth_, rangeHeight, srcStride_, dst_ + range.start*dstStride_,
                             srcWidth_, rangeHeight, dstStride_, mapX_, mapY_, mapStride_, fcvInterpolation_, FASTCV_BORDER_CONSTANT, borderValue_);
         }
         else if(src_type_==CV_8UC4)

@@ -8,7 +8,7 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef FAST_CV_FOUND
+#ifdef HAVE_FASTCV
 
 cv::Moments moments(InputArray _src, bool binary)
 {
@@ -39,41 +39,41 @@ cv::Moments moments(InputArray _src, bool binary)
 		switch(type)
 		{
 			case CV_8UC1:
-			    fcvImageMomentsu8(src.data, src.cols, src.rows, 
+			    fcvImageMomentsu8(src.data, src.cols, src.rows,
 				                  src.step, mFCV, binary);
 				break;
 			case CV_32SC1:
-			    fcvImageMomentss32((const int*)src.data, src.cols, src.rows, 
+			    fcvImageMomentss32((const int*)src.data, src.cols, src.rows,
 				                  src.step, mFCV, binary);
 				break;
 			case CV_32FC1:
-			    fcvImageMomentsf32((const float*)src.data, src.cols, src.rows, 
+			    fcvImageMomentsf32((const float*)src.data, src.cols, src.rows,
 				                  src.step, mFCV, binary);
 				break;
 		}
 	}
 
-	if (status != FASTCV_SUCCESS) 
+	if (status != FASTCV_SUCCESS)
     {
         CV_Error( cv::Error::StsError, cv::format("Error occurred!") );
 		delete mFCV;
         return m;
     }
 
-	m.m00  = mFCV->m00;  m.m10  = mFCV->m10;  m.m01  = mFCV->m01; 
-	m.m20  = mFCV->m20;  m.m11  = mFCV->m11;  m.m02  = mFCV->m02;  
-	m.m30  = mFCV->m30;  m.m21  = mFCV->m21;  m.m12  = mFCV->m12; 
+	m.m00  = mFCV->m00;  m.m10  = mFCV->m10;  m.m01  = mFCV->m01;
+	m.m20  = mFCV->m20;  m.m11  = mFCV->m11;  m.m02  = mFCV->m02;
+	m.m30  = mFCV->m30;  m.m21  = mFCV->m21;  m.m12  = mFCV->m12;
 	m.m03  = mFCV->m03;  m.mu02 = mFCV->mu02; m.m03  = mFCV->mu03;
-	m.mu11 = mFCV->mu11; m.mu12 = mFCV->mu12; m.mu20 = mFCV->mu20; 
+	m.mu11 = mFCV->mu11; m.mu12 = mFCV->mu12; m.mu20 = mFCV->mu20;
 	m.mu21 = mFCV->mu21; m.mu30 = mFCV->mu30;
-	
+
 	float32_t inv_m00 = 1.0/mFCV->m00;
 	float32_t inv_sqrt_m00 = mFCV->inv_sqrt_m00;
     float32_t s2 = inv_m00 * inv_m00, s3 = s2 * inv_sqrt_m00;
 
-    m.nu20 = mFCV->mu20 * s2; m.nu11 = mFCV->mu11 * s2; 
-	m.nu02 = mFCV->mu02 * s2; m.nu30 = mFCV->mu30 * s3; 
-	m.nu21 = mFCV->mu21 * s3; m.nu12 = mFCV->mu12 * s3; 
+    m.nu20 = mFCV->mu20 * s2; m.nu11 = mFCV->mu11 * s2;
+	m.nu02 = mFCV->mu02 * s2; m.nu30 = mFCV->mu30 * s3;
+	m.nu21 = mFCV->mu21 * s3; m.nu12 = mFCV->mu12 * s3;
 	m.nu03 = mFCV->mu03 * s3;
 
     delete mFCV;

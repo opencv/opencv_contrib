@@ -4,7 +4,7 @@
 */
 
 #include "opencv2/ts.hpp"
-#include "opencv2/moments.hpp"
+#include "opencv2/fastcv/moments.hpp"
 
 namespace opencv_test { namespace {
 

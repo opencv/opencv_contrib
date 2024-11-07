@@ -8,7 +8,7 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef FAST_CV_FOUND
+#ifdef HAVE_FASTCV
 
 static void runMSER(InputArray _src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
                     std::vector<ContourData>& contourData,

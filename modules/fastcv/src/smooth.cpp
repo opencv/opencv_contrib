@@ -8,7 +8,7 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef FAST_CV_FOUND
+#ifdef HAVE_FASTCV
 
 void bilateralRecursive(cv::InputArray _src, cv::OutputArray _dst, float sigmaColor, float sigmaSpace)
 {

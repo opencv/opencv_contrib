@@ -8,7 +8,7 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef FAST_CV_FOUND
+#ifdef HAVE_FASTCV
 
 int meanShift(InputArray _src, Rect& rect, TermCriteria termCrit)
 {

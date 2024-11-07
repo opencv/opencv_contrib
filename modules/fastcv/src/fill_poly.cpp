@@ -8,7 +8,7 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef FAST_CV_FOUND
+#ifdef HAVE_FASTCV
 
 void fillConvexPoly(InputOutputArray _img, InputArray _pts, Scalar color)
 {

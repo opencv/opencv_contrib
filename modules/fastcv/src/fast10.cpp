@@ -8,7 +8,7 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef FAST_CV_FOUND
+#ifdef HAVE_FASTCV
 
 void FAST10(InputArray _src, InputArray _mask, OutputArray _coords, OutputArray _scores, int barrier, int border, bool nmsEnabled)
 {

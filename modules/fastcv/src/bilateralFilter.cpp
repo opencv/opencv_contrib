@@ -8,7 +8,7 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef FAST_CV_FOUND
+#ifdef HAVE_FASTCV
 
 class FcvFilterLoop_Invoker : public cv::ParallelLoopBody
 {
@@ -28,7 +28,7 @@ public:
         int width_  = width;
 		cv::Mat src_;
 		int n = knl/2;
-		
+
 		if(range.start == 0 && range.end == height)
 		{
 			src_ = cv::Mat(height_ + 2*n, width_ + 2*n, CV_8U);
@@ -49,10 +49,10 @@ public:
 			src_ = cv::Mat(height_ + 2*n, width_ + 2*n, CV_8U);
 			cv::copyMakeBorder(src(cv::Rect(0, range.start - n, width_, height_ + 2*n)), src_, 0, 0, n, n, bdr);
 		}
-		
-		
+
+
 		cv::Mat dst_padded = cv::Mat(height_ + 2*n, width_ + 2*n, CV_8U);
-		
+
 		if(knl == 5)
 		    status = fcvBilateralFilter5x5u8_v3(src_.data, width_ + 2*n, height_ + 2*n, width_ + 2*n,
 		                                        dst_padded.data, width_ + 2*n, sigma_color, sigma_space, 0);
@@ -62,10 +62,10 @@ public:
 		else if(knl == 9)
 		    status = fcvBilateralFilter9x9u8_v3(src_.data, width_ + 2*n, height_ + 2*n, width_ + 2*n,
 		                                        dst_padded.data, width_ + 2*n, sigma_color, sigma_space, 0);
-		
+
 		cv::Mat dst_temp1 = dst_padded(cv::Rect(n, n, width_, height_));
 		cv::Mat dst_temp2 = dst(cv::Rect(0, range.start, width_, height_));
-		dst_temp1.copyTo(dst_temp2); 
+		dst_temp1.copyTo(dst_temp2);
 	}
 
 private:
@@ -107,7 +107,7 @@ void bilateralFilter( InputArray _src, OutputArray _dst, int d,
         sigmaSpace = 1;
 
     fcvStatus status = FASTCV_SUCCESS;
-	
+
 	int nStripes = 1;
 	if(src.rows/20 == 0)
 		nStripes = 1;
