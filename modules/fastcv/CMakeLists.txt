@@ -1,6 +1,5 @@
-ocv_define_module(fastcv opencv_core opencv_imgproc opencv_features2d opencv_video WRAP python java)
-
 if(HAVE_FASTCV)
+  ocv_define_module(fastcv opencv_core opencv_imgproc opencv_features2d opencv_video WRAP python java)
   ocv_module_include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     ${FastCV_INCLUDE_PATH})
