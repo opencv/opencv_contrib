@@ -48,10 +48,10 @@ TEST_P(HoughLinesTest, accuracy)
         EXPECT_LE(to.y, src.rows);
     }
 
-    auto makeDistTrans = [src](const std::vector<Vec4f>& lines) -> cv::Mat
+    auto makeDistTrans = [src](const std::vector<Vec4f>& ls) -> cv::Mat
     {
         Mat lineMap(src.size(), CV_8U, Scalar(255));
-        for (const cv::Vec4f& l : lines)
+        for (const cv::Vec4f& l : ls)
         {
             cv::Point from(l[0], l[1]), to(l[2], l[3]);
             cv::line(lineMap, from, to, Scalar::all(0));

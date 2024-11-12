@@ -23,9 +23,9 @@ namespace fastcv {
  * @param interpolation Only INTER_NEAREST and INTER_LINEAR interpolation is supported
  * @param borderValue constant pixel value
 */
-CV_EXPORTS void remap( InputArray src, OutputArray dst,
+CV_EXPORTS_W void remap( InputArray src, OutputArray dst,
                        InputArray map1, InputArray map2,
-                       int interpolation, uint8_t borderValue=0);
+                       int interpolation, int borderValue=0);
 
 /**
  * @brief Applies a generic geometrical transformation to a 4-channel CV_8UC4 image with bilinear or nearest neighbor interpolation

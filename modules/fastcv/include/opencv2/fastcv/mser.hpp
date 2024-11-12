@@ -77,7 +77,7 @@ CV_EXPORTS void MSER(InputArray src, std::vector<std::vector<Point>>& contours,
  * @param minDiversity Minimum diversity in grayscale between 2 levels allowed.
                 Typical value range [0.1 1.0], typical value 0.2
  */
-CV_EXPORTS_W void MSER(InputArray src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
+CV_EXPORTS void MSER(InputArray src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
                        unsigned int numNeighbors = 4,
                        unsigned int delta = 2,
                        unsigned int minArea = 30,
@@ -108,7 +108,7 @@ CV_EXPORTS_W void MSER(InputArray src, std::vector<std::vector<Point>>& contours
  * @param minDiversity Minimum diversity in grayscale between 2 levels allowed.
                 Typical value range [0.1 1.0], typical value 0.2
  */
-CV_EXPORTS_W void MSER(InputArray src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
+CV_EXPORTS void MSER(InputArray src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
                        std::vector<ContourData>& contourData,
                        unsigned int numNeighbors = 4,
                        unsigned int delta = 2,

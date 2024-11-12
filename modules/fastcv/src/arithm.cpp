@@ -10,7 +10,7 @@ namespace fastcv {
 
 #ifdef HAVE_FASTCV
 
-void matmuls8s32(InputArray _src1, _InputArray _src2, OutputArray _dst)
+void matmuls8s32(InputArray _src1, InputArray _src2, OutputArray _dst)
 {
     INITIALIZATION_CHECK;
 
@@ -36,7 +36,7 @@ void matmuls8s32(InputArray _src1, _InputArray _src2, OutputArray _dst)
 
 #else
 
-void matmuls8s32(InputArray _src1, _InputArray _src2, OutputArray _dst)
+void matmuls8s32(InputArray _src1, InputArray _src2, OutputArray _dst)
 {
     CV_UNUSED(_src1);
     CV_UNUSED(_src2);

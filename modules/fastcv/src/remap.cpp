@@ -68,7 +68,7 @@ private:
 };
 
 void remap(cv::InputArray _src, cv::OutputArray _dst, cv::InputArray _map1, cv::InputArray _map2,
-                      int interpolation, uint8_t borderValue)
+                      int interpolation, int borderValue)
 {
     INITIALIZATION_CHECK;
 
@@ -77,6 +77,7 @@ void remap(cv::InputArray _src, cv::OutputArray _dst, cv::InputArray _map1, cv::
     CV_Assert(interpolation == cv::InterpolationFlags::INTER_NEAREST || interpolation == cv::InterpolationFlags::INTER_LINEAR);
     CV_Assert(!_map1.empty() && !_map2.empty());
     CV_Assert(_map1.size() == _map2.size());
+    CV_Assert(borderValue >= 0 && borderValue < 256);
 
     Size size = _map1.size();
     int type = _src.type();

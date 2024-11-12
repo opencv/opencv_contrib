@@ -121,7 +121,7 @@ void bilateralFilter( InputArray _src, OutputArray _dst, int d,
 #else
 
 void bilateralFilter( InputArray _src, OutputArray _dst, int d,
-                      double sigmaColor, double sigmaSpace,
+                      float sigmaColor, float sigmaSpace,
                       int borderType )
 {
     CV_UNUSED(_src);

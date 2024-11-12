@@ -14,10 +14,14 @@
 #include <opencv2/fastcv.hpp>
 #include <map>
 
+#ifdef HAVE_FASTCV
 #include "fastcv.h"
+#endif
 
 namespace cv {
 namespace fastcv {
+
+#ifdef HAVE_FASTCV
 
 #define INITIALIZATION_CHECK                                                \
 {                                                                           \
@@ -68,6 +72,7 @@ public:
 
     bool isInitialized;
 };
+#endif
 
 } // namespace fastcv
 } // namespace cv
