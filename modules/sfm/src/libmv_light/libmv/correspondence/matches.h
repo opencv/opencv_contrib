@@ -25,7 +25,7 @@
 #include <vector>
 
 #include <opencv2/core.hpp>
-#include <opencv2/features2d.hpp>
+#include <opencv2/features.hpp>
 
 #include "libmv/base/vector.h"
 // TODO(julien) use the bipartite_graph_new.h now

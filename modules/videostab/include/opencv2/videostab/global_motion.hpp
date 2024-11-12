@@ -46,7 +46,7 @@
 #include <vector>
 #include <fstream>
 #include "opencv2/core.hpp"
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 #include "opencv2/opencv_modules.hpp"
 #include "opencv2/videostab/optical_flow.hpp"
 #include "opencv2/videostab/motion_core.hpp"

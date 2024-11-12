@@ -4,7 +4,7 @@
 #include <opencv2/core.hpp>        // Basic OpenCV structures (cv::Mat, Scalar)
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>  // OpenCV window I/O
-#include <opencv2/features2d.hpp>
+#include <opencv2/features.hpp>
 #include <opencv2/xobjdetect.hpp>
 
 #include <stdio.h>

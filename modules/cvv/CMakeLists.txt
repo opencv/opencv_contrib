@@ -4,7 +4,7 @@ if(NOT HAVE_QT OR NOT HAVE_CXX11 OR QT_VERSION_MAJOR LESS 5)
 endif()
 
 set(the_description "Debug visualization framework")
-ocv_add_module(cvv opencv_core opencv_imgproc opencv_features2d WRAP python)
+ocv_add_module(cvv opencv_core opencv_imgproc opencv_features WRAP python)
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wshadow -Wmissing-declarations)
 
 # Qt

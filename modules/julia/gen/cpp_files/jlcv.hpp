@@ -40,8 +40,8 @@ using namespace jlcxx;
 #include <opencv2/videoio.hpp>
 #endif
 
-#ifdef HAVE_OPENCV_FEATURES2D
-#include <opencv2/features2d.hpp>
+#ifdef HAVE_OPENCV_FEATURES
+#include <opencv2/features.hpp>
 typedef SimpleBlobDetector::Params SimpleBlobDetector_Params;
 typedef AKAZE::DescriptorType AKAZE_DescriptorType;
 typedef AgastFeatureDetector::DetectorType AgastFeatureDetector_DetectorType;

@@ -50,7 +50,7 @@
 #include "opencv2/cudafeatures2d.hpp"
 #include "opencv2/cudaarithm.hpp"
 #include "opencv2/cudawarping.hpp"
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 
 #include "opencv2/core/private.cuda.hpp"
 

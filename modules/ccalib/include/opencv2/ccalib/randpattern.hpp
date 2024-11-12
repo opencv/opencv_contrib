@@ -42,7 +42,7 @@
 #ifndef __OPENCV_RANDOMPATTERN_HPP__
 #define __OPENCV_RANDOMPATTERN_HPP__
 
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 #include "opencv2/xfeatures2d.hpp"
 #include "opencv2/highgui.hpp"
 

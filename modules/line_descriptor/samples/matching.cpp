@@ -42,12 +42,12 @@
 #include <iostream>
 #include <opencv2/opencv_modules.hpp>
 
-#ifdef HAVE_OPENCV_FEATURES2D
+#ifdef HAVE_OPENCV_FEATURES
 
 #include <opencv2/line_descriptor.hpp>
 #include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/features2d.hpp>
+#include <opencv2/features.hpp>
 #include <opencv2/highgui.hpp>
 
 #define MATCHES_DIST_THRESHOLD 25
@@ -213,8 +213,8 @@ int main( int argc, char** argv )
 
 int main()
 {
-    std::cerr << "OpenCV was built without features2d module" << std::endl;
+    std::cerr << "OpenCV was built without features module" << std::endl;
     return 0;
 }
 
-#endif // HAVE_OPENCV_FEATURES2D
+#endif // HAVE_OPENCV_FEATURES

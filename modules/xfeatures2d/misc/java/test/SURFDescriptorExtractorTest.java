@@ -1,4 +1,4 @@
-package org.opencv.test.features2d;
+package org.opencv.test.features;
 
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;

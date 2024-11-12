@@ -48,8 +48,8 @@ const string DESCRIPTOR_DIR = FEATURES2D_DIR + "/descriptor_extractors";
 const string IMAGE_FILENAME = "tsukuba.png";
 }} // namespace
 
-#include "features2d/test/test_detectors_regression.impl.hpp"
-#include "features2d/test/test_descriptors_regression.impl.hpp"
+#include "features/test/test_detectors_regression.impl.hpp"
+#include "features/test/test_descriptors_regression.impl.hpp"
 
 namespace opencv_test { namespace {
 

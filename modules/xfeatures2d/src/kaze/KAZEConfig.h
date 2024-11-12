@@ -10,7 +10,7 @@
 
 // OpenCV Includes
 #include "../precomp.hpp"
-#include <opencv2/features2d.hpp>
+#include <opencv2/features.hpp>
 
 namespace cv
 {

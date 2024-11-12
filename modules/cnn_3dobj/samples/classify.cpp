@@ -38,7 +38,7 @@
  * @author Yida Wang
  */
 #include <opencv2/cnn_3dobj.hpp>
-#include <opencv2/features2d.hpp>
+#include <opencv2/features.hpp>
 #include <iomanip>
 using namespace cv;
 using namespace std;
