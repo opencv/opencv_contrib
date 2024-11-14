@@ -8,8 +8,6 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef HAVE_FASTCV
-
 static void runMSER(InputArray _src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
                     std::vector<ContourData>& contourData,
                     bool useBoundingBoxes = true,
@@ -175,36 +173,6 @@ static void runMSER(InputArray _src, std::vector<std::vector<Point>>& contours, 
 
     fcvMserRelease(mserHandle);
 }
-
-#else
-
-static void runMSER(InputArray _src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
-                    std::vector<ContourData>& contourData,
-                    bool useBoundingBoxes,
-                    bool useContourData,
-                    unsigned int numNeighbors,
-                    unsigned int delta,
-                    unsigned int minArea,
-                    unsigned int maxArea,
-                    float        maxVariation,
-                    float        minDiversity)
-{
-    CV_UNUSED(_src);
-    CV_UNUSED(contours);
-    CV_UNUSED(boundingBoxes);
-    CV_UNUSED(contourData);
-    CV_UNUSED(useBoundingBoxes);
-    CV_UNUSED(useContourData);
-    CV_UNUSED(numNeighbors);
-    CV_UNUSED(delta);
-    CV_UNUSED(minArea);
-    CV_UNUSED(maxArea);
-    CV_UNUSED(maxVariation);
-    CV_UNUSED(minDiversity);
-    CV_Error( cv::Error::StsNotImplemented, "OpenCV was build without FastCV support" );
-}
-
-#endif
 
 void MSER(InputArray _src, std::vector<std::vector<Point>> &contours,
           unsigned int numNeighbors, unsigned int delta, unsigned int minArea, unsigned int maxArea, float maxVariation, float minDiversity)

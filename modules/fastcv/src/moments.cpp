@@ -8,8 +8,6 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef HAVE_FASTCV
-
 cv::Moments moments(InputArray _src, bool binary)
 {
 	INITIALIZATION_CHECK;
@@ -79,17 +77,6 @@ cv::Moments moments(InputArray _src, bool binary)
     delete mFCV;
     return m;
 }
-
-#else
-
-cv::Moments moments(InputArray _src, bool binary)
-{
-    CV_UNUSED(_src);
-    CV_UNUSED(binary);
-    CV_Error( cv::Error::StsNotImplemented, "OpenCV was build without FastCV support" );
-}
-
-#endif
 
 } // fastcv::
 } // cv::

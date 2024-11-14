@@ -8,8 +8,6 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef HAVE_FASTCV
-
 void matmuls8s32(InputArray _src1, InputArray _src2, OutputArray _dst)
 {
     INITIALIZATION_CHECK;
@@ -33,18 +31,6 @@ void matmuls8s32(InputArray _src1, InputArray _src2, OutputArray _dst)
                            (const int8_t*)src2.data, src2.cols, src2.step,
                            (int32_t*)dst.data, dst.step);
 }
-
-#else
-
-void matmuls8s32(InputArray _src1, InputArray _src2, OutputArray _dst)
-{
-    CV_UNUSED(_src1);
-    CV_UNUSED(_src2);
-    CV_UNUSED(_dst);
-    CV_Error( cv::Error::StsNotImplemented, "OpenCV was build without FastCV support" );
-}
-
-#endif
 
 } // fastcv::
 } // cv::

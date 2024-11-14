@@ -8,8 +8,6 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef HAVE_FASTCV
-
 int meanShift(InputArray _src, Rect& rect, TermCriteria termCrit)
 {
     INITIALIZATION_CHECK;
@@ -53,18 +51,6 @@ int meanShift(InputArray _src, Rect& rect, TermCriteria termCrit)
 
     return nIterations;
 }
-
-#else
-
-int meanShift(InputArray _src, Rect& rect, TermCriteria termCrit)
-{
-    CV_UNUSED(_src);
-    CV_UNUSED(rect);
-    CV_UNUSED(termCrit);
-    CV_Error( cv::Error::StsNotImplemented, "OpenCV was build without FastCV support" );
-}
-
-#endif
 
 } // fastcv::
 } // cv::

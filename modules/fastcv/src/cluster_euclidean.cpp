@@ -8,8 +8,6 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef HAVE_FASTCV
-
 void clusterEuclidean(InputArray _points, InputArray _clusterCenters, OutputArray _newClusterCenters,
                       OutputArray _clusterSizes, OutputArray _clusterBindings, OutputArray _clusterSumDists,
                       int numPointsUsed)
@@ -63,25 +61,6 @@ void clusterEuclidean(InputArray _points, InputArray _clusterCenters, OutputArra
         CV_Error(cv::Error::StsInternal, cv::format("Failed to clusterize, error code: %d", result));
     }
 }
-
-#else
-
-void clusterEuclidean(InputArray _points, InputArray _clusterCenters, OutputArray _newClusterCenters,
-                      OutputArray _clusterSizes, OutputArray _clusterBindings, OutputArray _clusterSumDists,
-                      int numPointsUsed)
-{
-    CV_UNUSED(_points);
-    CV_UNUSED(_clusterCenters);
-    CV_UNUSED(_newClusterCenters);
-    CV_UNUSED(_clusterSizes);
-    CV_UNUSED(_clusterBindings);
-    CV_UNUSED(_clusterSumDists);
-    CV_UNUSED(numPointsUsed);
-
-    CV_Error( cv::Error::StsNotImplemented, "OpenCV was build without FastCV support" );
-}
-
-#endif
 
 } // fastcv::
 } // cv::

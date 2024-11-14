@@ -8,8 +8,6 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef HAVE_FASTCV
-
 void fillConvexPoly(InputOutputArray _img, InputArray _pts, Scalar color)
 {
     INITIALIZATION_CHECK;
@@ -33,18 +31,6 @@ void fillConvexPoly(InputOutputArray _img, InputArray _pts, Scalar color)
                          img.channels(), coloru8.val,
                          img.data, img.cols, img.rows, img.step);
 }
-
-#else
-
-void fillConvexPoly(InputOutputArray _img, InputArray _pts, Scalar color)
-{
-    CV_UNUSED(_img);
-    CV_UNUSED(_pts);
-    CV_UNUSED(color);
-    CV_Error( cv::Error::StsNotImplemented, "OpenCV was build without FastCV support" );
-}
-
-#endif
 
 } // fastcv::
 } // cv::

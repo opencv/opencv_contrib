@@ -14,9 +14,7 @@
 #include <opencv2/fastcv.hpp>
 #include <map>
 
-#ifdef HAVE_FASTCV
 #include "fastcv.h"
-#endif
 
 namespace cv {
 namespace fastcv {

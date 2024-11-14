@@ -8,14 +8,13 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef HAVE_FASTCV
-
 class FcvFilterLoop_Invoker : public cv::ParallelLoopBody
 {
 public:
 
     FcvFilterLoop_Invoker(cv::Mat src_, size_t src_step_, cv::Mat dst_, size_t dst_step_, int width_, int height_,  int bdr_, int knl_, float32_t sigma_color_, float32_t sigma_space_) :
-        cv::ParallelLoopBody(), src(src_), src_step(src_step_), dst(dst_), dst_step(dst_step_), width(width_), height(height_), bdr(bdr_), knl(knl_), sigma_color(sigma_color_), sigma_space(sigma_space_)
+        cv::ParallelLoopBody(), src_step(src_step_), dst_step(dst_step_), width(width_), height(height_),
+        bdr(bdr_), knl(knl_), sigma_color(sigma_color_), sigma_space(sigma_space_), src(src_), dst(dst_)
     {
     }
 
@@ -23,7 +22,6 @@ public:
     {
 
         fcvStatus status = FASTCV_SUCCESS;
-        const uchar* yS;
 		int height_ = range.end - range.start;
         int width_  = width;
 		cv::Mat src_;
@@ -106,8 +104,6 @@ void bilateralFilter( InputArray _src, OutputArray _dst, int d,
     if( sigmaSpace <= 0 )
         sigmaSpace = 1;
 
-    fcvStatus status = FASTCV_SUCCESS;
-
 	int nStripes = 1;
 	if(src.rows/20 == 0)
 		nStripes = 1;
@@ -117,23 +113,6 @@ void bilateralFilter( InputArray _src, OutputArray _dst, int d,
 	cv::parallel_for_(cv::Range(0, src.rows),
               FcvFilterLoop_Invoker(src, src.step, dst, dst.step, src.cols, src.rows, borderType, d, sigmaColor, sigmaSpace), nStripes);
 }
-
-#else
-
-void bilateralFilter( InputArray _src, OutputArray _dst, int d,
-                      float sigmaColor, float sigmaSpace,
-                      int borderType )
-{
-    CV_UNUSED(_src);
-    CV_UNUSED(_dst);
-    CV_UNUSED(d);
-    CV_UNUSED(sigmaColor);
-    CV_UNUSED(sigmaSpace);
-    CV_UNUSED(borderType);
-    CV_Error( cv::Error::StsNotImplemented, "OpenCV was build without FastCV support" );
-}
-
-#endif
 
 }
 }

@@ -8,8 +8,6 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef HAVE_FASTCV
-
 void houghLines(InputArray _src, OutputArray _lines, double threshold)
 {
     INITIALIZATION_CHECK;
@@ -32,18 +30,6 @@ void houghLines(InputArray _src, OutputArray _lines, double threshold)
     _lines.create(1, nLines, CV_32FC4);
     lines(Range::all(), Range(0, nLines)).copyTo(_lines);
 }
-
-#else
-
-void houghLines(InputArray _src, OutputArray _lines, double threshold)
-{
-    CV_UNUSED(_src);
-    CV_UNUSED(_lines);
-    CV_UNUSED(threshold);
-    CV_Error( cv::Error::StsNotImplemented, "OpenCV was build without FastCV support" );
-}
-
-#endif
 
 } // fastcv::
 } // cv::

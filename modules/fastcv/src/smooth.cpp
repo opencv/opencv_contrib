@@ -8,8 +8,6 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef HAVE_FASTCV
-
 void bilateralRecursive(cv::InputArray _src, cv::OutputArray _dst, float sigmaColor, float sigmaSpace)
 {
     INITIALIZATION_CHECK;
@@ -34,19 +32,6 @@ void bilateralRecursive(cv::InputArray _src, cv::OutputArray _dst, float sigmaCo
         CV_Error( cv::Error::StsInternal, "FastCV error: " + s);
     }
 }
-
-#else
-
-void bilateralRecursive(cv::InputArray _src, cv::OutputArray _dst, float sigmaColor, float sigmaSpace)
-{
-    CV_UNUSED(_src);
-    CV_UNUSED(_dst);
-    CV_UNUSED(sigmaColor);
-    CV_UNUSED(sigmaSpace);
-    CV_Error( cv::Error::StsNotImplemented, "OpenCV was build without FastCV support" );
-}
-
-#endif
 
 } // fastcv::
 } // cv::

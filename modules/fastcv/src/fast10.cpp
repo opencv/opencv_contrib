@@ -8,8 +8,6 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef HAVE_FASTCV
-
 void FAST10(InputArray _src, InputArray _mask, OutputArray _coords, OutputArray _scores, int barrier, int border, bool nmsEnabled)
 {
     INITIALIZATION_CHECK;
@@ -117,22 +115,6 @@ void FAST10(InputArray _src, InputArray _mask, OutputArray _coords, OutputArray 
         scores(Range::all(), Range(0, nCorners)).copyTo(_scores);
     }
 }
-
-#else
-
-void FAST10(InputArray _src, InputArray _mask, OutputArray _coords, OutputArray _scores, int barrier, int border, bool nmsEnabled)
-{
-    CV_UNUSED(_src);
-    CV_UNUSED(_mask);
-    CV_UNUSED(_coords);
-    CV_UNUSED(_scores);
-    CV_UNUSED(barrier);
-    CV_UNUSED(border);
-    CV_UNUSED(nmsEnabled);
-    CV_Error( cv::Error::StsNotImplemented, "OpenCV was build without FastCV support" );
-}
-
-#endif
 
 } // fastcv::
 } // cv::

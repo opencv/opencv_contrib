@@ -8,8 +8,6 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef HAVE_FASTCV
-
 class RemapParallel : public cv::ParallelLoopBody {
 public:
     RemapParallel(int src_type, const uint8_t* src, unsigned int srcWidth, unsigned int srcHeight, unsigned int srcStride, uint8_t* dst,
@@ -143,31 +141,6 @@ void remapRGBA(cv::InputArray _src, cv::OutputArray _dst, cv::InputArray _map1, 
         CV_Error( cv::Error::StsInternal, "FastCV error: " + s);
     }
 }
-
-#else
-
-void remap(cv::InputArray _src, cv::OutputArray _dst, cv::InputArray _map1, cv::InputArray _map2,
-                      int interpolation, int borderValue)
-{
-    CV_UNUSED(_src);
-    CV_UNUSED(_dst);
-    CV_UNUSED(_map1);
-    CV_UNUSED(_map2);
-    CV_UNUSED(interpolation);
-    CV_UNUSED(borderValue);
-    CV_Error( cv::Error::StsNotImplemented, "OpenCV was build without FastCV support" );
-}
-
-void remapRGBA(cv::InputArray _src, cv::OutputArray _dst, cv::InputArray _map1, cv::InputArray _map2, int interpolation)
-{
-    CV_UNUSED(_src);
-    CV_UNUSED(_dst);
-    CV_UNUSED(_map1);
-    CV_UNUSED(_map2);
-    CV_UNUSED(interpolation);
-    CV_Error( cv::Error::StsNotImplemented, "OpenCV was build without FastCV support" );
-}
-#endif
 
 } // fastcv::
 } // cv::
