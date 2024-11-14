@@ -31,7 +31,5 @@ endfunction()
 
 
 add_subdirectory(waldboost_detector)
-# add_subdirectory(traincascade)
-# add_subdirectory(createsamples)
 add_subdirectory(annotation)
 add_subdirectory(visualisation)
