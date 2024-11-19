@@ -18,7 +18,7 @@ TEST_P(Fast10Test, accuracy)
     int border      = std::get<2>(p);
     bool nmsEnabled = std::get<3>(p);
 
-    cv::Mat src = imread(cvtest::findDataFile("cv/shared/lena.png"), cv::IMREAD_GRAYSCALE);
+    cv::Mat src = imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
 
     std::vector<int> coords, scores;
     cv::fastcv::FAST10(src, noArray(), coords, useScores ? scores : noArray(), barrier, border, nmsEnabled);
@@ -52,7 +52,7 @@ TEST_P(Fast10Test, accuracy)
     double normL2  = cvtest::norm(refDistTrans, distTrans, cv::NORM_L2)  / src.size().area();
 
     EXPECT_LT(normInf, 129.7);
-    EXPECT_LT(normL2, 0.0616);
+    EXPECT_LT(normL2, 0.067);
 }
 
 INSTANTIATE_TEST_CASE_P(FastCV_Extension, Fast10Test,
