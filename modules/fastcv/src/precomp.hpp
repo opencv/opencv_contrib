@@ -21,8 +21,6 @@
 namespace cv {
 namespace fastcv {
 
-#ifdef HAVE_FASTCV
-
 #define INITIALIZATION_CHECK                                                \
 {                                                                           \
     if (!FastCvContext::getContext().isInitialized)                         \
@@ -72,7 +70,6 @@ public:
 
     bool isInitialized;
 };
-#endif
 
 } // namespace fastcv
 } // namespace cv
