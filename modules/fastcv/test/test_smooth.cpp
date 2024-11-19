@@ -16,7 +16,7 @@ TEST_P(BilateralRecursiveTest, accuracy)
     float sigmaColor = std::get<0>(p);
     float sigmaSpace = std::get<1>(p);
 
-    cv::Mat src = imread(cvtest::findDataFile("cv/shared/lena.png"), cv::IMREAD_GRAYSCALE);
+    cv::Mat src = imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
 
     Mat dst;
     cv::fastcv::bilateralRecursive(src, dst, sigmaColor, sigmaSpace);
@@ -24,10 +24,15 @@ TEST_P(BilateralRecursiveTest, accuracy)
     // NOTE: test files should be manually loaded to folder on a device, for example like this:
     // adb push fastcv/misc/bilateral_recursive/ /sdcard/testdata/fastcv/bilateral/
     cv::Mat ref = imread(cvtest::findDataFile(cv::format("fastcv/bilateral/rec_%2f_%2f.png", sigmaColor, sigmaSpace)),
-        IMREAD_GRAYSCALE);
+                         IMREAD_GRAYSCALE);
+
+    if (cvtest::debugLevel > 0)
+    {
+        cv::imwrite(cv::format("rec_%2f_%2f.png", sigmaColor, sigmaSpace), dst);
+    }
 
     double normInf = cvtest::norm(dst, ref, cv::NORM_INF);
-    double normL2 = cvtest::norm(dst, ref, cv::NORM_L2);
+    double normL2  = cvtest::norm(dst, ref, cv::NORM_L2);
 
     ASSERT_LT(normInf, 1);
     ASSERT_LT(normL2, 1.f / src.size().area());
