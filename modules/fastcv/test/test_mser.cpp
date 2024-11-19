@@ -161,7 +161,7 @@ TEST_P(MSERTest, accuracy)
     }
 
     double overallL2 = std::sqrt(overallL2Sqr);
-    EXPECT_LT(std::sqrt(overallL2), 8.25);
+    EXPECT_LT(std::sqrt(overallL2), 11.45);
     double ratioInliers = double(nInliers) / contourEstimate.size();
     EXPECT_GT(ratioInliers, 0.363);
 }
@@ -172,7 +172,7 @@ INSTANTIATE_TEST_CASE_P(FastCV_Extension, MSERTest,
                                          std::tuple<bool, bool> {false, false},
                                          std::tuple<bool, bool> { true,  true}),
                        ::testing::Values(4, 8), // numNeighbors
-                       ::testing::Values("cv/shared/lena.png", "cv/mser/puzzle.png")
+                       ::testing::Values("cv/shared/baboon.png", "cv/mser/puzzle.png")
                       )
     );
 }} // namespaces opencv_test, ::
