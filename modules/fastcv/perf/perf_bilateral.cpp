@@ -19,7 +19,7 @@ PERF_TEST_P(BilateralPerfTest, run,
     float sigmaColor = std::get<0>(p);
     float sigmaSpace = std::get<1>(p);
 
-    cv::Mat src = imread(cvtest::findDataFile("cv/shared/lena.png"), cv::IMREAD_GRAYSCALE);
+    cv::Mat src = imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
     Mat dst;
 
     for (;  next(); )

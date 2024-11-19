@@ -24,7 +24,7 @@ PERF_TEST_P(FAST10PerfTest, run,
     int  border     = std::get<2>(p);
     bool nmsEnabled = std::get<3>(p);
 
-    cv::Mat src = imread(cvtest::findDataFile("cv/shared/lena.png"), cv::IMREAD_GRAYSCALE);
+    cv::Mat src = imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
 
     std::vector<int> coords, scores;
     for (;  next(); )

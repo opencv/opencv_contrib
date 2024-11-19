@@ -18,7 +18,7 @@ PERF_TEST_P(MSERPerfTest, run,
                                          std::tuple<bool, bool> { true,  true}
                                         ), // useBboxes, useContourData
                        ::testing::Values(4, 8), // numNeighbors
-                       ::testing::Values("cv/shared/lena.png", "cv/mser/puzzle.png")
+                       ::testing::Values("cv/shared/baboon.png", "cv/mser/puzzle.png")
                       )
            )
 {
