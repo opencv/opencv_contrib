@@ -30,7 +30,7 @@ PERF_TEST_P(HoughLinesPerfTest, run,
     cv::copyMakeBorder(src, withBorder, 0, 0, 0, bpix, BORDER_REFLECT101);
     src = withBorder;
 
-    for (; next(); )
+    while(next())
     {
         std::vector<cv::Vec4f> lines;
         startTimer();

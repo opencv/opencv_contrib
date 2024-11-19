@@ -47,7 +47,7 @@ PERF_TEST_P(MeanShiftPerfTest, run,
     cv::TermCriteria termCrit( TermCriteria::EPS + TermCriteria::MAX_ITER, iters, eps);
 
     Rect window = startRect;
-    for (;  next(); )
+    while(next())
     {
         startTimer();
         cv::fastcv::meanShift(src, window, termCrit);

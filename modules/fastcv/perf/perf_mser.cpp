@@ -36,15 +36,11 @@ PERF_TEST_P(MSERPerfTest, run,
     float        maxVariation = 0.15f;
     float        minDiversity = 0.2f;
 
-    std::vector<std::vector<Point>> contours;
-    std::vector<cv::Rect> bboxes;
-    std::vector<cv::fastcv::ContourData> contourData;
-
-    for (;  next(); )
+    while(next())
     {
-        contours.clear();
-        bboxes.clear();
-        contourData.clear();
+        std::vector<std::vector<Point>> contours;
+        std::vector<cv::Rect> bboxes;
+        std::vector<cv::fastcv::ContourData> contourData;
 
         startTimer();
         if (useBboxes)

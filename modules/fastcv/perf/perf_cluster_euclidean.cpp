@@ -63,7 +63,7 @@ PERF_TEST_P(ClusterEuclideanPerfTest, run,
         stdev.copyTo(stddevs.row(i));
     }
 
-    for (;  next(); )
+    while(next())
     {
         Mat newClusterCenters;
         std::vector<int> clusterSizes, clusterBindings;

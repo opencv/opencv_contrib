@@ -22,7 +22,7 @@ PERF_TEST_P(BilateralPerfTest, run,
     cv::Mat src = imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
     Mat dst;
 
-    for (;  next(); )
+    while(next())
     {
         startTimer();
         cv::fastcv::bilateralRecursive(src, dst, sigmaColor, sigmaSpace);

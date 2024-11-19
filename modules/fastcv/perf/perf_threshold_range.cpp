@@ -34,7 +34,7 @@ PERF_TEST_P(ThresholdRangePerfTest, run,
     cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(256));
 
     Mat dst;
-    for (;  next(); )
+    while(next())
     {
         startTimer();
         cv::fastcv::thresholdRange(src, dst, lowThresh, highThresh, trueValue, falseValue);

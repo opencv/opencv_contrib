@@ -35,11 +35,10 @@ PERF_TEST_P(FillConvexPerfTest, randomDraw, Combine(
 
     Mat img(imgSize, CV_MAKE_TYPE(CV_8U, channels), Scalar(0));
 
-    for (;  next(); )
+    while(next())
     {
         img = 0;
         startTimer();
-        //cv::fillConvexPoly(img, contour, color);
         cv::fastcv::fillConvexPoly(img, contour, color);
         stopTimer();
     }
@@ -75,11 +74,10 @@ PERF_TEST_P(FillConvexPerfTest, circle, Combine(
 
     Mat img(imgSize, CV_MAKE_TYPE(CV_8U, channels), Scalar(0));
 
-    for (;  next(); )
+    while(next())
     {
         img = 0;
         startTimer();
-        //cv::fillConvexPoly(img, contour, color);
         cv::fastcv::fillConvexPoly(img, contour, color);
         stopTimer();
     }

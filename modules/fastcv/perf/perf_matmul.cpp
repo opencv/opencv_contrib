@@ -27,7 +27,7 @@ PERF_TEST_P(MatMulPerfTest, run,
     cvtest::randUni(rng, src2, Scalar::all(-128), Scalar::all(128));
 
     Mat dst;
-    for (;  next(); )
+    while(next())
     {
         startTimer();
         cv::fastcv::matmuls8s32(src1, src2, dst);

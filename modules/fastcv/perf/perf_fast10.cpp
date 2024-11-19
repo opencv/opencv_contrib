@@ -27,7 +27,7 @@ PERF_TEST_P(FAST10PerfTest, run,
     cv::Mat src = imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
 
     std::vector<int> coords, scores;
-    for (;  next(); )
+    while(next())
     {
         coords.clear();
         scores.clear();
