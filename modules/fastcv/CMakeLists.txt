@@ -7,6 +7,7 @@ if(HAVE_FASTCV)
 
   ocv_target_link_libraries(${the_module} ${FASTCV_LIBRARY})
   ocv_target_compile_definitions(${the_module} PRIVATE -DHAVE_FASTCV=1)
+  ocv_install_3rdparty_licenses(FastCV "${OpenCV_BINARY_DIR}/3rdparty/fastcv/LICENSE")
 else()
   ocv_module_disable(fastcv)
 endif()
