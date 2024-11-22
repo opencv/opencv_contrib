@@ -137,7 +137,7 @@ This sample is using two DNN detectors. Every network takes one input
 and produces one output. In G-API, networks are defined with macro
 G_API_NET():
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp net_decl
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp net_decl
 
 To get more information, see
 [Declaring Deep Learning topologies](@ref gapi_ifd_declaring_nets)
@@ -147,7 +147,7 @@ described in the "Face Analytics pipeline" tutorial.
 
 The code below generates a graph for the algorithm above:
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp ppl
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp ppl
 
 The resulting graph is a mixture of G-API's standard operations,
 user-defined operations (namespace `custom::`), and DNN inference.
@@ -173,7 +173,7 @@ and \f$s\f$ is a strength coefficient. While G-API doesn't provide
 this function out-of-the-box, it is expressed naturally with the
 existing G-API operations:
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp unsh
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp unsh
 
 Note that the code snipped above is a regular C++ function defined
 with G-API types. Users can write functions like this to simplify
@@ -192,8 +192,8 @@ information on defining operations and implementing kernels in G-API.
 A face detector output is converted to an array of faces with the
 following kernel:
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp vec_ROI
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp fd_pp
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp vec_ROI
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp fd_pp
 
 ## Facial landmarks post-processing {#gapi_fb_landm_detect}
 
@@ -206,7 +206,7 @@ the face represented by closed contours, so some interpolation is applied to
 get them. This landmarks
 processing and interpolation is performed by the following kernel:
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp ld_pp_cnts
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp ld_pp_cnts
 
 The kernel takes two arrays of denormalized landmarks coordinates and
 returns an array of elements' closed contours and an array of faces'
@@ -220,8 +220,8 @@ Here and below `Contour` is a vector of points.
 
 Eye contours are estimated with the following function:
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp ld_pp_incl
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp ld_pp_eye
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp ld_pp_incl
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp ld_pp_eye
 
 Briefly, this function restores the bottom side of an eye by a
 half-ellipse based on two points in left and right eye
@@ -245,7 +245,7 @@ can get the right angle even in case of upside-down face arrangement
 
 The function  approximates the forehead contour:
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp ld_pp_fhd
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp ld_pp_fhd
 
 As we have only jaw points in our detected landmarks, we have to get a
 half-ellipse based on three points of a jaw: the leftmost, the
@@ -260,7 +260,7 @@ middle between the left and right points) and the lowest jaw point.
 
 When we have all the contours needed, we are able to draw masks:
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp msk_ppline
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp msk_ppline
 
 The steps to get the masks are:
 * the "sharp" mask calculation:
@@ -289,7 +289,7 @@ configuration happens via G-API compilation arguments.
 This sample is using OpenVINO™ Toolkit Inference Engine backend for DL
 inference, which is configured the following way:
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp net_param
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp net_param
 
 Every `cv::gapi::ie::Params<>` object is related to the network
 specified in its template argument. We should pass there the network
@@ -298,7 +298,7 @@ tutorial.
 
 Network parameters are then wrapped in `cv::gapi::NetworkPackage`:
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp netw
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp netw
 
 More details in "Face Analytics Pipeline"
 ([Configuring the pipeline](@ref gapi_ifd_configuration) section).
@@ -309,14 +309,14 @@ In this example we use a lot of custom kernels, in addition to that we
 use Fluid backend to optimize out memory for G-API's standard kernels
 where applicable. The resulting kernel package is formed like this:
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp kern_pass_1
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp kern_pass_1
 
 ## Compiling the streaming pipeline  {#gapi_fb_compiling}
 
 G-API optimizes execution for video streams when compiled in the
 "Streaming" mode.
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp str_comp
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp str_comp
 
 More on this in "Face Analytics Pipeline"
 ([Configuring the pipeline](@ref gapi_ifd_configuration) section).
@@ -328,8 +328,8 @@ specify the input video source, call
 `cv::GStreamingCompiled::start()`, and then fetch the pipeline
 processing results:
 
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp str_src
-@snippet cpp/tutorial_code/gapi/face_beautification/face_beautification.cpp str_loop
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp str_src
+@snippet samples/tutorial_code/face_beautification/face_beautification.cpp str_loop
 
 Once results are ready and can be pulled from the pipeline we display
 it on the screen and handle GUI events.

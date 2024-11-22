@@ -20,7 +20,7 @@ tutorial_anisotropic_image_segmentation_by_a_gst.
 
 Before we start, let's review the original algorithm implementation:
 
-@include cpp/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp
+@include samples/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp
 
 ## Examining calcGST() {#gapi_anisotropic_calcgst}
 
@@ -33,11 +33,11 @@ cv::boxFilter, cv::sqrt, etc).
 Considering the above, calcGST() is a great candidate to start
 with. In the original code, its prototype is defined like this:
 
-@snippet cpp/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp calcGST_proto
+@snippet samples/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp calcGST_proto
 
 With G-API, we can define it as follows:
 
-@snippet cpp/tutorial_code/gapi/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi.cpp calcGST_proto
+@snippet samples/tutorial_code/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi.cpp calcGST_proto
 
 It is important to understand that the new G-API based version of
 calcGST() will just produce a compute graph, in contrast to its
@@ -48,7 +48,7 @@ construct graphs, not to process the actual data.
 Let's start implementing calcGST() with calculation of \f$J\f$
 matrix. This is how the original code looks like:
 
-@snippet cpp/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp calcJ_header
+@snippet samples/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp calcJ_header
 
 Here we need to declare output objects for every new operation (see
 img as a result for cv::Mat::convertTo, imgDiffX and others as results for
@@ -56,7 +56,7 @@ cv::Sobel and cv::multiply).
 
 The G-API analogue is listed below:
 
-@snippet cpp/tutorial_code/gapi/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi.cpp calcGST_header
+@snippet samples/tutorial_code/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi.cpp calcGST_header
 
 This snippet demonstrates the following syntactic difference between
 G-API and traditional OpenCV:
@@ -78,7 +78,7 @@ having a return value).
 The rest of calcGST() function can be implemented the same
 way trivially. Below is its full source code:
 
-@snippet cpp/tutorial_code/gapi/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi.cpp calcGST
+@snippet samples/tutorial_code/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi.cpp calcGST
 
 ## Running G-API graph {#gapi_anisotropic_running}
 
@@ -87,7 +87,7 @@ based on it and finally run it -- pass input image and obtain
 result. Before we do it, let's have a look how original code looked
 like:
 
-@snippet cpp/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp main_extra
+@snippet samples/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp main_extra
 
 G-API-based functions like calcGST() can't be applied to input data
 directly, since it is a _construction_ code, not the _processing_ code.
@@ -105,7 +105,7 @@ and reconstructs the graph with operations in-between the specified
 boundaries. This may sound complex, however in fact the code looks
 like this:
 
-@snippet cpp/tutorial_code/gapi/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi.cpp main
+@snippet samples/tutorial_code/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi.cpp main
 
 Note that this code slightly changes from the original one: forming up
 the resulting image is also a part of the pipeline (done with
@@ -121,7 +121,7 @@ Result of this G-API pipeline bit-exact matches the original one
 Below is the full listing of the initial anisotropic image
 segmentation port on G-API:
 
-@snippet cpp/tutorial_code/gapi/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi.cpp full_sample
+@snippet samples/tutorial_code/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi.cpp full_sample
 
 # Inspecting the initial version {#gapi_anisotropic_inspect}
 
@@ -286,12 +286,12 @@ of execution.
 In order to start using Fluid kernels, we need first to include
 appropriate header files (which are not included by default):
 
-@snippet cpp/tutorial_code/gapi/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi_fluid.cpp fluid_includes
+@snippet samples/tutorial_code/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi_fluid.cpp fluid_includes
 
 Once these headers are included, we can form up a new _kernel package_
 and specify it to G-API:
 
-@snippet cpp/tutorial_code/gapi/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi_fluid.cpp kernel_pkg
+@snippet samples/tutorial_code/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi_fluid.cpp kernel_pkg
 
 In G-API, kernels (or operation implementations) are objects. Kernels are
 organized into collections, or _kernel packages_, represented by class
@@ -299,7 +299,7 @@ cv::GKernelPackage. The main purpose of a kernel package is to
 capture which kernels we would like to use in our graph, and pass it
 as a _graph compilation option_:
 
-@snippet cpp/tutorial_code/gapi/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi_fluid.cpp kernel_pkg_use
+@snippet samples/tutorial_code/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi_fluid.cpp kernel_pkg_use
 
 Traditional OpenCV is logically divided into modules, with every
 module providing a set of functions. In G-API, there are also
@@ -346,14 +346,14 @@ version of Box filter kernel in this sample. It can be done by
 removing the appropriate kernel from the kernel package we've just
 created:
 
-@snippet cpp/tutorial_code/gapi/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi_fluid.cpp kernel_hotfix
+@snippet samples/tutorial_code/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi_fluid.cpp kernel_hotfix
 
 Now this kernel package doesn't have _any_ implementation of Box
 filter kernel interface (specified as a template parameter). As
 described above, G-API will fall-back to OpenCV to run this kernel
 now. The resulting code with this change now looks like:
 
-@snippet cpp/tutorial_code/gapi/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi_fluid.cpp kernel_pkg_proper
+@snippet samples/tutorial_code/porting_anisotropic_image_segmentation/porting_anisotropic_image_segmentation_gapi_fluid.cpp kernel_pkg_proper
 
 Let's examine the memory profile for this sample after we switched to
 Fluid backend. Now it looks like this:

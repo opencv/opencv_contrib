@@ -137,7 +137,7 @@ cv::gapi::infer<> is _parametrized_ by the details of a topology we are
 going to execute. Like operations, topologies in G-API are strongly
 typed and are defined with a special macro G_API_NET():
 
-@snippet cpp/tutorial_code/gapi/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp G_API_NET
+@snippet samples/tutorial_code/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp G_API_NET
 
 Similar to how operations are defined with G_API_OP(), network
 description requires three parameters:
@@ -157,7 +157,7 @@ description requires three parameters:
 
 Now the above pipeline is expressed in G-API like this:
 
-@snippet cpp/tutorial_code/gapi/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp GComputation
+@snippet samples/tutorial_code/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp GComputation
 
 Every pipeline starts with declaring empty data objects -- which act
 as inputs to the pipeline. Then we call a generic cv::gapi::infer<>
@@ -216,7 +216,7 @@ available. Every inference backend in G-API has to provide a special
 parameterizable structure to express *backend-specific* neural network
 parameters -- and in this case, it is cv::gapi::ie::Params:
 
-@snippet cpp/tutorial_code/gapi/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp Param_Cfg
+@snippet samples/tutorial_code/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp Param_Cfg
 
 Here we define three parameter objects: `det_net`, `age_net`, and
 `emo_net`. Every object is a cv::gapi::ie::Params structure
@@ -236,7 +236,7 @@ These arguments are taken from the command-line parser.
 Once networks are defined and custom kernels are implemented, the
 pipeline is compiled for streaming:
 
-@snippet cpp/tutorial_code/gapi/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp Compile
+@snippet samples/tutorial_code/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp Compile
 
 cv::GComputation::compileStreaming() triggers a special video-oriented
 form of graph compilation where G-API is trying to optimize
@@ -280,7 +280,7 @@ APIs.
 
 Sample application specifies the input source as follows:
 
-@snippet cpp/tutorial_code/gapi/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp Source
+@snippet samples/tutorial_code/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp Source
 
 Please note that a GComputation may still have multiple inputs like
 cv::GMat, cv::GScalar, or cv::GArray objects. User can pass their
@@ -294,7 +294,7 @@ cv::GStreamingCompiled::start() and fetch your data with blocking
 cv::GStreamingCompiled::pull() or non-blocking
 cv::GStreamingCompiled::try_pull(); repeat until the stream ends:
 
-@snippet cpp/tutorial_code/gapi/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp Run
+@snippet samples/tutorial_code/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp Run
 
 The above code may look complex but in fact it handles two modes --
 with and without graphical user interface (GUI):
@@ -320,7 +320,7 @@ cv::GCompiled object is produced; the pipelining optimization is not
 applied within G-API; it is the user responsibility to acquire image
 frames from cv::VideoCapture object and pass those to G-API.
 
-@snippet cpp/tutorial_code/gapi/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp Run_Serial
+@snippet samples/tutorial_code/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp Run_Serial
 
 On a test machine (Intel® Core™ i5-6600), with OpenCV built with
 [Intel® TBB]
