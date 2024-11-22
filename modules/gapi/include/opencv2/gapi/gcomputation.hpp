@@ -62,11 +62,11 @@ namespace s11n {
  * executed. The below example expresses calculation of Sobel operator
  * for edge detection (\f$G = \sqrt{G_x^2 + G_y^2}\f$):
  *
- * @snippet samples/cpp/tutorial_code/gapi/doc_snippets/api_ref_snippets.cpp graph_def
+ * @snippet samples/tutorial_code/doc_snippets/api_ref_snippets.cpp graph_def
  *
  * Full pipeline can be now captured with this object declaration:
  *
- * @snippet samples/cpp/tutorial_code/gapi/doc_snippets/api_ref_snippets.cpp graph_cap_full
+ * @snippet samples/tutorial_code/doc_snippets/api_ref_snippets.cpp graph_cap_full
  *
  * Input/output data objects on which a call graph should be
  * reconstructed are passed using special wrappers cv::GIn and
@@ -79,7 +79,7 @@ namespace s11n {
  * expects that image gradients are already pre-calculated may be
  * defined like this:
  *
- * @snippet samples/cpp/tutorial_code/gapi/doc_snippets/api_ref_snippets.cpp graph_cap_sub
+ * @snippet samples/tutorial_code/doc_snippets/api_ref_snippets.cpp graph_cap_sub
  *
  * The resulting graph would expect two inputs and produce one
  * output. In this case, it doesn't matter if gx/gy data objects are
@@ -131,7 +131,7 @@ public:
      * Graph can be defined in-place directly at the moment of its
      * construction with a lambda:
      *
-     * @snippet samples/cpp/tutorial_code/gapi/doc_snippets/api_ref_snippets.cpp graph_gen
+     * @snippet samples/tutorial_code/doc_snippets/api_ref_snippets.cpp graph_gen
      *
      * This may be useful since all temporary objects (cv::GMats) and
      * namespaces can be localized to scope of lambda, without

@@ -669,7 +669,7 @@ namespace gapi {
      * Use this function to pass kernel implementations (defined in
      * either way) and transformations to the system. Example:
      *
-     * @snippet samples/cpp/tutorial_code/gapi/doc_snippets/api_ref_snippets.cpp kernels_snippet
+     * @snippet samples/tutorial_code/doc_snippets/api_ref_snippets.cpp kernels_snippet
      *
      * Note that kernels() itself is a function returning object, not
      * a type, so having `()` at the end is important -- it must be a
