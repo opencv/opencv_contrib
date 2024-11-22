@@ -20,7 +20,7 @@ tutorial_anisotropic_image_segmentation_by_a_gst.
 
 Before we start, let's review the original algorithm implementation:
 
-@include samples/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp
+@include cpp/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp
 
 ## Examining calcGST() {#gapi_anisotropic_calcgst}
 
@@ -33,7 +33,7 @@ cv::boxFilter, cv::sqrt, etc).
 Considering the above, calcGST() is a great candidate to start
 with. In the original code, its prototype is defined like this:
 
-@snippet samples/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp calcGST_proto
+@snippet cpp/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp calcGST_proto
 
 With G-API, we can define it as follows:
 
@@ -48,7 +48,7 @@ construct graphs, not to process the actual data.
 Let's start implementing calcGST() with calculation of \f$J\f$
 matrix. This is how the original code looks like:
 
-@snippet samples/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp calcJ_header
+@snippet cpp/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp calcJ_header
 
 Here we need to declare output objects for every new operation (see
 img as a result for cv::Mat::convertTo, imgDiffX and others as results for
@@ -87,7 +87,7 @@ based on it and finally run it -- pass input image and obtain
 result. Before we do it, let's have a look how original code looked
 like:
 
-@snippet samples/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp main_extra
+@snippet cpp/tutorial_code/ImgProc/anisotropic_image_segmentation/anisotropic_image_segmentation.cpp main_extra
 
 G-API-based functions like calcGST() can't be applied to input data
 directly, since it is a _construction_ code, not the _processing_ code.
