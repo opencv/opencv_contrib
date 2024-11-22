@@ -345,7 +345,7 @@ objects so accessing those is as easy as with a regular DNN module.
 The OpenCV-based SSD post-processing kernel is defined and implemented in this
 sample as follows:
 
-@snippet cpp/tutorial_code/gapi/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp Postproc
+@snippet samples/tutorial_code/age_gender_emotion_recognition/age_gender_emotion_recognition.cpp Postproc
 
 ["Interactive Face Detection"]: https://github.com/opencv/open_model_zoo/tree/master/demos/interactive_face_detection_demo
 [core]: @ref gapi_core
