@@ -1209,6 +1209,8 @@ public:
     CV_WRAP virtual float getScaleFactor() const = 0;
     CV_WRAP virtual void setNScales(int n_scales) = 0;
     CV_WRAP virtual int getNScales() const = 0;
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 };
 
 /** @brief Estimates cornerness for prespecified KeyPoints using the FAST algorithm
