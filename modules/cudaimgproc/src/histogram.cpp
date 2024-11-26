@@ -553,24 +553,6 @@ namespace
     };
 }
 
-class OldNppStreamHandlerForEvenLevels
-{
-public:
-    explicit OldNppStreamHandlerForEvenLevels(Stream& newStream)
-    {
-        oldStream = nppGetStream();
-        nppSafeSetStream(oldStream, StreamAccessor::getStream(newStream));
-    }
-
-    ~OldNppStreamHandlerForEvenLevels()
-    {
-        nppSafeSetStream(nppGetStream(), oldStream);
-    }
-
-private:
-    cudaStream_t oldStream;
-};
-
 void cv::cuda::evenLevels(OutputArray _levels, int nLevels, int lowerLevel, int upperLevel, Stream& stream)
 {
     const int kind = _levels.kind();
@@ -582,9 +564,6 @@ void cv::cuda::evenLevels(OutputArray _levels, int nLevels, int lowerLevel, int 
         host_levels.create(1, nLevels, CV_32SC1);
     else
         host_levels = _levels.getMat();
-
-    // Update to use NppStreamHandler when nppiEvenLevelsHost_32s_Ctx is included in nppist.lib and libnppist.so
-    OldNppStreamHandlerForEvenLevels h(stream);
 
     nppSafeCall( nppiEvenLevelsHost_32s(host_levels.ptr<Npp32s>(), nLevels, lowerLevel, upperLevel) );
 
