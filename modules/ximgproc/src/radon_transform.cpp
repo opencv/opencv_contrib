@@ -43,7 +43,7 @@ namespace cv {namespace ximgproc {
             // crop the source into circle
             Mat _mask(_srcMat.size(), CV_8UC1, Scalar(0));
             _center = Point2f(_srcMat.cols / 2.f - 0.5f, _srcMat.rows / 2.f - 0.5f);
-            circle(_mask, _center, _srcMat.cols / 2, Scalar(255), FILLED);
+            circle(_mask, _center * 2, _srcMat.cols, Scalar(255), FILLED, LINE_8, 1);
             _srcMat.copyTo(_masked_src, _mask);
         }
         else {
