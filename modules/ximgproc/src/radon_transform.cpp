@@ -23,7 +23,7 @@ namespace cv {namespace ximgproc {
         _col_num = cvRound((end_angle - start_angle) / theta);
         transpose(_srcMat, _srcMat);
         Mat _masked_src;
-        Point _center;
+        Point2f _center;
 
         if (_srcMat.type() == CV_32FC1 || _srcMat.type() == CV_64FC1) {
             _out_mat_type = CV_64FC1;
@@ -42,7 +42,7 @@ namespace cv {namespace ximgproc {
             _srcMat = _srcMat(_crop_ROI);
             // crop the source into circle
             Mat _mask(_srcMat.size(), CV_8UC1, Scalar(0));
-            _center = Point(_srcMat.cols / 2, _srcMat.rows / 2);
+            _center = Point2f(_srcMat.cols / 2.f - 0.5f, _srcMat.rows / 2.f - 0.5f);
             circle(_mask, _center, _srcMat.cols / 2, Scalar(255), FILLED);
             _srcMat.copyTo(_masked_src, _mask);
         }
@@ -50,7 +50,7 @@ namespace cv {namespace ximgproc {
             // avoid cropping corner when rotating
             _row_num = cvCeil(sqrt(_srcMat.rows * _srcMat.rows + _srcMat.cols * _srcMat.cols));
             _masked_src = Mat(Size(_row_num, _row_num), _srcMat.type(), Scalar(0));
-            _center = Point(_masked_src.cols / 2, _masked_src.rows / 2);
+            _center = Point2f(_masked_src.cols / 2.f - 0.5f, _masked_src.rows / 2.f - 0.5f);
             _srcMat.copyTo(_masked_src(Rect(
                 (_row_num - _srcMat.cols) / 2,
                 (_row_num - _srcMat.rows) / 2,
