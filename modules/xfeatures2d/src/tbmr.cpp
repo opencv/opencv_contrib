@@ -573,6 +573,11 @@ void TBMR_Impl::detectAndCompute(
                           useProvidedKeypoints);
 }
 
+String TBMR::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".TBMR");
+}
+
 Ptr<TBMR> TBMR::create(int _min_area, float _max_area_relative, float _scale,
                        int _n_scale)
 {
