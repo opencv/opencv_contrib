@@ -22,6 +22,7 @@ namespace fastcv {
  * @param dst Resulting matrix of type CV_32S
  */
 CV_EXPORTS_W void matmuls8s32(InputArray src1, InputArray src2, OutputArray dst);
+
 //! @}
 
 } // fastcv::
