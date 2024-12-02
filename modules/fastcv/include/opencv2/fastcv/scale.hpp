@@ -16,15 +16,15 @@ namespace fastcv {
 
 /**
  * @brief Down-scale the image by averaging each 2x2 pixel block.
- * @param src The first input image data, type CV_8UC1, src height must be a multiple of 2
- * @param dst The output image data, type CV_8UC1
+ * @param _src The first input image data, type CV_8UC1, src height must be a multiple of 2
+ * @param _dst The output image data, type CV_8UC1
 */
 CV_EXPORTS_W void resizeDownBy2(cv::InputArray _src, cv::OutputArray _dst);
 
 /**
  * @brief Down-scale the image by averaging each 4x4 pixel block.
- * @param src The first input image data, type CV_8UC1, src height must be a multiple of 4
- * @param dst The output image data, type CV_8UC1
+ * @param _src The first input image data, type CV_8UC1, src height must be a multiple of 4
+ * @param _dst The output image data, type CV_8UC1
 */
 CV_EXPORTS_W void resizeDownBy4(cv::InputArray _src, cv::OutputArray _dst);
 

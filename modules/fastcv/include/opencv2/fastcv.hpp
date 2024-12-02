@@ -8,10 +8,6 @@
 
 #include <opencv2/core.hpp>
 
-/**
- * @defgroup fastcv Module-wrapper for FastCV hardware accelerated functions
- */
-
 #include "opencv2/fastcv/arithm.hpp"
 #include "opencv2/fastcv/bilateralFilter.hpp"
 #include "opencv2/fastcv/cluster.hpp"
@@ -27,6 +23,10 @@
 #include "opencv2/fastcv/smooth.hpp"
 #include "opencv2/fastcv/thresh.hpp"
 
-//! @}
+/**
+ * @defgroup fastcv Module-wrapper for FastCV hardware accelerated functions
+ * @{
+ * @}
+ */
 
 #endif // OPENCV_FASTCV_ARITHM_HPP
