@@ -52,7 +52,7 @@ PERF_TEST_P(BilateralPerfTest, run,
 
     RNG& rng = cv::theRNG();
     Mat src(size, CV_8UC1);
-    cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(256));
+    cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(255));
     Mat dst;
 
     while (next())

@@ -16,6 +16,7 @@
 #include "opencv2/fastcv/edges.hpp"
 #include "opencv2/fastcv/fast10.hpp"
 #include "opencv2/fastcv/fft.hpp"
+#include "opencv2/fastcv/histogram.hpp"
 #include "opencv2/fastcv/hough.hpp"
 #include "opencv2/fastcv/ipptransform.hpp"
 #include "opencv2/fastcv/moments.hpp"

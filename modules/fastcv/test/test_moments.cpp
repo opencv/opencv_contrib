@@ -15,22 +15,29 @@ TEST_P(fcv_momentsTest, accuracy)
     const Size srcSize = get<1>(GetParam());
     const MatDepth srcType = get<2>(GetParam());
     Mat src(srcSize, srcType);
+    cv::RNG& rng = cv::theRNG();
+    if(srcType == CV_8UC1)
+        rng.fill(src,  cv::RNG::UNIFORM, 0, 5);
+    else if(srcType == CV_32SC1)
+        rng.fill(src, cv::RNG::UNIFORM, 0, 5);
+    else if(srcType == CV_32FC1)
+        rng.fill(src, cv::RNG::UNIFORM, 0.f, 5.f);
 
-	for(int j = 0; j < srcSize.width; ++j)
-        for(int i = 0; i < srcSize.height; ++i)
-		{
-			if(srcType == CV_8UC1)
-				src.at<uchar>(i, j) = cv::randu<uchar>();
-			else if(srcType == CV_32SC1)
-				src.at<int>(i, j) = cv::randu<int>();
-			else if(srcType == CV_32FC1)
-				src.at<float>(i, j) = cv::randu<float>();
-	    }
+    cv::Moments m = cv::fastcv::moments(src, binaryImage);
 
-	cv::Moments m = cv::fastcv::moments(src, binaryImage);
+    cv::Scalar mean_val, stdDev;
+    float mean_val_fcv = m.m00/(srcSize.width * srcSize.height);
+    if(binaryImage)
+    {
+        cv::Mat src_binary(srcSize, CV_8UC1);
+        cv::compare( src, 0, src_binary, cv::CMP_NE );
+        mean_val = cv::mean(src_binary);
+        mean_val_fcv *= 255;
+    }
+    else
+        mean_val = cv::mean(src);
 
-    int len_m = sizeof(m)/sizeof(m.m00);
-    EXPECT_FALSE(len_m != 24);
+    EXPECT_NEAR(mean_val[0], mean_val_fcv, 2);
 }
 
 INSTANTIATE_TEST_CASE_P(/*nothing*/, fcv_momentsTest, Combine(
