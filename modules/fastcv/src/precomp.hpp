@@ -28,6 +28,9 @@ namespace fastcv {
     CV_INSTRUMENT_REGION();                                                 \
 }
 
+#define FCV_KernelSize_SHIFT 3
+#define FCV_MAKETYPE(ksize,depth) ((ksize<<FCV_KernelSize_SHIFT) + depth)
+
 const std::map<fcvStatus, std::string> fcvStatusStrings =
 {
     { FASTCV_SUCCESS,       "Success"},

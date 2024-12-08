@@ -36,30 +36,31 @@ PERF_TEST_P(MSERPerfTest, run,
     float        maxVariation = 0.15f;
     float        minDiversity = 0.2f;
 
+    cv::Ptr<cv::fastcv::MSER> mser;
+    mser = cv::fastcv::MSER::create(src.size(), numNeighbors, delta, minArea, maxArea,
+                                    maxVariation, minDiversity);
+
     while(next())
     {
         std::vector<std::vector<Point>> contours;
         std::vector<cv::Rect> bboxes;
-        std::vector<cv::fastcv::ContourData> contourData;
+        std::vector<cv::fastcv::MSER::ContourData> contourData;
 
         startTimer();
         if (useBboxes)
         {
             if (useContourData)
             {
-                cv::fastcv::MSER(src, contours, bboxes, contourData, numNeighbors,
-                                 delta, minArea, maxArea, maxVariation, minDiversity);
+                mser->detect(src, contours, bboxes, contourData);
             }
             else
             {
-                cv::fastcv::MSER(src, contours, bboxes, numNeighbors,
-                                 delta, minArea, maxArea, maxVariation, minDiversity);
+                mser->detect(src, contours, bboxes);
             }
         }
         else
         {
-            cv::fastcv::MSER(src, contours, numNeighbors,
-                             delta, minArea, maxArea, maxVariation, minDiversity);
+            mser->detect(src, contours);
         }
         stopTimer();
     }

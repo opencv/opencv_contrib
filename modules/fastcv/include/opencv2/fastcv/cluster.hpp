@@ -16,7 +16,7 @@ namespace fastcv {
 
 /**
  * @brief Clusterizes N input points in D-dimensional space into K clusters
- * 
+ *
  * @param points            Points array of type 8u, each row represets a point.
  *                          Size is N rows by D columns, can be non-continuous.
  * @param clusterCenters    Initial cluster centers array of type 32f, each row represents a center.

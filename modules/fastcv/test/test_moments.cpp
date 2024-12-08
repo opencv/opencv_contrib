@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-#include "opencv2/ts.hpp"
-#include "opencv2/fastcv/moments.hpp"
+#include "test_precomp.hpp"
 
 namespace opencv_test { namespace {
 
@@ -30,14 +29,25 @@ TEST_P(fcv_momentsTest, accuracy)
 
 	cv::Moments m = cv::fastcv::moments(src, binaryImage);
 
-    int len_m = sizeof(m)/sizeof(m.m00);
-    EXPECT_FALSE(len_m != 24);
+    cv::Scalar mean_val, stdDev;
+    float mean_val_fcv = m.m00/(srcSize.width * srcSize.height);
+    if(binaryImage)
+    {
+        cv::Mat src_binary(srcSize, CV_8UC1);
+        cv::compare( src, 0, src_binary, cv::CMP_NE );
+        mean_val = cv::mean(src_binary);
+        mean_val_fcv *= 255;
+    }
+    else
+        mean_val = cv::mean(src);
+
+    EXPECT_NEAR(mean_val[0], mean_val_fcv, 2);
 }
 
 INSTANTIATE_TEST_CASE_P(/*nothing*/, fcv_momentsTest, Combine(
                    Values(false, true),
                    Values(TYPICAL_MAT_SIZES),
-                   Values(CV_8UC1, CV_32SC1, CV_32FC1)			   
+                   Values(CV_8UC1, CV_32SC1, CV_32FC1)
 ));
 
 }

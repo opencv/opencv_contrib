@@ -10,20 +10,20 @@ namespace opencv_test { namespace {
 typedef testing::TestWithParam<tuple<cv::Size,int,int>> fcv_bilateralFilterTest;
 
 TEST_P(fcv_bilateralFilterTest, accuracy)
-{	
+{
     cv::Size size  = get<0>(GetParam());
 	int d = get<1>(GetParam());
     double sigmaColor = get<2>(GetParam());
-	double sigmaSpace = sigmaColor;
-	
-	RNG& rng = cv::theRNG();
+    double sigmaSpace = sigmaColor;
+
+    RNG& rng = cv::theRNG();
     Mat src(size, CV_8UC1);
     cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(256));
 
     cv::Mat dst;
 
-	cv::fastcv::bilateralFilter(src, dst, d, sigmaColor, sigmaSpace);
-	
+    cv::fastcv::bilateralFilter(src, dst, d, sigmaColor, sigmaSpace);
+
     EXPECT_FALSE(dst.empty());
 }
 

@@ -39,7 +39,6 @@ TEST_P(FFTExtTest, inverse)
     RNG& rng = cv::theRNG();
     Mat src(size, CV_8UC1);
     cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(256));
-    //cv::Mat src = imread(cvtest::findDataFile("cv/shared/lena.png"), IMREAD_GRAYSCALE);
 
     Mat srcFloat;
     src.convertTo(srcFloat, CV_32F);
