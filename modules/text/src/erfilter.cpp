@@ -1038,7 +1038,7 @@ double ERClassifierNM1::eval(const ERStat& stat)
                      (float)(1-stat.euler), //number of holes
                      stat.med_crossings);
 
-    float votes = boost->predict( sample, noArray(), DTrees::PREDICT_SUM | StatModel::RAW_OUTPUT);
+    float votes = boost->predict( sample, noArray(), (int)DTrees::PREDICT_SUM | (int)StatModel::RAW_OUTPUT);
 
     // Logistic Correction returns a probability value (in the range(0,1))
     return (double)1-(double)1/(1+exp(-2*votes));
@@ -1070,7 +1070,7 @@ double ERClassifierNM2::eval(const ERStat& stat)
                      stat.med_crossings, stat.hole_area_ratio,
                      stat.convex_hull_ratio, stat.num_inflexion_points);
 
-    float votes = boost->predict( sample, noArray(), DTrees::PREDICT_SUM | StatModel::RAW_OUTPUT);
+    float votes = boost->predict( sample, noArray(), (int)DTrees::PREDICT_SUM | (int)StatModel::RAW_OUTPUT);
 
     // Logistic Correction returns a probability value (in the range(0,1))
     return (double)1-(double)1/(1+exp(-2*votes));
@@ -2152,6 +2152,11 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
     {
         HCluster cluster;
         cluster.num_elem = (int)Z[i+3]; //number of elements
+        cluster.nfa = 0;
+        cluster.dist_ext = 0.0f;
+        cluster.max_meaningful = false;
+        cluster.min_nfa_in_branch = 0;
+        cluster.probability = 0.0;
 
         int node1  = (int)Z[i];
         int node2  = (int)Z[i+1];
@@ -2611,7 +2616,7 @@ double MaxMeaningfulClustering::probability(vector<int> &cluster)
     sample.push_back((float)mean[0]);
     sample.push_back((float)std[0]);
 
-    float votes_group = group_boost->predict( Mat(sample), noArray(), DTrees::PREDICT_SUM | StatModel::RAW_OUTPUT);
+    float votes_group = group_boost->predict( Mat(sample), noArray(), (int)DTrees::PREDICT_SUM | (int)StatModel::RAW_OUTPUT);
 
     return (double)1-(double)1/(1+exp(-2*votes_group));
 }
