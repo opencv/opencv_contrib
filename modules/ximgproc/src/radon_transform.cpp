@@ -23,7 +23,7 @@ namespace cv {namespace ximgproc {
         _col_num = cvRound((end_angle - start_angle) / theta);
         transpose(_srcMat, _srcMat);
         Mat _masked_src;
-        cv::Point _center;
+        Point _center;
 
         if (_srcMat.type() == CV_32FC1 || _srcMat.type() == CV_64FC1) {
             _out_mat_type = CV_64FC1;
@@ -35,7 +35,7 @@ namespace cv {namespace ximgproc {
         if (crop) {
             // crop the source into square
             _row_num = min(_srcMat.rows, _srcMat.cols);
-            cv::Rect _crop_ROI(
+            Rect _crop_ROI(
                 _srcMat.cols / 2 - _row_num / 2,
                 _srcMat.rows / 2 - _row_num / 2,
                 _row_num, _row_num);
@@ -64,11 +64,11 @@ namespace cv {namespace ximgproc {
         for (int _col = 0; _col < _col_num; _col++) {
             // rotate the source by _t
             _t = (start_angle + _col * theta);
-            cv::Mat _r_matrix = cv::getRotationMatrix2D(_center, _t, 1);
-            cv::warpAffine(_masked_src, _rotated_src, _r_matrix, _masked_src.size());
+            Mat _r_matrix = getRotationMatrix2D(_center, _t, 1);
+            warpAffine(_masked_src, _rotated_src, _r_matrix, _masked_src.size());
             Mat _col_mat = _radon.col(_col);
             // make projection
-            cv::reduce(_rotated_src, _col_mat, 1, REDUCE_SUM, _out_mat_type);
+            reduce(_rotated_src, _col_mat, 1, REDUCE_SUM, _out_mat_type);
         }
 
         if (norm) {
