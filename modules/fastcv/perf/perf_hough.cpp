@@ -51,12 +51,12 @@ typedef ::perf::TestBaseWithParam<HoughCirclesPerfTestParams> HoughCirclesPerf;
 
 PERF_TEST_P(HoughCirclesPerf, run,
                 ::testing::Values(
-                            HoughCirclesPerfTestParams {"fastcv/hough/kandinsky-circles_2.jpg", 100, 100, 50, 10, 100 },
-                            HoughCirclesPerfTestParams {"fastcv/hough/kandinsky-circles_2.jpg", 100, 100, 50, 30, 100 },
-                            HoughCirclesPerfTestParams {"fastcv/hough/kandinsky-circles_2.jpg", 100, 100, 50, 50, 100 },
-                            HoughCirclesPerfTestParams {"fastcv/hough/kandinsky-circles_2.jpg",  10, 100, 50, 10, 100 },
-                            HoughCirclesPerfTestParams {"fastcv/hough/kandinsky-circles_2.jpg",  10, 100, 50, 30, 100 },
-                            HoughCirclesPerfTestParams {"fastcv/hough/kandinsky-circles_2.jpg",  10, 100, 50, 50, 100 }
+                            HoughCirclesPerfTestParams {"cv/cameracalibration/circles/circles4.png", 100, 100, 50, 10, 100 },
+                            HoughCirclesPerfTestParams {"cv/cameracalibration/circles/circles4.png", 100, 100, 50, 30, 100 },
+                            HoughCirclesPerfTestParams {"cv/cameracalibration/circles/circles4.png", 100, 100, 50, 50, 100 },
+                            HoughCirclesPerfTestParams {"cv/cameracalibration/circles/circles4.png",  10, 100, 50, 10, 100 },
+                            HoughCirclesPerfTestParams {"cv/cameracalibration/circles/circles4.png",  10, 100, 50, 30, 100 },
+                            HoughCirclesPerfTestParams {"cv/cameracalibration/circles/circles4.png",  10, 100, 50, 50, 100 }
                          )
            )
 {

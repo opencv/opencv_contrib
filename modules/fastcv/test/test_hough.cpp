@@ -156,7 +156,7 @@ TEST_P(HoughCirclesTest, accuracy)
     }
     totalDist = std::sqrt(totalDist);
 
-    EXPECT_LT(totalDist, 554.0);
+    EXPECT_LT(totalDist, 811.0);
 
     if (cvtest::debugLevel > 0)
     {
@@ -187,12 +187,13 @@ TEST_P(HoughCirclesTest, accuracy)
 // adb push fastcv/misc/hough/ /sdcard/testdata/fastcv/hough/
 INSTANTIATE_TEST_CASE_P(FastCV_Extension, HoughCirclesTest,
                         ::testing::Values(
-                            HoughCirclesTestParams {"fastcv/hough/kandinsky-circles_2.jpg", 100, 100, 50, 10, 100 },
-                            HoughCirclesTestParams {"fastcv/hough/kandinsky-circles_2.jpg", 100, 100, 50, 30, 100 },
-                            HoughCirclesTestParams {"fastcv/hough/kandinsky-circles_2.jpg", 100, 100, 50, 50, 100 },
-                            HoughCirclesTestParams {"fastcv/hough/kandinsky-circles_2.jpg",  10, 100, 50, 10, 100 },
-                            HoughCirclesTestParams {"fastcv/hough/kandinsky-circles_2.jpg",  10, 100, 50, 30, 100 },
-                            HoughCirclesTestParams {"fastcv/hough/kandinsky-circles_2.jpg",  10, 100, 50, 50, 100 }
+                            // gpu/connectedcomponents/concentric_circles.png
+                            HoughCirclesTestParams {"cv/cameracalibration/circles/circles4.png", 100, 100, 50, 10, 100 },
+                            HoughCirclesTestParams {"cv/cameracalibration/circles/circles4.png", 100, 100, 50, 30, 100 },
+                            HoughCirclesTestParams {"cv/cameracalibration/circles/circles4.png", 100, 100, 50, 50, 100 },
+                            HoughCirclesTestParams {"cv/cameracalibration/circles/circles4.png",  10, 100, 50, 10, 100 },
+                            HoughCirclesTestParams {"cv/cameracalibration/circles/circles4.png",  10, 100, 50, 30, 100 },
+                            HoughCirclesTestParams {"cv/cameracalibration/circles/circles4.png",  10, 100, 50, 50, 100 }
                          ));
 
 }} // namespaces opencv_test, ::
