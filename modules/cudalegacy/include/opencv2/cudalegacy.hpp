@@ -44,11 +44,13 @@
 #define OPENCV_CUDALEGACY_HPP
 
 #include "opencv2/core/cuda.hpp"
+#if defined (HAVE_CUDA) && !defined (CUDA_DISABLER)
 #include "opencv2/cudalegacy/NCV.hpp"
 #include "opencv2/cudalegacy/NPP_staging.hpp"
 #include "opencv2/cudalegacy/NCVPyramid.hpp"
 #include "opencv2/cudalegacy/NCVHaarObjectDetection.hpp"
 #include "opencv2/cudalegacy/NCVBroxOpticalFlow.hpp"
+#endif
 #include "opencv2/video/background_segm.hpp"
 
 /**

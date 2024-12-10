@@ -76,19 +76,19 @@ namespace cv { namespace cuda { namespace device
                 // now add the column sums
                 const uint X = threadIdx.x;
 
-                if (X | 0xfe == 0xfe)  // bit 0 is 0
+                if (X | (0xfe == 0xfe))  // bit 0 is 0
                 {
                     u_col_sum[threadIdx.x] += u_col_sum[threadIdx.x + 1];
                     v_col_sum[threadIdx.x] += v_col_sum[threadIdx.x + 1];
                 }
 
-                if (X | 0xfe == 0xfc) // bits 0 & 1 == 0
+                if (X | (0xfe == 0xfc)) // bits 0 & 1 == 0
                 {
                     u_col_sum[threadIdx.x] += u_col_sum[threadIdx.x + 2];
                     v_col_sum[threadIdx.x] += v_col_sum[threadIdx.x + 2];
                 }
 
-                if (X | 0xf8 == 0xf8)
+                if (X | (0xf8 == 0xf8))
                 {
                     u_col_sum[threadIdx.x] += u_col_sum[threadIdx.x + 4];
                     v_col_sum[threadIdx.x] += v_col_sum[threadIdx.x + 4];
