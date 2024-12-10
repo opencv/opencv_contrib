@@ -42,6 +42,8 @@
 
 #include "precomp.hpp"
 
+#if defined (HAVE_CUDA) && !defined (CUDA_DISABLER)
+
 //==============================================================================
 //
 // Error handling helpers
@@ -886,3 +888,4 @@ NCVStatus ncvDrawRects_32u_host(Ncv32u *h_dst,
 {
     return drawRectsWrapperHost(h_dst, dstStride, dstWidth, dstHeight, h_rects, numRects, color);
 }
+#endif

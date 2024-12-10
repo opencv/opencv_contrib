@@ -85,26 +85,24 @@ const Ncv32u NUM_SCAN_THREADS = 256;
 const Ncv32u LOG2_NUM_SCAN_THREADS = 8;
 
 
-template<class T_in, class T_out>
+template<class T_in, class T_out, bool tbDoSqr>
 struct _scanElemOp
 {
-    template<bool tbDoSqr>
-    static inline __host__ __device__ T_out scanElemOp(T_in elem)
-    {
-        return scanElemOp( elem, Int2Type<(int)tbDoSqr>() );
+    static __host__ __device__ T_out scanElemOp(T_in elem);
+};
+
+template<class T_in, class T_out>
+struct _scanElemOp<T_in, T_out, false>
+{
+    static inline __host__ __device__ T_out scanElemOp(T_in elem) {
+        return (T_out)(elem);
     }
+};
 
-private:
-
-    template <int v> struct Int2Type { enum { value = v }; };
-
-    static inline __host__ __device__ T_out scanElemOp(T_in elem, Int2Type<0>)
-    {
-        return (T_out)elem;
-    }
-
-    static inline __host__ __device__ T_out scanElemOp(T_in elem, Int2Type<1>)
-    {
+template<class T_in, class T_out>
+struct _scanElemOp<T_in, T_out, true>
+{
+    static inline __host__ __device__ T_out scanElemOp(T_in elem) {
         return (T_out)(elem*elem);
     }
 };
@@ -177,7 +175,7 @@ __global__ void scanRows(cv::cudev::TexturePtr<Ncv8u> tex8u, T_in *d_src, Ncv32u
         Ncv32u curElemOffs = offsetX + threadIdx.x;
         T_out curScanElem;
 
-        T_in curElem;
+        T_in curElem = 0;
         T_out curElemMod;
 
         if (curElemOffs < srcWidth)
@@ -185,7 +183,7 @@ __global__ void scanRows(cv::cudev::TexturePtr<Ncv8u> tex8u, T_in *d_src, Ncv32u
             //load elements
             curElem = readElem<T_in>(tex8u, d_src, texOffs, srcStride, curElemOffs);
         }
-        curElemMod = _scanElemOp<T_in, T_out>::scanElemOp<tbDoSqr>(curElem);
+        curElemMod = _scanElemOp<T_in, T_out, tbDoSqr>::scanElemOp(curElem);
 
         //inclusive scan
         curScanElem = cv::cudev::blockScanInclusive<NUM_SCAN_THREADS>(curElemMod, shmem, threadIdx.x);
