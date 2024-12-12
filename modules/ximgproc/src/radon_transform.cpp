@@ -35,16 +35,16 @@ namespace cv {namespace ximgproc {
         if (crop) {
             // crop the source into square
             _row_num = min(_srcMat.rows, _srcMat.cols);
-            Rect _crop_ROI(
-                _srcMat.cols / 2 - _row_num / 2,
-                _srcMat.rows / 2 - _row_num / 2,
-                _row_num, _row_num);
-            _srcMat = _srcMat(_crop_ROI);
+            Point2f _srcCenter = Point2f(_srcMat.cols / 2.f - 0.5f, _srcMat.rows / 2.f - 0.5f);
+            Mat _squared_src = Mat(Size(_row_num, _row_num), _srcMat.type(), Scalar(0));
+            _center = Point2f(_squared_src.cols / 2.f - 0.5f, _squared_src.rows / 2.f - 0.5f);
+            Point2f _offset = _center - _srcCenter;
+            Mat _t_matrix = (Mat1f(2, 3) << 1, 0, _offset.x, 0, 1, _offset.y);
+            warpAffine(_srcMat, _squared_src, _t_matrix, _squared_src.size());
             // crop the source into circle
-            Mat _mask(_srcMat.size(), CV_8UC1, Scalar(0));
-            _center = Point2f(_srcMat.cols / 2.f - 0.5f, _srcMat.rows / 2.f - 0.5f);
+            Mat _mask(_squared_src.size(), CV_8UC1, Scalar(0));
             circle(_mask, _center * 2, _srcMat.cols, Scalar(255), FILLED, LINE_8, 1);
-            _srcMat.copyTo(_masked_src, _mask);
+            _squared_src.copyTo(_masked_src, _mask);
         }
         else {
             // avoid cropping corner when rotating
