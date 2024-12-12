@@ -51,10 +51,10 @@ namespace cv {namespace ximgproc {
             _row_num = cvCeil(sqrt(_srcMat.rows * _srcMat.rows + _srcMat.cols * _srcMat.cols));
             _masked_src = Mat(Size(_row_num, _row_num), _srcMat.type(), Scalar(0));
             _center = Point2f(_masked_src.cols / 2.f - 0.5f, _masked_src.rows / 2.f - 0.5f);
-            _srcMat.copyTo(_masked_src(Rect(
-                (_row_num - _srcMat.cols) / 2,
-                (_row_num - _srcMat.rows) / 2,
-                _srcMat.cols, _srcMat.rows)));
+            Point2f _srcCenter = Point2f(_srcMat.cols / 2.f - 0.5f, _srcMat.rows / 2.f - 0.5f);
+            Point2f _offset = _center - _srcCenter;
+            Mat _t_matrix = (Mat1f(2, 3) << 1, 0, _offset.x, 0, 1, _offset.y);
+            warpAffine(_srcMat, _masked_src, _t_matrix, _masked_src.size());
         }
 
         double _t;
