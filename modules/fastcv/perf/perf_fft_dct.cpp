@@ -17,8 +17,6 @@ PERF_TEST_P_(FFTExtPerfTest, forward)
     Mat src(size, CV_8UC1);
     cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(256));
 
-    Mat srcFloat;
-    src.convertTo(srcFloat, CV_32F);
     Mat dst;
 
     while(next())
@@ -38,9 +36,6 @@ PERF_TEST_P_(FFTExtPerfTest, inverse)
     RNG& rng = cv::theRNG();
     Mat src(size, CV_8UC1);
     cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(256));
-
-    Mat srcFloat;
-    src.convertTo(srcFloat, CV_32F);
 
     Mat fwd, back;
     cv::fastcv::FFT(src, fwd);
@@ -70,8 +65,7 @@ PERF_TEST_P_(DCTExtPerfTest, forward)
     RNG& rng = cv::theRNG();
     Mat src(size, CV_8UC1);
     cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(256));
-    Mat srcFloat;
-    src.convertTo(srcFloat, CV_32F);
+
     Mat dst, ref;
 
     while(next())
@@ -91,9 +85,6 @@ PERF_TEST_P_(DCTExtPerfTest, inverse)
     RNG& rng = cv::theRNG();
     Mat src(size, CV_8UC1);
     cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(256));
-
-    Mat srcFloat;
-    src.convertTo(srcFloat, CV_32F);
 
     Mat fwd, back;
     cv::fastcv::DCT(src, fwd);

@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+*/
+
 #ifndef OPENCV_FASTCV_BLUR_HPP
 #define OPENCV_FASTCV_BLUR_HPP
 
@@ -14,18 +19,20 @@ namespace fastcv {
 //! @{
 
 /**
- * @brief Gaussian blur with sigma = 0 and square kernel size
+ * @brief Gaussian blur with sigma = 0 and square kernel size. The way of handling borders is different with cv::GaussianBlur,
+ *        leading to slight variations in the output.
  * @param _src Intput image with type CV_8UC1
  * @param _dst Output image with type CV_8UC1
  * @param kernel_size Filer kernel size. One of 3, 5, 11
- * @param blur_border Blur border or not
+ * @param blur_border If set to true, border is blurred by 0-padding adjacent values.(A variant of the constant border)
+ *                    If set to false, borders up to half-kernel width are ignored (e.g. 1 pixel in the 3x3 case).
  *
  * @sa GaussianBlur
  */
 CV_EXPORTS_W void gaussianBlur(cv::InputArray _src, cv::OutputArray _dst, int kernel_size = 3, bool blur_border = true);
 
 /**
- * @brief Filter an image with non-separable kernel
+ * @brief NxN correlation with non-separable kernel. Borders up to half-kernel width are ignored
  * @param _src Intput image with type CV_8UC1
  * @param _dst Output image with type CV_8UC1, CV_16SC1 or CV_32FC1
  * @param ddepth The depth of output image
@@ -36,8 +43,10 @@ CV_EXPORTS_W void gaussianBlur(cv::InputArray _src, cv::OutputArray _dst, int ke
 CV_EXPORTS_W void filter2D(InputArray _src, OutputArray _dst, int ddepth, InputArray _kernel);
 
 /**
- * @brief sepFilter an image with separable kernel.The way of handling overflow is different with OpenCV, this function will
- * do right shift for the intermediate results and final result.
+ * @brief NxN correlation with separable kernel. If srcImg and dstImg point to the same address and srcStride equals to dstStride,
+ *        it will do in-place. Borders up to half-kernel width are ignored.
+ *        The way of handling overflow is different with OpenCV, this function will do right shift for
+ *        the intermediate results and final result.
  * @param _src Intput image with type CV_8UC1
  * @param _dst Output image with type CV_8UC1, CV_16SC1
  * @param ddepth The depth of output image

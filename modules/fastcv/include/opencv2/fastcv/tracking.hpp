@@ -16,7 +16,8 @@ namespace fastcv {
 
 /**
  * @brief Calculates sparse optical flow using Lucas-Kanade algorithm
- *
+ *		  accepts 8-bit unsigned integer image
+ *		  Provides faster execution time on Qualcomm's processor 
  * @param src Input single-channel image of type 8U, initial motion frame
  * @param dst Input single-channel image of type 8U, final motion frame, should have the same size and stride as initial frame
  * @param srcPyr Pyramid built from intial motion frame

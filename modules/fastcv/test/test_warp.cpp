@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+*/
+
 #include "test_precomp.hpp"
 
 namespace opencv_test { namespace {
@@ -54,9 +59,6 @@ TEST_P(WarpPerspective2Plane, accuracy)
     cv::threshold(difference2, mask2, 5, 255, cv::THRESH_BINARY);
     int num_diff_pixels_1 = cv::countNonZero(mask1);
     int num_diff_pixels_2 = cv::countNonZero(mask2);
-    // imwrite(format("/tmp/image/warp_dst_%dx%d.png",dstSize.width,dstSize.height),dst1);
-    // imwrite(format("/tmp/image/warp_ref_%dx%d.png",dstSize.width,dstSize.height),ref1);
-    // imwrite(format("/tmp/image/warp_diff_%dx%d.png",dstSize.width,dstSize.height),difference_1);
 
     EXPECT_LT(num_diff_pixels_1, src.size().area()*0.02);
     EXPECT_LT(num_diff_pixels_2, src.size().area()*0.02);

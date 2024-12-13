@@ -16,7 +16,8 @@ namespace fastcv {
 
 /**
  * @brief Matrix multiplication of two int8_t type matrices
-
+ *		  uses signed integer input/output whereas cv::gemm uses floating point input/output
+ *        matmuls8s32 provides enhanced speed on Qualcomm's processors
  * @param src1 First source matrix of type CV_8S
  * @param src2 Second source matrix of type CV_8S
  * @param dst Resulting matrix of type CV_32S

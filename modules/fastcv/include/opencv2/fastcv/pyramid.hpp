@@ -27,7 +27,7 @@ CV_EXPORTS_W void sobelPyramid(InputArrayOfArrays pyr, OutputArrayOfArrays dx, O
 /**
  * @brief Builds an image pyramid of float32 arising from a single
     original image - that are successively downscaled w.r.t. the
-    pre-set levels.
+    pre-set levels. This API supports both ORB scaling and scale down by half. 
  *
  * @param src Input single-channel image of type 8U or 32F
  * @param pyr Output array containing nLevels downscaled image copies
@@ -36,7 +36,8 @@ CV_EXPORTS_W void sobelPyramid(InputArrayOfArrays pyr, OutputArrayOfArrays dx, O
  *                 ORB scaling is not supported for float point images
  * @param borderType how to process border, the options are BORDER_REFLECT (maps to FASTCV_BORDER_REFLECT),
  *                   BORDER_REFLECT_101 (maps to FASTCV_BORDER_REFLECT_V2) and BORDER_REPLICATE (maps to FASTCV_BORDER_REPLICATE).
- *                   Other border types are mapped to FASTCV_BORDER_UNDEFINED. Ignored for float point images
+ *                   Other border types are mapped to FASTCV_BORDER_UNDEFINED(border pixels are ignored). Currently, borders only
+ *                   supported for downscaling by half, ignored for ORB scaling. Also ignored for float point images
  * @param borderValue what value should be used to fill border, ignored for float point images
  */
 CV_EXPORTS_W void buildPyramid(InputArray src, OutputArrayOfArrays pyr, int nLevels, bool scaleBy2 = true,

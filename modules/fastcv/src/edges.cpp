@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+*/
+
 #include "precomp.hpp"
 
 namespace cv {
@@ -73,7 +78,6 @@ void sobel(cv::InputArray _src, cv::OutputArray _dx, cv::OutputArray _dy, int ke
 
     switch (borderType)
     {
-        // For constant border, there are no border value, OpenCV default value is 0
         case cv::BorderTypes::BORDER_CONSTANT:
         {
             fcvBorder = fcvBorderType::FASTCV_BORDER_CONSTANT;

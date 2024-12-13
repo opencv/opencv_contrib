@@ -70,7 +70,7 @@ TEST_P(ResizeBy2Test, ResizeBy2) {
     EXPECT_EQ(resized_image.size().height, size.height * 0.5);
 }
 
-TEST_P(ResizeBy4Test, ResizeBy2) {
+TEST_P(ResizeBy4Test, ResizeBy4) {
 
     //Size size = get<0>(GetParam());
     Size size = GetParam();
@@ -80,7 +80,7 @@ TEST_P(ResizeBy4Test, ResizeBy2) {
     Size dsize;
     cv::Mat resized_image;
 
-    // Resize the image by a factor of 2
+    // Resize the image by a factor of 4
     cv::fastcv::resizeDownBy4(inputImage, resized_image);
 
     // Check if the output size is correct

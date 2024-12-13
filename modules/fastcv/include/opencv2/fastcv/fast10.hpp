@@ -15,9 +15,10 @@ namespace fastcv {
 //! @{
 
 /**
- * @brief Extracts FAST corners and scores from the image based on the mask.
-          The mask specifies pixels to be ignored by the detector
-
+ * @brief Extracts FAST10 corners and scores from the image based on the mask.
+ *        The mask specifies pixels to be ignored by the detector
+ *        designed for corner detection on Qualcomm's processors, provides enhanced speed.
+ *
  * @param src 8-bit grayscale image
  * @param mask Optional mask indicating which pixels should be omited from corner dection.
                Its size should be k times image width and height, where k = 1/2, 1/4 , 1/8 , 1, 2, 4 and 8
