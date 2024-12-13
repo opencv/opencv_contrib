@@ -20,30 +20,36 @@ cv::Moments moments(InputArray _src, bool binary)
     Mat src = _src.getMat();
 
     cv::Moments m;
-    fcvMoments mFCV;
+	if( size.width == 0 || size.height == 0 )
+        return m;
+
+	fcvMoments* mFCV = new fcvMoments();
     fcvStatus status = FASTCV_SUCCESS;
 	if(binary)
     {
-        cv::Mat src_binary(size, CV_8UC1);
-        cv::compare( src, 0, src_binary, cv::CMP_NE );
-        fcvImageMomentsu8(src_binary.data, src_binary.cols,
-                        src_binary.rows, src_binary.step, &mFCV, binary);
+		cv::Mat src_binary(size, CV_8UC1);
+		cv::compare( src, 0, src_binary, cv::CMP_NE );
+		fcvImageMomentsu8(src_binary.data, src_binary.cols,
+		                  src_binary.rows, src_binary.step, mFCV, binary);
     }
-    else
-    {
-        switch(type)
-        {
-            case CV_8UC1:
-                fcvImageMomentsu8(src.data, src.cols, src.rows, src.step[0], &mFCV, binary);
-                break;
-            case CV_32SC1:
-                fcvImageMomentss32(src.ptr<int>(), src.cols, src.rows, src.step[0], &mFCV, binary);
-                break;
-            case CV_32FC1:
-                fcvImageMomentsf32(src.ptr<float>(), src.cols, src.rows, src.step[0], &mFCV, binary);
-                break;
-        }
-    }
+	else
+	{
+		switch(type)
+		{
+			case CV_8UC1:
+			    fcvImageMomentsu8(src.data, src.cols, src.rows,
+				                  src.step, mFCV, binary);
+				break;
+			case CV_32SC1:
+			    fcvImageMomentss32((const int*)src.data, src.cols, src.rows,
+				                  src.step, mFCV, binary);
+				break;
+			case CV_32FC1:
+			    fcvImageMomentsf32((const float*)src.data, src.cols, src.rows,
+				                  src.step, mFCV, binary);
+				break;
+		}
+	}
 
 	if (status != FASTCV_SUCCESS)
     {
