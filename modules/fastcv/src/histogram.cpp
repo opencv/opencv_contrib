@@ -63,7 +63,7 @@ void calcHist( InputArray _src, OutputArray _hist )
 
     cv::Mutex histogramLockInstance;
 
-    int nStripes = cv::getNumThreads();//(src.cols*src.rows)/(1<<8);
+    int nStripes = cv::getNumThreads();
     int stripeHeight = src.rows / nStripes;
 
     cv::parallel_for_(cv::Range(0, nStripes),

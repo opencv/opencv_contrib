@@ -23,7 +23,7 @@ PERF_TEST_P(HistogramPerfTest, run,
     cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(255));
     Mat hist(1, 256, CV_32SC1);
 
-    for (;  next(); )
+    while (next())
     {
         startTimer();
         cv::fastcv::calcHist(src, hist);
