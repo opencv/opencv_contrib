@@ -27,8 +27,8 @@ namespace fastcv {
  * @param _M0       The 3x3 perspective transformation matrix (inversed map)
  * @param dsize     The output image size
 */
-CV_EXPORTS_W void warpPerspective2Plane(cv::InputArray _src1, cv::InputArray _src2, cv::OutputArray _dst1,
-    cv::OutputArray _dst2, InputArray _M0, Size dsize);
+CV_EXPORTS_W void warpPerspective2Plane(InputArray _src1, InputArray _src2, OutputArray _dst1, OutputArray _dst2,
+    InputArray _M0, Size dsize);
 
 //! @}
 

@@ -8,64 +8,65 @@
 namespace cv {
 namespace fastcv {
 
-class FcvGaussianBlurLoop_Invoker : public cv::ParallelLoopBody
+class FcvGaussianBlurLoop_Invoker : public ParallelLoopBody
 {
     public:
 
-    FcvGaussianBlurLoop_Invoker(const uchar* _src_data, size_t _src_step, uchar* _dst_data, size_t _dst_step, int _width,
-        int _height, int _ksize, int _depth, fcvBorderType _fcvBorder, int _fcvBorderValue) :
-        cv::ParallelLoopBody(), src_data(_src_data), src_step(_src_step), dst_data(_dst_data), dst_step(_dst_step), width(_width),
-        height(_height), ksize(_ksize), depth(_depth), fcvBorder(_fcvBorder), fcvBorderValue(_fcvBorderValue)
+    FcvGaussianBlurLoop_Invoker(const Mat& _src, Mat& _dst, int _ksize, fcvBorderType _fcvBorder, int _fcvBorderValue) :
+        ParallelLoopBody(), src(_src),dst(_dst), ksize(_ksize), fcvBorder(_fcvBorder), fcvBorderValue(_fcvBorderValue)
     {
-        half_ksize = ksize/2;
-        fcvFuncType = FCV_MAKETYPE(ksize,depth);
+        width       = src.cols;
+        height      = src.rows;
+        halfKsize   = ksize / 2;
+        fcvFuncType = FCV_MAKETYPE(ksize, src.depth());
     }
 
-    virtual void operator()(const cv::Range& range) const CV_OVERRIDE
+    virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        int topLines    = 0;
-        int rangeHeight = range.end-range.start;
+        int topLines     = 0;
+        int rangeHeight  = range.end-range.start;
+        int paddedHeight = rangeHeight;
 
-        if(range.start >= half_ksize)
+        if(range.start != 0)
         {
-            topLines  += half_ksize;
-            rangeHeight += half_ksize;
+            topLines     += halfKsize;
+            paddedHeight += halfKsize;
         }
 
-        if(range.end <= height-half_ksize)
+        if(range.end != height)
         {
-            rangeHeight += half_ksize;
+            paddedHeight += halfKsize;
         }
 
-        const uchar* src = src_data + (range.start-topLines)*src_step;
-        std::vector<uchar> dst(dst_step*rangeHeight);
+        const Mat srcPadded = src(Rect(0, range.start - topLines, width, paddedHeight));
+        Mat dstPadded       = Mat(paddedHeight, width, dst.depth());
 
         if (fcvFuncType == FCV_MAKETYPE(3,CV_8U))
-            fcvFilterGaussian3x3u8_v4(src, width, rangeHeight, src_step, dst.data(), dst_step, fcvBorder, 0);
+            fcvFilterGaussian3x3u8_v4(srcPadded.data, width, paddedHeight, srcPadded.step, dstPadded.data, dstPadded.step, fcvBorder, 0);
         else if (fcvFuncType == FCV_MAKETYPE(5,CV_8U))
-            fcvFilterGaussian5x5u8_v3(src, width, rangeHeight, src_step, dst.data(), dst_step, fcvBorder, 0);
+            fcvFilterGaussian5x5u8_v3(srcPadded.data, width, paddedHeight, srcPadded.step, dstPadded.data, dstPadded.step, fcvBorder, 0);
         else if (fcvFuncType == FCV_MAKETYPE(5,CV_16S))
-            fcvFilterGaussian5x5s16_v3((int16_t*)src, width, rangeHeight, src_step, (int16_t*)dst.data(), dst_step, fcvBorder, 0);
+            fcvFilterGaussian5x5s16_v3((int16_t*)srcPadded.data, width, paddedHeight, srcPadded.step, (int16_t*)dstPadded.data,
+                dstPadded.step, fcvBorder, 0);
         else if (fcvFuncType == FCV_MAKETYPE(5,CV_32S))
-            fcvFilterGaussian5x5s32_v3((int32_t*)src, width, rangeHeight, src_step, (int32_t*)dst.data(), dst_step, fcvBorder, 0);
+            fcvFilterGaussian5x5s32_v3((int32_t*)srcPadded.data, width, paddedHeight, srcPadded.step, (int32_t*)dstPadded.data,
+                dstPadded.step, fcvBorder, 0);
         else if (fcvFuncType == FCV_MAKETYPE(11,CV_8U))
-            fcvFilterGaussian11x11u8_v2(src, width, rangeHeight, src_step, dst.data(), dst_step, fcvBorder);
+            fcvFilterGaussian11x11u8_v2(srcPadded.data, width, rangeHeight, srcPadded.step, dstPadded.data, dstPadded.step, fcvBorder);
 
-        uchar *dptr = dst_data + range.start * dst_step;
-        uchar *sptr = dst.data() + topLines * dst_step;
-        memcpy(dptr, sptr, (range.end - range.start) * dst_step);
+        // Only copy center part back to output image and ignore the padded lines
+        Mat temp1 = dstPadded(Rect(0, topLines, width, rangeHeight));
+        Mat temp2 = dst(Rect(0, range.start, width, rangeHeight));
+        temp1.copyTo(temp2);
     }
 
     private:
-    const uchar*    src_data;
-    const size_t    src_step;
-    uchar*          dst_data;
-    const size_t    dst_step;
-    const int       width;
-    const int       height;
+    const Mat&      src;
+    Mat&            dst;
+    int             width;
+    int             height;
     const int       ksize;
-    const int       depth;
-    int             half_ksize;
+    int             halfKsize;
     int             fcvFuncType;
     fcvBorderType   fcvBorder;
     int             fcvBorderValue;
@@ -74,7 +75,7 @@ class FcvGaussianBlurLoop_Invoker : public cv::ParallelLoopBody
     const FcvGaussianBlurLoop_Invoker& operator= (const FcvGaussianBlurLoop_Invoker &);  // = delete;
 };
 
-void gaussianBlur(cv::InputArray _src, cv::OutputArray _dst, int kernel_size, bool blur_border)
+void gaussianBlur(InputArray _src, OutputArray _dst, int kernel_size, bool blur_border)
 {
     INITIALIZATION_CHECK;
 
@@ -87,7 +88,8 @@ void gaussianBlur(cv::InputArray _src, cv::OutputArray _dst, int kernel_size, bo
     Mat src = _src.getMat();
     Mat dst = _dst.getMat();
 
-    int nStripes = src.rows / 80 == 0 ? 1 : src.rows / 80;
+    int nThreads = getNumThreads();
+    int nStripes = (nThreads > 1) ? ((src.rows > 60) ? 3 * nThreads : 1) : 1;
 
     fcvBorderType fcvBorder = blur_border ? FASTCV_BORDER_ZERO_PADDING : FASTCV_BORDER_UNDEFINED;
 
@@ -95,68 +97,69 @@ void gaussianBlur(cv::InputArray _src, cv::OutputArray _dst, int kernel_size, bo
         ((type == CV_16SC1) && (kernel_size == 5)) ||
         ((type == CV_32SC1) && (kernel_size == 5)))
     {
-        cv::parallel_for_(cv::Range(0, src.rows),
-            FcvGaussianBlurLoop_Invoker(src.data, src.step, dst.data, dst.step, src.cols, src.rows, kernel_size,
-            src.depth(), fcvBorder, 0), nStripes);
+        parallel_for_(Range(0, src.rows), FcvGaussianBlurLoop_Invoker(src, dst, kernel_size, fcvBorder, 0), nStripes);
     }
     else
         CV_Error(cv::Error::StsBadArg, cv::format("Src type %d, kernel size %d is not supported", type, kernel_size));
 }
 
-class FcvFilter2DLoop_Invoker : public cv::ParallelLoopBody
+class FcvFilter2DLoop_Invoker : public ParallelLoopBody
 {
     public:
 
-    FcvFilter2DLoop_Invoker(const uchar* _src_data, size_t _src_step, uchar* _dst_data, size_t _dst_step, const int _ddepth,
-        int _width, int _height, uchar* _kernel,int _ksize ) :
-        cv::ParallelLoopBody(), src_data(_src_data), src_step(_src_step), dst_data(_dst_data), dst_step(_dst_step),
-        ddepth(_ddepth), width(_width),height(_height), kernel(_kernel), ksize(_ksize)
+    FcvFilter2DLoop_Invoker(const Mat& _src, Mat& _dst, const Mat& _kernel) :
+        ParallelLoopBody(), src(_src), dst(_dst), kernel(_kernel)
     {
-        half_ksize = ksize/2;
+        width     = src.cols;
+        height    = src.rows;
+        ksize     = kernel.size().width;
+        halfKsize = ksize/2;
     }
 
-    virtual void operator()(const cv::Range& range) const CV_OVERRIDE
+    virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        int topLines    = 0;
-        int rangeHeight = range.end-range.start;
+        int topLines     = 0;
+        int rangeHeight  = range.end-range.start;
+        int paddedHeight = rangeHeight;
 
-        if(range.start >= half_ksize)
+        if(range.start >= halfKsize)
         {
-            topLines  += half_ksize;
-            rangeHeight += half_ksize;
+            topLines    += halfKsize;
+            paddedHeight += halfKsize;
         }
 
-        if(range.end <= height-half_ksize)
+        if(range.end <= height-halfKsize)
         {
-            rangeHeight += half_ksize;
+            paddedHeight += halfKsize;
         }
 
-        const uchar *src = src_data + (range.start - topLines) * src_step;
-        std::vector<uchar> dst(dst_step*rangeHeight);
+        const Mat srcPadded = src(Rect(0, range.start - topLines, width, paddedHeight));
+        Mat dstPadded       = Mat(paddedHeight, width, dst.depth());
 
-        if (ddepth == CV_8U)
-            fcvFilterCorrNxNu8((int8_t*)kernel, ksize, 0, src, width, rangeHeight, src_step, dst.data(), dst_step);
-        else if (ddepth == CV_16S)
-            fcvFilterCorrNxNu8s16((int8_t*)kernel, ksize, 0, src, width, rangeHeight, src_step, (int16_t*)dst.data(), dst_step);
-        else if (ddepth == CV_32F)
-            fcvFilterCorrNxNu8f32((float32_t*)kernel, ksize, src, width, rangeHeight, src_step, (float32_t*)dst.data(), dst_step);
+        if (dst.depth() == CV_8U)
+            fcvFilterCorrNxNu8((int8_t*)kernel.data, ksize, 0, srcPadded.data, width, paddedHeight, srcPadded.step,
+                dstPadded.data, dstPadded.step);
+        else if (dst.depth() == CV_16S)
+            fcvFilterCorrNxNu8s16((int8_t*)kernel.data, ksize, 0, srcPadded.data, width, paddedHeight, srcPadded.step,
+                (int16_t*)dstPadded.data, dstPadded.step);
+        else if (dst.depth() == CV_32F)
+            fcvFilterCorrNxNu8f32((float32_t*)kernel.data, ksize, srcPadded.data, width, paddedHeight, srcPadded.step,
+                (float32_t*)dstPadded.data, dstPadded.step);
 
-        uchar *dptr = dst_data + range.start * dst_step;
-        uchar *sptr = dst.data() + topLines * dst_step;
-        memcpy(dptr, sptr, (range.end - range.start) * dst_step);
+        // Only copy center part back to output image and ignore the padded lines
+        Mat temp1 = dstPadded(Rect(0, topLines, width, rangeHeight));
+        Mat temp2 = dst(Rect(0, range.start, width, rangeHeight));
+        temp1.copyTo(temp2);
     }
 
     private:
-    const uchar*    src_data;
-    const size_t    src_step;
-    uchar*          dst_data;
-    const size_t    dst_step;
-    const int       ddepth;
-    const int       width;
-    const int       height;
-    uchar*          kernel;
-    const int       ksize;
-    int             half_ksize;
+    const Mat&  src;
+    Mat&        dst;
+    const Mat&  kernel;
+    int         width;
+    int         height;
+    int         ksize;
+    int         halfKsize;
 
     FcvFilter2DLoop_Invoker(const FcvFilter2DLoop_Invoker &);  // = delete;
     const FcvFilter2DLoop_Invoker& operator= (const FcvFilter2DLoop_Invoker &);  // = delete;
@@ -176,7 +179,8 @@ void filter2D(InputArray _src, OutputArray _dst, int ddepth, InputArray _kernel)
     Mat src = _src.getMat();
     Mat dst = _dst.getMat();
 
-    int nStripes = src.rows / 80 == 0 ? 1 : src.rows / 80;
+    int nThreads = getNumThreads();
+    int nStripes = (nThreads > 1) ? ((src.rows > 60) ? 3 * nThreads : 1) : 1;
 
     switch (ddepth)
     {
@@ -184,19 +188,13 @@ void filter2D(InputArray _src, OutputArray _dst, int ddepth, InputArray _kernel)
         case CV_16S:
         {
             CV_Assert(CV_MAT_DEPTH(kernel.type()) == CV_8S);
-
-            cv::parallel_for_(cv::Range(0, src.rows),
-            FcvFilter2DLoop_Invoker(src.data, src.step, dst.data, dst.step, ddepth, src.cols, src.rows, kernel.data, ksize.width),
-            nStripes);
+            parallel_for_(Range(0, src.rows), FcvFilter2DLoop_Invoker(src, dst, kernel), nStripes);
             break;
         }
         case CV_32F:
         {
             CV_Assert(CV_MAT_DEPTH(kernel.type()) == CV_32F);
-
-            cv::parallel_for_(cv::Range(0, src.rows),
-            FcvFilter2DLoop_Invoker(src.data, src.step, dst.data, dst.step, ddepth, src.cols, src.rows, kernel.data, ksize.width),
-            nStripes);
+            parallel_for_(Range(0, src.rows), FcvFilter2DLoop_Invoker(src, dst, kernel), nStripes);
             break;
         }
         default:
@@ -208,85 +206,88 @@ void filter2D(InputArray _src, OutputArray _dst, int ddepth, InputArray _kernel)
     }
 }
 
-class FcvSepFilter2DLoop_Invoker : public cv::ParallelLoopBody
+class FcvSepFilter2DLoop_Invoker : public ParallelLoopBody
 {
     public:
 
-    FcvSepFilter2DLoop_Invoker(const uchar* _src_data, size_t _src_step, uchar* _dst_data, size_t _dst_step, const int _ddepth,
-        int _width, int _height, uchar* _kernelX, int _kernelXSize, uchar* _kernelY,int _kernelYSize) :
-        cv::ParallelLoopBody(), src_data(_src_data), src_step(_src_step), dst_data(_dst_data), dst_step(_dst_step), ddepth(_ddepth),
-        width(_width), height(_height), kernelX(_kernelX), kernelXSize(_kernelXSize), kernelY(_kernelY), kernelYSize(_kernelYSize)
+    FcvSepFilter2DLoop_Invoker(const Mat& _src, Mat& _dst, const Mat& _kernelX, const Mat& _kernelY) :
+        ParallelLoopBody(), src(_src), dst(_dst), kernelX(_kernelX), kernelY(_kernelY)
     {
-        half_ksize = kernelYSize/2;
+        width       = src.cols;
+        height      = src.rows;
+        kernelXSize = kernelX.size().width;
+        kernelYSize = kernelY.size().width;
+        halfKsize   = kernelXSize/2;
     }
 
-    virtual void operator()(const cv::Range& range) const CV_OVERRIDE
+    virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        int topLines    = 0;
-        int rangeHeight = range.end-range.start;
+        int topLines     = 0;
+        int rangeHeight  = range.end-range.start;
+        int paddedHeight = rangeHeight;
 
-        if(range.start >= half_ksize)
+        if(range.start >= halfKsize)
         {
-            topLines  += half_ksize;
-            rangeHeight += half_ksize;
+            topLines     += halfKsize;
+            paddedHeight += halfKsize;
         }
 
-        if(range.end <= height-half_ksize)
+        if(range.end <= height-halfKsize)
         {
-            rangeHeight += half_ksize;
+            paddedHeight += halfKsize;
         }
 
-        const uchar *src = src_data + (range.start - topLines) * src_step;
-        std::vector<uchar> dst(dst_step*rangeHeight);
+        const Mat srcPadded = src(Rect(0, range.start - topLines, width, paddedHeight));
+        Mat dstPadded       = Mat(paddedHeight, width, dst.depth());
 
-        switch (ddepth)
+        switch (dst.depth())
         {
             case CV_8U:
             {
-                fcvFilterCorrSepMxNu8((int8_t*)kernelX, kernelXSize, (int8_t*)kernelY, kernelYSize, 0, src, width, rangeHeight,
-                    src_step, dst.data(), dst_step);
+                fcvFilterCorrSepMxNu8((int8_t*)kernelX.data, kernelXSize, (int8_t*)kernelY.data, kernelYSize, 0, srcPadded.data,
+                    width, paddedHeight, srcPadded.step, dstPadded.data, dstPadded.step);
                 break;
             }
             case CV_16S:
             {
-                std::vector<int16_t> tmpImage(width*(rangeHeight+kernelXSize-1));
+                std::vector<int16_t> tmpImage(width * (paddedHeight + kernelXSize - 1));
                 switch (kernelXSize)
                 {
                     case 9:
                     {
-                        fcvFilterCorrSep9x9s16_v2((int16_t*)kernelX, (int16_t*)src, width, rangeHeight, src_step,
-                            tmpImage.data(), (int16_t*)dst.data(), dst_step);
+                        fcvFilterCorrSep9x9s16_v2((int16_t*)kernelX.data, (int16_t*)srcPadded.data, width, paddedHeight,
+                            srcPadded.step, tmpImage.data(), (int16_t*)dstPadded.data, dstPadded.step);
                         break;
                     }
                     case 11:
                     {
-                        fcvFilterCorrSep11x11s16_v2((int16_t*)kernelX, (int16_t*)src, width, rangeHeight, src_step,
-                            tmpImage.data(), (int16_t*)dst.data(), dst_step);
+                        fcvFilterCorrSep11x11s16_v2((int16_t*)kernelX.data, (int16_t*)srcPadded.data, width, paddedHeight,
+                            srcPadded.step, tmpImage.data(), (int16_t*)dstPadded.data, dstPadded.step);
                         break;
                     }
                     case 13:
                     {
-                        fcvFilterCorrSep13x13s16_v2((int16_t*)kernelX, (int16_t*)src, width, rangeHeight, src_step,
-                            tmpImage.data(), (int16_t*)dst.data(), dst_step);
+                        fcvFilterCorrSep13x13s16_v2((int16_t*)kernelX.data, (int16_t*)srcPadded.data, width, paddedHeight,
+                            srcPadded.step, tmpImage.data(), (int16_t*)dstPadded.data, dstPadded.step);
                         break;
                     }
                     case 15:
                     {
-                        fcvFilterCorrSep15x15s16_v2((int16_t*)kernelX, (int16_t*)src, width, rangeHeight, src_step,
-                            tmpImage.data(), (int16_t*)dst.data(), dst_step);
+                        fcvFilterCorrSep15x15s16_v2((int16_t*)kernelX.data, (int16_t*)srcPadded.data, width, paddedHeight,
+                            srcPadded.step, tmpImage.data(), (int16_t*)dstPadded.data, dstPadded.step);
                         break;
                     }
                     case 17:
                     {
-                        fcvFilterCorrSep17x17s16_v2((int16_t*)kernelX, (int16_t*)src, width, rangeHeight, src_step,
-                            tmpImage.data(), (int16_t*)dst.data(), dst_step);
+                        fcvFilterCorrSep17x17s16_v2((int16_t*)kernelX.data, (int16_t*)srcPadded.data, width, paddedHeight,
+                            srcPadded.step, tmpImage.data(), (int16_t*)dstPadded.data, dstPadded.step);
                         break;
                     }
 
                     default:
                     {
-                        fcvFilterCorrSepNxNs16((int16_t*)kernelX, kernelXSize, (int16_t*)src, width, rangeHeight, src_step,
-                            tmpImage.data(), (int16_t*)dst.data(), dst_step);
+                        fcvFilterCorrSepNxNs16((int16_t*)kernelX.data, kernelXSize, (int16_t*)srcPadded.data, width, paddedHeight,
+                            srcPadded.step, tmpImage.data(), (int16_t*)dstPadded.data, dstPadded.step);
                         break;
                     }
                 }
@@ -294,29 +295,27 @@ class FcvSepFilter2DLoop_Invoker : public cv::ParallelLoopBody
             }
             default:
             {
-                CV_Error(cv::Error::StsBadArg, cv::format("Dst type:%s is not supported", depthToString(ddepth)));
+                CV_Error(cv::Error::StsBadArg, cv::format("Dst type:%s is not supported", depthToString(dst.depth())));
                 break;
             }
         }
 
-        uchar *dptr = dst_data + range.start * dst_step;
-        uchar *sptr = dst.data() + topLines * dst_step;
-        memcpy(dptr, sptr, (range.end - range.start) * dst_step);
+        // Only copy center part back to output image and ignore the padded lines
+        Mat temp1 = dstPadded(Rect(0, topLines, width, rangeHeight));
+        Mat temp2 = dst(Rect(0, range.start, width, rangeHeight));
+        temp1.copyTo(temp2);
     }
 
     private:
-    const uchar*    src_data;
-    const size_t    src_step;
-    uchar*          dst_data;
-    const size_t    dst_step;
-    const int       ddepth;
-    const int       width;
-    const int       height;
-    uchar*          kernelX;
-    const int       kernelXSize;
-    uchar*          kernelY;
-    const int       kernelYSize;
-    int             half_ksize;
+    const Mat&  src;
+    Mat&        dst;
+    int         width;
+    int         height;
+    const Mat&  kernelX;
+    const Mat&  kernelY;
+    int         kernelXSize;
+    int         kernelYSize;
+    int         halfKsize;
 
     FcvSepFilter2DLoop_Invoker(const FcvSepFilter2DLoop_Invoker &);  // = delete;
     const FcvSepFilter2DLoop_Invoker& operator= (const FcvSepFilter2DLoop_Invoker &);  // = delete;
@@ -332,14 +331,14 @@ void sepFilter2D(InputArray _src, OutputArray _dst, int ddepth, InputArray _kern
     Mat kernelX = _kernelX.getMat();
     Mat kernelY = _kernelY.getMat();
 
-    int nStripes = src.rows / 80 == 0 ? 1 : src.rows / 80;
+    int nThreads = getNumThreads();
+    int nStripes = (nThreads > 1) ? ((src.rows > 60) ? 3 * nThreads : 1) : 1;
+
     switch (ddepth)
     {
         case CV_8U:
         {
-            cv::parallel_for_(cv::Range(0, src.rows),
-            FcvSepFilter2DLoop_Invoker(src.data, src.step, dst.data, dst.step, ddepth, src.cols, src.rows, kernelX.data,
-                kernelX.size().width, kernelY.data, kernelY.size().width),nStripes);
+            cv::parallel_for_(cv::Range(0, src.rows), FcvSepFilter2DLoop_Invoker(src, dst, kernelX, kernelY), nStripes);
             break;
         }
         case CV_16S:
@@ -351,9 +350,7 @@ void sepFilter2D(InputArray _src, OutputArray _dst, int ddepth, InputArray _kern
             absdiff(kernelX, kernelY, diff);
             CV_Assert(countNonZero(diff) == 0);
 
-            cv::parallel_for_(cv::Range(0, src.rows),
-            FcvSepFilter2DLoop_Invoker(src.data, src.step, dst.data, dst.step, ddepth, src.cols, src.rows, kernelX.data,
-                kernelX.size().width, kernelY.data, kernelY.size().width),nStripes);
+            cv::parallel_for_(cv::Range(0, src.rows), FcvSepFilter2DLoop_Invoker(src, dst, kernelX, kernelY), nStripes);
             break;
         }
         default:

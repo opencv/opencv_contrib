@@ -29,7 +29,7 @@ namespace fastcv {
  *
  * @sa GaussianBlur
  */
-CV_EXPORTS_W void gaussianBlur(cv::InputArray _src, cv::OutputArray _dst, int kernel_size = 3, bool blur_border = true);
+CV_EXPORTS_W void gaussianBlur(InputArray _src, OutputArray _dst, int kernel_size = 3, bool blur_border = true);
 
 /**
  * @brief NxN correlation with non-separable kernel. Borders up to half-kernel width are ignored

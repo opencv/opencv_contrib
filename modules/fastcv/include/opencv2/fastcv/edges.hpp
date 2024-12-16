@@ -29,8 +29,7 @@ namespace fastcv {
  * @param borderType    Border type, support BORDER_CONSTANT, BORDER_REPLICATE
  * @param borderValue   Border value for constant border
 */
-CV_EXPORTS_W void sobel(cv::InputArray _src, cv::OutputArray _dx, cv::OutputArray _dy, int kernel_size, int borderType,
-    int borderValue);
+CV_EXPORTS_W void sobel(InputArray _src, OutputArray _dx, OutputArray _dy, int kernel_size, int borderType, int borderValue);
 
 /**
  * @brief Creates a 2D gradient image from source luminance data without normalization.
@@ -43,7 +42,7 @@ CV_EXPORTS_W void sobel(cv::InputArray _src, cv::OutputArray _dx, cv::OutputArra
  * @param ddepth        The depth of output image CV_8SC1,CV_16SC1,CV_32FC1,
  * @param normalization If do normalization for the result
 */
-CV_EXPORTS_W void sobel3x3u8(cv::InputArray _src, cv::OutputArray _dst, cv::OutputArray _dsty = noArray(), int ddepth = CV_8U,
+CV_EXPORTS_W void sobel3x3u8(InputArray _src, OutputArray _dst, OutputArray _dsty = noArray(), int ddepth = CV_8U,
     bool normalization = false);
 
 //! @}
