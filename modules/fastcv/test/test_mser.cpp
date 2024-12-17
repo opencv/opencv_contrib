@@ -31,24 +31,24 @@ TEST_P(MSERTest, accuracy)
 
     std::vector<std::vector<Point>> contours;
     std::vector<cv::Rect> bboxes;
-    std::vector<cv::fastcv::ContourData> contourData;
+    std::vector<cv::fastcv::MSER::ContourData> contourData;
+    cv::Ptr<cv::fastcv::MSER> mser;
+    mser = cv::fastcv::MSER::create(src.size(), numNeighbors, delta, minArea, maxArea,
+                                    maxVariation, minDiversity);
     if (useBboxes)
     {
         if (useContourData)
         {
-            cv::fastcv::MSER(src, contours, bboxes, contourData, numNeighbors,
-                             delta, minArea, maxArea, maxVariation, minDiversity);
+            mser->detect(src, contours, bboxes, contourData);
         }
         else
         {
-            cv::fastcv::MSER(src, contours, bboxes, numNeighbors,
-                             delta, minArea, maxArea, maxVariation, minDiversity);
+            mser->detect(src, contours, bboxes);
         }
     }
     else
     {
-        cv::fastcv::MSER(src, contours, numNeighbors,
-                         delta, minArea, maxArea, maxVariation, minDiversity);
+        mser->detect(src, contours);
     }
 
     Rect imgRect(0, 0, src.cols, src.rows);

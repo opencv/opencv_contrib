@@ -43,7 +43,7 @@ public:
 
         if(status!=FASTCV_SUCCESS)
         {
-			std::string s = fcvStatusStrings.count(status) ? fcvStatusStrings.at(status) : "unknown";
+            std::string s = fcvStatusStrings.count(status) ? fcvStatusStrings.at(status) : "unknown";
             CV_Error( cv::Error::StsInternal, "FastCV error: " + s);
         }
     }
