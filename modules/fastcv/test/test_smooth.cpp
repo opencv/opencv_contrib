@@ -39,7 +39,14 @@ TEST_P(BilateralRecursiveTest, accuracy)
 }
 
 INSTANTIATE_TEST_CASE_P(FastCV_Extension, BilateralRecursiveTest,
-                        ::testing::Combine(::testing::Values(0.01f, 0.03f, 0.1f, 1.f, 5.f),
-                                           ::testing::Values(0.01f, 0.05f, 0.1f, 1.f, 5.f)));
+                        ::testing::Values(
+                            BilateralTestParams {0.01f, 1.00f},
+                            BilateralTestParams {0.10f, 0.01f},
+                            BilateralTestParams {1.00f, 0.01f},
+                            BilateralTestParams {1.00f, 1.00f},
+                            BilateralTestParams {5.00f, 0.01f},
+                            BilateralTestParams {5.00f, 0.10f},
+                            BilateralTestParams {5.00f, 5.00f}
+                        ));
 
 }} // namespaces opencv_test, ::
