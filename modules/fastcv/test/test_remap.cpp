@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-#include "opencv2/ts.hpp"
-#include "opencv2/fastcv/remap.hpp"
+#include "test_precomp.hpp"
 
 namespace opencv_test { namespace {
 
@@ -77,12 +76,8 @@ TEST_P(RemapTest, accuracy)
     cv::Mat remapOpenCV;
     cv::remap(src_converted, remapOpenCV, map_x, map_y, interpolation);
 
-    cv::Mat diffImage;
-    cv::absdiff(dst, remapOpenCV, diffImage);
-
     // Calculate the maximum difference
-    double maxVal=0.0;
-    cv::minMaxLoc(diffImage, nullptr, &maxVal);
+    double maxVal = cv::norm(dst, remapOpenCV, cv::NORM_INF);
 
     // Assert if the difference is acceptable (max difference should be less than 10)
     CV_Assert(maxVal < 10 && "Difference between images is too high!");
@@ -105,12 +100,8 @@ TEST_P(RemapTestRGBA, accuracy)
     cv::Mat remapOpenCV;
     cv::remap(src_converted, remapOpenCV, map_x, map_y, interpolation);
 
-    cv::Mat diffImage;
-    cv::absdiff(dst, remapOpenCV, diffImage);
-
     // Calculate the maximum difference
-    double maxVal=0.0;
-    cv::minMaxLoc(diffImage, nullptr, &maxVal);
+    double maxVal = cv::norm(dst, remapOpenCV, cv::NORM_INF);
 
     // Assert if the difference is acceptable (max difference should be less than 10)
     CV_Assert(maxVal < 10 && "Difference between images is too high!");

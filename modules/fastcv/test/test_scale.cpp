@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-#include "opencv2/ts.hpp"
-#include "opencv2/fastcv/scale.hpp"
+#include "test_precomp.hpp"
 
 namespace opencv_test { namespace {
 
@@ -25,12 +24,8 @@ TEST(resizeDownBy2, accuracy)
     cv::Mat resizedImageOpenCV;
     cv::resize(inputImage, resizedImageOpenCV, cv::Size(inputImage.cols / 2, inputImage.rows / 2), 0, 0, INTER_AREA);
 
-    cv::Mat diffImage;
-    cv::absdiff(resized_image, resizedImageOpenCV, diffImage);
-
     // Calculate the maximum difference
-    double maxVal=0.0;
-    cv::minMaxLoc(diffImage, nullptr, &maxVal);
+    double maxVal = cv::norm(resized_image, resizedImageOpenCV, cv::NORM_INF);
 
     // Assert if the difference is acceptable (max difference should be less than 10)
     CV_Assert(maxVal < 10 && "Difference between images is too high!");
@@ -50,12 +45,8 @@ TEST(resizeDownBy4, accuracy)
     cv::Mat resizedImageOpenCV;
     cv::resize(inputImage, resizedImageOpenCV, cv::Size(inputImage.cols / 4, inputImage.rows / 4), 0, 0, INTER_AREA);
 
-    cv::Mat diffImage;
-    cv::absdiff(resized_image, resizedImageOpenCV, diffImage);
-
     // Calculate the maximum difference
-    double maxVal=0.0;
-    cv::minMaxLoc(diffImage, nullptr, &maxVal);
+    double maxVal = cv::norm(resized_image, resizedImageOpenCV, cv::NORM_INF);
 
     // Assert if the difference is acceptable (max difference should be less than 10)
     CV_Assert(maxVal < 10 && "Difference between images is too high!");
@@ -79,7 +70,7 @@ TEST_P(ResizeBy2Test, ResizeBy2) {
     EXPECT_EQ(resized_image.size().height, size.height * 0.5);
 }
 
-TEST_P(ResizeBy4Test, ResizeBy2) {
+TEST_P(ResizeBy4Test, ResizeBy4) {
 
     //Size size = get<0>(GetParam());
     Size size = GetParam();
@@ -89,7 +80,7 @@ TEST_P(ResizeBy4Test, ResizeBy2) {
     Size dsize;
     cv::Mat resized_image;
 
-    // Resize the image by a factor of 2
+    // Resize the image by a factor of 4
     cv::fastcv::resizeDownBy4(inputImage, resized_image);
 
     // Check if the output size is correct
@@ -98,14 +89,14 @@ TEST_P(ResizeBy4Test, ResizeBy2) {
 }
 
 INSTANTIATE_TEST_CASE_P(
-    ResizeTests, 
-    ResizeBy2Test, 
+    ResizeTests,
+    ResizeBy2Test,
     ::testing::Values(cv::Size(640, 480), cv::Size(1280, 720), cv::Size(1920, 1080)
 ));
 
 INSTANTIATE_TEST_CASE_P(
-    ResizeTests, 
-    ResizeBy4Test, 
+    ResizeTests,
+    ResizeBy4Test,
     ::testing::Values(cv::Size(640, 480), cv::Size(1280, 720), cv::Size(1920, 1080)
 ));
 

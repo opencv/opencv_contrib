@@ -15,107 +15,98 @@ namespace fastcv {
 //! @{
 
 /**
- * @brief Structure containing additional information about found contour
+ * @brief MSER blob detector for grayscale images
  *
  */
-struct ContourData
+class CV_EXPORTS_W FCVMSER
 {
-    uint32_t variation;   //!< Variation of a contour from previous grey level
-    int32_t  polarity;    //!< Polarity for a contour. This value is 1 if this is a MSER+ region, -1 if this is a MSER- region.
-    uint32_t nodeId;      //!< Node ID for a contour
-    uint32_t nodeCounter; //!< Node counter for a contour
+public:
+
+    /**
+     * @brief Structure containing additional information about found contour
+     *
+     */
+    struct ContourData
+    {
+        uint32_t variation;   //!< Variation of a contour from previous grey level
+        int32_t  polarity;    //!< Polarity for a contour. This value is 1 if this is a MSER+ region, -1 if this is a MSER- region.
+        uint32_t nodeId;      //!< Node ID for a contour
+        uint32_t nodeCounter; //!< Node counter for a contour
+    };
+
+    /**
+     * @brief Creates MSER detector
+     *
+     * @param imgSize Image size. Image width has to be greater than 50, and image height has to be greater than 5.
+     * @param numNeighbors Number of neighbors in contours, can be 4 or 8
+     * @param delta Delta to be used in MSER algorithm (the difference in grayscale values
+                    within which the region is stable ).
+                    Typical value range [0.8 8], typical value 2
+     * @param minArea Minimum area (number of pixels) of a mser contour.
+                      Typical value range [10 50], typical value 30
+     * @param maxArea Maximum area (number of pixels) of a  mser contour.
+                      Typical value 14400 or 0.25*width*height
+     * @param maxVariation Maximum variation in grayscale between 2 levels allowed.
+                           Typical value range [0.1 1.0], typical value 0.15
+     * @param minDiversity Minimum diversity in grayscale between 2 levels allowed.
+                           Typical value range [0.1 1.0], typical value 0.2
+     * @return Feature detector object ready for detection
+     */
+    CV_WRAP static Ptr<FCVMSER> create( cv::Size     imgSize,
+                                        uint32_t numNeighbors = 4,
+                                        uint32_t delta = 2,
+                                        uint32_t minArea = 30,
+                                        uint32_t maxArea = 14400,
+                                        float        maxVariation = 0.15f,
+                                        float        minDiversity = 0.2f);
+
+    /**
+     * @brief This is an overload for detect() function
+     *
+     * @param src Source image of type CV_8UC1. Image width has to be greater than 50, and image height has to be greater than 5.
+                 Pixels at the image boundary are not processed. If boundary pixels are important
+                for a particular application, please consider padding the input image with dummy
+                pixels of one pixel wide.
+    * @param contours Array containing found contours
+    */
+    CV_WRAP virtual void detect(InputArray src, std::vector<std::vector<Point>>& contours) = 0;
+
+    /**
+     * @brief This is an overload for detect() function
+     *
+     * @param src Source image of type CV_8UC1. Image width has to be greater than 50, and image height has to be greater than 5.
+                 Pixels at the image boundary are not processed. If boundary pixels are important
+                for a particular application, please consider padding the input image with dummy
+                pixels of one pixel wide.
+    * @param contours Array containing found contours
+    * @param boundingBoxes Array containing bounding boxes of found contours
+    */
+    CV_WRAP virtual void detect(InputArray src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes) = 0;
+
+    /**
+     * @brief Runs MSER blob detector on the grayscale image
+     *
+     * @param src Source image of type CV_8UC1. Image width has to be greater than 50, and image height has to be greater than 5.
+                 Pixels at the image boundary are not processed. If boundary pixels are important
+                for a particular application, please consider padding the input image with dummy
+                pixels of one pixel wide.
+    * @param contours Array containing found contours
+    * @param boundingBoxes Array containing bounding boxes of found contours
+    * @param contourData Array containing additional information about found contours
+    */
+    virtual void detect(InputArray src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
+                                std::vector<ContourData>& contourData) = 0;
+
+    CV_WRAP virtual cv::Size     getImgSize()      = 0;
+    CV_WRAP virtual uint32_t getNumNeighbors() = 0;
+    CV_WRAP virtual uint32_t getDelta()        = 0;
+    CV_WRAP virtual uint32_t getMinArea()      = 0;
+    CV_WRAP virtual uint32_t getMaxArea()      = 0;
+    CV_WRAP virtual float        getMaxVariation() = 0;
+    CV_WRAP virtual float        getMinDiversity() = 0;
+
+    virtual ~FCVMSER() {}
 };
-
-/**
- * @brief This is an overload for MSER() function
- *
- * @param src Source image of type CV_8UC1. Image width has to be greater than 50, and image height has to be greater than 5.
-              Pixels at the image boundary are not processed. If boundary pixels are important
-              for a particular application, please consider padding the input image with dummy
-              pixels of one pixel wide.
- * @param contours Array containing found contours
- * @param numNeighbors Number of neighbors in contours, can be 4 or 8
- * @param delta Delta to be used in MSER algorithm (the difference in grayscale values
-                within which the region is stable ).
-                Typical value range [0.8 8], typical value 2
- * @param minArea Minimum area (number of pixels) of a mser contour.
-                Typical value range [10 50], typical value 30
- * @param maxArea Maximum area (number of pixels) of a  mser contour.
-                Typical value 14400 or 0.25*width*height
- * @param maxVariation Maximum variation in grayscale between 2 levels allowed.
-                Typical value range [0.1 1.0], typical value 0.15
- * @param minDiversity Minimum diversity in grayscale between 2 levels allowed.
-                Typical value range [0.1 1.0], typical value 0.2
- */
-CV_EXPORTS void MSER(InputArray src, std::vector<std::vector<Point>>& contours,
-                       unsigned int numNeighbors = 4,
-                       unsigned int delta = 2,
-                       unsigned int minArea = 30,
-                       unsigned int maxArea = 14400,
-                       float        maxVariation = 0.15f,
-                       float        minDiversity = 0.2f);
-
-/**
- * @brief This is an overload for MSER() function
- *
- * @param src Source image of type CV_8UC1. Image width has to be greater than 50, and image height has to be greater than 5.
-              Pixels at the image boundary are not processed. If boundary pixels are important
-              for a particular application, please consider padding the input image with dummy
-              pixels of one pixel wide.
- * @param contours Array containing found contours
- * @param boundingBoxes Array containing bounding boxes of found contours
- * @param numNeighbors Number of neighbors in contours, can be 4 or 8
- * @param delta Delta to be used in MSER algorithm (the difference in grayscale values
-                within which the region is stable ).
-                Typical value range [0.8 8], typical value 2
- * @param minArea Minimum area (number of pixels) of a mser contour.
-                Typical value range [10 50], typical value 30
- * @param maxArea Maximum area (number of pixels) of a  mser contour.
-                Typical value 14400 or 0.25*width*height
- * @param maxVariation Maximum variation in grayscale between 2 levels allowed.
-                Typical value range [0.1 1.0], typical value 0.15
- * @param minDiversity Minimum diversity in grayscale between 2 levels allowed.
-                Typical value range [0.1 1.0], typical value 0.2
- */
-CV_EXPORTS void MSER(InputArray src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
-                       unsigned int numNeighbors = 4,
-                       unsigned int delta = 2,
-                       unsigned int minArea = 30,
-                       unsigned int maxArea = 14400,
-                       float        maxVariation = 0.15f,
-                       float        minDiversity = 0.2f);
-
-/**
- * @brief Runs MSER blob detector on the grayscale image
- *
- * @param src Source image of type CV_8UC1. Image width has to be greater than 50, and image height has to be greater than 5.
-              Pixels at the image boundary are not processed. If boundary pixels are important
-              for a particular application, please consider padding the input image with dummy
-              pixels of one pixel wide.
- * @param contours Array containing found contours
- * @param boundingBoxes Array containing bounding boxes of found contours
- * @param contourData Array containing additional information about found contours
- * @param numNeighbors Number of neighbors in contours, can be 4 or 8
- * @param delta Delta to be used in MSER algorithm (the difference in grayscale values
-                within which the region is stable ).
-                Typical value range [0.8 8], typical value 2
- * @param minArea Minimum area (number of pixels) of a mser contour.
-                Typical value range [10 50], typical value 30
- * @param maxArea Maximum area (number of pixels) of a  mser contour.
-                Typical value 14400 or 0.25*width*height
- * @param maxVariation Maximum variation in grayscale between 2 levels allowed.
-                Typical value range [0.1 1.0], typical value 0.15
- * @param minDiversity Minimum diversity in grayscale between 2 levels allowed.
-                Typical value range [0.1 1.0], typical value 0.2
- */
-CV_EXPORTS void MSER(InputArray src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
-                       std::vector<ContourData>& contourData,
-                       unsigned int numNeighbors = 4,
-                       unsigned int delta = 2,
-                       unsigned int minArea = 30,
-                       unsigned int maxArea = 14400,
-                       float        maxVariation = 0.15f,
-                       float        minDiversity = 0.2f);
 
 //! @}
 

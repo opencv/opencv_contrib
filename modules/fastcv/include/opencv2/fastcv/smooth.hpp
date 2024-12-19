@@ -20,6 +20,7 @@ namespace fastcv {
 Different from traditional bilateral filtering, here the smoothing is actually performed in gradient domain.
 The algorithm claims that it's more efficient than the original bilateral filtering in both image quality and computation.
 See algorithm description in the paper Recursive Bilateral Filtering, ECCV2012 by Prof Yang Qingxiong
+This function isn't bit-exact with cv::bilateralFilter but provides improved latency on Snapdragon processors.
  * @param src Input image, should have one CV_8U channel
  * @param dst Output array having one CV_8U channel
  * @param sigmaColor Sigma in the color space, the bigger the value the more color difference is smoothed by the algorithm

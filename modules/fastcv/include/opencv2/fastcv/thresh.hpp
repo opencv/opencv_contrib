@@ -17,7 +17,7 @@ namespace fastcv {
 /**
  * @brief Binarizes a grayscale image based on a pair of threshold values. The binarized image will be in the two values
  *        selected by user
-
+ *        this function provides improved latency on Snapdragon processor.
  * @param src 8-bit grayscale image
  * @param dst Output image of the same size and type as input image, can be the same as input image
  * @param lowThresh The lower threshold value for binarization
