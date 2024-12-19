@@ -8,24 +8,24 @@
 namespace cv {
 namespace fastcv {
 
-class MSER_Impl CV_FINAL : public cv::fastcv::MSER
+class MSER_Impl CV_FINAL : public cv::fastcv::FCVMSER
 {
 public:
     explicit MSER_Impl(cv::Size     imgSize,
-                       unsigned int numNeighbors,
-                       unsigned int delta,
-                       unsigned int minArea,
-                       unsigned int maxArea,
+                       uint32_t numNeighbors,
+                       uint32_t delta,
+                       uint32_t minArea,
+                       uint32_t maxArea,
                        float        maxVariation,
                        float        minDiversity);
 
     ~MSER_Impl() CV_OVERRIDE;
 
     cv::Size     getImgSize()      CV_OVERRIDE { return imgSize;      };
-    unsigned int getNumNeighbors() CV_OVERRIDE { return numNeighbors; };
-    unsigned int getDelta()        CV_OVERRIDE { return delta;        };
-    unsigned int getMinArea()      CV_OVERRIDE { return minArea;      };
-    unsigned int getMaxArea()      CV_OVERRIDE { return maxArea;      };
+    uint32_t getNumNeighbors() CV_OVERRIDE { return numNeighbors; };
+    uint32_t getDelta()        CV_OVERRIDE { return delta;        };
+    uint32_t getMinArea()      CV_OVERRIDE { return minArea;      };
+    uint32_t getMaxArea()      CV_OVERRIDE { return maxArea;      };
     float        getMaxVariation() CV_OVERRIDE { return maxVariation; };
     float        getMinDiversity() CV_OVERRIDE { return minDiversity; };
 
@@ -42,10 +42,10 @@ public:
                        bool useContourData = true);
 
     cv::Size imgSize;
-    unsigned int numNeighbors;
-    unsigned int delta;
-    unsigned int minArea;
-    unsigned int maxArea;
+    uint32_t numNeighbors;
+    uint32_t delta;
+    uint32_t minArea;
+    uint32_t maxArea;
     float        maxVariation;
     float        minDiversity;
 
@@ -54,10 +54,10 @@ public:
 
 
 MSER_Impl::MSER_Impl(cv::Size     _imgSize,
-                     unsigned int _numNeighbors,
-                     unsigned int _delta,
-                     unsigned int _minArea,
-                     unsigned int _maxArea,
+                     uint32_t _numNeighbors,
+                     uint32_t _delta,
+                     uint32_t _minArea,
+                     uint32_t _maxArea,
                      float        _maxVariation,
                      float        _minDiversity)
 {
@@ -103,14 +103,14 @@ void MSER_Impl::detectRegions(InputArray _src, std::vector<std::vector<Point>>& 
     bool usePointsArray = (this->numNeighbors == 8);
 
     //bufSize for pts and bboxes
-    const unsigned int maxContours = 16384;
-    unsigned int numContours;
+    const uint32_t maxContours = 16384;
+    uint32_t numContours;
     std::vector<uint32_t> numPointsInContour(maxContours);
 
     std::vector<uint16_t> rectArray;
     rectArray.resize(4 * maxContours); // xMin, xMax, yMax, yMin
 
-    unsigned int pointsArraySize = src.total() * 30; // Recommended typical size
+    uint32_t pointsArraySize = src.total() * 30; // Recommended typical size
     std::vector<uint16_t> pointsArray;
     std::vector<uint32_t> contourStartingPoints;
     uint32_t pathArraySize = src.total() * 4; // Recommended size
@@ -244,13 +244,13 @@ void MSER_Impl::detect(InputArray src, std::vector<std::vector<Point>>& contours
     this->detectRegions(src, contours, boundingBoxes, contourData, /*useBoundingBoxes*/ true, /*useContourData*/ true);
 }
 
-Ptr<MSER> MSER::create(cv::Size     imgSize,
-                       unsigned int numNeighbors,
-                       unsigned int delta,
-                       unsigned int minArea,
-                       unsigned int maxArea,
-                       float        maxVariation,
-                       float        minDiversity)
+Ptr<FCVMSER> FCVMSER::create(cv::Size     imgSize,
+                             uint32_t numNeighbors,
+                             uint32_t delta,
+                             uint32_t minArea,
+                             uint32_t maxArea,
+                             float        maxVariation,
+                             float        minDiversity)
 {
     return makePtr<MSER_Impl>(imgSize, numNeighbors, delta, minArea, maxArea, maxVariation, minDiversity);
 }

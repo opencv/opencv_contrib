@@ -169,7 +169,7 @@ void buildPyramid(InputArray _src, OutputArrayOfArrays _pyr, int nLevels, bool s
     _pyr.create(nLevels, 1, src.type(), -1);
     for (int i = 0; i < nLevels; i++)
     {
-        cv::Mat m = cv::Mat((unsigned int)lpyrSrc2[i].height, (unsigned int)lpyrSrc2[i].width,
+        cv::Mat m = cv::Mat((uint32_t)lpyrSrc2[i].height, (uint32_t)lpyrSrc2[i].width,
                              src.type(), (void*)lpyrSrc2[i].ptr, (size_t)lpyrSrc2[i].stride);
 
         _pyr.create(m.size(), m.type(), i);

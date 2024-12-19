@@ -18,7 +18,7 @@ namespace fastcv {
  * @brief MSER blob detector for grayscale images
  *
  */
-class CV_EXPORTS_W MSER
+class CV_EXPORTS_W FCVMSER
 {
 public:
 
@@ -52,13 +52,13 @@ public:
                            Typical value range [0.1 1.0], typical value 0.2
      * @return Feature detector object ready for detection
      */
-    CV_WRAP static Ptr<MSER> create(cv::Size     imgSize,
-                                    unsigned int numNeighbors = 4,
-                                    unsigned int delta = 2,
-                                    unsigned int minArea = 30,
-                                    unsigned int maxArea = 14400,
-                                    float        maxVariation = 0.15f,
-                                    float        minDiversity = 0.2f);
+    CV_WRAP static Ptr<FCVMSER> create( cv::Size     imgSize,
+                                        uint32_t numNeighbors = 4,
+                                        uint32_t delta = 2,
+                                        uint32_t minArea = 30,
+                                        uint32_t maxArea = 14400,
+                                        float        maxVariation = 0.15f,
+                                        float        minDiversity = 0.2f);
 
     /**
      * @brief This is an overload for detect() function
@@ -94,18 +94,18 @@ public:
     * @param boundingBoxes Array containing bounding boxes of found contours
     * @param contourData Array containing additional information about found contours
     */
-    CV_WRAP virtual void detect(InputArray src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
+    virtual void detect(InputArray src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
                                 std::vector<ContourData>& contourData) = 0;
 
     CV_WRAP virtual cv::Size     getImgSize()      = 0;
-    CV_WRAP virtual unsigned int getNumNeighbors() = 0;
-    CV_WRAP virtual unsigned int getDelta()        = 0;
-    CV_WRAP virtual unsigned int getMinArea()      = 0;
-    CV_WRAP virtual unsigned int getMaxArea()      = 0;
+    CV_WRAP virtual uint32_t getNumNeighbors() = 0;
+    CV_WRAP virtual uint32_t getDelta()        = 0;
+    CV_WRAP virtual uint32_t getMinArea()      = 0;
+    CV_WRAP virtual uint32_t getMaxArea()      = 0;
     CV_WRAP virtual float        getMaxVariation() = 0;
     CV_WRAP virtual float        getMinDiversity() = 0;
 
-    virtual ~MSER() {}
+    virtual ~FCVMSER() {}
 };
 
 //! @}
