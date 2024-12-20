@@ -10,8 +10,8 @@ namespace fastcv {
 
 class RemapParallel : public cv::ParallelLoopBody {
 public:
-    RemapParallel(int src_type, const uint8_t* src, unsigned int srcWidth, unsigned int srcHeight, unsigned int srcStride, uint8_t* dst,
-                unsigned int dstWidth, unsigned int dstHeight, unsigned int dstStride, const float32_t* __restrict  mapX,
+    RemapParallel(int src_type, const uint8_t* src, uint32_t srcWidth, uint32_t srcHeight, uint32_t srcStride, uint8_t* dst,
+                uint32_t dstWidth, uint32_t dstHeight, uint32_t dstStride, const float32_t* __restrict  mapX,
                 const float32_t* __restrict mapY, uint32_t mapStride, fcvInterpolationType interpolation, uint8_t borderValue)
                 : src_type_(src_type), src_(src), srcWidth_(srcWidth), srcHeight_(srcHeight), srcStride_(srcStride), dst_(dst), dstWidth_(dstWidth),
                 dstHeight_(dstHeight), dstStride_(dstStride), mapX_(mapX), mapY_(mapY), mapStride_(mapStride),
@@ -43,7 +43,7 @@ public:
 
         if(status!=FASTCV_SUCCESS)
         {
-			std::string s = fcvStatusStrings.count(status) ? fcvStatusStrings.at(status) : "unknown";
+            std::string s = fcvStatusStrings.count(status) ? fcvStatusStrings.at(status) : "unknown";
             CV_Error( cv::Error::StsInternal, "FastCV error: " + s);
         }
     }
@@ -51,16 +51,16 @@ public:
 private:
     int src_type_;
     const uint8_t* src_;
-    unsigned int srcWidth_;
-    unsigned int srcHeight_;
-    unsigned int srcStride_;
+    uint32_t srcWidth_;
+    uint32_t srcHeight_;
+    uint32_t srcStride_;
     uint8_t* dst_;
-    unsigned int dstWidth_;
-    unsigned int dstHeight_;
-    unsigned int dstStride_;
+    uint32_t dstWidth_;
+    uint32_t dstHeight_;
+    uint32_t dstStride_;
     const float32_t* __restrict mapX_;
     const float32_t* __restrict mapY_;
-    unsigned int mapStride_;
+    uint32_t mapStride_;
     fcvInterpolationType fcvInterpolation_;
     uint8_t borderValue_;
 };

@@ -16,7 +16,8 @@ namespace fastcv {
 
 /**
  * @brief Clusterizes N input points in D-dimensional space into K clusters
- * 
+ *        Accepts 8-bit unsigned integer points
+ *        Provides faster execution time than cv::kmeans on Qualcomm's processors
  * @param points            Points array of type 8u, each row represets a point.
  *                          Size is N rows by D columns, can be non-continuous.
  * @param clusterCenters    Initial cluster centers array of type 32f, each row represents a center.

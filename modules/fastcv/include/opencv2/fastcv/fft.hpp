@@ -18,7 +18,7 @@ namespace fastcv {
  * @brief Computes the 1D or 2D Fast Fourier Transform of a real valued matrix.
           For the 2D case, the width and height of the input and output matrix must be powers of 2.
           For the 1D case, the height of the matrices must be 1, while the width must be a power of 2.
-
+          Accepts 8-bit unsigned integer array, whereas cv::dft accepts floating-point or complex array.
  * @param src Input array of CV_8UC1. The dimensions of the matrix must be powers of 2 for the 2D case,
               and in the 1D case, the height must be 1, while the width must be a power of 2.
  * @param dst The computed FFT matrix of type CV_32FC2. The FFT Re and Im coefficients are stored in different channels.

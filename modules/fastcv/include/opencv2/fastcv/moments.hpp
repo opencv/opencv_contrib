@@ -17,8 +17,9 @@ namespace fastcv {
 /**
  * @brief Calculates all of the moments up to the third order of the image pixels' intensities
           The results are returned in the structure cv::Moments.
- * @param _src Input image with type CV_8UC1, CV_32SC1, CV_32FC1
- * @param binary If 1, binary image (0x00-black, oxff-white); if 0, grayscale image
+ * @param _src      Input image with type CV_8UC1, CV_32SC1, CV_32FC1
+ * @param binary    If true, assumes the image to be binary (0x00 for black, 0xff for white), otherwise assumes the image to be
+ *                  grayscale.
  */
 CV_EXPORTS cv::Moments moments(InputArray _src, bool binary);
 

@@ -30,36 +30,37 @@ PERF_TEST_P(MSERPerfTest, run,
 
     cv::Mat src = imread(cvtest::findDataFile(imgPath), cv::IMREAD_GRAYSCALE);
 
-    unsigned int delta = 2;
-    unsigned int minArea = 256;
-    unsigned int maxArea = (int)src.total()/4;
+    uint32_t delta = 2;
+    uint32_t minArea = 256;
+    uint32_t maxArea = (int)src.total()/4;
     float        maxVariation = 0.15f;
     float        minDiversity = 0.2f;
+
+    cv::Ptr<cv::fastcv::FCVMSER> mser;
+    mser = cv::fastcv::FCVMSER::create(src.size(), numNeighbors, delta, minArea, maxArea,
+                                    maxVariation, minDiversity);
 
     while(next())
     {
         std::vector<std::vector<Point>> contours;
         std::vector<cv::Rect> bboxes;
-        std::vector<cv::fastcv::ContourData> contourData;
+        std::vector<cv::fastcv::FCVMSER::ContourData> contourData;
 
         startTimer();
         if (useBboxes)
         {
             if (useContourData)
             {
-                cv::fastcv::MSER(src, contours, bboxes, contourData, numNeighbors,
-                                 delta, minArea, maxArea, maxVariation, minDiversity);
+                mser->detect(src, contours, bboxes, contourData);
             }
             else
             {
-                cv::fastcv::MSER(src, contours, bboxes, numNeighbors,
-                                 delta, minArea, maxArea, maxVariation, minDiversity);
+                mser->detect(src, contours, bboxes);
             }
         }
         else
         {
-            cv::fastcv::MSER(src, contours, numNeighbors,
-                             delta, minArea, maxArea, maxVariation, minDiversity);
+            mser->detect(src, contours);
         }
         stopTimer();
     }

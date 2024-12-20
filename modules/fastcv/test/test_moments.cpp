@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-#include "opencv2/ts.hpp"
-#include "opencv2/fastcv/moments.hpp"
+#include "test_precomp.hpp"
 
 namespace opencv_test { namespace {
 
@@ -37,7 +36,7 @@ TEST_P(fcv_momentsTest, accuracy)
 INSTANTIATE_TEST_CASE_P(/*nothing*/, fcv_momentsTest, Combine(
                    Values(false, true),
                    Values(TYPICAL_MAT_SIZES),
-                   Values(CV_8UC1, CV_32SC1, CV_32FC1)			   
+                   Values(CV_8UC1, CV_32SC1, CV_32FC1)
 ));
 
 }
