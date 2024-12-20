@@ -50,9 +50,7 @@
 
 #include "opencv2/core/private.cuda.hpp"
 
-#ifndef HAVE_CUDA
-#  error cudalegacy module requires CUDA
-#endif
+#ifdef HAVE_CUDA
 
 #include "opencv2/cudalegacy.hpp"
 
@@ -92,5 +90,7 @@ namespace cv { namespace cuda
 #define ncvSafeCall(expr)  cv::cuda::checkNcvError(expr, __FILE__, __LINE__, CV_Func)
 
 //! @endcond
+
+#endif HAVE_CUDA
 
 #endif // OPENCV_CORE_CUDALEGACY_PRIVATE_HPP
