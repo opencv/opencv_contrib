@@ -38,7 +38,7 @@ PERF_TEST_P(MSERPerfTest, run,
 
     cv::Ptr<cv::fastcv::FCVMSER> mser;
     mser = cv::fastcv::FCVMSER::create(src.size(), numNeighbors, delta, minArea, maxArea,
-                                    maxVariation, minDiversity);
+                                       maxVariation, minDiversity);
 
     while(next())
     {
