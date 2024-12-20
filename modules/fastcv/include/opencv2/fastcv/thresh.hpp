@@ -27,7 +27,7 @@ namespace fastcv {
  * @param falseValue The value assigned to the destination pixel if the source is out of the range inclusively defined by the
  *                   pair of threshold values
  */
-CV_EXPORTS_W void thresholdRange(InputArray src, OutputArray dst, uint8_t lowThresh, uint8_t highThresh, uint8_t trueValue, uint8_t falseValue);
+CV_EXPORTS_W void thresholdRange(InputArray src, OutputArray dst, int lowThresh, int highThresh, int trueValue, int falseValue);
 
 //! @}
 
