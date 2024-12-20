@@ -52,13 +52,13 @@ public:
                            Typical value range [0.1 1.0], typical value 0.2
      * @return Feature detector object ready for detection
      */
-    CV_WRAP static Ptr<FCVMSER> create( cv::Size     imgSize,
-                                        uint32_t numNeighbors = 4,
-                                        uint32_t delta = 2,
-                                        uint32_t minArea = 30,
-                                        uint32_t maxArea = 14400,
-                                        float        maxVariation = 0.15f,
-                                        float        minDiversity = 0.2f);
+    CV_WRAP static Ptr<FCVMSER> create( const cv::Size& imgSize,
+                                        int numNeighbors = 4,
+                                        int delta = 2,
+                                        int minArea = 30,
+                                        int maxArea = 14400,
+                                        float maxVariation = 0.15f,
+                                        float minDiversity = 0.2f);
 
     /**
      * @brief This is an overload for detect() function
@@ -95,15 +95,15 @@ public:
     * @param contourData Array containing additional information about found contours
     */
     virtual void detect(InputArray src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes,
-                                std::vector<ContourData>& contourData) = 0;
+                        std::vector<ContourData>& contourData) = 0;
 
-    CV_WRAP virtual cv::Size     getImgSize()      = 0;
-    CV_WRAP virtual uint32_t getNumNeighbors() = 0;
-    CV_WRAP virtual uint32_t getDelta()        = 0;
-    CV_WRAP virtual uint32_t getMinArea()      = 0;
-    CV_WRAP virtual uint32_t getMaxArea()      = 0;
-    CV_WRAP virtual float        getMaxVariation() = 0;
-    CV_WRAP virtual float        getMinDiversity() = 0;
+    CV_WRAP virtual cv::Size getImgSize() = 0;
+    CV_WRAP virtual int getNumNeighbors() = 0;
+    CV_WRAP virtual int getDelta()        = 0;
+    CV_WRAP virtual int getMinArea()      = 0;
+    CV_WRAP virtual int getMaxArea()      = 0;
+    CV_WRAP virtual float getMaxVariation() = 0;
+    CV_WRAP virtual float getMinDiversity() = 0;
 
     virtual ~FCVMSER() {}
 };
