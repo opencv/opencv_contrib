@@ -12,22 +12,22 @@ class MSER_Impl CV_FINAL : public cv::fastcv::FCVMSER
 {
 public:
     explicit MSER_Impl(cv::Size     imgSize,
-                       uint32_t numNeighbors,
-                       uint32_t delta,
-                       uint32_t minArea,
-                       uint32_t maxArea,
-                       float        maxVariation,
-                       float        minDiversity);
+                       int numNeighbors,
+                       int delta,
+                       int minArea,
+                       int maxArea,
+                       float maxVariation,
+                       float minDiversity);
 
     ~MSER_Impl() CV_OVERRIDE;
 
-    cv::Size     getImgSize()      CV_OVERRIDE { return imgSize;      };
-    uint32_t getNumNeighbors() CV_OVERRIDE { return numNeighbors; };
-    uint32_t getDelta()        CV_OVERRIDE { return delta;        };
-    uint32_t getMinArea()      CV_OVERRIDE { return minArea;      };
-    uint32_t getMaxArea()      CV_OVERRIDE { return maxArea;      };
-    float        getMaxVariation() CV_OVERRIDE { return maxVariation; };
-    float        getMinDiversity() CV_OVERRIDE { return minDiversity; };
+    cv::Size getImgSize()      CV_OVERRIDE { return imgSize;      };
+    int getNumNeighbors() CV_OVERRIDE { return numNeighbors; };
+    int getDelta()        CV_OVERRIDE { return delta;        };
+    int getMinArea()      CV_OVERRIDE { return minArea;      };
+    int getMaxArea()      CV_OVERRIDE { return maxArea;      };
+    float getMaxVariation() CV_OVERRIDE { return maxVariation; };
+    float getMinDiversity() CV_OVERRIDE { return minDiversity; };
 
     void detect(InputArray src, std::vector<std::vector<Point>>& contours) CV_OVERRIDE;
     void detect(InputArray src, std::vector<std::vector<Point>>& contours, std::vector<cv::Rect>& boundingBoxes) CV_OVERRIDE;
@@ -42,24 +42,24 @@ public:
                        bool useContourData = true);
 
     cv::Size imgSize;
-    uint32_t numNeighbors;
-    uint32_t delta;
-    uint32_t minArea;
-    uint32_t maxArea;
-    float        maxVariation;
-    float        minDiversity;
+    int numNeighbors;
+    int delta;
+    int minArea;
+    int maxArea;
+    float maxVariation;
+    float minDiversity;
 
     void *mserHandle;
 };
 
 
-MSER_Impl::MSER_Impl(cv::Size     _imgSize,
-                     uint32_t _numNeighbors,
-                     uint32_t _delta,
-                     uint32_t _minArea,
-                     uint32_t _maxArea,
-                     float        _maxVariation,
-                     float        _minDiversity)
+MSER_Impl::MSER_Impl(cv::Size _imgSize,
+                     int _numNeighbors,
+                     int _delta,
+                     int _minArea,
+                     int _maxArea,
+                     float _maxVariation,
+                     float _minDiversity)
 {
     CV_Assert(_imgSize.width > 50);
     CV_Assert(_imgSize.height > 5);
@@ -244,14 +244,15 @@ void MSER_Impl::detect(InputArray src, std::vector<std::vector<Point>>& contours
     this->detectRegions(src, contours, boundingBoxes, contourData, /*useBoundingBoxes*/ true, /*useContourData*/ true);
 }
 
-Ptr<FCVMSER> FCVMSER::create(cv::Size     imgSize,
-                             uint32_t numNeighbors,
-                             uint32_t delta,
-                             uint32_t minArea,
-                             uint32_t maxArea,
-                             float        maxVariation,
-                             float        minDiversity)
+Ptr<FCVMSER> FCVMSER::create(const cv::Size& imgSize,
+                             int numNeighbors,
+                             int delta,
+                             int minArea,
+                             int maxArea,
+                             float maxVariation,
+                             float minDiversity)
 {
+    CV_Assert(numNeighbors > 0 && delta >= 0 && minArea >= 0 && maxArea >= 0);
     return makePtr<MSER_Impl>(imgSize, numNeighbors, delta, minArea, maxArea, maxVariation, minDiversity);
 }
 

@@ -8,9 +8,14 @@
 namespace cv {
 namespace fastcv {
 
-void thresholdRange(InputArray _src, OutputArray _dst, uint8_t lowThresh, uint8_t highThresh, uint8_t trueValue, uint8_t falseValue)
+void thresholdRange(InputArray _src, OutputArray _dst, int lowThresh, int highThresh, int trueValue, int falseValue)
 {
     INITIALIZATION_CHECK;
+
+    CV_Assert(lowThresh >= 0 && lowThresh < 256);
+    CV_Assert(highThresh >= 0 && highThresh < 256);
+    CV_Assert(falseValue >= 0 && falseValue < 256);
+    CV_Assert(trueValue >= 0 && trueValue < 256);
 
     CV_Assert(lowThresh <= highThresh);
 
