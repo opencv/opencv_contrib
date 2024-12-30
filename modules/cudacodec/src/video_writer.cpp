@@ -188,6 +188,8 @@ NV_ENC_BUFFER_FORMAT EncBufferFormat(const ColorFormat colorFormat) {
     case ColorFormat::NV_IYUV: return NV_ENC_BUFFER_FORMAT_IYUV;
     case ColorFormat::NV_YUV444: return NV_ENC_BUFFER_FORMAT_YUV444;
     case ColorFormat::NV_AYUV: return NV_ENC_BUFFER_FORMAT_AYUV;
+    case ColorFormat::NV_YUV420_10BIT: return NV_ENC_BUFFER_FORMAT_YUV420_10BIT;
+    case ColorFormat::NV_YUV444_10BIT: return NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
     default: return NV_ENC_BUFFER_FORMAT_UNDEFINED;
     }
 }
@@ -195,15 +197,17 @@ NV_ENC_BUFFER_FORMAT EncBufferFormat(const ColorFormat colorFormat) {
 int NChannels(const ColorFormat colorFormat) {
     switch (colorFormat) {
     case ColorFormat::BGR:
-    case ColorFormat::RGB:
-    case ColorFormat::NV_IYUV:
-    case ColorFormat::NV_YUV444: return 3;
+    case ColorFormat::RGB: return 3;
     case ColorFormat::RGBA:
     case ColorFormat::BGRA:
     case ColorFormat::NV_AYUV: return 4;
     case ColorFormat::GRAY:
     case ColorFormat::NV_NV12:
-    case ColorFormat::NV_YV12: return 1;
+    case ColorFormat::NV_IYUV:
+    case ColorFormat::NV_YV12:
+    case ColorFormat::NV_YUV420_10BIT:
+    case ColorFormat::NV_YUV444:
+    case ColorFormat::NV_YUV444_10BIT: return 1;
     default: return 0;
     }
 }
