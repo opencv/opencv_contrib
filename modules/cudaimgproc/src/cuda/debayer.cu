@@ -382,6 +382,14 @@ namespace cv { namespace cuda { namespace device
     template void Bayer2BGR_16u_gpu<3>(PtrStepSzb src, PtrStepSzb dst, bool blue_last, bool start_with_green, cudaStream_t stream);
     template void Bayer2BGR_16u_gpu<4>(PtrStepSzb src, PtrStepSzb dst, bool blue_last, bool start_with_green, cudaStream_t stream);
 
+    template <typename D> __device__ __forceinline__ D toDstColor(const float3& pix){
+        return toDst<D>(make_uchar3(saturate_cast<uchar>(pix.x), saturate_cast<uchar>(pix.y), saturate_cast<uchar>(pix.z)));
+    }
+    template <> __device__ __forceinline__ float3 toDstColor<float3>(const float3& pix)
+    {
+        return pix;
+    }
+
     //////////////////////////////////////////////////////////////
     // Bayer Demosaicing (Malvar, He, and Cutler)
     //
@@ -507,16 +515,15 @@ namespace cv { namespace cuda { namespace device
         alternate.y = (y + firstRed.y) % 2;
 
         // in BGR sequence;
-        uchar3 pixelColor =
+        float3 pixelColor =
             (alternate.y == 0) ?
                 ((alternate.x == 0) ?
-                    make_uchar3(saturate_cast<uchar>(PATTERN.y), saturate_cast<uchar>(PATTERN.x), saturate_cast<uchar>(C)) :
-                    make_uchar3(saturate_cast<uchar>(PATTERN.w), saturate_cast<uchar>(C), saturate_cast<uchar>(PATTERN.z))) :
+                    make_float3(PATTERN.y, PATTERN.x, C) :
+                    make_float3(PATTERN.w, C, PATTERN.z)) :
                 ((alternate.x == 0) ?
-                    make_uchar3(saturate_cast<uchar>(PATTERN.z), saturate_cast<uchar>(C), saturate_cast<uchar>(PATTERN.w)) :
-                    make_uchar3(saturate_cast<uchar>(C), saturate_cast<uchar>(PATTERN.x), saturate_cast<uchar>(PATTERN.y)));
-
-        dst(y, x) = toDst<DstType>(pixelColor);
+                    make_float3(PATTERN.z, C, PATTERN.w) :
+                    make_float3(C, PATTERN.x, PATTERN.y));
+        dst(y, x) = toDstColor<DstType>(pixelColor);
     }
 
     template <int cn>
@@ -545,6 +552,29 @@ namespace cv { namespace cuda { namespace device
     template void MHCdemosaic<1>(PtrStepSzb src, int2 sourceOffset, PtrStepSzb dst, int2 firstRed, cudaStream_t stream);
     template void MHCdemosaic<3>(PtrStepSzb src, int2 sourceOffset, PtrStepSzb dst, int2 firstRed, cudaStream_t stream);
     template void MHCdemosaic<4>(PtrStepSzb src, int2 sourceOffset, PtrStepSzb dst, int2 firstRed, cudaStream_t stream);
+
+    // Implement MHCdemosaic for float and with a result of 3 channels
+    void MHCdemosaic_float3(PtrStepSzf src, int2 sourceOffset, PtrStepSzf dst, int2 firstRed, cudaStream_t stream)
+    {
+        typedef typename TypeVec<float, 3>::vec_type dst_t;
+
+        const dim3 block(32, 8);
+        const dim3 grid(divUp(src.cols, block.x), divUp(src.rows, block.y));
+
+        if (sourceOffset.x || sourceOffset.y) {
+            cv::cudev::TextureOff<float> texSrc(src, sourceOffset.y, sourceOffset.x);
+            MHCdemosaic<dst_t, cv::cudev::TextureOffPtr<float>><<<grid, block, 0, stream>>>((PtrStepSz<dst_t>)dst, texSrc, firstRed);
+        }
+        else {
+            cv::cudev::Texture<float> texSrc(src);
+            MHCdemosaic<dst_t, cv::cudev::TexturePtr<float>><<<grid, block, 0, stream>>>((PtrStepSz<dst_t>)dst, texSrc, firstRed);
+        }
+
+        cudaSafeCall( cudaGetLastError() );
+
+        if (stream == 0)
+            cudaSafeCall( cudaDeviceSynchronize() );
+    }
 }}}
 
 #endif /* CUDA_DISABLER */
