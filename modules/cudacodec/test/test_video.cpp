@@ -1065,6 +1065,67 @@ CUDA_TEST_P(H264ToH265, Transcode)
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, H264ToH265, ALL_DEVICES);
 
+CV_ENUM(YuvColorFormats, cudacodec::ColorFormat::NV_YUV444, cudacodec::ColorFormat::NV_YUV420_10BIT, cudacodec::ColorFormat::NV_YUV444_10BIT)
+PARAM_TEST_CASE(YUVFormats, cv::cuda::DeviceInfo, YuvColorFormats)
+{
+};
+
+CUDA_TEST_P(YUVFormats, Transcode)
+{
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.h265";
+    const cv::cudacodec::ColorFormat writerColorFormat = static_cast<cudacodec::ColorFormat>(static_cast<int>(GET_PARAM(1)));
+    constexpr double fps = 25;
+    const cudacodec::Codec codec = cudacodec::Codec::HEVC;
+    const std::string ext = ".mp4";
+    const std::string outputFile = cv::tempfile(ext.c_str());
+    constexpr int nFrames = 5;
+    vector<Mat> bgrGs;
+    {
+        VideoCapture cap(inputFile);
+        cv::Ptr<cv::cudacodec::VideoWriter> writer;
+        Mat frame, yuv, bgr;
+        cv::cudacodec::EncoderParams params;
+        params.tuningInfo = cv::cudacodec::EncodeTuningInfo::ENC_TUNING_INFO_LOSSLESS;
+        params.rateControlMode = cv::cudacodec::EncodeParamsRcMode::ENC_PARAMS_RC_CONSTQP;
+        for (int i = 0; i < nFrames; ++i) {
+            ASSERT_TRUE(cap.read(frame));
+            ASSERT_FALSE(frame.empty());
+            cudacodec::SurfaceFormat yuvFormat = cudacodec::SurfaceFormat::SF_YUV444;
+            cudacodec::BitDepth bitDepth = cudacodec::BitDepth::EIGHT;
+            if (writerColorFormat == cudacodec::ColorFormat::NV_YUV444_10BIT) {
+                yuvFormat = cudacodec::SurfaceFormat::SF_YUV444_16Bit;
+                bitDepth = cudacodec::BitDepth::SIXTEEN;
+            }
+            else if (writerColorFormat == cudacodec::ColorFormat::NV_YUV420_10BIT){
+                yuvFormat = cudacodec::SurfaceFormat::SF_P016;
+                bitDepth = cudacodec::BitDepth::SIXTEEN;
+            }
+            generateTestImages(frame, yuv, bgr, yuvFormat, cudacodec::ColorFormat::BGR, bitDepth, false);
+            bgrGs.push_back(bgr.clone());
+            if (writer.empty())
+                writer = cv::cudacodec::createVideoWriter(outputFile, frame.size(), codec, fps, writerColorFormat, params);
+            writer->write(yuv);
+        }
+    }
+
+    {
+        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(outputFile);
+        reader->set(cudacodec::ColorFormat::BGR);
+        cv::cuda::GpuMat frame, frameGs;
+        Mat frameHost, frameGsHost;
+        for (int i = 0; i < nFrames; ++i) {
+            ASSERT_TRUE(reader->nextFrame(frame));
+            frame.download(frameHost);
+            frameGsHost = bgrGs[i];
+            const int diff = writerColorFormat == cudacodec::ColorFormat::NV_YUV420_10BIT || writerColorFormat == cudacodec::ColorFormat::NV_YUV444_10BIT ? 512 : 1;
+            EXPECT_MAT_NEAR(frameHost, frameGsHost, diff);
+        }
+    }
+    ASSERT_EQ(0, remove(outputFile.c_str()));
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, YUVFormats, testing::Combine(ALL_DEVICES, YuvColorFormats::all()));
 #endif
 
 #if defined(HAVE_NVCUVENC)
