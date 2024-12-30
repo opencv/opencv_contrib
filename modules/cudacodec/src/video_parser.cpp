@@ -119,6 +119,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
 
     FormatInfo newFormat;
     newFormat.videoFullRangeFlag = format->video_signal_description.video_full_range_flag;
+    newFormat.colorSpaceStandard = static_cast<ColorSpaceStandard>(format->video_signal_description.matrix_coefficients);
     newFormat.codec = static_cast<Codec>(format->codec);
     newFormat.chromaFormat = static_cast<ChromaFormat>(format->chroma_format);
     newFormat.nBitDepthMinus8 = format->bit_depth_luma_minus8;

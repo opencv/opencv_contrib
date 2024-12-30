@@ -93,19 +93,19 @@ enum Codec
 
 /** @brief ColorFormat for the frame returned by VideoReader::nextFrame() and VideoReader::retrieve() or used to initialize a VideoWriter.
 */
-enum class ColorFormat {
+enum ColorFormat {
     UNDEFINED = 0,
-    BGRA = 1, //!< OpenCV color format, can be used with both VideoReader and VideoWriter.
-    BGR = 2, //!< OpenCV color format, can be used with both VideoReader and VideoWriter.
-    GRAY = 3, //!< OpenCV color format, can be used with both VideoReader and VideoWriter.
-    NV_NV12 = 4, //!< Nvidia color format - equivalent to YUV - Semi-Planar YUV [Y plane followed by interleaved UV plane], can be used with both VideoReader and VideoWriter.
-
-    RGB = 5, //!< OpenCV color format, can only be used with VideoWriter.
-    RGBA = 6, //!< OpenCV color format, can only be used with VideoWriter.
-    NV_YV12 = 8, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by V and U planes], use with VideoReader, can only be used with VideoWriter.
-    NV_IYUV = 9, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by U and V planes], use with VideoReader, can only be used with VideoWriter.
-    NV_YUV444 = 10, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by U and V planes], use with VideoReader, can only be used with VideoWriter.
-    NV_AYUV = 11, //!< Nvidia Buffer Format - 8 bit Packed A8Y8U8V8. This is a word-ordered format where a pixel is represented by a 32-bit word with V in the lowest 8 bits, U in the next 8 bits, Y in the 8 bits after that and A in the highest 8 bits, can only be used with VideoWriter.
+    BGRA = 1, //!< OpenCV color format. VideoReader and VideoWriter.
+    BGR = 2, //!< OpenCV color format. VideoReader and VideoWriter.
+    GRAY = 3, //!< OpenCV color format. VideoReader and VideoWriter.
+    RGB = 5, //!< OpenCV color format. VideoReader and VideoWriter.
+    RGBA = 6, //!< OpenCV color format. VideoReader and VideoWriter.
+    NV_YUV_SURFACE_FORMAT = 7, //!< Nvidia YUV Surface Format output by the Nvidia decoder, see @ref SurfaceFormat. VideoReader only.
+    NV_NV12 = 4, //!< Nvidia Buffer Format - Semi-Planar YUV [Y plane followed by interleaved UV plane]. VideoWriter only. @deprecated Deprecated for use with VideoReader, use @ref NV_YUV_SURFACE_FORMAT instead.
+    NV_YV12 = 8, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by V and U planes]. VideoWriter only.
+    NV_IYUV = 9, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by U and V planes]. VideoWriter only.
+    NV_YUV444 = 10, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by U and V planes]. VideoWriter only.
+    NV_AYUV = 11, //!< Nvidia Buffer Format - 8 bit Packed A8Y8U8V8. This is a word-ordered format where a pixel is represented by a 32-bit word with V in the lowest 8 bits, U in the next 8 bits, Y in the 8 bits after that and A in the highest 8 bits. VideoWriter only.
 #ifndef CV_DOXYGEN
     PROP_NOT_SUPPORTED
 #endif
@@ -298,16 +298,41 @@ enum ChromaFormat
     NumFormats
 };
 
-/** @brief Deinterlacing mode used by decoder.
-* @param Weave Weave both fields (no deinterlacing). For progressive content and for content that doesn't need deinterlacing.
-* @param Bob Drop one field.
-* @param Adaptive Adaptive deinterlacing needs more video memory than other deinterlacing modes.
-* */
+/** @brief Deinterlacing mode used by decoder. */
 enum DeinterlaceMode
 {
-    Weave = 0,
-    Bob = 1,
-    Adaptive = 2
+    Weave = 0, //!< Weave both fields(no deinterlacing).For progressive content and for content that doesn't need deinterlacing.
+    Bob = 1, //!< Drop one field.
+    Adaptive = 2 //!< Adaptive deinterlacing needs more video memory than other deinterlacing modes.
+};
+
+/** @brief Video Signal Description Color Primaries of the VideoReader source (section E.2.1 VUI parameters semantics of H265 spec file) */
+enum class ColorSpaceStandard {
+    BT709 = 1, //!< ITU-R BT.709 standard for high-definition television.
+    Unspecified = 2, //!< Unspecified color space standard.
+    Reserved = 3, //!< Reserved for future use.
+    FCC = 4, //!< FCC color space standard.
+    BT470 = 5, //!< ITU - R BT.470, used for older analog television systems.
+    BT601 = 6, //!< ITU - R BT.601, used for standard definition television.
+    SMPTE240M = 7, //!< SMPTE 240M, used for early HDTV systems.
+    YCgCo = 8, //!< YCgCo color space, used in some video compression algorithms.
+    BT2020 = 9, //!< ITU - R BT.2020, used for ultra-high-definition television.
+    BT2020C = 10 //!< ITU - R BT.2020 Constant Luminance, used for ultra-high-definition television.
+};
+
+/** @brief Video surface formats output by the decoder */
+enum SurfaceFormat {
+    SF_NV12 = 0, //!< Semi-Planar YUV [Y plane followed by interleaved UV plane]
+    SF_P016 = 1, //!< 16 bit Semi-Planar YUV [Y plane followed by interleaved UV plane]. Can be used for 10 bit(6LSB bits 0), 12 bit (4LSB bits 0)
+    SF_YUV444 = 2, //!< Planar YUV [Y plane followed by U and V planes]
+    SF_YUV444_16Bit = 3 //!< 16 bit Planar YUV [Y plane followed by U and V planes]. Can be used for 10 bit(6LSB bits 0), 12 bit (4LSB bits 0)
+};
+
+/** @brief Bit depth of the frame returned by VideoReader::nextFrame() and VideoReader::retrieve()  */
+enum BitDepth {
+    EIGHT = 0, //!< 8 bit depth.
+    SIXTEEN = 1, //!< 16 bit depth.
+    UNCHANGED = 2 //!< Use source bit depth.
 };
 
 /** @brief Utility function demonstrating how to map the luma histogram when FormatInfo::videoFullRangeFlag == false
@@ -316,7 +341,7 @@ enum DeinterlaceMode
 
     @note
     -   This function demonstrates how to map the luma histogram back so that it is equivalent to the result obtained from cuda::calcHist()
-    if the returned frame was colorFormat::GRAY.
+    if the returned frame was ColorFormat::GRAY.
  */
 CV_EXPORTS_W void MapHist(const cuda::GpuMat& hist, CV_OUT Mat& histFull);
 
@@ -325,10 +350,11 @@ CV_EXPORTS_W void MapHist(const cuda::GpuMat& hist, CV_OUT Mat& histFull);
 struct CV_EXPORTS_W_SIMPLE FormatInfo
 {
     CV_WRAP FormatInfo() : nBitDepthMinus8(-1), ulWidth(0), ulHeight(0), width(0), height(0), ulMaxWidth(0), ulMaxHeight(0), valid(false),
-        fps(0), ulNumDecodeSurfaces(0), videoFullRangeFlag(false), enableHistogram(false), nCounterBitDepth(0), nMaxHistogramBins(0){};
+        fps(0), ulNumDecodeSurfaces(0), videoFullRangeFlag(false), colorSpaceStandard(ColorSpaceStandard::BT601), enableHistogram(false), nCounterBitDepth(0), nMaxHistogramBins(0){};
 
     CV_PROP_RW Codec codec;
     CV_PROP_RW ChromaFormat chromaFormat;
+    CV_PROP_RW SurfaceFormat surfaceFormat; //!< Surface format of the decoded frame.
     CV_PROP_RW int nBitDepthMinus8;
     CV_PROP_RW int nBitDepthChromaMinus8;
     CV_PROP_RW int ulWidth;//!< Coded sequence width in pixels.
@@ -345,11 +371,35 @@ struct CV_EXPORTS_W_SIMPLE FormatInfo
     CV_PROP_RW cv::Size targetSz;//!< Post-processed size of the output frame.
     CV_PROP_RW cv::Rect srcRoi;//!< Region of interest decoded from video source.
     CV_PROP_RW cv::Rect targetRoi;//!< Region of interest in the output frame containing the decoded frame.
-    CV_PROP_RW bool videoFullRangeFlag;//!< Output value indicating if the black level, luma and chroma of the source are represented using the full or limited range (AKA TV or "analogue" range) of values as defined in Annex E of the ITU-T Specification.  Internally the conversion from NV12 to BGR obeys ITU 709.
+    CV_PROP_RW bool videoFullRangeFlag;//!< Output value indicating if the black level, luma and chroma of the source are represented using the full or limited range (AKA TV or "analogue" range) of values as defined in Annex E of the ITU-T Specification.
+    CV_PROP_RW ColorSpaceStandard colorSpaceStandard; //!< Video Signal Description Color Primaries of the VideoReader source (section E.2.1 VUI parameters semantics of H265 spec file)
     CV_PROP_RW bool enableHistogram;//!< Flag requesting histogram output if supported. Exception will be thrown when requested but not supported.
     CV_PROP_RW int nCounterBitDepth;//!< Bit depth of histogram bins if histogram output is requested and supported.
     CV_PROP_RW int nMaxHistogramBins;//!< Max number of histogram bins if histogram output is requested and supported.
 };
+
+/** @brief Class for converting the raw YUV Surface output from VideoReader if output color format is set to ColorFormat::NV_YUV_SURFACE_FORMAT (VideoReader::set(ColorFormat::NV_YUV_SURFACE_FORMAT)) to the requested @ref ColorFormat.
+ */
+class CV_EXPORTS_W NVSurfaceToColorConverter {
+public:
+    /** @brief Performs the conversion from the raw YUV Surface output from VideoReader to the requested color format. Use this function when you want to convert the raw YUV Surface output from VideoReader to more than one color format or you want both the raw Surface output in addition to a color frame.
+     * @param yuv The raw YUV Surface output from VideoReader see @ref SurfaceFormat.
+     * @param color The converted frame.
+     * @param surfaceFormat The surface format of the input YUV data.
+     * @param outputFormat The requested output color format.
+     * @param bitDepth The requested bit depth of the output frame.
+     * @param planar Request seperate planes for each color plane.
+     * @param videoFullRangeFlag Indicates if the black level, luma and chroma of the source are represented using the full or limited range (AKA TV or "analogue" range) of values as defined in Annex E of the ITU-T Specification.
+     * @param stream Stream for the asynchronous version.
+     */
+    virtual bool convert(InputArray yuv, OutputArray color, const SurfaceFormat surfaceFormat, const ColorFormat outputFormat, const BitDepth bitDepth = BitDepth::UNCHANGED, const bool planar = false, const bool videoFullRangeFlag = false, cuda::Stream& stream = cuda::Stream::Null()) = 0;
+};
+
+/** @brief Creates a NVSurfaceToColorConverter.
+* @param colorSpace The requested @ref ColorSpaceStandard for the converter.
+* @param videoFullRangeFlag Indicates if the black level, luma and chroma of the source are represented using the full or limited range (AKA TV or "analogue" range) of values as defined in Annex E of the ITU-T Specification.
+ */
+CV_EXPORTS_W Ptr<NVSurfaceToColorConverter> createNVSurfaceToColorConverter(const ColorSpaceStandard colorSpace, const bool videoFullRangeFlag = false);
 
 /** @brief cv::cudacodec::VideoReader generic properties identifier.
 */
@@ -360,9 +410,11 @@ enum class VideoReaderProps {
     PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB = 3, //!< Number of raw packages recieved since the last call to grab().
     PROP_RAW_MODE = 4, //!< Status of raw mode.
     PROP_LRF_HAS_KEY_FRAME = 5, //!< FFmpeg source only - Indicates whether the Last Raw Frame (LRF), output from VideoReader::retrieve() when VideoReader is initialized in raw mode, contains encoded data for a key frame.
-    PROP_COLOR_FORMAT = 6, //!< Set the ColorFormat of the decoded frame.  This can be changed before every call to nextFrame() and retrieve().
+    PROP_COLOR_FORMAT = 6, //!< ColorFormat of the decoded frame.  This can be changed before every call to nextFrame() and retrieve().
     PROP_UDP_SOURCE = 7, //!< Status of VideoReaderInitParams::udpSource initialization.
     PROP_ALLOW_FRAME_DROP = 8, //!< Status of VideoReaderInitParams::allowFrameDrop initialization.
+    PROP_BIT_DEPTH = 9, //!< Bit depth of the decoded frame. This can be changed before every call to nextFrame() and retrieve().
+    PROP_PLANAR = 10, //!< Planar when true, packed when false. This can be changed before every call to nextFrame() and retrieve().
 #ifndef CV_DOXYGEN
     PROP_NOT_SUPPORTED
 #endif
@@ -481,9 +533,11 @@ public:
     /** @brief Set the desired ColorFormat for the frame returned by nextFrame()/retrieve().
 
     @param colorFormat Value of the ColorFormat.
+    @param bitDepth Requested bit depth of the frame.
+    @param planar Set to true for planar and false for packed color format.
     @return `true` unless the colorFormat is not supported.
      */
-    CV_WRAP virtual bool set(const ColorFormat colorFormat) = 0;
+    CV_WRAP virtual bool set(const ColorFormat colorFormat, const BitDepth bitDepth = BitDepth::UNCHANGED, const bool planar = false) = 0;
 
     /** @brief Returns the specified VideoReader property
 
