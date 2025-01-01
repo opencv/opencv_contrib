@@ -189,7 +189,7 @@ namespace cv { namespace cuda { namespace device
 
             cudaSafeCall( cudaStreamSynchronize(stream) );
 
-            totalCount = ::min(totalCount, maxSize);
+            totalCount = std::min(totalCount, maxSize);
 
             if (doSort && totalCount > 0)
             {

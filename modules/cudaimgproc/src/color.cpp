@@ -51,7 +51,7 @@ void cv::cuda::cvtColor(InputArray, OutputArray, int, int, Stream&) { throw_no_c
 
 void cv::cuda::demosaicing(InputArray, OutputArray, int, int, Stream&) { throw_no_cuda(); }
 
-void cv::cuda::swapChannels(InputOutputArray, const int[], Stream&) { throw_no_cuda(); }
+void cv::cuda::swapChannels(InputOutputArray, const int[4], Stream&) { throw_no_cuda(); }
 
 void cv::cuda::gammaCorrection(InputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
 
@@ -1831,10 +1831,17 @@ namespace
         oSizeROI.width = src.cols;
         oSizeROI.height = src.rows;
 
+#if USE_NPP_STREAM_CTX
         if (src.depth() == CV_8U)
-            nppSafeCall( nppiAlphaPremul_8u_AC4R(src.ptr<Npp8u>(), static_cast<int>(src.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step), oSizeROI) );
+            nppSafeCall( nppiAlphaPremul_8u_AC4R_Ctx(src.ptr<Npp8u>(), static_cast<int>(src.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step), oSizeROI, h) );
         else
-            nppSafeCall( nppiAlphaPremul_16u_AC4R(src.ptr<Npp16u>(), static_cast<int>(src.step), dst.ptr<Npp16u>(), static_cast<int>(dst.step), oSizeROI) );
+            nppSafeCall( nppiAlphaPremul_16u_AC4R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step), dst.ptr<Npp16u>(), static_cast<int>(dst.step), oSizeROI, h) );
+#else
+        if (src.depth() == CV_8U)
+            nppSafeCall(nppiAlphaPremul_8u_AC4R(src.ptr<Npp8u>(), static_cast<int>(src.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step), oSizeROI));
+        else
+            nppSafeCall(nppiAlphaPremul_16u_AC4R(src.ptr<Npp16u>(), static_cast<int>(src.step), dst.ptr<Npp16u>(), static_cast<int>(dst.step), oSizeROI));
+#endif
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
@@ -2200,7 +2207,11 @@ void cv::cuda::swapChannels(InputOutputArray _image, const int dstOrder[4], Stre
     sz.width  = image.cols;
     sz.height = image.rows;
 
-    nppSafeCall( nppiSwapChannels_8u_C4IR(image.ptr<Npp8u>(), static_cast<int>(image.step), sz, dstOrder) );
+#if USE_NPP_STREAM_CTX
+    nppSafeCall( nppiSwapChannels_8u_C4IR_Ctx(image.ptr<Npp8u>(), static_cast<int>(image.step), sz, dstOrder, h) );
+#else
+    nppSafeCall(nppiSwapChannels_8u_C4IR(image.ptr<Npp8u>(), static_cast<int>(image.step), sz, dstOrder));
+#endif
 
     if (stream == 0)
         cudaSafeCall( cudaDeviceSynchronize() );
@@ -2209,7 +2220,7 @@ void cv::cuda::swapChannels(InputOutputArray _image, const int dstOrder[4], Stre
 ////////////////////////////////////////////////////////////////////////
 // gammaCorrection
 
-void cv::cuda::gammaCorrection(InputArray _src, OutputArray _dst, bool forward, Stream& stream)
+void cv::cuda::gammaCorrection(InputArray _src, OutputArray _dst, bool forward, Stream& _stream)
 {
 #if (CUDA_VERSION < 5000)
     CV_UNUSED(_src);
@@ -2218,8 +2229,23 @@ void cv::cuda::gammaCorrection(InputArray _src, OutputArray _dst, bool forward, 
     CV_UNUSED(stream);
     CV_Error(Error::StsNotImplemented, "This function works only with CUDA 5.0 or higher");
 #else
-    typedef NppStatus (*func_t)(const Npp8u* pSrc, int nSrcStep, Npp8u* pDst, int nDstStep, NppiSize oSizeROI);
-    typedef NppStatus (*func_inplace_t)(Npp8u* pSrcDst, int nSrcDstStep, NppiSize oSizeROI);
+#if USE_NPP_STREAM_CTX
+    typedef NppStatus (*func_t)(const Npp8u* pSrc, int nSrcStep, Npp8u* pDst, int nDstStep, NppiSize oSizeROI, NppStreamContext ctx);
+    typedef NppStatus (*func_inplace_t)(Npp8u* pSrcDst, int nSrcDstStep, NppiSize oSizeROI, NppStreamContext ctx);
+
+    static const func_t funcs[2][5] =
+    {
+        {0, 0, 0, nppiGammaInv_8u_C3R_Ctx, nppiGammaInv_8u_AC4R_Ctx},
+        {0, 0, 0, nppiGammaFwd_8u_C3R_Ctx, nppiGammaFwd_8u_AC4R_Ctx}
+    };
+    static const func_inplace_t funcs_inplace[2][5] =
+    {
+        {0, 0, 0, nppiGammaInv_8u_C3IR_Ctx, nppiGammaInv_8u_AC4IR_Ctx},
+        {0, 0, 0, nppiGammaFwd_8u_C3IR_Ctx, nppiGammaFwd_8u_AC4IR_Ctx}
+    };
+#else
+    typedef NppStatus(*func_t)(const Npp8u* pSrc, int nSrcStep, Npp8u* pDst, int nDstStep, NppiSize oSizeROI);
+    typedef NppStatus(*func_inplace_t)(Npp8u* pSrcDst, int nSrcDstStep, NppiSize oSizeROI);
 
     static const func_t funcs[2][5] =
     {
@@ -2231,6 +2257,7 @@ void cv::cuda::gammaCorrection(InputArray _src, OutputArray _dst, bool forward, 
         {0, 0, 0, nppiGammaInv_8u_C3IR, nppiGammaInv_8u_AC4IR},
         {0, 0, 0, nppiGammaFwd_8u_C3IR, nppiGammaFwd_8u_AC4IR}
     };
+#endif
 
     GpuMat src = _src.getGpuMat();
 
@@ -2239,17 +2266,27 @@ void cv::cuda::gammaCorrection(InputArray _src, OutputArray _dst, bool forward, 
     _dst.create(src.size(), src.type());
     GpuMat dst = _dst.getGpuMat();
 
-    NppStreamHandler h(StreamAccessor::getStream(stream));
+    cudaStream_t stream = StreamAccessor::getStream(_stream);
+    NppStreamHandler h(stream);
 
     NppiSize oSizeROI;
     oSizeROI.width = src.cols;
     oSizeROI.height = src.rows;
 
+#if USE_NPP_STREAM_CTX
     if (dst.data == src.data)
-        funcs_inplace[forward][src.channels()](dst.ptr<Npp8u>(), static_cast<int>(src.step), oSizeROI);
+        nppSafeCall(funcs_inplace[forward][src.channels()](dst.ptr<Npp8u>(), static_cast<int>(src.step), oSizeROI, h));
     else
-        funcs[forward][src.channels()](src.ptr<Npp8u>(), static_cast<int>(src.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step), oSizeROI);
+        nppSafeCall(funcs[forward][src.channels()](src.ptr<Npp8u>(), static_cast<int>(src.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step), oSizeROI, h));
+#else
+    if (dst.data == src.data)
+        nppSafeCall(funcs_inplace[forward][src.channels()](dst.ptr<Npp8u>(), static_cast<int>(src.step), oSizeROI));
+    else
+        nppSafeCall(funcs[forward][src.channels()](src.ptr<Npp8u>(), static_cast<int>(src.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step), oSizeROI));
+#endif
 
+    if (stream == 0)
+        cudaSafeCall(cudaDeviceSynchronize());
 #endif
 }
 
@@ -2262,7 +2299,11 @@ namespace
     {
         typedef typename NPPTypeTraits<DEPTH>::npp_type npp_t;
 
-        typedef NppStatus (*func_t)(const npp_t* pSrc1, int nSrc1Step, const npp_t* pSrc2, int nSrc2Step, npp_t* pDst, int nDstStep, NppiSize oSizeROI, NppiAlphaOp eAlphaOp);
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus (*func_t)(const npp_t* pSrc1, int nSrc1Step, const npp_t* pSrc2, int nSrc2Step, npp_t* pDst, int nDstStep, NppiSize oSizeROI, NppiAlphaOp eAlphaOp, NppStreamContext ctx);
+#else
+        typedef NppStatus(*func_t)(const npp_t* pSrc1, int nSrc1Step, const npp_t* pSrc2, int nSrc2Step, npp_t* pDst, int nDstStep, NppiSize oSizeROI, NppiAlphaOp eAlphaOp);
+#endif
     };
 
     template <int DEPTH, typename NppAlphaCompFunc<DEPTH>::func_t func> struct NppAlphaComp
@@ -2277,8 +2318,13 @@ namespace
             oSizeROI.width = img1.cols;
             oSizeROI.height = img2.rows;
 
+#if USE_NPP_STREAM_CTX
             nppSafeCall( func(img1.ptr<npp_t>(), static_cast<int>(img1.step), img2.ptr<npp_t>(), static_cast<int>(img2.step),
-                              dst.ptr<npp_t>(), static_cast<int>(dst.step), oSizeROI, eAlphaOp) );
+                              dst.ptr<npp_t>(), static_cast<int>(dst.step), oSizeROI, eAlphaOp, h) );
+#else
+            nppSafeCall(func(img1.ptr<npp_t>(), static_cast<int>(img1.step), img2.ptr<npp_t>(), static_cast<int>(img2.step),
+                dst.ptr<npp_t>(), static_cast<int>(dst.step), oSizeROI, eAlphaOp));
+#endif
 
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
@@ -2307,12 +2353,21 @@ void cv::cuda::alphaComp(InputArray _img1, InputArray _img2, OutputArray _dst, i
     typedef void (*func_t)(const GpuMat& img1, const GpuMat& img2, GpuMat& dst, NppiAlphaOp eAlphaOp, cudaStream_t stream);
     static const func_t funcs[] =
     {
+#if USE_NPP_STREAM_CTX
+        NppAlphaComp<CV_8U, nppiAlphaComp_8u_AC4R_Ctx>::call,
+        0,
+        NppAlphaComp<CV_16U, nppiAlphaComp_16u_AC4R_Ctx>::call,
+        0,
+        NppAlphaComp<CV_32S, nppiAlphaComp_32s_AC4R_Ctx>::call,
+        NppAlphaComp<CV_32F, nppiAlphaComp_32f_AC4R_Ctx>::call
+#else
         NppAlphaComp<CV_8U, nppiAlphaComp_8u_AC4R>::call,
         0,
         NppAlphaComp<CV_16U, nppiAlphaComp_16u_AC4R>::call,
         0,
         NppAlphaComp<CV_32S, nppiAlphaComp_32s_AC4R>::call,
         NppAlphaComp<CV_32F, nppiAlphaComp_32f_AC4R>::call
+#endif
     };
 
     GpuMat img1 = _img1.getGpuMat();

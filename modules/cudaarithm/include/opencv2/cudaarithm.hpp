@@ -75,7 +75,24 @@ namespace cv { namespace cuda {
 @param src1 First source matrix or scalar.
 @param src2 Second source matrix or scalar. Matrix should have the same size and type as src1 .
 @param dst Destination matrix that has the same size and number of channels as the input array(s).
-The depth is defined by dtype or src1 depth.
+The depth is defined by dtype or @p src1 depth.
+@param mask Optional operation mask, 8-bit single channel array, that specifies elements of the
+destination array to be changed. The mask can be used only with single channel images.
+@param dtype Optional depth of the output array.
+@param stream Stream for the asynchronous version.
+
+@warning In python both @p src1 and @p src2 have to be matrices, see @ref addWithScalar for scalar overload.
+
+@sa cv::add, addWithScalar
+ */
+CV_EXPORTS_W void add(InputArray src1, InputArray src2, OutputArray dst, InputArray mask = noArray(), int dtype = -1, Stream& stream = Stream::Null());
+
+/** @brief Computes a matrix-scalar sum.
+
+@param src1 First source matrix.
+@param src2 Second source scalar.
+@param dst Destination matrix that has the same size and number of channels as the input array.
+The depth is defined by dtype or @p src1 depth.
 @param mask Optional operation mask, 8-bit single channel array, that specifies elements of the
 destination array to be changed. The mask can be used only with single channel images.
 @param dtype Optional depth of the output array.
@@ -83,43 +100,100 @@ destination array to be changed. The mask can be used only with single channel i
 
 @sa add
  */
-CV_EXPORTS_W void add(InputArray src1, InputArray src2, OutputArray dst, InputArray mask = noArray(), int dtype = -1, Stream& stream = Stream::Null());
+CV_EXPORTS_W void inline addWithScalar(InputArray src1, Scalar src2, OutputArray dst, InputArray mask = noArray(), int dtype = -1, Stream& stream = Stream::Null()) {
+    add(src1, src2, dst, mask, dtype, stream);
+}
 
 /** @brief Computes a matrix-matrix or matrix-scalar difference.
 
 @param src1 First source matrix or scalar.
-@param src2 Second source matrix or scalar. Matrix should have the same size and type as src1 .
+@param src2 Second source matrix or scalar. Matrix should have the same size and type as @p src1.
 @param dst Destination matrix that has the same size and number of channels as the input array(s).
-The depth is defined by dtype or src1 depth.
+The depth is defined by dtype or @p src1 depth.
 @param mask Optional operation mask, 8-bit single channel array, that specifies elements of the
 destination array to be changed. The mask can be used only with single channel images.
 @param dtype Optional depth of the output array.
 @param stream Stream for the asynchronous version.
 
-@sa subtract
+@warning In python both @p src1 and @p src2 have to be matrices, see @ref subtractWithScalar for scalar overload.
+
+@sa cv::subtract, subtractWithScalar
  */
 CV_EXPORTS_W void subtract(InputArray src1, InputArray src2, OutputArray dst, InputArray mask = noArray(), int dtype = -1, Stream& stream = Stream::Null());
+
+/** @brief Computes matrix-scalar difference.
+
+@param src1 First source matrix.
+@param src2 Second source scalar.
+@param dst Destination matrix that has the same size and number of channels as the input array.
+The depth is defined by dtype or @p src1 depth.
+@param mask Optional operation mask, 8-bit single channel array, that specifies elements of the
+destination array to be changed. The mask can be used only with single channel images.
+@param dtype Optional depth of the output array.
+@param stream Stream for the asynchronous version.
+
+@sa cv::subtract
+ */
+CV_EXPORTS_W void inline subtractWithScalar(InputArray src1, Scalar src2, OutputArray dst, InputArray mask = noArray(), int dtype = -1, Stream& stream = Stream::Null()) {
+    subtract(src1, src2, dst, mask, dtype, stream);
+}
 
 /** @brief Computes a matrix-matrix or matrix-scalar per-element product.
 
 @param src1 First source matrix or scalar.
 @param src2 Second source matrix or scalar.
 @param dst Destination matrix that has the same size and number of channels as the input array(s).
-The depth is defined by dtype or src1 depth.
+The depth is defined by dtype or @p src1 depth.
+@param scale Optional scale factor.
+@param dtype Optional depth of the output array.
+@param stream Stream for the asynchronous version.
+
+@warning In python both @p src1 and @p src2 have to be matrices, see @ref multiplyWithScalar for scalar overload.
+
+@sa cv::multiply, multiplyWithScalar
+ */
+CV_EXPORTS_W void multiply(InputArray src1, InputArray src2, OutputArray dst, double scale = 1, int dtype = -1, Stream& stream = Stream::Null());
+
+/** @brief Computes a matrix-scalar per-element product.
+
+@param src1 First source matrix.
+@param src2 Second source scalar.
+@param dst Destination matrix that has the same size and number of channels as the input array.
+The depth is defined by dtype or @p src1 depth.
 @param scale Optional scale factor.
 @param dtype Optional depth of the output array.
 @param stream Stream for the asynchronous version.
 
 @sa multiply
  */
-CV_EXPORTS_W void multiply(InputArray src1, InputArray src2, OutputArray dst, double scale = 1, int dtype = -1, Stream& stream = Stream::Null());
+CV_EXPORTS_W void inline multiplyWithScalar(InputArray src1, Scalar src2, OutputArray dst, double scale = 1, int dtype = -1, Stream& stream = Stream::Null()) {
+    multiply(src1, src2, dst, scale, dtype, stream);
+}
 
 /** @brief Computes a matrix-matrix or matrix-scalar division.
 
-@param src1 First source matrix or a scalar.
+@param src1 First source matrix or scalar.
 @param src2 Second source matrix or scalar.
 @param dst Destination matrix that has the same size and number of channels as the input array(s).
-The depth is defined by dtype or src1 depth.
+The depth is defined by dtype or @p src1 depth.
+@param scale Optional scale factor.
+@param dtype Optional depth of the output array.
+@param stream Stream for the asynchronous version.
+
+This function, in contrast to divide, uses a round-down rounding mode.
+
+@warning In python both @p src1 and @p src2 have to be matrices, see @ref divideWithScalar for scalar overload.
+
+@sa cv::divide, divideWithScalar
+ */
+CV_EXPORTS_W void divide(InputArray src1, InputArray src2, OutputArray dst, double scale = 1, int dtype = -1, Stream& stream = Stream::Null());
+
+/** @brief Computes a matrix-scalar division.
+
+@param src1 First source matrix.
+@param src2 Second source scalar.
+@param dst Destination matrix that has the same size and number of channels as the input array.
+The depth is defined by dtype or @p src1 depth.
 @param scale Optional scale factor.
 @param dtype Optional depth of the output array.
 @param stream Stream for the asynchronous version.
@@ -128,7 +202,9 @@ This function, in contrast to divide, uses a round-down rounding mode.
 
 @sa divide
  */
-CV_EXPORTS_W void divide(InputArray src1, InputArray src2, OutputArray dst, double scale = 1, int dtype = -1, Stream& stream = Stream::Null());
+CV_EXPORTS_W void inline divideWithScalar(InputArray src1, Scalar src2, OutputArray dst, double scale = 1, int dtype = -1, Stream& stream = Stream::Null()) {
+    divide(src1, src2, dst, scale, dtype, stream);
+}
 
 /** @brief Computes per-element absolute difference of two matrices (or of a matrix and scalar).
 
@@ -137,9 +213,24 @@ CV_EXPORTS_W void divide(InputArray src1, InputArray src2, OutputArray dst, doub
 @param dst Destination matrix that has the same size and type as the input array(s).
 @param stream Stream for the asynchronous version.
 
-@sa absdiff
+@warning In python both @p src1 and @p src2 have to be matrices, see @ref absdiffWithScalar for scalar overload.
+
+@sa cv::absdiff, absdiffWithScalar
  */
 CV_EXPORTS_W void absdiff(InputArray src1, InputArray src2, OutputArray dst, Stream& stream = Stream::Null());
+
+/** @brief Computes per-element absolute difference of a matrix and scalar.
+
+@param src1 First source matrix.
+@param src2 Second source scalar.
+@param dst Destination matrix that has the same size and type as the input array.
+@param stream Stream for the asynchronous version.
+
+@sa absdiff
+ */
+CV_EXPORTS_W void inline absdiffWithScalar(InputArray src1, Scalar src2, OutputArray dst, Stream& stream = Stream::Null()) {
+    absdiff(src1, src2, dst, stream);
+}
 
 /** @brief Computes an absolute value of each matrix element.
 
@@ -218,9 +309,31 @@ CV_EXPORTS_W void pow(InputArray src, double power, OutputArray dst, Stream& str
 -   **CMP_NE:** a(.) != b(.)
 @param stream Stream for the asynchronous version.
 
-@sa compare
+@warning In python both @p src1 and @p src2 have to be matrices, see @ref compareWithScalar for scalar overload.
+
+@sa cv::compare, compareWithScalar
  */
 CV_EXPORTS_W void compare(InputArray src1, InputArray src2, OutputArray dst, int cmpop, Stream& stream = Stream::Null());
+
+/** @brief Compares elements of a matrix and scalar.
+
+@param src1 First source matrix.
+@param src2 Second source scalar.
+@param dst Destination matrix that has the same size as the input array and type \ref CV_8U.
+@param cmpop Flag specifying the relation between the elements to be checked:
+-   **CMP_EQ:** a(.) == b(.)
+-   **CMP_GT:** a(.) \> b(.)
+-   **CMP_GE:** a(.) \>= b(.)
+-   **CMP_LT:** a(.) \< b(.)
+-   **CMP_LE:** a(.) \<= b(.)
+-   **CMP_NE:** a(.) != b(.)
+@param stream Stream for the asynchronous version.
+
+@sa compare
+ */
+CV_EXPORTS_W void inline compareWithScalar(InputArray src1, Scalar src2, OutputArray dst, int cmpop, Stream& stream = Stream::Null()) {
+    compare(src1, src2, dst, cmpop, stream);
+}
 
 /** @brief Performs a per-element bitwise inversion.
 
@@ -240,8 +353,27 @@ CV_EXPORTS_W void bitwise_not(InputArray src, OutputArray dst, InputArray mask =
 @param mask Optional operation mask, 8-bit single channel array, that specifies elements of the
 destination array to be changed. The mask can be used only with single channel images.
 @param stream Stream for the asynchronous version.
+
+@warning In python both @p src1 and @p src2 have to be matrices, see @ref bitwise_or_with_scalar for scalar overload.
+
+@sa cv::bitwise_or, bitwise_or_with_scalar
  */
 CV_EXPORTS_W void bitwise_or(InputArray src1, InputArray src2, OutputArray dst, InputArray mask = noArray(), Stream& stream = Stream::Null());
+
+/** @brief Performs a per-element bitwise disjunction of a matrix and scalar.
+
+@param src1 First source matrix.
+@param src2 Second source scalar.
+@param dst Destination matrix that has the same size and type as the input array.
+@param mask Optional operation mask, 8-bit single channel array, that specifies elements of the
+destination array to be changed. The mask can be used only with single channel images.
+@param stream Stream for the asynchronous version.
+
+@sa bitwise_or
+ */
+CV_EXPORTS_W void inline bitwise_or_with_scalar(InputArray src1, Scalar src2, OutputArray dst, InputArray mask = noArray(), Stream& stream = Stream::Null()) {
+    bitwise_or(src1, src2, dst, mask, stream);
+}
 
 /** @brief Performs a per-element bitwise conjunction of two matrices (or of matrix and scalar).
 
@@ -251,19 +383,57 @@ CV_EXPORTS_W void bitwise_or(InputArray src1, InputArray src2, OutputArray dst, 
 @param mask Optional operation mask, 8-bit single channel array, that specifies elements of the
 destination array to be changed. The mask can be used only with single channel images.
 @param stream Stream for the asynchronous version.
+
+@warning In python both @p src1 and @p src2 have to be matrices, see @ref bitwise_and_with_scalar for scalar overload.
+
+@sa bitwise_and_with_scalar
  */
 CV_EXPORTS_W void bitwise_and(InputArray src1, InputArray src2, OutputArray dst, InputArray mask = noArray(), Stream& stream = Stream::Null());
+
+/** @brief Performs a per-element bitwise conjunction of a matrix and a scalar.
+
+@param src1 First source matrix.
+@param src2 Second source scalar.
+@param dst Destination matrix that has the same size and type as the input array.
+@param mask Optional operation mask, 8-bit single channel array, that specifies elements of the
+destination array to be changed. The mask can be used only with single channel images.
+@param stream Stream for the asynchronous version.
+
+@sa bitwise_and
+ */
+CV_EXPORTS_W void inline bitwise_and_with_scalar(InputArray src1, Scalar src2, OutputArray dst, InputArray mask = noArray(), Stream& stream = Stream::Null()) {
+    bitwise_and(src1, src2, dst, mask, stream);
+}
 
 /** @brief Performs a per-element bitwise exclusive or operation of two matrices (or of matrix and scalar).
 
 @param src1 First source matrix or scalar.
 @param src2 Second source matrix or scalar.
+@param dst Destination matrix that has the same size and type as the input array.
+@param mask Optional operation mask, 8-bit single channel array, that specifies elements of the
+destination array to be changed. The mask can be used only with single channel images.
+@param stream Stream for the asynchronous version.
+
+@warning In python both @p src1 and @p src2 have to be matrices, see @ref bitwise_xor_with_scalar for scalar overload.
+
+@sa cv::bitwise_xor, bitwise_xor_with_scalar
+ */
+CV_EXPORTS_W void bitwise_xor(InputArray src1, InputArray src2, OutputArray dst, InputArray mask = noArray(), Stream& stream = Stream::Null());
+
+/** @brief Performs a per-element bitwise exclusive or operation of a matrix and a scalar.
+
+@param src1 First source matrix.
+@param src2 Second source scalar.
 @param dst Destination matrix that has the same size and type as the input array(s).
 @param mask Optional operation mask, 8-bit single channel array, that specifies elements of the
 destination array to be changed. The mask can be used only with single channel images.
 @param stream Stream for the asynchronous version.
+
+@sa bitwise_xor
  */
-CV_EXPORTS_W void bitwise_xor(InputArray src1, InputArray src2, OutputArray dst, InputArray mask = noArray(), Stream& stream = Stream::Null());
+CV_EXPORTS_W void inline bitwise_xor_with_scalar(InputArray src1, Scalar src2, OutputArray dst, InputArray mask = noArray(), Stream& stream = Stream::Null()) {
+    bitwise_xor(src1, src2, dst, mask, stream);
+}
 
 /** @brief Performs pixel by pixel right shift of an image by a constant value.
 
@@ -299,9 +469,24 @@ CV_WRAP inline void lshift(InputArray src, Scalar val, OutputArray dst, Stream& 
 @param dst Destination matrix that has the same size and type as the input array(s).
 @param stream Stream for the asynchronous version.
 
-@sa min
+@warning In python both @p src1 and @p src2 have to be matrices, see @ref minWithScalar for scalar overload.
+
+@sa cv::min, minWithScalar
  */
 CV_EXPORTS_W void min(InputArray src1, InputArray src2, OutputArray dst, Stream& stream = Stream::Null());
+
+/** @brief Computes the per-element minimum or a matrix and a scalar.
+
+@param src1 First source matrix.
+@param src2 Second source scalar.
+@param dst Destination matrix that has the same size and type as the input array.
+@param stream Stream for the asynchronous version.
+
+@sa min
+ */
+CV_EXPORTS_W void inline minWithScalar(InputArray src1, Scalar src2, OutputArray dst, Stream& stream = Stream::Null()) {
+    min(src1, src2, dst, stream);
+}
 
 /** @brief Computes the per-element maximum of two matrices (or a matrix and a scalar).
 
@@ -310,9 +495,24 @@ CV_EXPORTS_W void min(InputArray src1, InputArray src2, OutputArray dst, Stream&
 @param dst Destination matrix that has the same size and type as the input array(s).
 @param stream Stream for the asynchronous version.
 
-@sa max
+@warning In python both @p src1 and @p src2 have to be matrices, see @ref maxWithScalar for scalar overload.
+
+@sa cv::max, maxWithScalar
  */
 CV_EXPORTS_W void max(InputArray src1, InputArray src2, OutputArray dst, Stream& stream = Stream::Null());
+
+/** @brief Computes the per-element maximum of a matrix and a scalar.
+
+@param src1 First source matrix.
+@param src2 Second source scalar.
+@param dst Destination matrix that has the same size and type as the input array.
+@param stream Stream for the asynchronous version.
+
+@sa max
+ */
+CV_EXPORTS_W void inline maxWithScalar(InputArray src1, Scalar src2, OutputArray dst, Stream& stream = Stream::Null()) {
+    max(src1, src2, dst, stream);
+}
 
 /** @brief Computes the weighted sum of two arrays.
 

@@ -45,6 +45,10 @@ namespace opencv_test {
     namespace {
 
 #if defined(HAVE_NVCUVID) || defined(HAVE_NVCUVENC)
+CV_ENUM(ColorFormats, cudacodec::ColorFormat::BGR, cudacodec::ColorFormat::BGRA, cudacodec::ColorFormat::RGB, cudacodec::ColorFormat::RGBA, cudacodec::ColorFormat::GRAY)
+CV_ENUM(SurfaceFormats, cudacodec::SurfaceFormat::SF_NV12, cudacodec::SurfaceFormat::SF_P016, cudacodec::SurfaceFormat::SF_YUV444, cudacodec::SurfaceFormat::SF_YUV444_16Bit)
+CV_ENUM(BitDepths, cudacodec::BitDepth::UNCHANGED, cudacodec::BitDepth::EIGHT, cudacodec::BitDepth::SIXTEEN)
+
 struct SetDevice : testing::TestWithParam<cv::cuda::DeviceInfo>
 {
     cv::cuda::DeviceInfo devInfo;
@@ -76,7 +80,19 @@ PARAM_TEST_CASE(Video, cv::cuda::DeviceInfo, std::string)
 };
 
 typedef tuple<std::string, bool> color_conversion_params_t;
-PARAM_TEST_CASE(ColorConversion, cv::cuda::DeviceInfo, cv::cudacodec::ColorFormat, color_conversion_params_t)
+PARAM_TEST_CASE(ColorConversionLumaChromaRange, cv::cuda::DeviceInfo, color_conversion_params_t)
+{
+};
+
+PARAM_TEST_CASE(ColorConversionFormat, cv::cuda::DeviceInfo, ColorFormats)
+{
+};
+
+struct ColorConversionPlanar : SetDevice
+{
+};
+
+PARAM_TEST_CASE(ColorConversionBitdepth, cv::cuda::DeviceInfo, BitDepths)
 {
 };
 
@@ -114,6 +130,10 @@ struct CheckParams : SetDevice
 };
 
 struct Seek : SetDevice
+{
+};
+
+PARAM_TEST_CASE(YuvConverter, cv::cuda::DeviceInfo, SurfaceFormats, ColorFormats, BitDepths, bool, bool)
 {
 };
 
@@ -300,38 +320,35 @@ CUDA_TEST_P(Video, Reader)
         {cudacodec::ColorFormat::GRAY,1},
         {cudacodec::ColorFormat::BGR,3},
         {cudacodec::ColorFormat::BGRA,4},
-        {cudacodec::ColorFormat::NV_NV12,1}
+        {cudacodec::ColorFormat::NV_YUV_SURFACE_FORMAT,1}
     };
 
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + relativeFilePath;
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
-    ASSERT_FALSE(reader->set(cudacodec::ColorFormat::RGB));
     cv::cudacodec::FormatInfo fmt = reader->format();
     cv::cuda::GpuMat frame;
     for (int i = 0; i < 10; i++)
     {
-        // request a different colour format for each frame
         const std::pair< cudacodec::ColorFormat, int>& formatToChannels = formatsToChannels[i % formatsToChannels.size()];
         ASSERT_TRUE(reader->set(formatToChannels.first));
         double colorFormat;
         ASSERT_TRUE(reader->get(cudacodec::VideoReaderProps::PROP_COLOR_FORMAT, colorFormat) && static_cast<cudacodec::ColorFormat>(colorFormat) == formatToChannels.first);
         ASSERT_TRUE(reader->nextFrame(frame));
-        const int height = formatToChannels.first == cudacodec::ColorFormat::NV_NV12 ? static_cast<int>(1.5 * fmt.height) : fmt.height;
+        const int height = formatToChannels.first == cudacodec::ColorFormat::NV_YUV_SURFACE_FORMAT ? static_cast<int>(1.5 * fmt.height) : fmt.height;
         ASSERT_TRUE(frame.cols == fmt.width && frame.rows == height);
         ASSERT_FALSE(frame.empty());
         ASSERT_TRUE(frame.channels() == formatToChannels.second);
     }
 }
 
-CUDA_TEST_P(ColorConversion, Reader)
+CUDA_TEST_P(ColorConversionLumaChromaRange, Reader)
 {
     cv::cuda::setDevice(GET_PARAM(0).deviceID());
-    const cv::cudacodec::ColorFormat colorFormat = GET_PARAM(1);
-    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + get<0>(GET_PARAM(2));
-    const bool videoFullRangeFlag = get<1>(GET_PARAM(2));
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + get<0>(GET_PARAM(1));
+    const bool videoFullRangeFlag = get<1>(GET_PARAM(1));
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
     cv::cudacodec::FormatInfo fmt = reader->format();
-    reader->set(colorFormat);
+    reader->set(cudacodec::ColorFormat::BGR);
     cv::VideoCapture cap(inputFile);
 
     cv::cuda::GpuMat frame;
@@ -343,11 +360,120 @@ CUDA_TEST_P(ColorConversion, Reader)
         cap.read(frameHost);
         fmt = reader->format();
         ASSERT_TRUE(fmt.videoFullRangeFlag == videoFullRangeFlag);
-        if (colorFormat == cv::cudacodec::ColorFormat::BGRA)
-            cv::cvtColor(frameHost, frameHostGs, COLOR_BGR2BGRA);
-        else
+        frameHostGs = frameHost;
+        EXPECT_MAT_NEAR(frameHostGs, frameFromDevice, 2);
+    }
+}
+
+CUDA_TEST_P(ColorConversionFormat, Reader)
+{
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.h264";
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    const cudacodec::ColorFormat colorFormat = static_cast<cudacodec::ColorFormat>(static_cast<int>(GET_PARAM(1)));
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+    double colorFormatGetVal;
+    ASSERT_TRUE(reader->get(cudacodec::VideoReaderProps::PROP_COLOR_FORMAT, colorFormatGetVal));
+    ASSERT_EQ(cudacodec::ColorFormat::BGRA, static_cast<cudacodec::ColorFormat>(colorFormatGetVal));
+    reader->set(colorFormat);
+    ASSERT_TRUE(reader->get(cudacodec::VideoReaderProps::PROP_COLOR_FORMAT, colorFormatGetVal));
+    ASSERT_EQ(colorFormat, static_cast<cudacodec::ColorFormat>(colorFormatGetVal));
+    cv::VideoCapture cap(inputFile);
+
+    int maxDiff = 2;
+    cv::cuda::GpuMat frame;
+    Mat frameHost, frameHostGs, frameFromDevice, unused;
+    for (int i = 0; i < 10; i++)
+    {
+        reader->nextFrame(frame);
+        frame.download(frameFromDevice);
+        cap.read(frameHost);
+        switch (colorFormat)
+        {
+        case cudacodec::ColorFormat::BGRA:
+            cv::cvtColor(frameHost, frameHostGs, cv::COLOR_BGR2BGRA);
+            break;
+        case cudacodec::ColorFormat::RGB:
+            cv::cvtColor(frameHost, frameHostGs, cv::COLOR_BGR2RGB);
+            break;
+        case cudacodec::ColorFormat::RGBA:
+            cv::cvtColor(frameHost, frameHostGs, cv::COLOR_BGR2RGBA);
+            break;
+        case cudacodec::ColorFormat::GRAY:
+            cv::cvtColor(frameHost, frameHostGs, cv::COLOR_BGR2GRAY);
+            // Increased error because of different conversion pipelines. i.e. frameFromDevice (NV12 -> GRAY) and frameHostGs (NV12 -> BGR -> GRAY).  Due to 420 subsampling NV12 -> BGR can increase the luminance of neighbouring pixels if they are significantly different to each other meaning the subsequent conversion BGR -> GRAY will be different to the direct NV12 -> GRAY conversion.
+            maxDiff = 15;
+            break;
+        default:
             frameHostGs = frameHost;
-        EXPECT_MAT_NEAR(frameHostGs, frameFromDevice, 2.0);
+        }
+        EXPECT_MAT_NEAR(frameHostGs, frameFromDevice, maxDiff);
+    }
+}
+
+CUDA_TEST_P(ColorConversionPlanar, Reader)
+{
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.h264";
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+    double planarGetVal;
+    ASSERT_TRUE(reader->get(cudacodec::VideoReaderProps::PROP_PLANAR, planarGetVal));
+    ASSERT_FALSE(static_cast<bool>(planarGetVal));
+    reader->set(cudacodec::ColorFormat::BGR, cudacodec::BitDepth::UNCHANGED, true);
+    ASSERT_TRUE(reader->get(cudacodec::VideoReaderProps::PROP_PLANAR, planarGetVal));
+    ASSERT_TRUE(static_cast<bool>(planarGetVal));
+    cv::VideoCapture cap(inputFile);
+
+    cv::cuda::GpuMat frame;
+    Mat frameHost, frameHostGs, frameFromDevice;
+    for (int i = 0; i < 10; i++)
+    {
+        reader->nextFrame(frame);
+        frame.download(frameFromDevice);
+        cap.read(frameHost);
+        Mat bgrSplit[3];
+        cv::split(frameHost, bgrSplit);
+        if(i == 0)
+            frameHostGs = Mat(frameHost.rows * 3, frameHost.cols, CV_8U);
+        bgrSplit[0].copyTo(frameHostGs(Rect(0, 0, frameHost.cols, frameHost.rows)));
+        bgrSplit[1].copyTo(frameHostGs(Rect(0, frameHost.rows, frameHost.cols, frameHost.rows)));
+        bgrSplit[2].copyTo(frameHostGs(Rect(0, 2 * frameHost.rows, frameHost.cols, frameHost.rows)));
+        EXPECT_MAT_NEAR(frameHostGs, frameFromDevice, 2);
+    }
+}
+
+CUDA_TEST_P(ColorConversionBitdepth, Reader)
+{
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.h264";
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    const cudacodec::BitDepth bitDepth = static_cast<cudacodec::BitDepth>(static_cast<int>(GET_PARAM(1)));
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+    double bitDepthGetVal;
+    ASSERT_TRUE(reader->get(cudacodec::VideoReaderProps::PROP_BIT_DEPTH, bitDepthGetVal));
+    ASSERT_EQ(cudacodec::BitDepth::UNCHANGED, static_cast<cudacodec::BitDepth>(bitDepthGetVal));
+    reader->set(cudacodec::ColorFormat::BGR, bitDepth);
+    ASSERT_TRUE(reader->get(cudacodec::VideoReaderProps::PROP_BIT_DEPTH, bitDepthGetVal));
+    ASSERT_EQ(bitDepth, static_cast<cudacodec::BitDepth>(bitDepthGetVal));
+    cv::VideoCapture cap(inputFile);
+
+    int maxDiff = 2;
+    cv::cuda::GpuMat frame;
+    Mat frameHost, frameHostGs, frameFromDevice;
+    for (int i = 0; i < 10; i++)
+    {
+        reader->nextFrame(frame);
+        frame.download(frameFromDevice);
+        cap.read(frameHost);
+        switch (bitDepth)
+        {
+        case cudacodec::BitDepth::EIGHT:
+        default:
+            frameHostGs = frameHost;
+            break;
+        case cudacodec::BitDepth::SIXTEEN:
+            frameHost.convertTo(frameHostGs, CV_16U);
+            frameHostGs *= pow(2, 8);
+            maxDiff = 512;
+        }
+        EXPECT_MAT_NEAR(frameHostGs, frameFromDevice, maxDiff);
     }
 }
 
@@ -637,24 +763,259 @@ CUDA_TEST_P(Seek, Reader)
     ASSERT_EQ(iFrame, static_cast<double>(firstFrameIdx+1));
 }
 
+
+void inline GetConstants(float& wr, float& wb, int& black, int& white, int& uvWhite, int& max, bool fullRange = false) {
+    if (fullRange) {
+        black = 0; white = 255; uvWhite = 255;
+    }
+    else {
+        black = 16; white = 235; uvWhite = 240;
+    }
+    max = 255;
+    wr = 0.2990f; wb = 0.1140f;
+}
+
+std::array<std::array<float, 3>, 3> getYuv2RgbMatrix(const bool fullRange = false) {
+    float wr, wb;
+    int black, white, uvWhite, max;
+    GetConstants(wr, wb, black, white, uvWhite, max, fullRange);
+    std::array<std::array<float, 3>, 3> mat = { {
+        {1.0f, 0.0f, (1.0f - wr) / 0.5f},
+        {1.0f, -wb * (1.0f - wb) / 0.5f / (1 - wb - wr), -wr * (1 - wr) / 0.5f / (1 - wb - wr)},
+        {1.0f, (1.0f - wb) / 0.5f, 0.0f},
+    } };
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (j == 0)
+                mat[i][j] = (float)(1.0 * max / (white - black) * mat[i][j]);
+            else
+                mat[i][j] = (float)(1.0 * max / (uvWhite - black) * mat[i][j]);
+        }
+    }
+    return mat;
+}
+
+std::array<std::array<float, 3>, 3> getRgb2YuvMatrix(const bool fullRange = false) {
+    float wr, wb;
+    int black, white, max, uvWhite;
+    GetConstants(wr, wb, black, white, uvWhite, max, fullRange);
+    std::array<std::array<float, 3>, 3> mat = { {
+        {wr, 1.0f - wb - wr, wb},
+        {-0.5f * wr / (1.0f - wb), -0.5f * (1 - wb - wr) / (1.0f - wb), 0.5f},
+        {0.5f, -0.5f * (1.0f - wb - wr) / (1.0f - wr), -0.5f * wb / (1.0f - wr)},
+    } };
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (j == 0)
+                mat[i][j] = (float)(1.0 * (white - black) / max * mat[i][j]);
+            else
+                mat[i][j] = (float)(1.0 * (uvWhite - black) / max * mat[i][j]);
+        }
+    }
+    return mat;
+}
+
+void generateGray(Mat bgr, Mat& y, Mat& grayFromY, const bool fullRange) {
+    Mat yuvI420;
+    cv::cvtColor(bgr, yuvI420, COLOR_BGR2YUV_I420);
+    yuvI420(Rect(0, 0, bgr.cols, bgr.rows)).copyTo(y);
+    if (fullRange) {
+        y -= 16;
+        y *= 255.0 / 219.0;
+    }
+    y.copyTo(grayFromY);
+    if (!fullRange) {
+        grayFromY -= 16;
+        grayFromY *= 255.0 / 219.0;
+    }
+}
+
+void generateNv12(Mat bgr, Mat& nv12Interleaved, Mat& bgrFromYuv, const bool fullRange) {
+    Mat yuvI420;
+    cv::cvtColor(bgr, yuvI420, COLOR_BGR2YUV_I420);
+    cv::cvtColor(yuvI420, bgrFromYuv, COLOR_YUV2BGR_I420);
+
+    Mat uv = yuvI420(Rect(0, bgr.rows, bgr.cols, bgr.rows / 2));
+    Mat u0 = uv(Rect(0, 0, uv.cols / 2, uv.rows / 2));
+    Mat u1 = uv(Rect(uv.cols / 2, 0, uv.cols / 2, uv.rows / 2));
+    Mat v0 = uv(Rect(0, uv.rows / 2, uv.cols / 2, uv.rows / 2));
+    Mat v1 = uv(Rect(uv.cols / 2, uv.rows / 2, uv.cols / 2, uv.rows / 2));
+
+    Mat u(uv.rows, uv.cols / 2, CV_8U);
+    Mat ur0(u0.rows, u0.cols, CV_8U, u.data, u0.cols * 2);
+    Mat ur1(u0.rows, u0.cols, CV_8U, u.data + u0.cols, u0.cols * 2);
+    u0.copyTo(ur0);
+    u1.copyTo(ur1);
+
+    Mat v(uv.rows, uv.cols / 2, CV_8U);
+    Mat vr0(v0.rows, v0.cols, CV_8U, v.data, v0.cols * 2);
+    Mat vr1(v0.rows, v0.cols, CV_8U, v.data + v0.cols, v0.cols * 2);
+    v0.copyTo(vr0);
+    v1.copyTo(vr1);
+
+    Mat uv2Channel;
+    Mat uvArray[2] = { u,v };
+    cv::merge(uvArray, 2, uv2Channel);
+
+    Mat y = yuvI420(Rect(0, 0, bgr.cols, bgr.rows));
+    Mat uvInterleaved(uv2Channel.rows, uv2Channel.cols * 2, CV_8U, uv2Channel.data, uv2Channel.step[0]);
+
+    if (fullRange) {
+        Mat y32F;
+        y = (y - 16) * 255.0 / 219.0;
+        uvInterleaved = (uvInterleaved - 128) * 255.0 / 224.0 + 128;
+    }
+
+    nv12Interleaved = Mat(yuvI420.size(), CV_8UC1);
+    y.copyTo(nv12Interleaved(Rect(0, 0, bgr.cols, bgr.rows)));
+    uvInterleaved.copyTo(nv12Interleaved(Rect(0, bgr.rows, uvInterleaved.cols, uvInterleaved.rows)));
+}
+
+void generateYuv444(Mat bgr, Mat& yuv444, Mat& bgrFromYuv, const bool fullRange) {
+    std::array<std::array<float, 3>, 3> matrix = getRgb2YuvMatrix(fullRange);
+    const int yAdj = fullRange ? 0 : 16, uvAdj = 128;
+    Mat bgr32F;
+    bgr.convertTo(bgr32F, CV_32F);
+    Mat bgrSplit32F[3];
+    cv::split(bgr32F, bgrSplit32F);
+    Mat yuv32 = Mat(bgr.rows * 3, bgr.cols, CV_32F);
+    Mat Y = matrix[0][0] * bgrSplit32F[2] + matrix[0][1] * bgrSplit32F[1] + matrix[0][2] * bgrSplit32F[0] + yAdj;
+    Y.copyTo(yuv32(Rect(0, 0, bgr.cols, bgr.rows)));
+    Mat U = matrix[1][0] * bgrSplit32F[2] + matrix[1][1] * bgrSplit32F[1] + matrix[1][2] * bgrSplit32F[0] + uvAdj;
+    U.copyTo(yuv32(Rect(0, bgr.rows, bgr.cols, bgr.rows)));
+    Mat V = matrix[2][0] * bgrSplit32F[2] + matrix[2][1] * bgrSplit32F[1] + matrix[2][2] * bgrSplit32F[0] + uvAdj;
+    V.copyTo(yuv32(Rect(0, 2 * bgr.rows, bgr.cols, bgr.rows)));
+    yuv32.convertTo(yuv444, CV_8UC1);
+
+    Mat y8 = yuv444(Rect(0, 0, bgr.cols, bgr.rows));
+    Mat u8 = yuv444(Rect(0, bgr.rows, bgr.cols, bgr.rows));
+    Mat v8 = yuv444(Rect(0, 2 * bgr.rows, bgr.cols, bgr.rows));
+    y8.convertTo(Y, CV_32F);
+    u8.convertTo(U, CV_32F);
+    v8.convertTo(V, CV_32F);
+
+    if (!fullRange) Y -= 16;
+    U -= 128;
+    V -= 128;
+    matrix = getYuv2RgbMatrix(fullRange);
+    Mat bgrFromYuvSplit32F[3];
+    bgrFromYuvSplit32F[0] = matrix[2][0] * Y + matrix[2][1] * U;
+    bgrFromYuvSplit32F[1] = matrix[1][0] * Y + matrix[1][1] * U + matrix[1][2] * V;
+    bgrFromYuvSplit32F[2] = matrix[0][0] * Y + matrix[0][2] * V;
+    Mat bgrFromYuv32F;
+    cv::merge(bgrFromYuvSplit32F, 3, bgrFromYuv32F);
+    bgrFromYuv32F.convertTo(bgrFromYuv, CV_8UC3);
+}
+
+void generateTestImages(Mat bgrIn, Mat& testImg, Mat& out, const cudacodec::SurfaceFormat inputFormat, const cudacodec::ColorFormat outputFormat, const cudacodec::BitDepth outputBitDepth = cudacodec::BitDepth::EIGHT, bool planar = false, const bool fullRange = false) {
+    Mat imgOutFromYuv, imgOut8;
+    Mat yuv8;
+
+    switch (inputFormat) {
+    case cudacodec::SurfaceFormat::SF_NV12:
+    case cudacodec::SurfaceFormat::SF_P016:
+        if (outputFormat == cudacodec::ColorFormat::GRAY) {
+            yuv8 = Mat(static_cast<int>(bgrIn.rows * 1.5), bgrIn.cols, CV_8U);
+            Mat y = yuv8(Rect(0, 0, bgrIn.cols, bgrIn.rows));
+            generateGray(bgrIn, y, imgOutFromYuv, fullRange);
+        }
+        else
+            generateNv12(bgrIn, yuv8, imgOutFromYuv, fullRange);
+        break;
+    case cudacodec::SurfaceFormat::SF_YUV444:
+    case cudacodec::SurfaceFormat::SF_YUV444_16Bit:
+        if (outputFormat == cudacodec::ColorFormat::GRAY) {
+            yuv8 = Mat(bgrIn.rows * 3, bgrIn.cols, CV_8U);
+            Mat y = yuv8(Rect(0, 0, bgrIn.cols, bgrIn.rows));
+            generateGray(bgrIn, y, imgOutFromYuv, fullRange);
+        }
+        else
+            generateYuv444(bgrIn, yuv8, imgOutFromYuv, fullRange);
+        break;
+    }
+
+    if (inputFormat == cudacodec::SurfaceFormat::SF_P016 || inputFormat == cudacodec::SurfaceFormat::SF_YUV444_16Bit) {
+        yuv8.convertTo(testImg, CV_16U);
+        testImg *= pow(2, 8);
+    }
+    else
+        yuv8.copyTo(testImg);
+
+    switch (outputFormat) {
+    case cudacodec::ColorFormat::BGR:
+        imgOut8 = imgOutFromYuv;
+        break;
+    case cudacodec::ColorFormat::BGRA: {
+        cv::cvtColor(imgOutFromYuv, imgOut8, COLOR_BGR2BGRA);
+        break;
+    }
+    case cudacodec::ColorFormat::RGB: {
+        cv::cvtColor(imgOutFromYuv, imgOut8, COLOR_BGR2RGB);
+        break;
+    }
+    case cudacodec::ColorFormat::RGBA: {
+        cv::cvtColor(imgOutFromYuv, imgOut8, COLOR_BGR2RGBA);
+        break;
+    }
+    case cudacodec::ColorFormat::GRAY: {
+        imgOut8 = imgOutFromYuv;
+        break;
+    }
+    }
+
+    Mat imgOutBitDepthOut;
+    if (outputBitDepth == cudacodec::BitDepth::SIXTEEN) {
+        imgOut8.convertTo(imgOutBitDepthOut, CV_16U);
+        imgOutBitDepthOut *= pow(2, 8);
+    }
+    else
+        imgOutBitDepthOut = imgOut8;
+
+    if (planar && outputFormat != cudacodec::ColorFormat::GRAY) {
+        Mat* bgrSplit = new Mat[imgOutBitDepthOut.channels()];
+        cv::split(imgOutBitDepthOut, bgrSplit);
+        const int type = CV_MAKE_TYPE(CV_MAT_DEPTH(imgOutBitDepthOut.flags), 1);
+        out = Mat(imgOutBitDepthOut.rows * imgOutBitDepthOut.channels(), imgOutBitDepthOut.cols, type);
+        for (int i = 0; i < imgOut8.channels(); i++)
+            bgrSplit[i].copyTo(out(Rect(0, i * imgOut8.rows, imgOut8.cols, imgOut8.rows)));
+        delete[] bgrSplit;
+    }
+    else
+        imgOutBitDepthOut.copyTo(out);
+}
+
+CUDA_TEST_P(YuvConverter, Reader)
+{
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    const cudacodec::SurfaceFormat surfaceFormat = static_cast<cudacodec::SurfaceFormat>(static_cast<int>(GET_PARAM(1)));
+    const cudacodec::ColorFormat outputFormat = static_cast<cudacodec::ColorFormat>(static_cast<int>(GET_PARAM(2)));
+    const cudacodec::BitDepth bitDepth = static_cast<cudacodec::BitDepth>(static_cast<int>(GET_PARAM(3)));
+    const bool planar = GET_PARAM(4);
+    const bool fullRange = GET_PARAM(5);
+    std::string imgPath = std::string(cvtest::TS::ptr()->get_data_path()) + "../python/images/baboon.jpg";
+    Ptr<cv::cudacodec::NVSurfaceToColorConverter> yuvConverter = cudacodec::createNVSurfaceToColorConverter(cv::cudacodec::ColorSpaceStandard::BT601, fullRange);
+    Mat bgr = imread(imgPath), bgrHost;
+    Mat nv12Interleaved, bgrFromYuv;
+    generateTestImages(bgr, nv12Interleaved, bgrFromYuv, surfaceFormat, outputFormat, bitDepth, planar, fullRange);
+    GpuMat nv12Device(nv12Interleaved), bgrDevice(bgrFromYuv.size(), bgrFromYuv.type());
+    yuvConverter->convert(nv12Device, bgrDevice, surfaceFormat, outputFormat, bitDepth, planar, fullRange);
+    bgrDevice.download(bgrHost);
+    EXPECT_MAT_NEAR(bgrFromYuv, bgrHost, bitDepth == cudacodec::BitDepth::EIGHT ? 2 :512);
+}
+
 #endif // HAVE_NVCUVID
 
 #if defined(HAVE_NVCUVID) && defined(HAVE_NVCUVENC)
-struct TransCode : testing::TestWithParam<cv::cuda::DeviceInfo>
+
+struct H264ToH265 : SetDevice
 {
-    cv::cuda::DeviceInfo devInfo;
-    virtual void SetUp()
-    {
-        devInfo = GetParam();
-        cv::cuda::setDevice(devInfo.deviceID());
-    }
 };
 
 #if defined(WIN32)  // remove when FFmpeg wrapper includes PR25874
 #define WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE
 #endif
 
-CUDA_TEST_P(TransCode, H264ToH265)
+CUDA_TEST_P(H264ToH265, Transcode)
 {
     const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.h264";
     constexpr cv::cudacodec::ColorFormat colorFormat = cv::cudacodec::ColorFormat::NV_NV12;
@@ -667,14 +1028,13 @@ CUDA_TEST_P(TransCode, H264ToH265)
     {
         cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
         cv::cudacodec::FormatInfo fmt = reader->format();
-        reader->set(cudacodec::ColorFormat::NV_NV12);
+        reader->set(cudacodec::ColorFormat::NV_YUV_SURFACE_FORMAT);
         cv::Ptr<cv::cudacodec::VideoWriter> writer;
         cv::cuda::GpuMat frame;
         cv::cuda::Stream stream;
         for (int i = 0; i < nFrames; ++i) {
             ASSERT_TRUE(reader->nextFrame(frame, stream));
             ASSERT_FALSE(frame.empty());
-            Mat tst; frame.download(tst);
             if (writer.empty()) {
                 frameSz = Size(fmt.width, fmt.height);
                 writer = cv::cudacodec::createVideoWriter(outputFile, frameSz, codec, fps, colorFormat, 0, stream);
@@ -703,7 +1063,7 @@ CUDA_TEST_P(TransCode, H264ToH265)
     ASSERT_EQ(0, remove(outputFile.c_str()));
 }
 
-INSTANTIATE_TEST_CASE_P(CUDA_Codec, TransCode, ALL_DEVICES);
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, H264ToH265, ALL_DEVICES);
 
 #endif
 
@@ -920,11 +1280,15 @@ const color_conversion_params_t color_conversion_params[] =
     color_conversion_params_t("highgui/video/big_buck_bunny_full_color_range.h264", true),
 };
 
-#define VIDEO_COLOR_OUTPUTS cv::cudacodec::ColorFormat::BGRA, cv::cudacodec::ColorFormat::BGRA
-INSTANTIATE_TEST_CASE_P(CUDA_Codec, ColorConversion, testing::Combine(
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, ColorConversionLumaChromaRange, testing::Combine(
     ALL_DEVICES,
-    testing::Values(VIDEO_COLOR_OUTPUTS),
     testing::ValuesIn(color_conversion_params)));
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, ColorConversionFormat, testing::Combine(ALL_DEVICES, ColorFormats::all()));
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, ColorConversionPlanar, ALL_DEVICES);
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, ColorConversionBitdepth, testing::Combine(ALL_DEVICES, BitDepths::all()));
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, ReconfigureDecoderWithScaling, ALL_DEVICES);
 
@@ -939,7 +1303,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, VideoReadRaw, testing::Combine(
 const histogram_params_t histogram_params[] =
 {
     histogram_params_t("highgui/video/big_buck_bunny.mp4", false),
-    histogram_params_t("highgui/video/big_buck_bunny.h264", true),
+    histogram_params_t("highgui/video/big_buck_bunny.h264", false),
     histogram_params_t("highgui/video/big_buck_bunny_full_color_range.h264", true),
 };
 
@@ -974,6 +1338,10 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckInitParams, testing::Combine(
     testing::Values(true,false), testing::Values(true,false), testing::Values(true,false)));
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Seek, ALL_DEVICES);
+
+#define BIT_DEPTHS testing::Values(BitDepths(cudacodec::BitDepth::EIGHT), BitDepths(cudacodec::BitDepth::SIXTEEN))
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, YuvConverter, testing::Combine(
+    ALL_DEVICES, SurfaceFormats::all(), ColorFormats::all(), BIT_DEPTHS, testing::Bool(), testing::Bool()));
 
 #endif // HAVE_NVCUVID || HAVE_NVCUVENC
 }} // namespace

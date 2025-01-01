@@ -695,8 +695,6 @@ NCVStatus NCVBroxOpticalFlow(const NCVBroxOpticalFlowDescriptor desc,
     //prepare image pyramid
     ImagePyramid pyr(desc.number_of_outer_iterations);
 
-    cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<float>();
-
     float scale = 1.0f;
 
     //cuda arrays for frames

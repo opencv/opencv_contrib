@@ -84,8 +84,13 @@ void cv::cuda::magnitude(InputArray, InputArray, OutputArray, Stream&) { throw_n
 void cv::cuda::magnitudeSqr(InputArray, OutputArray, Stream&) { throw_no_cuda(); }
 void cv::cuda::magnitudeSqr(InputArray, InputArray, OutputArray, Stream&) { throw_no_cuda(); }
 void cv::cuda::phase(InputArray, InputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
+void cv::cuda::phase(InputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
 void cv::cuda::cartToPolar(InputArray, InputArray, OutputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
+void cv::cuda::cartToPolar(InputArray, OutputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
+void cv::cuda::cartToPolar(InputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
 void cv::cuda::polarToCart(InputArray, InputArray, OutputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
+void cv::cuda::polarToCart(InputArray, InputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
+void cv::cuda::polarToCart(InputArray, OutputArray, bool, Stream&) { throw_no_cuda(); }
 
 #else
 
@@ -337,13 +342,21 @@ namespace
     {
         typedef typename NPPTypeTraits<DEPTH>::npp_type npp_type;
 
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*func_t)(const npp_type* pSrc1, int nSrc1Step, const Npp32u* pConstants, npp_type* pDst, int nDstStep, NppiSize oSizeROI, NppStreamContext ctx);
+#else
         typedef NppStatus (*func_t)(const npp_type* pSrc1, int nSrc1Step, const Npp32u* pConstants, npp_type* pDst,  int nDstStep,  NppiSize oSizeROI);
+#endif
     };
     template <int DEPTH> struct NppShiftFunc<DEPTH, 1>
     {
         typedef typename NPPTypeTraits<DEPTH>::npp_type npp_type;
 
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*func_t)(const npp_type* pSrc1, int nSrc1Step, const Npp32u pConstants, npp_type* pDst, int nDstStep, NppiSize oSizeROI, NppStreamContext ctx);
+#else
         typedef NppStatus (*func_t)(const npp_type* pSrc1, int nSrc1Step, const Npp32u pConstants, npp_type* pDst,  int nDstStep,  NppiSize oSizeROI);
+#endif
     };
 
     template <int DEPTH, int cn, typename NppShiftFunc<DEPTH, cn>::func_t func> struct NppShift
@@ -358,7 +371,11 @@ namespace
             oSizeROI.width = src.cols;
             oSizeROI.height = src.rows;
 
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func(src.ptr<npp_type>(), static_cast<int>(src.step), sc.val, dst.ptr<npp_type>(), static_cast<int>(dst.step), oSizeROI, h));
+#else
             nppSafeCall( func(src.ptr<npp_type>(), static_cast<int>(src.step), sc.val, dst.ptr<npp_type>(), static_cast<int>(dst.step), oSizeROI) );
+#endif
 
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
@@ -376,7 +393,11 @@ namespace
             oSizeROI.width = src.cols;
             oSizeROI.height = src.rows;
 
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func(src.ptr<npp_type>(), static_cast<int>(src.step), sc.val[0], dst.ptr<npp_type>(), static_cast<int>(dst.step), oSizeROI, h));
+#else
             nppSafeCall( func(src.ptr<npp_type>(), static_cast<int>(src.step), sc.val[0], dst.ptr<npp_type>(), static_cast<int>(dst.step), oSizeROI) );
+#endif
 
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
@@ -389,11 +410,20 @@ void cv::cuda::rshift(InputArray _src, Scalar_<int> val, OutputArray _dst, Strea
     typedef void (*func_t)(const GpuMat& src, Scalar_<Npp32u> sc, GpuMat& dst, cudaStream_t stream);
     static const func_t funcs[5][4] =
     {
+#if USE_NPP_STREAM_CTX
+
+        {NppShift<CV_8U , 1, nppiRShiftC_8u_C1R_Ctx>::call, 0, NppShift<CV_8U , 3, nppiRShiftC_8u_C3R_Ctx>::call, NppShift<CV_8U , 4, nppiRShiftC_8u_C4R_Ctx>::call },
+        {NppShift<CV_8S , 1, nppiRShiftC_8s_C1R_Ctx>::call, 0, NppShift<CV_8S , 3, nppiRShiftC_8s_C3R_Ctx>::call, NppShift<CV_8S , 4, nppiRShiftC_8s_C4R_Ctx>::call },
+        {NppShift<CV_16U, 1, nppiRShiftC_16u_C1R_Ctx>::call, 0, NppShift<CV_16U, 3, nppiRShiftC_16u_C3R_Ctx>::call, NppShift<CV_16U, 4, nppiRShiftC_16u_C4R_Ctx>::call},
+        {NppShift<CV_16S, 1, nppiRShiftC_16s_C1R_Ctx>::call, 0, NppShift<CV_16S, 3, nppiRShiftC_16s_C3R_Ctx>::call, NppShift<CV_16S, 4, nppiRShiftC_16s_C4R_Ctx>::call},
+        {NppShift<CV_32S, 1, nppiRShiftC_32s_C1R_Ctx>::call, 0, NppShift<CV_32S, 3, nppiRShiftC_32s_C3R_Ctx>::call, NppShift<CV_32S, 4, nppiRShiftC_32s_C4R_Ctx>::call},
+#else
         {NppShift<CV_8U , 1, nppiRShiftC_8u_C1R >::call, 0, NppShift<CV_8U , 3, nppiRShiftC_8u_C3R >::call, NppShift<CV_8U , 4, nppiRShiftC_8u_C4R>::call },
         {NppShift<CV_8S , 1, nppiRShiftC_8s_C1R >::call, 0, NppShift<CV_8S , 3, nppiRShiftC_8s_C3R >::call, NppShift<CV_8S , 4, nppiRShiftC_8s_C4R>::call },
         {NppShift<CV_16U, 1, nppiRShiftC_16u_C1R>::call, 0, NppShift<CV_16U, 3, nppiRShiftC_16u_C3R>::call, NppShift<CV_16U, 4, nppiRShiftC_16u_C4R>::call},
         {NppShift<CV_16S, 1, nppiRShiftC_16s_C1R>::call, 0, NppShift<CV_16S, 3, nppiRShiftC_16s_C3R>::call, NppShift<CV_16S, 4, nppiRShiftC_16s_C4R>::call},
         {NppShift<CV_32S, 1, nppiRShiftC_32s_C1R>::call, 0, NppShift<CV_32S, 3, nppiRShiftC_32s_C3R>::call, NppShift<CV_32S, 4, nppiRShiftC_32s_C4R>::call},
+#endif
     };
 
     GpuMat src = getInputMat(_src, stream);
@@ -413,11 +443,19 @@ void cv::cuda::lshift(InputArray _src, Scalar_<int> val, OutputArray _dst, Strea
     typedef void (*func_t)(const GpuMat& src, Scalar_<Npp32u> sc, GpuMat& dst, cudaStream_t stream);
     static const func_t funcs[5][4] =
     {
+#if USE_NPP_STREAM_CTX
+        {NppShift<CV_8U , 1, nppiLShiftC_8u_C1R_Ctx>::call , 0, NppShift<CV_8U , 3, nppiLShiftC_8u_C3R_Ctx>::call , NppShift<CV_8U , 4, nppiLShiftC_8u_C4R_Ctx>::call },
+        {0                                             , 0, 0                                             , 0                                             },
+        {NppShift<CV_16U, 1, nppiLShiftC_16u_C1R_Ctx>::call, 0, NppShift<CV_16U, 3, nppiLShiftC_16u_C3R_Ctx>::call, NppShift<CV_16U, 4, nppiLShiftC_16u_C4R_Ctx>::call},
+        {0                                             , 0, 0                                             , 0                                             },
+        {NppShift<CV_32S, 1, nppiLShiftC_32s_C1R_Ctx>::call, 0, NppShift<CV_32S, 3, nppiLShiftC_32s_C3R_Ctx>::call, NppShift<CV_32S, 4, nppiLShiftC_32s_C4R_Ctx>::call},
+#else
         {NppShift<CV_8U , 1, nppiLShiftC_8u_C1R>::call , 0, NppShift<CV_8U , 3, nppiLShiftC_8u_C3R>::call , NppShift<CV_8U , 4, nppiLShiftC_8u_C4R>::call },
         {0                                             , 0, 0                                             , 0                                             },
         {NppShift<CV_16U, 1, nppiLShiftC_16u_C1R>::call, 0, NppShift<CV_16U, 3, nppiLShiftC_16u_C3R>::call, NppShift<CV_16U, 4, nppiLShiftC_16u_C4R>::call},
         {0                                             , 0, 0                                             , 0                                             },
         {NppShift<CV_32S, 1, nppiLShiftC_32s_C1R>::call, 0, NppShift<CV_32S, 3, nppiLShiftC_32s_C3R>::call, NppShift<CV_32S, 4, nppiLShiftC_32s_C4R>::call},
+#endif
     };
 
     GpuMat src = getInputMat(_src, stream);
@@ -463,7 +501,11 @@ void cv::cuda::max(InputArray src1, InputArray src2, OutputArray dst, Stream& st
 
 namespace
 {
+#if USE_NPP_STREAM_CTX
+    typedef NppStatus(*nppMagnitude_t)(const Npp32fc* pSrc, int nSrcStep, Npp32f* pDst, int nDstStep, NppiSize oSizeROI, NppStreamContext ctx);
+#else
     typedef NppStatus (*nppMagnitude_t)(const Npp32fc* pSrc, int nSrcStep, Npp32f* pDst, int nDstStep, NppiSize oSizeROI);
+#endif
 
     void npp_magnitude(const GpuMat& src, GpuMat& dst, nppMagnitude_t func, cudaStream_t stream)
     {
@@ -475,7 +517,11 @@ namespace
 
         NppStreamHandler h(stream);
 
+#if USE_NPP_STREAM_CTX
+        nppSafeCall(func(src.ptr<Npp32fc>(), static_cast<int>(src.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz, h));
+#else
         nppSafeCall( func(src.ptr<Npp32fc>(), static_cast<int>(src.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
+#endif
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
@@ -488,7 +534,11 @@ void cv::cuda::magnitude(InputArray _src, OutputArray _dst, Stream& stream)
 
     GpuMat dst = getOutputMat(_dst, src.size(), CV_32FC1, stream);
 
+#if USE_NPP_STREAM_CTX
+    npp_magnitude(src, dst, nppiMagnitude_32fc32f_C1R_Ctx, StreamAccessor::getStream(stream));
+#else
     npp_magnitude(src, dst, nppiMagnitude_32fc32f_C1R, StreamAccessor::getStream(stream));
+#endif
 
     syncOutput(dst, _dst, stream);
 }
@@ -499,7 +549,11 @@ void cv::cuda::magnitudeSqr(InputArray _src, OutputArray _dst, Stream& stream)
 
     GpuMat dst = getOutputMat(_dst, src.size(), CV_32FC1, stream);
 
+#if USE_NPP_STREAM_CTX
+    npp_magnitude(src, dst, nppiMagnitudeSqr_32fc32f_C1R_Ctx, StreamAccessor::getStream(stream));
+#else
     npp_magnitude(src, dst, nppiMagnitudeSqr_32fc32f_C1R, StreamAccessor::getStream(stream));
+#endif
 
     syncOutput(dst, _dst, stream);
 }

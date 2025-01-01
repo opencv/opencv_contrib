@@ -105,10 +105,17 @@ namespace
         void apply(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
 
     private:
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*nppFilterBox8U_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep,
+            NppiSize oSizeROI, NppiSize oMaskSize, NppiPoint oAnchor, NppStreamContext ctx);
+        typedef NppStatus(*nppFilterBox32F_t)(const Npp32f* pSrc, Npp32s nSrcStep, Npp32f* pDst, Npp32s nDstStep,
+            NppiSize oSizeROI, NppiSize oMaskSize, NppiPoint oAnchor, NppStreamContext ctx);
+#else
         typedef NppStatus (*nppFilterBox8U_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep,
                                             NppiSize oSizeROI, NppiSize oMaskSize, NppiPoint oAnchor);
         typedef NppStatus (*nppFilterBox32F_t)(const Npp32f* pSrc, Npp32s nSrcStep, Npp32f* pDst, Npp32s nDstStep,
                                             NppiSize oSizeROI, NppiSize oMaskSize, NppiPoint oAnchor);
+#endif
 
         Size ksize_;
         Point anchor_;
@@ -161,20 +168,40 @@ namespace
         {
         case CV_8U:
         {
+#if USE_NPP_STREAM_CTX
+            static const nppFilterBox8U_t funcs8U[] = { 0, nppiFilterBox_8u_C1R_Ctx, 0, 0, nppiFilterBox_8u_C4R_Ctx };
+#else
             static const nppFilterBox8U_t funcs8U[] = { 0, nppiFilterBox_8u_C1R, 0, 0, nppiFilterBox_8u_C4R };
+#endif
             const nppFilterBox8U_t func8U = funcs8U[cn];
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func8U(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
+                dst.ptr<Npp8u>(), static_cast<int>(dst.step),
+                oSizeROI, oMaskSize, oAnchor, h));
+#else
             nppSafeCall(func8U(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
                 dst.ptr<Npp8u>(), static_cast<int>(dst.step),
                 oSizeROI, oMaskSize, oAnchor));
+#endif
         }
             break;
         case CV_32F:
         {
+#if USE_NPP_STREAM_CTX
+            static const nppFilterBox32F_t funcs32F[] = { 0, nppiFilterBox_32f_C1R_Ctx, 0, 0, 0 };
+#else
             static const nppFilterBox32F_t funcs32F[] = { 0, nppiFilterBox_32f_C1R, 0, 0, 0 };
+#endif
             const nppFilterBox32F_t func32F = funcs32F[cn];
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func32F(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step),
+                dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+                oSizeROI, oMaskSize, oAnchor, h));
+#else
             nppSafeCall(func32F(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step),
                 dst.ptr<Npp32f>(), static_cast<int>(dst.step),
                 oSizeROI, oMaskSize, oAnchor));
+#endif
         }
             break;
         }
@@ -566,10 +593,18 @@ namespace
         void apply(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
 
     private:
+#if USE_NPP_STREAM_CTX
         typedef NppStatus (*nppMorfFilter8u_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep, NppiSize oSizeROI,
-                                               const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor);
+                                               const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor, NppStreamContext streamCtx);
         typedef NppStatus (*nppMorfFilter32f_t)(const Npp32f* pSrc, Npp32s nSrcStep, Npp32f* pDst, Npp32s nDstStep, NppiSize oSizeROI,
-                                                const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor);
+                                                const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor, NppStreamContext streamCtx);
+#else
+        typedef NppStatus(*nppMorfFilter8u_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep, NppiSize oSizeROI,
+            const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor);
+        typedef NppStatus(*nppMorfFilter32f_t)(const Npp32f* pSrc, Npp32s nSrcStep, Npp32f* pDst, Npp32s nDstStep, NppiSize oSizeROI,
+            const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor);
+
+#endif
 
         int type_;
         GpuMat kernel_;
@@ -585,6 +620,18 @@ namespace
     MorphologyFilter::MorphologyFilter(int op, int srcType, InputArray _kernel, Point anchor, int iterations) :
         type_(srcType), anchor_(anchor), iters_(iterations)
     {
+#if USE_NPP_STREAM_CTX
+        static const nppMorfFilter8u_t funcs8u[2][5] =
+        {
+            {0, nppiErode_8u_C1R_Ctx, 0, 0, nppiErode_8u_C4R_Ctx },
+            {0, nppiDilate_8u_C1R_Ctx, 0, 0, nppiDilate_8u_C4R_Ctx }
+        };
+        static const nppMorfFilter32f_t funcs32f[2][5] =
+        {
+            {0, nppiErode_32f_C1R_Ctx, 0, 0, nppiErode_32f_C4R_Ctx },
+            {0, nppiDilate_32f_C1R_Ctx, 0, 0, nppiDilate_32f_C4R_Ctx }
+        };
+#else
         static const nppMorfFilter8u_t funcs8u[2][5] =
         {
             {0, nppiErode_8u_C1R, 0, 0, nppiErode_8u_C4R },
@@ -595,6 +642,7 @@ namespace
             {0, nppiErode_32f_C1R, 0, 0, nppiErode_32f_C4R },
             {0, nppiDilate_32f_C1R, 0, 0, nppiDilate_32f_C4R }
         };
+#endif
 
         CV_Assert( op == MORPH_ERODE || op == MORPH_DILATE );
         CV_Assert( srcType == CV_8UC1 || srcType == CV_8UC4 || srcType == CV_32FC1 || srcType == CV_32FC4 );
@@ -676,28 +724,46 @@ namespace
 
         if (type_ == CV_8UC1 || type_ == CV_8UC4)
         {
+#if USE_NPP_STREAM_CTX
             nppSafeCall( func8u_(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
-                                 oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor) );
+                                 oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor, h) );
+#else
+            nppSafeCall(func8u_(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
+                oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor));
+#endif
 
             for(int i = 1; i < iters_; ++i)
             {
                 dst.copyTo(bufRoi, _stream);
-
+#if USE_NPP_STREAM_CTX
                 nppSafeCall( func8u_(bufRoi.ptr<Npp8u>(), static_cast<int>(bufRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
-                                     oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor) );
+                                     oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor, h) );
+#else
+                nppSafeCall(func8u_(bufRoi.ptr<Npp8u>(), static_cast<int>(bufRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
+                    oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor));
+#endif
             }
         }
         else if (type_ == CV_32FC1 || type_ == CV_32FC4)
         {
+#if USE_NPP_STREAM_CTX
             nppSafeCall( func32f_(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
-                                  oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor) );
-
+                                  oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor, h) );
+#else
+            nppSafeCall(func32f_(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+                oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor));
+#endif
             for(int i = 1; i < iters_; ++i)
             {
                 dst.copyTo(bufRoi, _stream);
 
+#if USE_NPP_STREAM_CTX
                 nppSafeCall( func32f_(bufRoi.ptr<Npp32f>(), static_cast<int>(bufRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
-                                      oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor) );
+                                      oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor, h) );
+#else
+                nppSafeCall(func32f_(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+                    oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor));
+#endif
             }
         }
 
@@ -887,8 +953,13 @@ namespace
         void apply(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
 
     private:
+#if USE_NPP_STREAM_CTX
         typedef NppStatus (*nppFilterRank_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep, NppiSize oSizeROI,
-                                             NppiSize oMaskSize, NppiPoint oAnchor);
+                                             NppiSize oMaskSize, NppiPoint oAnchor, NppStreamContext);
+#else
+        typedef NppStatus(*nppFilterRank_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep, NppiSize oSizeROI,
+            NppiSize oMaskSize, NppiPoint oAnchor);
+#endif
 
         int type_;
         Size ksize_;
@@ -903,8 +974,13 @@ namespace
     NPPRankFilter::NPPRankFilter(int op, int srcType, Size ksize, Point anchor, int borderMode, Scalar borderVal) :
         type_(srcType), ksize_(ksize), anchor_(anchor), borderMode_(borderMode), borderVal_(borderVal)
     {
-        static const nppFilterRank_t maxFuncs[] = {0, nppiFilterMax_8u_C1R, 0, 0, nppiFilterMax_8u_C4R};
+#if USE_NPP_STREAM_CTX
+        static const nppFilterRank_t maxFuncs[] = {0, nppiFilterMax_8u_C1R_Ctx, 0, 0, nppiFilterMax_8u_C4R_Ctx};
+        static const nppFilterRank_t minFuncs[] = { 0, nppiFilterMin_8u_C1R_Ctx, 0, 0, nppiFilterMin_8u_C4R_Ctx };
+#else
+        static const nppFilterRank_t maxFuncs[] = { 0, nppiFilterMax_8u_C1R, 0, 0, nppiFilterMax_8u_C4R };
         static const nppFilterRank_t minFuncs[] = {0, nppiFilterMin_8u_C1R, 0, 0, nppiFilterMin_8u_C4R};
+#endif
 
         CV_Assert( srcType == CV_8UC1 || srcType == CV_8UC4 );
 
@@ -943,8 +1019,13 @@ namespace
         oAnchor.x = anchor_.x;
         oAnchor.y = anchor_.y;
 
+#if USE_NPP_STREAM_CTX
+        nppSafeCall(func_(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
+            oSizeROI, oMaskSize, oAnchor, h));
+#else
         nppSafeCall( func_(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
                            oSizeROI, oMaskSize, oAnchor) );
+#endif
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
@@ -1011,9 +1092,15 @@ namespace
         oSizeROI.width = src.cols;
         oSizeROI.height = src.rows;
 
+#if USE_NPP_STREAM_CTX
+        nppSafeCall(nppiSumWindowRow_8u32f_C1R_Ctx(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
+            dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+            oSizeROI, ksize_, anchor_, h));
+#else
         nppSafeCall( nppiSumWindowRow_8u32f_C1R(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
                                                 dst.ptr<Npp32f>(), static_cast<int>(dst.step),
                                                 oSizeROI, ksize_, anchor_) );
+#endif
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
@@ -1072,9 +1159,15 @@ namespace
         oSizeROI.width = src.cols;
         oSizeROI.height = src.rows;
 
-        nppSafeCall( nppiSumWindowColumn_8u32f_C1R(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
+#if USE_NPP_STREAM_CTX
+        nppSafeCall( nppiSumWindowColumn_8u32f_C1R_Ctx(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
                                                    dst.ptr<Npp32f>(), static_cast<int>(dst.step),
-                                                   oSizeROI, ksize_, anchor_) );
+                                                   oSizeROI, ksize_, anchor_, h) );
+#else
+        nppSafeCall(nppiSumWindowColumn_8u32f_C1R(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
+            dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+            oSizeROI, ksize_, anchor_) );
+#endif
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );

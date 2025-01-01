@@ -48,6 +48,7 @@ using namespace cv::cuda;
 #if !defined (HAVE_CUDA) || defined (CUDA_DISABLER)
 
 void cv::cuda::calcHist(InputArray, OutputArray, Stream&) { throw_no_cuda(); }
+void cv::cuda::calcHist(InputArray, InputArray, OutputArray, Stream&) { throw_no_cuda(); }
 
 void cv::cuda::equalizeHist(InputArray, OutputArray, Stream&) { throw_no_cuda(); }
 
@@ -281,27 +282,37 @@ cv::Ptr<cv::cuda::CLAHE> cv::cuda::createCLAHE(double clipLimit, cv::Size tileGr
 
 namespace
 {
-#if (CUDA_VERSION >= 12040)
-    typedef NppStatus (*get_buf_size_c1_t)(NppiSize oSizeROI, int nLevels, size_t* hpBufferSize);
-    typedef NppStatus (*get_buf_size_c4_t)(NppiSize oSizeROI, int nLevels[], size_t* hpBufferSize);
+#if (NPP_VERSION >= 12205)
+    typedef NppStatus(*get_buf_size_c1_t)(NppiSize oSizeROI, int nLevels, size_t* hpBufferSize, NppStreamContext ctx);
+    typedef NppStatus(*get_buf_size_c4_t)(NppiSize oSizeROI, int nLevels[], size_t* hpBufferSize, NppStreamContext ctx);
 #else
-    typedef NppStatus (*get_buf_size_c1_t)(NppiSize oSizeROI, int nLevels, int* hpBufferSize);
-    typedef NppStatus (*get_buf_size_c4_t)(NppiSize oSizeROI, int nLevels[], int* hpBufferSize);
+    typedef NppStatus(*get_buf_size_c1_t)(NppiSize oSizeROI, int nLevels, int* hpBufferSize);
+    typedef NppStatus(*get_buf_size_c4_t)(NppiSize oSizeROI, int nLevels[], int* hpBufferSize);
 #endif
 
     template<int SDEPTH> struct NppHistogramEvenFuncC1
     {
         typedef typename NPPTypeTraits<SDEPTH>::npp_type src_t;
 
-    typedef NppStatus (*func_ptr)(const src_t* pSrc, int nSrcStep, NppiSize oSizeROI, Npp32s * pHist,
-            int nLevels, Npp32s nLowerLevel, Npp32s nUpperLevel, Npp8u * pBuffer);
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*func_ptr)(const src_t* pSrc, int nSrcStep, NppiSize oSizeROI, Npp32s* pHist,
+            int nLevels, Npp32s nLowerLevel, Npp32s nUpperLevel, Npp8u* pBuffer, NppStreamContext ctx);
+#else
+        typedef NppStatus (*func_ptr)(const src_t* pSrc, int nSrcStep, NppiSize oSizeROI, Npp32s * pHist,
+                int nLevels, Npp32s nLowerLevel, Npp32s nUpperLevel, Npp8u * pBuffer);
+#endif
     };
     template<int SDEPTH> struct NppHistogramEvenFuncC4
     {
         typedef typename NPPTypeTraits<SDEPTH>::npp_type src_t;
 
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*func_ptr)(const src_t* pSrc, int nSrcStep, NppiSize oSizeROI,
+            Npp32s* pHist[4], int nLevels[4], Npp32s nLowerLevel[4], Npp32s nUpperLevel[4], Npp8u* pBuffer, NppStreamContext ctx);
+#else
         typedef NppStatus (*func_ptr)(const src_t* pSrc, int nSrcStep, NppiSize oSizeROI,
             Npp32s * pHist[4], int nLevels[4], Npp32s nLowerLevel[4], Npp32s nUpperLevel[4], Npp8u * pBuffer);
+#endif
     };
 
     template<int SDEPTH, typename NppHistogramEvenFuncC1<SDEPTH>::func_ptr func, get_buf_size_c1_t get_buf_size>
@@ -320,20 +331,27 @@ namespace
             sz.width = src.cols;
             sz.height = src.rows;
 
-#if (CUDA_VERSION >= 12040)
-            size_t buf_size;
-#else
-            int buf_size;
-#endif
-            get_buf_size(sz, levels, &buf_size);
-
-            BufferPool pool(stream);
-            GpuMat buf = pool.getBuffer(1, buf_size, CV_8UC1);
-
             NppStreamHandler h(stream);
 
+#if (NPP_VERSION >= 12205)
+            size_t buf_size;
+            get_buf_size(sz, levels, &buf_size, h);
+#else
+            int buf_size;
+            get_buf_size(sz, levels, &buf_size);
+#endif
+
+            BufferPool pool(stream);
+            CV_Assert(buf_size <= std::numeric_limits<int>::max());
+            GpuMat buf = pool.getBuffer(1, static_cast<int>(buf_size), CV_8UC1);
+
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func(src.ptr<src_t>(), static_cast<int>(src.step), sz, hist.ptr<Npp32s>(), levels,
+                lowerLevel, upperLevel, buf.ptr<Npp8u>(), h));
+#else
             nppSafeCall( func(src.ptr<src_t>(), static_cast<int>(src.step), sz, hist.ptr<Npp32s>(), levels,
                 lowerLevel, upperLevel, buf.ptr<Npp8u>()) );
+#endif
 
             if (!stream)
                 cudaSafeCall( cudaDeviceSynchronize() );
@@ -358,19 +376,25 @@ namespace
 
             Npp32s* pHist[] = {hist[0].ptr<Npp32s>(), hist[1].ptr<Npp32s>(), hist[2].ptr<Npp32s>(), hist[3].ptr<Npp32s>()};
 
-#if (CUDA_VERSION >= 12040)
-            size_t buf_size;
-#else
-            int buf_size;
-#endif
-            get_buf_size(sz, levels, &buf_size);
-
-            BufferPool pool(stream);
-            GpuMat buf = pool.getBuffer(1, buf_size, CV_8UC1);
-
             NppStreamHandler h(stream);
 
-            nppSafeCall( func(src.ptr<src_t>(), static_cast<int>(src.step), sz, pHist, levels, lowerLevel, upperLevel, buf.ptr<Npp8u>()) );
+#if (NPP_VERSION >= 12205)
+            size_t buf_size;
+            get_buf_size(sz, levels, &buf_size, h);
+#else
+            int buf_size;
+            get_buf_size(sz, levels, &buf_size);
+#endif
+
+            BufferPool pool(stream);
+            CV_Assert(buf_size <= std::numeric_limits<int>::max());
+            GpuMat buf = pool.getBuffer(1, static_cast<int>(buf_size), CV_8UC1);
+
+#if USE_NPP_STREAM_CTX
+            nppSafeCall( func(src.ptr<src_t>(), static_cast<int>(src.step), sz, pHist, levels, lowerLevel, upperLevel, buf.ptr<Npp8u>(), h));
+#else
+            nppSafeCall(func(src.ptr<src_t>(), static_cast<int>(src.step), sz, pHist, levels, lowerLevel, upperLevel, buf.ptr<Npp8u>()));
+#endif
 
             if (!stream)
                 cudaSafeCall( cudaDeviceSynchronize() );
@@ -383,8 +407,13 @@ namespace
         typedef Npp32s level_t;
         enum {LEVEL_TYPE_CODE=CV_32SC1};
 
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*func_ptr)(const src_t* pSrc, int nSrcStep, NppiSize oSizeROI, Npp32s* pHist,
+            const Npp32s* pLevels, int nLevels, Npp8u* pBuffer, NppStreamContext ctx);
+#else
         typedef NppStatus (*func_ptr)(const src_t* pSrc, int nSrcStep, NppiSize oSizeROI, Npp32s* pHist,
             const Npp32s* pLevels, int nLevels, Npp8u* pBuffer);
+#endif
     };
     template<> struct NppHistogramRangeFuncC1<CV_32F>
     {
@@ -392,8 +421,13 @@ namespace
         typedef Npp32f level_t;
         enum {LEVEL_TYPE_CODE=CV_32FC1};
 
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*func_ptr)(const Npp32f* pSrc, int nSrcStep, NppiSize oSizeROI, Npp32s* pHist,
+            const Npp32f* pLevels, int nLevels, Npp8u* pBuffer, NppStreamContext ctx);
+#else
         typedef NppStatus (*func_ptr)(const Npp32f* pSrc, int nSrcStep, NppiSize oSizeROI, Npp32s* pHist,
             const Npp32f* pLevels, int nLevels, Npp8u* pBuffer);
+#endif
     };
     template<int SDEPTH> struct NppHistogramRangeFuncC4
     {
@@ -401,8 +435,13 @@ namespace
         typedef Npp32s level_t;
         enum {LEVEL_TYPE_CODE=CV_32SC1};
 
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*func_ptr)(const src_t* pSrc, int nSrcStep, NppiSize oSizeROI, Npp32s* pHist[4],
+            const Npp32s* pLevels[4], int nLevels[4], Npp8u* pBuffer, NppStreamContext ctx);
+#else
         typedef NppStatus (*func_ptr)(const src_t* pSrc, int nSrcStep, NppiSize oSizeROI, Npp32s* pHist[4],
             const Npp32s* pLevels[4], int nLevels[4], Npp8u* pBuffer);
+#endif
     };
     template<> struct NppHistogramRangeFuncC4<CV_32F>
     {
@@ -410,8 +449,13 @@ namespace
         typedef Npp32f level_t;
         enum {LEVEL_TYPE_CODE=CV_32FC1};
 
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*func_ptr)(const Npp32f* pSrc, int nSrcStep, NppiSize oSizeROI, Npp32s* pHist[4],
+            const Npp32f* pLevels[4], int nLevels[4], Npp8u* pBuffer, NppStreamContext ctx);
+#else
         typedef NppStatus (*func_ptr)(const Npp32f* pSrc, int nSrcStep, NppiSize oSizeROI, Npp32s* pHist[4],
             const Npp32f* pLevels[4], int nLevels[4], Npp8u* pBuffer);
+#endif
     };
 
     template<int SDEPTH, typename NppHistogramRangeFuncC1<SDEPTH>::func_ptr func, get_buf_size_c1_t get_buf_size>
@@ -432,19 +476,25 @@ namespace
             sz.width = src.cols;
             sz.height = src.rows;
 
-#if (CUDA_VERSION >= 12040)
-            size_t buf_size;
-#else
-            int buf_size;
-#endif
-            get_buf_size(sz, levels.cols, &buf_size);
-
-            BufferPool pool(stream);
-            GpuMat buf = pool.getBuffer(1, buf_size, CV_8UC1);
-
             NppStreamHandler h(stream);
 
+#if (NPP_VERSION >= 12205)
+            size_t buf_size;
+            get_buf_size(sz, levels.cols, &buf_size, h);
+#else
+            int buf_size;
+            get_buf_size(sz, levels.cols, &buf_size);
+#endif
+
+            BufferPool pool(stream);
+            CV_Assert(buf_size <= std::numeric_limits<int>::max());
+            GpuMat buf = pool.getBuffer(1, static_cast<int>(buf_size), CV_8UC1);
+
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func(src.ptr<src_t>(), static_cast<int>(src.step), sz, hist.ptr<Npp32s>(), levels.ptr<level_t>(), levels.cols, buf.ptr<Npp8u>(), h));
+#else
             nppSafeCall( func(src.ptr<src_t>(), static_cast<int>(src.step), sz, hist.ptr<Npp32s>(), levels.ptr<level_t>(), levels.cols, buf.ptr<Npp8u>()) );
+#endif
 
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
@@ -477,19 +527,25 @@ namespace
             sz.width = src.cols;
             sz.height = src.rows;
 
-#if (CUDA_VERSION >= 12040)
-            size_t buf_size;
-#else
-            int buf_size;
-#endif
-            get_buf_size(sz, nLevels, &buf_size);
-
-            BufferPool pool(stream);
-            GpuMat buf = pool.getBuffer(1, buf_size, CV_8UC1);
-
             NppStreamHandler h(stream);
 
+#if (NPP_VERSION >= 12205)
+            size_t buf_size;
+            get_buf_size(sz, nLevels, &buf_size, h);
+#else
+            int buf_size;
+            get_buf_size(sz, nLevels, &buf_size);
+#endif
+
+            BufferPool pool(stream);
+            CV_Assert(buf_size <= std::numeric_limits<int>::max());
+            GpuMat buf = pool.getBuffer(1, static_cast<int>(buf_size), CV_8UC1);
+
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func(src.ptr<src_t>(), static_cast<int>(src.step), sz, pHist, pLevels, nLevels, buf.ptr<Npp8u>(), h));
+#else
             nppSafeCall( func(src.ptr<src_t>(), static_cast<int>(src.step), sz, pHist, pLevels, nLevels, buf.ptr<Npp8u>()) );
+#endif
 
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
@@ -537,10 +593,17 @@ void cv::cuda::histEven(InputArray _src, OutputArray hist, int histSize, int low
     typedef void (*hist_t)(const GpuMat& src, OutputArray hist, int levels, int lowerLevel, int upperLevel, Stream& stream);
     static const hist_t hist_callers[] =
     {
+#if USE_NPP_STREAM_CTX
+        NppHistogramEvenC1<CV_8U , nppiHistogramEven_8u_C1R_Ctx , nppiHistogramEvenGetBufferSize_8u_C1R_Ctx >::hist,
+        0,
+        NppHistogramEvenC1<CV_16U, nppiHistogramEven_16u_C1R_Ctx, nppiHistogramEvenGetBufferSize_16u_C1R_Ctx>::hist,
+        NppHistogramEvenC1<CV_16S, nppiHistogramEven_16s_C1R_Ctx, nppiHistogramEvenGetBufferSize_16s_C1R_Ctx>::hist
+#else
         NppHistogramEvenC1<CV_8U , nppiHistogramEven_8u_C1R , nppiHistogramEvenGetBufferSize_8u_C1R >::hist,
         0,
         NppHistogramEvenC1<CV_16U, nppiHistogramEven_16u_C1R, nppiHistogramEvenGetBufferSize_16u_C1R>::hist,
         NppHistogramEvenC1<CV_16S, nppiHistogramEven_16s_C1R, nppiHistogramEvenGetBufferSize_16s_C1R>::hist
+#endif
     };
 
     GpuMat src = _src.getGpuMat();
@@ -561,10 +624,17 @@ void cv::cuda::histEven(InputArray _src, GpuMat hist[4], int histSize[4], int lo
     typedef void (*hist_t)(const GpuMat& src, GpuMat hist[4], int levels[4], int lowerLevel[4], int upperLevel[4], Stream& stream);
     static const hist_t hist_callers[] =
     {
+#if USE_NPP_STREAM_CTX
+        NppHistogramEvenC4<CV_8U , nppiHistogramEven_8u_C4R_Ctx , nppiHistogramEvenGetBufferSize_8u_C4R_Ctx >::hist,
+        0,
+        NppHistogramEvenC4<CV_16U, nppiHistogramEven_16u_C4R_Ctx, nppiHistogramEvenGetBufferSize_16u_C4R_Ctx>::hist,
+        NppHistogramEvenC4<CV_16S, nppiHistogramEven_16s_C4R_Ctx, nppiHistogramEvenGetBufferSize_16s_C4R_Ctx>::hist
+#else
         NppHistogramEvenC4<CV_8U , nppiHistogramEven_8u_C4R , nppiHistogramEvenGetBufferSize_8u_C4R >::hist,
         0,
         NppHistogramEvenC4<CV_16U, nppiHistogramEven_16u_C4R, nppiHistogramEvenGetBufferSize_16u_C4R>::hist,
         NppHistogramEvenC4<CV_16S, nppiHistogramEven_16s_C4R, nppiHistogramEvenGetBufferSize_16s_C4R>::hist
+#endif
     };
 
     GpuMat src = _src.getGpuMat();
@@ -579,12 +649,21 @@ void cv::cuda::histRange(InputArray _src, OutputArray hist, InputArray _levels, 
     typedef void (*hist_t)(const GpuMat& src, OutputArray hist, const GpuMat& levels, Stream& stream);
     static const hist_t hist_callers[] =
     {
+#if USE_NPP_STREAM_CTX
+        NppHistogramRangeC1<CV_8U , nppiHistogramRange_8u_C1R_Ctx , nppiHistogramRangeGetBufferSize_8u_C1R_Ctx >::hist,
+        0,
+        NppHistogramRangeC1<CV_16U, nppiHistogramRange_16u_C1R_Ctx, nppiHistogramRangeGetBufferSize_16u_C1R_Ctx>::hist,
+        NppHistogramRangeC1<CV_16S, nppiHistogramRange_16s_C1R_Ctx, nppiHistogramRangeGetBufferSize_16s_C1R_Ctx>::hist,
+        0,
+        NppHistogramRangeC1<CV_32F, nppiHistogramRange_32f_C1R_Ctx, nppiHistogramRangeGetBufferSize_32f_C1R_Ctx>::hist
+#else
         NppHistogramRangeC1<CV_8U , nppiHistogramRange_8u_C1R , nppiHistogramRangeGetBufferSize_8u_C1R >::hist,
         0,
         NppHistogramRangeC1<CV_16U, nppiHistogramRange_16u_C1R, nppiHistogramRangeGetBufferSize_16u_C1R>::hist,
         NppHistogramRangeC1<CV_16S, nppiHistogramRange_16s_C1R, nppiHistogramRangeGetBufferSize_16s_C1R>::hist,
         0,
         NppHistogramRangeC1<CV_32F, nppiHistogramRange_32f_C1R, nppiHistogramRangeGetBufferSize_32f_C1R>::hist
+#endif
     };
 
     GpuMat src = _src.getGpuMat();
@@ -600,12 +679,21 @@ void cv::cuda::histRange(InputArray _src, GpuMat hist[4], const GpuMat levels[4]
     typedef void (*hist_t)(const GpuMat& src, GpuMat hist[4], const GpuMat levels[4], Stream& stream);
     static const hist_t hist_callers[] =
     {
+#if USE_NPP_STREAM_CTX
+        NppHistogramRangeC4<CV_8U , nppiHistogramRange_8u_C4R_Ctx , nppiHistogramRangeGetBufferSize_8u_C4R_Ctx >::hist,
+        0,
+        NppHistogramRangeC4<CV_16U, nppiHistogramRange_16u_C4R_Ctx, nppiHistogramRangeGetBufferSize_16u_C4R_Ctx>::hist,
+        NppHistogramRangeC4<CV_16S, nppiHistogramRange_16s_C4R_Ctx, nppiHistogramRangeGetBufferSize_16s_C4R_Ctx>::hist,
+        0,
+        NppHistogramRangeC4<CV_32F, nppiHistogramRange_32f_C4R_Ctx, nppiHistogramRangeGetBufferSize_32f_C4R_Ctx>::hist
+#else
         NppHistogramRangeC4<CV_8U , nppiHistogramRange_8u_C4R , nppiHistogramRangeGetBufferSize_8u_C4R >::hist,
         0,
         NppHistogramRangeC4<CV_16U, nppiHistogramRange_16u_C4R, nppiHistogramRangeGetBufferSize_16u_C4R>::hist,
         NppHistogramRangeC4<CV_16S, nppiHistogramRange_16s_C4R, nppiHistogramRangeGetBufferSize_16s_C4R>::hist,
         0,
         NppHistogramRangeC4<CV_32F, nppiHistogramRange_32f_C4R, nppiHistogramRangeGetBufferSize_32f_C4R>::hist
+#endif
     };
 
     GpuMat src = _src.getGpuMat();

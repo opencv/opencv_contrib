@@ -9,8 +9,8 @@ using namespace cv::cuda;
 
 #if !defined (HAVE_CUDA) || defined (CUDA_DISABLER)
 
-void cv::cuda::connectedComponents(InputArray img_, OutputArray labels_, int connectivity,
-    int ltype, ConnectedComponentsAlgorithmsTypes ccltype) { throw_no_cuda(); }
+void cv::cuda::connectedComponents(InputArray, OutputArray, int, int, ConnectedComponentsAlgorithmsTypes) { throw_no_cuda(); }
+void cv::cuda::connectedComponents(InputArray, OutputArray, int, int) { throw_no_cuda(); }
 
 #else /* !defined (HAVE_CUDA) */
 
