@@ -3,4 +3,4 @@ ocv_define_module(xobjdetect opencv_core opencv_imgproc opencv_imgcodecs opencv_
 if (BUILD_opencv_apps AND NOT APPLE_FRAMEWORK)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tools ${CMAKE_CURRENT_BINARY_DIR}/tools)
 endif()
-add_subdirectory(data)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/data ${CMAKE_CURRENT_BINARY_DIR}/data)
