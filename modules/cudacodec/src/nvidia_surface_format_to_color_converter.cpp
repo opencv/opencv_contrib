@@ -142,36 +142,101 @@ public:
         const bool yuv420 = surfaceFormat == SurfaceFormat::SF_NV12 || surfaceFormat == SurfaceFormat::SF_P016;
         CV_Assert(yuv.cols() % 2 == 0);
 
-        typedef void (*func_t)(uint8_t* yuv, int yuvPitch, uint8_t* color, int colorPitch, int width, int height, bool videoFullRangeFlag, cudaStream_t stream);
-        static const func_t funcs[4][5][2][2] =
+        using func_t = void (*)(uint8_t* yuv, int yuvPitch, uint8_t* color, int colorPitch, int width, int height, bool videoFullRangeFlag, cudaStream_t stream);
+
+        static const func_t funcsNV12[5][2][2] =
         {
             {
-                {{{Nv12ToColor24<BGR24>},{Nv12ToColorPlanar24<BGR24>}},{{Nv12ToColor48<BGR48>},{Nv12ToColorPlanar48<BGR48>}}},
-                {{{Nv12ToColor24<RGB24>},{Nv12ToColorPlanar24<RGB24>}},{{Nv12ToColor48<RGB48>},{Nv12ToColorPlanar48<RGB48>}}},
-                {{{Nv12ToColor32<BGRA32>},{Nv12ToColorPlanar32<BGRA32>}},{{Nv12ToColor64<BGRA64>},{Nv12ToColorPlanar64<BGRA64>}}},
-                {{{Nv12ToColor32<RGBA32>},{Nv12ToColorPlanar32<RGBA32>}},{{Nv12ToColor64<RGBA64>},{Nv12ToColorPlanar64<RGBA64>}}},
-                {{{Y8ToGray8},{Y8ToGray8}},{{Y8ToGray16},{Y8ToGray16}}}
+                { Nv12ToColor24<BGR24>, Nv12ToColorPlanar24<BGR24> },
+                { Nv12ToColor48<BGR48>, Nv12ToColorPlanar48<BGR48> }
             },
             {
-                {{{P016ToColor24<BGR24>},{P016ToColorPlanar24<BGR24>}},{{P016ToColor48<BGR48>},{P016ToColorPlanar48<BGR48>}}},
-                {{{P016ToColor24<RGB24>},{P016ToColorPlanar24<RGB24>}},{{P016ToColor48<RGB48>},{P016ToColorPlanar48<RGB48>}}},
-                {{{P016ToColor32<BGRA32>},{P016ToColorPlanar32<BGRA32>}},{{P016ToColor64<BGRA64>},{P016ToColorPlanar64<BGRA64>}}},
-                {{{P016ToColor32<RGBA32>},{P016ToColorPlanar32<RGBA32>}},{{P016ToColor64<RGBA64>},{P016ToColorPlanar64<RGBA64>}}},
-                {{{Y16ToGray8},{Y16ToGray8}},{{Y16ToGray16},{Y16ToGray16}}}
+                { Nv12ToColor24<RGB24>, Nv12ToColorPlanar24<RGB24> },
+                { Nv12ToColor48<RGB48>, Nv12ToColorPlanar48<RGB48> }
             },
             {
-                {{{YUV444ToColor24<BGR24>},{YUV444ToColorPlanar24<BGR24>}},{{YUV444ToColor48<BGR48>},{YUV444ToColorPlanar48<BGR48>}}},
-                {{{YUV444ToColor24<RGB24>},{YUV444ToColorPlanar24<RGB24>}},{{YUV444ToColor48<RGB48>},{YUV444ToColorPlanar48<RGB48>}}},
-                {{{YUV444ToColor32<BGRA32>},{YUV444ToColorPlanar32<BGRA32>}},{{YUV444ToColor64<BGRA64>},{YUV444ToColorPlanar64<BGRA64>}}},
-                {{{YUV444ToColor32<RGBA32>},{YUV444ToColorPlanar32<RGBA32>}},{{YUV444ToColor64<RGBA64>},{YUV444ToColorPlanar64<RGBA64>}}},
-                {{{Y8ToGray8},{Y8ToGray8}},{{Y8ToGray16},{Y8ToGray16}}}
+                { Nv12ToColor32<BGRA32>, Nv12ToColorPlanar32<BGRA32> },
+                { Nv12ToColor64<BGRA64>, Nv12ToColorPlanar64<BGRA64> }
             },
             {
-                {{{YUV444P16ToColor24<BGR24>},{YUV444P16ToColorPlanar24<BGR24>}},{{YUV444P16ToColor48<BGR48>},{YUV444P16ToColorPlanar48<BGR48>}}},
-                {{{YUV444P16ToColor24<RGB24>},{YUV444P16ToColorPlanar24<RGB24>}},{{YUV444P16ToColor48<RGB48>},{YUV444P16ToColorPlanar48<RGB48>}}},
-                {{{YUV444P16ToColor32<BGRA32>},{YUV444P16ToColorPlanar32<BGRA32>}},{{YUV444P16ToColor64<BGRA64>},{YUV444P16ToColorPlanar64<BGRA64>}}},
-                {{{YUV444P16ToColor32<RGBA32>},{YUV444P16ToColorPlanar32<RGBA32>}},{{YUV444P16ToColor64<RGBA64>},{YUV444P16ToColorPlanar64<RGBA64>}}},
-                {{{Y16ToGray8},{Y16ToGray8}},{{Y16ToGray16},{Y16ToGray16}}}
+                { Nv12ToColor32<RGBA32>, Nv12ToColorPlanar32<RGBA32> },
+                { Nv12ToColor64<RGBA64>, Nv12ToColorPlanar64<RGBA64> }
+            },
+            {
+                { Y8ToGray8, Y8ToGray8 },
+                { Y8ToGray16, Y8ToGray16 }
+            }
+        };
+
+        static const func_t funcsP016[5][2][2] =
+        {
+            {
+                { P016ToColor24<BGR24>, P016ToColorPlanar24<BGR24> },
+                { P016ToColor48<BGR48>, P016ToColorPlanar48<BGR48> }
+            },
+            {
+                { P016ToColor24<RGB24>, P016ToColorPlanar24<RGB24> },
+                { P016ToColor48<RGB48>, P016ToColorPlanar48<RGB48> }
+            },
+            {
+                { P016ToColor32<BGRA32>, P016ToColorPlanar32<BGRA32> },
+                { P016ToColor64<BGRA64>, P016ToColorPlanar64<BGRA64> }
+            },
+            {
+                { P016ToColor32<RGBA32>, P016ToColorPlanar32<RGBA32> },
+                { P016ToColor64<RGBA64>, P016ToColorPlanar64<RGBA64> }
+            },
+            {
+                { Y16ToGray8, Y16ToGray8 },
+                { Y16ToGray16, Y16ToGray16 }
+            }
+        };
+
+        static const func_t funcsYUV444[5][2][2] =
+        {
+            {
+                { YUV444ToColor24<BGR24>, YUV444ToColorPlanar24<BGR24> },
+                { YUV444ToColor48<BGR48>, YUV444ToColorPlanar48<BGR48> }
+            },
+            {
+                { YUV444ToColor24<RGB24>, YUV444ToColorPlanar24<RGB24> },
+                { YUV444ToColor48<RGB48>, YUV444ToColorPlanar48<RGB48> }
+            },
+            {
+                { YUV444ToColor32<BGRA32>, YUV444ToColorPlanar32<BGRA32> },
+                { YUV444ToColor64<BGRA64>, YUV444ToColorPlanar64<BGRA64> }
+            },
+            {
+                { YUV444ToColor32<RGBA32>, YUV444ToColorPlanar32<RGBA32> },
+                { YUV444ToColor64<RGBA64>, YUV444ToColorPlanar64<RGBA64> }
+            },
+            {
+                { Y8ToGray8, Y8ToGray8 },
+                { Y8ToGray16, Y8ToGray16 }
+            }
+        };
+
+        static const func_t funcsYUV444P16[5][2][2] =
+        {
+            {
+                { YUV444P16ToColor24<BGR24>, YUV444P16ToColorPlanar24<BGR24> },
+                { YUV444P16ToColor48<BGR48>, YUV444P16ToColorPlanar48<BGR48> }
+            },
+            {
+                { YUV444P16ToColor24<RGB24>, YUV444P16ToColorPlanar24<RGB24> },
+                { YUV444P16ToColor48<RGB48>, YUV444P16ToColorPlanar48<RGB48> }
+            },
+            {
+                { YUV444P16ToColor32<BGRA32>, YUV444P16ToColorPlanar32<BGRA32> },
+                { YUV444P16ToColor64<BGRA64>, YUV444P16ToColorPlanar64<BGRA64> }
+            },
+            {
+                { YUV444P16ToColor32<RGBA32>, YUV444P16ToColorPlanar32<RGBA32> },
+                { YUV444P16ToColor64<RGBA64>, YUV444P16ToColorPlanar64<RGBA64> }
+            },
+            {
+                { Y16ToGray8, Y16ToGray8 },
+                { Y16ToGray16, Y16ToGray16 }
             }
         };
 
@@ -183,11 +248,31 @@ public:
         const int nChannels = NumChannels(outputFormat);
         const int nRowsOut = nRows * (planar ? nChannels : 1);
         const BitDepth bitDepth_ = GetBitDepthOut(bitDepth, yuv.depth());
+        const int iBitDepth = bitDepth_ == BitDepth::EIGHT ? 0 : 1;
         const int typeOut = CV_MAKE_TYPE(bitDepth_ == BitDepth::EIGHT ? CV_8U : CV_16U, planar ? 1 : nChannels);
         GpuMat out_ = getOutputMat(out, nRowsOut, yuv.cols(), typeOut, stream);
 
+        const int iSurfaceFormat = static_cast<int>(surfaceFormat);
+        const int iPlanar = planar ? 1 : 0;
         const int iOutputFormat = OutputColorFormatIdx(outputFormat);
-        const func_t func = funcs[static_cast<int>(surfaceFormat)][iOutputFormat][static_cast<int>(bitDepth_)][planar];
+        func_t func = nullptr;
+
+        switch (iSurfaceFormat)
+        {
+        case 0:
+            func = funcsNV12[iOutputFormat][iBitDepth][iPlanar];
+            break;
+        case 1:
+            func = funcsP016[iOutputFormat][iBitDepth][iPlanar];
+            break;
+        case 2:
+            func = funcsYUV444[iOutputFormat][iBitDepth][iPlanar];
+            break;
+        case 3:
+            func = funcsYUV444P16[iOutputFormat][iBitDepth][iPlanar];
+            break;
+        }
+
         if (!func)
             CV_Error(Error::StsUnsupportedFormat, "Unsupported combination of source and destination types");
 
