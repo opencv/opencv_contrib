@@ -10,7 +10,7 @@
 namespace opencv_test { namespace {
 
 static const char* const IMAGE_TSUKUBA = "features2d/tsukuba.png";
-static const char* const IMAGE_BIKES = "detectors_descriptors_evaluation/images_datasets/bikes/img1.png";
+// static const char* const IMAGE_BIKES = "detectors_descriptors_evaluation/images_datasets/bikes/img1.png";
 
 // ========================== ROTATION INVARIANCE =============================
 
