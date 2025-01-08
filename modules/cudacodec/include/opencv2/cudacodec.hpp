@@ -106,6 +106,8 @@ enum ColorFormat {
     NV_IYUV = 9, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by U and V planes]. VideoWriter only.
     NV_YUV444 = 10, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by U and V planes]. VideoWriter only.
     NV_AYUV = 11, //!< Nvidia Buffer Format - 8 bit Packed A8Y8U8V8. This is a word-ordered format where a pixel is represented by a 32-bit word with V in the lowest 8 bits, U in the next 8 bits, Y in the 8 bits after that and A in the highest 8 bits. VideoWriter only.
+    NV_YUV420_10BIT = 12, //!< Nvidia Buffer Format - 10 bit Semi-Planar YUV [Y plane followed by interleaved UV plane]. Each pixel of size 2 bytes. Most Significant 10 bits contain pixel data. VideoWriter only.
+    NV_YUV444_10BIT = 13, //!< Nvidia Buffer Format - 10 bit Planar YUV444 [Y plane followed by U and V planes]. Each pixel of size 2 bytes. Most Significant 10 bits contain pixel data. VideoWriter only.
 #ifndef CV_DOXYGEN
     PROP_NOT_SUPPORTED
 #endif

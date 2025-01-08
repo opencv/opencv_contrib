@@ -45,7 +45,44 @@
 
 #ifdef HAVE_NVCUVID
 
-#if (CUDART_VERSION < 9000)
+#if (CUDART_VERSION >= 9000)
+static const char* GetVideoCodecString(cudaVideoCodec eCodec) {
+    static struct {
+        cudaVideoCodec eCodec;
+        const char* name;
+    } aCodecName[] = {
+        { cudaVideoCodec_MPEG1,     "MPEG-1"       },
+        { cudaVideoCodec_MPEG2,     "MPEG-2"       },
+        { cudaVideoCodec_MPEG4,     "MPEG-4 (ASP)" },
+        { cudaVideoCodec_VC1,       "VC-1/WMV"     },
+        { cudaVideoCodec_H264,      "AVC/H.264"    },
+        { cudaVideoCodec_JPEG,      "M-JPEG"       },
+        { cudaVideoCodec_H264_SVC,  "H.264/SVC"    },
+        { cudaVideoCodec_H264_MVC,  "H.264/MVC"    },
+        { cudaVideoCodec_HEVC,      "H.265/HEVC"   },
+        { cudaVideoCodec_VP8,       "VP8"          },
+        { cudaVideoCodec_VP9,       "VP9"          },
+        { cudaVideoCodec_AV1,       "AV1"          },
+        { cudaVideoCodec_NumCodecs, "Invalid"      },
+        { cudaVideoCodec_YUV420,    "YUV  4:2:0"   },
+        { cudaVideoCodec_YV12,      "YV12 4:2:0"   },
+        { cudaVideoCodec_NV12,      "NV12 4:2:0"   },
+        { cudaVideoCodec_YUYV,      "YUYV 4:2:2"   },
+        { cudaVideoCodec_UYVY,      "UYVY 4:2:2"   },
+    };
+
+    if (eCodec >= 0 && eCodec <= cudaVideoCodec_NumCodecs) {
+        return aCodecName[eCodec].name;
+    }
+    for (int i = cudaVideoCodec_NumCodecs + 1; i < sizeof(aCodecName) / sizeof(aCodecName[0]); i++) {
+        if (eCodec == aCodecName[i].eCodec) {
+            return aCodecName[eCodec].name;
+        }
+    }
+    return "Unknown";
+}
+#endif
+
 static const char* GetVideoChromaFormatString(cudaVideoChromaFormat eChromaFormat) {
     static struct {
         cudaVideoChromaFormat eChromaFormat;
@@ -62,7 +99,6 @@ static const char* GetVideoChromaFormatString(cudaVideoChromaFormat eChromaForma
     }
     return "Unknown";
 }
-#endif
 
 void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
 {
@@ -141,7 +177,7 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     cuSafeCall(cuCtxPopCurrent(NULL));
 
     if (!decodeCaps.bIsSupported) {
-        CV_Error(Error::StsUnsupportedFormat, "Video codec is not supported by this GPU hardware video decoder refer to Nvidia's GPU Support Matrix to confirm your GPU supports hardware decoding of the video source's codec.");
+        CV_Error(Error::StsUnsupportedFormat, std::to_string(decodeCaps.nBitDepthMinus8 + 8) + " bit " + GetVideoCodecString(_codec) + " with " + GetVideoChromaFormatString(_chromaFormat) + " chroma format is not supported by this GPU hardware video decoder.  Please refer to Nvidia's GPU Support Matrix to confirm your GPU supports hardware decoding of this video source.");
     }
 
     if (!(decodeCaps.nOutputFormatMask & (1 << surfaceFormat)))
