@@ -10,7 +10,7 @@
 namespace opencv_test { namespace {
 
 static const char* const IMAGE_TSUKUBA = "features2d/tsukuba.png";
-#ifdef OPENCV_ENABLE_NONFREE
+#if defined(OPENCV_ENABLE_NONFREE) || defined (OPENCV_XFEATURES2D_HAS_VGG_DATA)
 static const char* const IMAGE_BIKES = "detectors_descriptors_evaluation/images_datasets/bikes/img1.png";
 #endif // OPENCV_ENABLE_NONFREE
 // ========================== ROTATION INVARIANCE =============================
