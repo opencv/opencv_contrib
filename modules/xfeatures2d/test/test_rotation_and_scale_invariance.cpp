@@ -166,7 +166,6 @@ INSTANTIATE_TEST_CASE_P(SURF, DetectorScaleInvariance, Values(
 INSTANTIATE_TEST_CASE_P(SURF, DescriptorScaleInvariance, Values(
     make_tuple(IMAGE_BIKES, []() { return SURF::create(); }, []() { return SURF::create(); }, 0.7f)
 ));
-#endif // NONFREE
 
 
 #if 0  // DAISY is not scale invariant
@@ -205,7 +204,6 @@ INSTANTIATE_TEST_CASE_P(VGG48, DescriptorScaleInvariance, Values(
 ));
 #endif  // OPENCV_XFEATURES2D_HAS_VGG_DATA
 
-#ifdef OPENCV_ENABLE_NONFREE  // SURF detector is used in tests
 #ifdef OPENCV_XFEATURES2D_HAS_BOOST_DATA
 INSTANTIATE_TEST_CASE_P(BoostDesc_BGM, DescriptorScaleInvariance, Values(
     make_tuple(IMAGE_BIKES,
