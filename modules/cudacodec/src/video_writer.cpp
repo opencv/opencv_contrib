@@ -315,6 +315,13 @@ GUID EncodingPresetGuid(const EncodePreset nvPreset) {
     CV_Error(Error::StsUnsupportedFormat, msg);
 }
 
+std::string GetVideoCodecString(const GUID codec) {
+    if (codec == NV_ENC_CODEC_H264_GUID) return "AVC/H.264";
+    else if (codec == NV_ENC_CODEC_HEVC_GUID) return "H.265/HEVC";
+    else if (codec == NV_ENC_CODEC_AV1_GUID) return "AV1";
+    else return "Unknown";
+}
+
 void VideoWriterImpl::InitializeEncoder(const GUID codec, const double fps)
 {
     NV_ENC_INITIALIZE_PARAMS initializeParams = {};
@@ -334,10 +341,24 @@ void VideoWriterImpl::InitializeEncoder(const GUID codec, const double fps)
     if (initializeParams.encodeConfig->frameIntervalP > 1) {
         CV_Assert(encoderCallback->setFrameIntervalP(initializeParams.encodeConfig->frameIntervalP));
     }
-    if (codec == NV_ENC_CODEC_H264_GUID)
+    if (codec == NV_ENC_CODEC_H264_GUID) {
         initializeParams.encodeConfig->encodeCodecConfig.h264Config.idrPeriod = encoderParams.idrPeriod;
-    else if (codec == NV_ENC_CODEC_HEVC_GUID)
+        if (encoderParams.videoFullRangeFlag) {
+            initializeParams.encodeConfig->encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1;
+            initializeParams.encodeConfig->encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 1;
+        }
+    }
+    else if (codec == NV_ENC_CODEC_HEVC_GUID) {
         initializeParams.encodeConfig->encodeCodecConfig.hevcConfig.idrPeriod = encoderParams.idrPeriod;
+        if (encoderParams.videoFullRangeFlag) {
+            initializeParams.encodeConfig->encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFullRangeFlag = 1;
+            initializeParams.encodeConfig->encodeCodecConfig.hevcConfig.hevcVUIParameters.videoSignalTypePresentFlag = 1;
+        }
+    }
+    else {
+        std::string msg = "videoFullRangeFlag is not supported by codec: " + GetVideoCodecString(codec);
+        CV_LOG_WARNING(NULL, msg);
+    }
     pEnc->CreateEncoder(&initializeParams);
 }
 
