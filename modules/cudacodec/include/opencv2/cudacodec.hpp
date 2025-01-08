@@ -186,7 +186,7 @@ struct CV_EXPORTS_W_SIMPLE EncoderParams
 public:
     CV_WRAP EncoderParams() : nvPreset(ENC_PRESET_P3), tuningInfo(ENC_TUNING_INFO_HIGH_QUALITY), encodingProfile(ENC_CODEC_PROFILE_AUTOSELECT),
         rateControlMode(ENC_PARAMS_RC_VBR), multiPassEncoding(ENC_MULTI_PASS_DISABLED), constQp({ 0,0,0 }), averageBitRate(0), maxBitRate(0),
-        targetQuality(30), gopLength(250), idrPeriod(250) {};
+        targetQuality(30), gopLength(250), idrPeriod(250), videoFullRangeFlag(false){};
     CV_PROP_RW EncodePreset nvPreset;
     CV_PROP_RW EncodeTuningInfo tuningInfo;
     CV_PROP_RW EncodeProfile encodingProfile;
@@ -198,6 +198,7 @@ public:
     CV_PROP_RW uint8_t targetQuality; //!< value 0 - 51 where video quality decreases as targetQuality increases, used with \ref ENC_PARAMS_RC_VBR.
     CV_PROP_RW int gopLength; //!< the number of pictures in one GOP, ensuring \ref idrPeriod >= \ref gopLength.
     CV_PROP_RW int idrPeriod; //!< IDR interval, ensuring \ref idrPeriod >= \ref gopLength.
+    CV_PROP_RW bool videoFullRangeFlag;//!< Indicates if the black level, luma and chroma of the source are represented using the full or limited range (AKA TV or "analogue" range) of values as defined in Annex E of the ITU-T Specification.
 };
 CV_EXPORTS bool operator==(const EncoderParams& lhs, const EncoderParams& rhs);
 

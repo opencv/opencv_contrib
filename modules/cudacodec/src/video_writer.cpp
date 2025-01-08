@@ -342,10 +342,20 @@ void VideoWriterImpl::InitializeEncoder(const GUID codec, const double fps)
         CV_Assert(encoderCallback->setFrameIntervalP(initializeParams.encodeConfig->frameIntervalP));
     }
 #endif
-    if (codec == NV_ENC_CODEC_H264_GUID)
+    if (codec == NV_ENC_CODEC_H264_GUID) {
         initializeParams.encodeConfig->encodeCodecConfig.h264Config.idrPeriod = encoderParams.idrPeriod;
-    else if (codec == NV_ENC_CODEC_HEVC_GUID)
+        if (encoderParams.videoFullRangeFlag) {
+            initializeParams.encodeConfig->encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1;
+            initializeParams.encodeConfig->encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 1;
+        }
+    }
+    else if (codec == NV_ENC_CODEC_HEVC_GUID) {
         initializeParams.encodeConfig->encodeCodecConfig.hevcConfig.idrPeriod = encoderParams.idrPeriod;
+        if (encoderParams.videoFullRangeFlag) {
+            initializeParams.encodeConfig->encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFullRangeFlag = 1;
+            initializeParams.encodeConfig->encodeCodecConfig.hevcConfig.hevcVUIParameters.videoSignalTypePresentFlag = 1;
+        }
+    }
     pEnc->CreateEncoder(&initializeParams);
 }
 
