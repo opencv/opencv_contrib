@@ -53,10 +53,6 @@ Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const C
 
 #else // !defined HAVE_NVCUVENC
 
-#if defined(WIN32)  // remove when FFmpeg wrapper includes PR25874
-#define WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE
-#endif
-
 NV_ENC_BUFFER_FORMAT EncBufferFormat(const ColorFormat colorFormat);
 int NChannels(const ColorFormat colorFormat);
 GUID CodecGuid(const Codec codec);
@@ -107,9 +103,7 @@ void FFmpegVideoWriter::onEncoded(const std::vector<std::vector<uint8_t>>& vPack
         Mat wrappedPacket(1, packet.size(), CV_8UC1, (void*)packet.data());
         const double ptsDouble = static_cast<double>(pts.at(i));
         CV_Assert(static_cast<uint64_t>(ptsDouble) == pts.at(i));
-#if !defined(WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE)
         CV_Assert(writer.set(VIDEOWRITER_PROP_PTS, ptsDouble));
-#endif
         writer.write(wrappedPacket);
     }
 }
@@ -337,11 +331,9 @@ void VideoWriterImpl::InitializeEncoder(const GUID codec, const double fps)
     initializeParams.encodeConfig->rcParams.maxBitRate = encoderParams.maxBitRate;
     initializeParams.encodeConfig->rcParams.targetQuality = encoderParams.targetQuality;
     initializeParams.encodeConfig->gopLength = encoderParams.gopLength;
-#if !defined(WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE)
     if (initializeParams.encodeConfig->frameIntervalP > 1) {
         CV_Assert(encoderCallback->setFrameIntervalP(initializeParams.encodeConfig->frameIntervalP));
     }
-#endif
     if (codec == NV_ENC_CODEC_H264_GUID)
         initializeParams.encodeConfig->encodeCodecConfig.h264Config.idrPeriod = encoderParams.idrPeriod;
     else if (codec == NV_ENC_CODEC_HEVC_GUID)
