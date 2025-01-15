@@ -1060,7 +1060,7 @@ CUDA_TEST_P(H264ToH265, Transcode)
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, H264ToH265, ALL_DEVICES);
 
 CV_ENUM(YuvColorFormats, cudacodec::ColorFormat::NV_YUV444, cudacodec::ColorFormat::NV_YUV420_10BIT, cudacodec::ColorFormat::NV_YUV444_10BIT)
-PARAM_TEST_CASE(YUVFormats, cv::cuda::DeviceInfo, YuvColorFormats)
+PARAM_TEST_CASE(YUVFormats, cv::cuda::DeviceInfo, YuvColorFormats, bool)
 {
 };
 
@@ -1069,6 +1069,7 @@ CUDA_TEST_P(YUVFormats, Transcode)
     cv::cuda::setDevice(GET_PARAM(0).deviceID());
     const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.h265";
     const cv::cudacodec::ColorFormat writerColorFormat = static_cast<cudacodec::ColorFormat>(static_cast<int>(GET_PARAM(1)));
+    const bool fullRange = GET_PARAM(2);
     constexpr double fps = 25;
     const cudacodec::Codec codec = cudacodec::Codec::HEVC;
     const std::string ext = ".mp4";
@@ -1082,6 +1083,7 @@ CUDA_TEST_P(YUVFormats, Transcode)
         cv::cudacodec::EncoderParams params;
         params.tuningInfo = cv::cudacodec::EncodeTuningInfo::ENC_TUNING_INFO_LOSSLESS;
         params.rateControlMode = cv::cudacodec::EncodeParamsRcMode::ENC_PARAMS_RC_CONSTQP;
+        params.videoFullRangeFlag = fullRange;
         for (int i = 0; i < nFrames; ++i) {
             ASSERT_TRUE(cap.read(frame));
             ASSERT_FALSE(frame.empty());
@@ -1095,7 +1097,7 @@ CUDA_TEST_P(YUVFormats, Transcode)
                 yuvFormat = cudacodec::SurfaceFormat::SF_P016;
                 bitDepth = cudacodec::BitDepth::SIXTEEN;
             }
-            generateTestImages(frame, yuv, bgr, yuvFormat, cudacodec::ColorFormat::BGR, bitDepth, false);
+            generateTestImages(frame, yuv, bgr, yuvFormat, cudacodec::ColorFormat::BGR, bitDepth, false, fullRange);
             bgrGs.push_back(bgr.clone());
             if (writer.empty())
                 writer = cv::cudacodec::createVideoWriter(outputFile, frame.size(), codec, fps, writerColorFormat, params);
@@ -1119,7 +1121,7 @@ CUDA_TEST_P(YUVFormats, Transcode)
     ASSERT_EQ(0, remove(outputFile.c_str()));
 }
 
-INSTANTIATE_TEST_CASE_P(CUDA_Codec, YUVFormats, testing::Combine(ALL_DEVICES, YuvColorFormats::all()));
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, YUVFormats, testing::Combine(ALL_DEVICES, YuvColorFormats::all(), testing::Bool()));
 #endif
 
 #if defined(HAVE_NVCUVENC)
