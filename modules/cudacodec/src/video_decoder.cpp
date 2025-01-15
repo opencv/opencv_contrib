@@ -45,6 +45,44 @@
 
 #ifdef HAVE_NVCUVID
 
+#if (CUDART_VERSION >= 9000)
+static const char* GetVideoCodecString(cudaVideoCodec eCodec) {
+    static struct {
+        cudaVideoCodec eCodec;
+        const char* name;
+    } aCodecName[] = {
+        { cudaVideoCodec_MPEG1,     "MPEG-1"       },
+        { cudaVideoCodec_MPEG2,     "MPEG-2"       },
+        { cudaVideoCodec_MPEG4,     "MPEG-4 (ASP)" },
+        { cudaVideoCodec_VC1,       "VC-1/WMV"     },
+        { cudaVideoCodec_H264,      "AVC/H.264"    },
+        { cudaVideoCodec_JPEG,      "M-JPEG"       },
+        { cudaVideoCodec_H264_SVC,  "H.264/SVC"    },
+        { cudaVideoCodec_H264_MVC,  "H.264/MVC"    },
+        { cudaVideoCodec_HEVC,      "H.265/HEVC"   },
+        { cudaVideoCodec_VP8,       "VP8"          },
+        { cudaVideoCodec_VP9,       "VP9"          },
+        { cudaVideoCodec_AV1,       "AV1"          },
+        { cudaVideoCodec_NumCodecs, "Invalid"      },
+        { cudaVideoCodec_YUV420,    "YUV  4:2:0"   },
+        { cudaVideoCodec_YV12,      "YV12 4:2:0"   },
+        { cudaVideoCodec_NV12,      "NV12 4:2:0"   },
+        { cudaVideoCodec_YUYV,      "YUYV 4:2:2"   },
+        { cudaVideoCodec_UYVY,      "UYVY 4:2:2"   },
+    };
+
+    if (eCodec >= 0 && eCodec <= cudaVideoCodec_NumCodecs) {
+        return aCodecName[eCodec].name;
+    }
+    for (int i = cudaVideoCodec_NumCodecs + 1; i < sizeof(aCodecName) / sizeof(aCodecName[0]); i++) {
+        if (eCodec == aCodecName[i].eCodec) {
+            return aCodecName[eCodec].name;
+        }
+    }
+    return "Unknown";
+}
+#endif
+
 static const char* GetVideoChromaFormatString(cudaVideoChromaFormat eChromaFormat) {
     static struct {
         cudaVideoChromaFormat eChromaFormat;
@@ -68,16 +106,30 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
         AutoLock autoLock(mtx_);
         videoFormat_ = videoFormat;
     }
-    const cudaVideoCodec _codec = static_cast<cudaVideoCodec>(videoFormat.codec);
-    const cudaVideoChromaFormat _chromaFormat = static_cast<cudaVideoChromaFormat>(videoFormat.chromaFormat);
+    const cudaVideoCodec _codec = static_cast<cudaVideoCodec>(videoFormat_.codec);
+    const cudaVideoChromaFormat _chromaFormat = static_cast<cudaVideoChromaFormat>(videoFormat_.chromaFormat);
+
+    cudaVideoSurfaceFormat surfaceFormat = cudaVideoSurfaceFormat_NV12;
+#if (CUDART_VERSION < 9000)
     if (videoFormat.nBitDepthMinus8 > 0) {
-        std::ostringstream warning;
-        warning << "NV12 (8 bit luma, 4 bit chroma) is currently the only supported decoder output format. Video input is " << videoFormat.nBitDepthMinus8 + 8 << " bit " \
+    std::ostringstream warning;
+    warning << "NV12 (8 bit luma, 4 bit chroma) is currently the only supported decoder output format. Video input is " << videoFormat.nBitDepthMinus8 + 8 << " bit " \
             << std::string(GetVideoChromaFormatString(_chromaFormat)) << ".  Truncating luma to 8 bits";
         if (videoFormat.chromaFormat != YUV420)
             warning << " and chroma to 4 bits";
         CV_LOG_WARNING(NULL, warning.str());
     }
+#else
+    if (_chromaFormat == cudaVideoChromaFormat_420 || cudaVideoChromaFormat_Monochrome)
+        surfaceFormat = videoFormat_.nBitDepthMinus8 ? cudaVideoSurfaceFormat_P016 : cudaVideoSurfaceFormat_NV12;
+    else if (_chromaFormat == cudaVideoChromaFormat_444)
+        surfaceFormat = videoFormat_.nBitDepthMinus8 ? cudaVideoSurfaceFormat_YUV444_16Bit : cudaVideoSurfaceFormat_YUV444;
+    else if (_chromaFormat == cudaVideoChromaFormat_422) {
+        surfaceFormat = videoFormat_.nBitDepthMinus8 ? cudaVideoSurfaceFormat_P016 : cudaVideoSurfaceFormat_NV12;
+        CV_LOG_WARNING(NULL, "YUV 4:2:2 is not currently supported, falling back to YUV 4:2:0.");
+    }
+#endif
+
     const cudaVideoCreateFlags videoCreateFlags = (_codec == cudaVideoCodec_JPEG || _codec == cudaVideoCodec_MPEG2) ?
                                             cudaVideoCreate_PreferCUDA :
                                             cudaVideoCreate_PreferCUVID;
@@ -123,9 +175,25 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     cuSafeCall(cuCtxPushCurrent(ctx_));
     cuSafeCall(cuvidGetDecoderCaps(&decodeCaps));
     cuSafeCall(cuCtxPopCurrent(NULL));
-    if (!(decodeCaps.bIsSupported && (decodeCaps.nOutputFormatMask & (1 << cudaVideoSurfaceFormat_NV12)))) {
-        CV_Error(Error::StsUnsupportedFormat, "Video source is not supported by hardware video decoder refer to Nvidia's GPU Support Matrix to confirm your GPU supports hardware decoding of the video source's codec.");
+
+    if (!decodeCaps.bIsSupported) {
+        CV_Error(Error::StsUnsupportedFormat, std::to_string(decodeCaps.nBitDepthMinus8 + 8) + " bit " + GetVideoCodecString(_codec) + " with " + GetVideoChromaFormatString(_chromaFormat) + " chroma format is not supported by this GPU hardware video decoder.  Please refer to Nvidia's GPU Support Matrix to confirm your GPU supports hardware decoding of this video source.");
     }
+
+    if (!(decodeCaps.nOutputFormatMask & (1 << surfaceFormat)))
+    {
+        if (decodeCaps.nOutputFormatMask & (1 << cudaVideoSurfaceFormat_NV12))
+            surfaceFormat = cudaVideoSurfaceFormat_NV12;
+        else if (decodeCaps.nOutputFormatMask & (1 << cudaVideoSurfaceFormat_P016))
+            surfaceFormat = cudaVideoSurfaceFormat_P016;
+        else if (decodeCaps.nOutputFormatMask & (1 << cudaVideoSurfaceFormat_YUV444))
+            surfaceFormat = cudaVideoSurfaceFormat_YUV444;
+        else if (decodeCaps.nOutputFormatMask & (1 << cudaVideoSurfaceFormat_YUV444_16Bit))
+            surfaceFormat = cudaVideoSurfaceFormat_YUV444_16Bit;
+        else
+            CV_Error(Error::StsUnsupportedFormat, "No supported output format found");
+    }
+    videoFormat_.surfaceFormat = static_cast<SurfaceFormat>(surfaceFormat);
 
     if (videoFormat.enableHistogram) {
         if (!decodeCaps.bIsHistogramSupported) {
@@ -168,7 +236,7 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     createInfo_.ulHeight            = videoFormat.ulHeight;
     createInfo_.ulNumDecodeSurfaces = videoFormat.ulNumDecodeSurfaces;
     createInfo_.ChromaFormat    = _chromaFormat;
-    createInfo_.OutputFormat    = cudaVideoSurfaceFormat_NV12;
+    createInfo_.OutputFormat    = surfaceFormat;
     createInfo_.DeinterlaceMode = static_cast<cudaVideoDeinterlaceMode>(videoFormat.deinterlaceMode);
     createInfo_.ulTargetWidth       = videoFormat.width;
     createInfo_.ulTargetHeight      = videoFormat.height;
