@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -16,6 +16,20 @@ namespace fastcv {
 
 //! @addtogroup fastcv
 //! @{
+
+/**
+ * @brief   Transform an image using perspective transformation, same as cv::warpPerspective but not bit-exact.
+ * @param _src          Input 8-bit image. Size of buffer is srcStride*srcHeight bytes.
+ * @param _dst          Output 8-bit image. Size of buffer is dstStride*dstHeight bytes.
+ * @param _M0           3x3 perspective transformation matrix.
+ * @param dsize         Size of the output image.
+ * @param interpolation Interpolation method. Only cv::INTER_NEAREST, cv::INTER_LINEAR and cv::INTER_AREA are supported.
+ * @param borderType    Pixel extrapolation method. Only cv::BORDER_CONSTANT, cv::BORDER_REPLICATE and cv::BORDER_TRANSPARENT
+ *                      are supported.
+ * @param borderValue   Value used in case of a constant border.
+ */
+void warpPerspective(InputArray _src, OutputArray _dst, InputArray _M0, Size dsize, int interpolation, int borderType,
+    const Scalar&  borderValue);
 
 /**
  * @brief Perspective warp two images using the same transformation. Bi-linear interpolation is used where applicable.
