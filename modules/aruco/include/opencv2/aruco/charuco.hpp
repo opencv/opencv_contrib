@@ -96,6 +96,8 @@ CV_EXPORTS_W void detectCharucoDiamond(InputArray image, InputArrayOfArrays mark
  * @param borderBits width of the marker borders.
  *
  * This function return the image of a ChArUco marker, ready to be printed.
+ *
+ * @deprecated Use CharucoBoard::generateImage()
  */
 CV_EXPORTS_W void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids, int squareLength,
                                      int markerLength, OutputArray img, int marginSize = 0,

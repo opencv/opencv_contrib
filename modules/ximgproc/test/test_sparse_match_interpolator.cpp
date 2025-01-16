@@ -17,22 +17,22 @@ Mat readOpticalFlow( const String& path )
 //    CV_Assert(sizeof(float) == 4);
     //FIXME: ensure right sizes of int and float - here and in writeOpticalFlow()
 
-    Mat_<Point2f> flow;
+    Mat flow;
     std::ifstream file(path.c_str(), std::ios_base::binary);
     if ( !file.good() )
-        return std::move(flow); // no file - return empty matrix
+        return flow; // no file - return empty matrix
 
     float tag;
     file.read((char*) &tag, sizeof(float));
     if ( tag != FLOW_TAG_FLOAT )
-        return std::move(flow);
+        return flow;
 
     int width, height;
 
     file.read((char*) &width, 4);
     file.read((char*) &height, 4);
 
-    flow.create(height, width);
+    flow.create(height, width, CV_32FC2);
 
     for ( int i = 0; i < flow.rows; ++i )
     {
@@ -44,14 +44,14 @@ Mat readOpticalFlow( const String& path )
             if ( !file.good() )
             {
                 flow.release();
-                return std::move(flow);
+                return flow;
             }
 
-            flow(i, j) = u;
+            flow.at<Point2f>(i, j) = u;
         }
     }
     file.close();
-    return std::move(flow);
+    return flow;
 }
 
 CV_ENUM(GuideTypes, CV_8UC1, CV_8UC3)

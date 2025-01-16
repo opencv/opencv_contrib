@@ -51,6 +51,7 @@
 #include "../warp/reduce.hpp"
 #include "detail/reduce.hpp"
 #include "detail/reduce_key_val.hpp"
+#include <cuda_runtime_api.h>
 
 namespace cv { namespace cudev {
 
@@ -65,6 +66,7 @@ __device__ __forceinline__ void blockReduce(volatile T* smem, T& val, uint tid, 
     block_reduce_detail::Dispatcher<N>::reductor::template reduce<volatile T*, T&, const Op&>(smem, val, tid, op);
 }
 
+#if (CUDART_VERSION < 12040)
 template <int N,
           typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9,
           typename R0, typename R1, typename R2, typename R3, typename R4, typename R5, typename R6, typename R7, typename R8, typename R9,
@@ -125,6 +127,39 @@ __device__ __forceinline__ void blockReduceKeyVal(const tuple<KP0, KP1, KP2, KP3
             const tuple<Cmp0, Cmp1, Cmp2, Cmp3, Cmp4, Cmp5, Cmp6, Cmp7, Cmp8, Cmp9>&
             >(skeys, key, svals, val, tid, cmp);
 }
+
+#else
+
+template <int N, typename... P, typename... R, typename... Op>
+__device__ __forceinline__ void blockReduce(const tuple<P...>& smem,
+                                            const tuple<R...>& val,
+                                            uint tid,
+                                            const tuple<Op...>& op)
+{
+    block_reduce_detail::Dispatcher<N>::reductor::template reduce<const tuple<P...>&, const tuple<R...>&, const tuple<Op...>&>(smem, val, tid, op);
+}
+
+// blockReduceKeyVal
+
+template <int N, typename K, typename V, class Cmp>
+__device__ __forceinline__ void blockReduceKeyVal(volatile K* skeys, K& key, volatile V* svals, V& val, uint tid, const Cmp& cmp)
+{
+    block_reduce_key_val_detail::Dispatcher<N>::reductor::template reduce<volatile K*, K&, volatile V*, V&, const Cmp&>(skeys, key, svals, val, tid, cmp);
+}
+
+template <int N, typename K, typename... VP, typename... VR, class Cmp>
+__device__ __forceinline__ void blockReduceKeyVal(volatile K* skeys, K& key, const tuple<VP...>& svals, const tuple<VR...>& val, uint tid, const Cmp& cmp)
+{
+    block_reduce_key_val_detail::Dispatcher<N>::reductor::template reduce<volatile K*, K&, const tuple<VP...>&, const tuple<VR...>&, const Cmp&>(skeys, key, svals, val, tid, cmp);
+}
+
+template <int N, typename... KP, typename... KR, typename... VP, typename... VR, class... Cmp>
+__device__ __forceinline__ void blockReduceKeyVal(const tuple<KP...>& skeys, const tuple<KR...>& key, const tuple<VP...>& svals, const tuple<VR...>& val, uint tid, const tuple<Cmp...>& cmp)
+{
+    block_reduce_key_val_detail::Dispatcher<N>::reductor::template reduce< const tuple<KP...>&, const tuple<KR...>&, const tuple<VP...>&, const tuple<VR...>&, const tuple<Cmp...>&>(skeys, key, svals, val, tid, cmp);
+}
+
+#endif
 
 //! @}
 

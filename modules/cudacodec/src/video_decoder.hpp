@@ -49,11 +49,12 @@ namespace cv { namespace cudacodec { namespace detail {
 class VideoDecoder
 {
 public:
-    VideoDecoder(const Codec& codec, const int minNumDecodeSurfaces, cv::Size targetSz, cv::Rect srcRoi, cv::Rect targetRoi, CUcontext ctx, CUvideoctxlock lock) :
+    VideoDecoder(const Codec& codec, const int minNumDecodeSurfaces, cv::Size targetSz, cv::Rect srcRoi, cv::Rect targetRoi, const bool enableHistogram, CUcontext ctx, CUvideoctxlock lock) :
         ctx_(ctx), lock_(lock), decoder_(0)
     {
         videoFormat_.codec = codec;
         videoFormat_.ulNumDecodeSurfaces = minNumDecodeSurfaces;
+        videoFormat_.enableHistogram = enableHistogram;
         // alignment enforced by nvcuvid, likely due to chroma subsampling
         videoFormat_.targetSz.width = targetSz.width - targetSz.width % 2; videoFormat_.targetSz.height = targetSz.height - targetSz.height % 2;
         videoFormat_.srcRoi.x = srcRoi.x - srcRoi.x % 4; videoFormat_.srcRoi.width = srcRoi.width - srcRoi.width % 4;
@@ -68,9 +69,11 @@ public:
     }
 
     void create(const FormatInfo& videoFormat);
+    int reconfigure(const FormatInfo& videoFormat);
     void release();
+    bool inited() { AutoLock autoLock(mtx_); return decoder_; }
 
-    // Get the code-type currently used.
+    // Get the codec-type currently used.
     cudaVideoCodec codec() const { return static_cast<cudaVideoCodec>(videoFormat_.codec); }
     int nDecodeSurfaces() const { return videoFormat_.ulNumDecodeSurfaces; }
     cv::Size getTargetSz() const { return videoFormat_.targetSz; }
@@ -86,6 +89,7 @@ public:
 
     cudaVideoChromaFormat chromaFormat() const { return static_cast<cudaVideoChromaFormat>(videoFormat_.chromaFormat); }
     int nBitDepthMinus8() const { return videoFormat_.nBitDepthMinus8; }
+    bool enableHistogram() const { return videoFormat_.enableHistogram; }
 
     bool decodePicture(CUVIDPICPARAMS* picParams)
     {
@@ -99,7 +103,9 @@ public:
 
         cuSafeCall( cuvidMapVideoFrame(decoder_, picIdx, &ptr, &pitch, &videoProcParams) );
 
-        return cuda::GpuMat(targetHeight() * 3 / 2, targetWidth(), CV_8UC1, (void*) ptr, pitch);
+        const int height = (videoFormat_.surfaceFormat == cudaVideoSurfaceFormat_NV12 || videoFormat_.surfaceFormat == cudaVideoSurfaceFormat_P016) ? targetHeight() * 3 / 2 : targetHeight() * 3;
+        const int type = (videoFormat_.surfaceFormat == cudaVideoSurfaceFormat_NV12 || videoFormat_.surfaceFormat == cudaVideoSurfaceFormat_YUV444) ? CV_8U : CV_16U;
+        return cuda::GpuMat(height, targetWidth(), type, (void*) ptr, pitch);
     }
 
     void unmapFrame(cuda::GpuMat& frame)
@@ -111,7 +117,7 @@ public:
 private:
     CUcontext ctx_ = 0;
     CUvideoctxlock lock_;
-    CUvideodecoder        decoder_ = 0;
+    CUvideodecoder decoder_ = 0;
     FormatInfo videoFormat_ = {};
     Mutex mtx_;
 };

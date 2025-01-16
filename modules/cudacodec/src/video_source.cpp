@@ -76,6 +76,10 @@ bool cv::cudacodec::detail::RawVideoSourceWrapper::get(const int propertyId, dou
     return source_->get(propertyId, propertyVal);
 }
 
+int cv::cudacodec::detail::RawVideoSourceWrapper::getFirstFrameIdx() const {
+    return source_->getFirstFrameIdx();
+}
+
 void cv::cudacodec::detail::RawVideoSourceWrapper::start()
 {
     stop_ = false;
@@ -137,7 +141,8 @@ void cv::cudacodec::detail::RawVideoSourceWrapper::readLoop(void* userData)
             break;
     }
 
-    thiz->parseVideoData(0, 0, false, false, true);
+    if(!thiz->hasError_)
+        thiz->parseVideoData(0, 0, false, false, true);
 }
 
 #endif // HAVE_NVCUVID

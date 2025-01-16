@@ -99,6 +99,19 @@ CV_EXPORTS_W Ptr<BackgroundSubtractorMOG>
 class CV_EXPORTS_W BackgroundSubtractorGMG : public BackgroundSubtractor
 {
 public:
+    // BackgroundSubtractor interface
+    /** @brief Computes a foreground mask.
+
+    @param image Next video frame of type CV_8UC(n),CV_8SC(n),CV_16UC(n),CV_16SC(n),CV_32SC(n),CV_32FC(n),CV_64FC(n), where n is 1,2,3,4.
+    @param fgmask The output foreground mask as an 8-bit binary image.
+    @param learningRate The value between 0 and 1 that indicates how fast the background model is
+    learnt. Negative parameter value makes the algorithm to use some automatically chosen learning
+    rate. 0 means that the background model is not updated at all, 1 means that the background model
+    is completely reinitialized from the last frame.
+     */
+    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
+    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE = 0;
+
     /** @brief Returns total number of distinct colors to maintain in histogram.
     */
     CV_WRAP virtual int getMaxFeatures() const = 0;

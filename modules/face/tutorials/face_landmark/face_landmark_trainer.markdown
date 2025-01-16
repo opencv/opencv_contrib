@@ -21,7 +21,7 @@ The above format is similar to HELEN dataset which is used for training the mode
 ./sample_train_landmark_detector -annotations=/home/sukhad/Downloads/code/trainset/ -config=config.xml -face_cascade=lbpcascadefrontalface.xml -model=trained_model.dat -width=460 -height=460
 ```
 
-### Description of command parameters
+## Description of command parameters
 
 > * **annotations** a : (REQUIRED) Path to annotations txt file [example - /data/annotations.txt]
 > * **config** c : (REQUIRED) Path to configuration xml file containing parameters for training.[ example - /data/config.xml]
@@ -30,7 +30,7 @@ The above format is similar to HELEN dataset which is used for training the mode
 > * **height** h : (OPTIONAL) The height which you want all images to get to scale the annotations. Large images are slow to process [default = 460]
 > * **face_cascade** f (REQUIRED) Path to the face cascade xml file which you want to use as a detector.
 
-### Description of training parameters
+## Description of training parameters
 
 
 The configuration file described above which is used while training contains the training parameters which are required for training.
@@ -49,7 +49,7 @@ The configuration file described above which is used while training contains the
 
 To get more detailed description about the training parameters you can refer to the [Research paper](https://pdfs.semanticscholar.org/d78b/6a5b0dcaa81b1faea5fb0000045a62513567.pdf).
 
-### Understanding code
+## Understanding code
 
 
 ![](images/3.jpg)

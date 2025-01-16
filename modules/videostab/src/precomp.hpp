@@ -59,7 +59,7 @@
 
 inline float sqr(float x) { return x * x; }
 
-inline float intensity(const cv::Point3_<uchar> &bgr)
+inline float intensity(const cv::Point3_<uint8_t> &bgr)
 {
     return 0.3f*bgr.x + 0.59f*bgr.y + 0.11f*bgr.z;
 }

@@ -121,6 +121,22 @@ __host__ void gridTransformBinary_(const SrcPtr1& src1, const SrcPtr2& src2, Gpu
     grid_transform_detail::transform_binary<Policy>(shrinkPtr(src1), shrinkPtr(src2), shrinkPtr(dst), op, shrinkPtr(mask), rows, cols, StreamAccessor::getStream(stream));
 }
 
+template <class Policy, class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class BinOp1, class BinOp2, class MaskPtr>
+__host__ void gridTransformBinary_(const SrcPtr1& src1, const SrcPtr2& src2, GpuMat_<DstType1>& dst1, GpuMat_<DstType2>& dst2,
+                                   const BinOp1& op1, const BinOp2& op2, const MaskPtr& mask, Stream& stream = Stream::Null())
+{
+    const int rows = getRows(src1);
+    const int cols = getCols(src1);
+
+    CV_Assert( getRows(src2) == rows && getCols(src2) == cols );
+    CV_Assert( getRows(mask) == rows && getCols(mask) == cols );
+
+    dst1.create(rows, cols);
+    dst2.create(rows, cols);
+
+    grid_transform_detail::transform_binary<Policy>(shrinkPtr(src1), shrinkPtr(src2), shrinkPtr(dst1), shrinkPtr(dst2), op1, op2, shrinkPtr(mask), rows, cols, StreamAccessor::getStream(stream));
+}
+
 template <class Policy, class SrcPtr1, class SrcPtr2, typename DstType, class BinOp, class MaskPtr>
 __host__ void gridTransformBinary_(const SrcPtr1& src1, const SrcPtr2& src2, const GlobPtrSz<DstType>& dst, const BinOp& op, const MaskPtr& mask, Stream& stream = Stream::Null())
 {
@@ -133,6 +149,22 @@ __host__ void gridTransformBinary_(const SrcPtr1& src1, const SrcPtr2& src2, con
 
     grid_transform_detail::transform_binary<Policy>(shrinkPtr(src1), shrinkPtr(src2), shrinkPtr(dst), op, shrinkPtr(mask), rows, cols, StreamAccessor::getStream(stream));
 }
+
+template <class Policy, class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class BinOp1, class BinOp2, class MaskPtr>
+__host__ void gridTransformBinary_(const SrcPtr1& src1, const SrcPtr2& src2, const GlobPtrSz<DstType1>& dst1, const GlobPtrSz<DstType2>& dst2,
+                                   const BinOp1& op1, const BinOp2& op2, const MaskPtr& mask, Stream& stream = Stream::Null())
+{
+    const int rows = getRows(src1);
+    const int cols = getCols(src1);
+
+    CV_Assert( getRows(dst1) == rows && getCols(dst1) == cols );
+    CV_Assert( getRows(dst2) == rows && getCols(dst2) == cols );
+    CV_Assert( getRows(src2) == rows && getCols(src2) == cols );
+    CV_Assert( getRows(mask) == rows && getCols(mask) == cols );
+
+    grid_transform_detail::transform_binary<Policy>(shrinkPtr(src1), shrinkPtr(src2), shrinkPtr(dst1), shrinkPtr(dst2), op1, op2, shrinkPtr(mask), rows, cols, StreamAccessor::getStream(stream));
+}
+
 
 template <class Policy, class SrcPtr1, class SrcPtr2, typename DstType, class BinOp>
 __host__ void gridTransformBinary_(const SrcPtr1& src1, const SrcPtr2& src2, GpuMat_<DstType>& dst, const BinOp& op, Stream& stream = Stream::Null())
@@ -147,6 +179,21 @@ __host__ void gridTransformBinary_(const SrcPtr1& src1, const SrcPtr2& src2, Gpu
     grid_transform_detail::transform_binary<Policy>(shrinkPtr(src1), shrinkPtr(src2), shrinkPtr(dst), op, WithOutMask(), rows, cols, StreamAccessor::getStream(stream));
 }
 
+template <class Policy, class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class BinOp1, class BinOp2>
+__host__ void gridTransformBinary_(const SrcPtr1& src1, const SrcPtr2& src2, GpuMat_<DstType1>& dst1, GpuMat_<DstType2>& dst2,
+                                   const BinOp1& op1, const BinOp2& op2, Stream& stream = Stream::Null())
+{
+    const int rows = getRows(src1);
+    const int cols = getCols(src1);
+
+    CV_Assert( getRows(src2) == rows && getCols(src2) == cols );
+
+    dst1.create(rows, cols);
+    dst2.create(rows, cols);
+
+    grid_transform_detail::transform_binary<Policy>(shrinkPtr(src1), shrinkPtr(src2), shrinkPtr(dst1), shrinkPtr(dst2), op1, op2, WithOutMask(), rows, cols, StreamAccessor::getStream(stream));
+}
+
 template <class Policy, class SrcPtr1, class SrcPtr2, typename DstType, class BinOp>
 __host__ void gridTransformBinary_(const SrcPtr1& src1, const SrcPtr2& src2, const GlobPtrSz<DstType>& dst, const BinOp& op, Stream& stream = Stream::Null())
 {
@@ -157,6 +204,20 @@ __host__ void gridTransformBinary_(const SrcPtr1& src1, const SrcPtr2& src2, con
     CV_Assert( getRows(src2) == rows && getCols(src2) == cols );
 
     grid_transform_detail::transform_binary<Policy>(shrinkPtr(src1), shrinkPtr(src2), shrinkPtr(dst), op, WithOutMask(), rows, cols, StreamAccessor::getStream(stream));
+}
+
+template <class Policy, class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class BinOp1, class BinOp2>
+__host__ void gridTransformBinary_(const SrcPtr1& src1, const SrcPtr2& src2, const GlobPtrSz<DstType1>& dst1, const GlobPtrSz<DstType2>& dst2,
+                                   const BinOp1& op1, const BinOp2& op2, Stream& stream = Stream::Null())
+{
+    const int rows = getRows(src1);
+    const int cols = getCols(src1);
+
+    CV_Assert( getRows(dst1) == rows && getCols(dst1) == cols );
+    CV_Assert( getRows(dst2) == rows && getCols(dst2) == cols );
+    CV_Assert( getRows(src2) == rows && getCols(src2) == cols );
+
+    grid_transform_detail::transform_binary<Policy>(shrinkPtr(src1), shrinkPtr(src2), shrinkPtr(dst1), shrinkPtr(dst2), op1, op2, WithOutMask(), rows, cols, StreamAccessor::getStream(stream));
 }
 
 template <class Policy, class SrcPtr, typename D0, typename D1, class OpTuple, class MaskPtr>
@@ -449,10 +510,24 @@ __host__ void gridTransformBinary(const SrcPtr1& src1, const SrcPtr2& src2, GpuM
     gridTransformBinary_<DefaultTransformPolicy>(src1, src2, dst, op, mask, stream);
 }
 
+template <class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class Op1, class Op2, class MaskPtr>
+__host__ void gridTransformBinary(const SrcPtr1& src1, const SrcPtr2& src2, GpuMat_<DstType1>& dst1, GpuMat_<DstType2>& dst2,
+                                  const Op1& op1, const Op2& op2, const MaskPtr& mask, Stream& stream = Stream::Null())
+{
+    gridTransformBinary_<DefaultTransformPolicy>(src1, src2, dst1, dst2, op1, op2, mask, stream);
+}
+
 template <class SrcPtr1, class SrcPtr2, typename DstType, class Op, class MaskPtr>
 __host__ void gridTransformBinary(const SrcPtr1& src1, const SrcPtr2& src2, const GlobPtrSz<DstType>& dst, const Op& op, const MaskPtr& mask, Stream& stream = Stream::Null())
 {
     gridTransformBinary_<DefaultTransformPolicy>(src1, src2, dst, op, mask, stream);
+}
+
+template <class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class Op1, class Op2, class MaskPtr>
+__host__ void gridTransformBinary(const SrcPtr1& src1, const SrcPtr2& src2, const GlobPtrSz<DstType2>& dst1, const GlobPtrSz<DstType2>& dst2,
+                                  const Op1& op1, const Op2& op2, const MaskPtr& mask, Stream& stream = Stream::Null())
+{
+    gridTransformBinary_<DefaultTransformPolicy>(src1, src2, dst1, dst2, op1, op2, mask, stream);
 }
 
 template <class SrcPtr1, class SrcPtr2, typename DstType, class Op>
@@ -461,10 +536,26 @@ __host__ void gridTransformBinary(const SrcPtr1& src1, const SrcPtr2& src2, GpuM
     gridTransformBinary_<DefaultTransformPolicy>(src1, src2, dst, op, stream);
 }
 
+template <class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class Op1, class Op2>
+__host__ void gridTransformBinary(const SrcPtr1& src1, const SrcPtr2& src2,
+                                  GpuMat_<DstType1>& dst1, GpuMat_<DstType2>& dst2,
+                                  const Op1& op1, const Op2& op2, Stream& stream = Stream::Null())
+{
+    gridTransformBinary_<DefaultTransformPolicy>(src1, src2, dst1, dst2, op1, op2, stream);
+}
+
 template <class SrcPtr1, class SrcPtr2, typename DstType, class Op>
 __host__ void gridTransformBinary(const SrcPtr1& src1, const SrcPtr2& src2, const GlobPtrSz<DstType>& dst, const Op& op, Stream& stream = Stream::Null())
 {
     gridTransformBinary_<DefaultTransformPolicy>(src1, src2, dst, op, stream);
+}
+
+template <class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class Op1, class Op2>
+__host__ void gridTransformBinary(const SrcPtr1& src1, const SrcPtr2& src2,
+                                  const GlobPtrSz<DstType1>& dst1, const GlobPtrSz<DstType2>& dst2,
+                                  const Op1& op1, const Op2& op2, Stream& stream = Stream::Null())
+{
+    gridTransformBinary_<DefaultTransformPolicy>(src1, src2, dst1, dst2, op1, op2, stream);
 }
 
 template <class SrcPtr, typename D0, typename D1, class OpTuple, class MaskPtr>

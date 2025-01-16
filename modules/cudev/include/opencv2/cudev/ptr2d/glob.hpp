@@ -118,6 +118,18 @@ __host__ GlobPtrSz<T> globPtr(const GpuMat& mat)
     return p;
 }
 
+template <typename T>
+__host__ GlobPtrSz<T> globPtr(const GpuMat_<T>& mat)
+{
+    GlobPtrSz<T> p;
+    p.data = (T*) mat.data;
+    p.step = mat.step;
+    p.rows = mat.rows;
+    p.cols = mat.cols;
+    return p;
+}
+
+
 template <typename T> struct PtrTraits< GlobPtrSz<T> > : PtrTraitsBase<GlobPtrSz<T>, GlobPtr<T> >
 {
 };

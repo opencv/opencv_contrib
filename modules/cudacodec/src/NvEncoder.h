@@ -15,6 +15,17 @@
 
 namespace cv { namespace cudacodec {
 
+#ifndef _WIN32
+#include <cstring>
+    static inline bool operator==(const GUID& guid1, const GUID& guid2) {
+        return !memcmp(&guid1, &guid2, sizeof(GUID));
+    }
+
+    static inline bool operator!=(const GUID& guid1, const GUID& guid2) {
+        return !(guid1 == guid2);
+    }
+#endif
+
 #define NVENC_THROW_ERROR( errorStr, errorCode ) \
 do \
 { \
@@ -89,7 +100,7 @@ public:
     * data, which has been copied to an input buffer obtained from the
     * GetNextInputFrame() function.
     */
-    virtual void EncodeFrame(std::vector<std::vector<uint8_t>>& vPacket, NV_ENC_PIC_PARAMS* pPicParams = nullptr);
+    virtual void EncodeFrame(std::vector<std::vector<uint8_t>>& vPacket, std::vector<uint64_t>& outputTimeStamps, NV_ENC_PIC_PARAMS* pPicParams = nullptr);
 
     /**
     * @brief This function to flush the encoder queue.
@@ -98,7 +109,7 @@ public:
     * from the encoder. The application must call this function before destroying
     * an encoder session.
     */
-    virtual void EndEncode(std::vector<std::vector<uint8_t>>& vPacket);
+    virtual void EndEncode(std::vector<std::vector<uint8_t>>& vPacket, std::vector<uint64_t>& outputTimeStamps);
 
     /**
     * @brief This function is used to query hardware encoder capabilities.
@@ -306,7 +317,7 @@ private:
     * This is called by DoEncode() function. If there is buffering enabled,
     * this may return without any output data.
     */
-    void GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR>& vOutputBuffer, std::vector<std::vector<uint8_t>>& vPacket, bool bOutputDelay);
+    void GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR>& vOutputBuffer, std::vector<std::vector<uint8_t>>& vPacket, std::vector<uint64_t>& outputTimeStamps, bool bOutputDelay);
 
     /**
     * @brief This is a private function which is used to initialize the bitstream buffers.
@@ -358,6 +369,7 @@ protected:
     int32_t m_iGot = 0;
     int32_t m_nEncoderBuffer = 0;
     int32_t m_nOutputDelay = 0;
+    int32_t m_iInputFrame = 0;
 
 private:
     void* m_pDevice;

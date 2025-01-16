@@ -411,6 +411,39 @@ std::vector<Point2f> CCheckerImpl::getBox()
 {
     return box;
 }
+std::vector<Point2f> CCheckerImpl::getColorCharts()
+{
+    // color chart classic model
+    CChartModel cccm(getTarget());
+    Mat lab;
+    size_t N;
+    std::vector<Point2f> fbox = cccm.box;
+    std::vector<Point2f> cellchart = cccm.cellchart;
+    std::vector<Point2f> charts(cellchart.size());
+
+    // tranformation
+    Matx33f ccT = getPerspectiveTransform(fbox, getBox());
+
+    std::vector<Point2f> bch(4), bcht(4);
+    N = cellchart.size() / 4;
+    for (size_t i = 0, k; i < N; i++)
+    {
+        k = 4 * i;
+        for (size_t j = 0ull; j < 4ull; j++)
+            bch[j] = cellchart[k + j];
+
+        polyanticlockwise(bch);
+        transform_points_forward(ccT, bch, bcht);
+
+        Point2f c(0, 0);
+        for (size_t j = 0; j < 4; j++)
+            c += bcht[j];
+        c /= 4;
+        for (size_t j = 0ull; j < 4ull; j++)
+            charts[k+j] = ((bcht[j] - c) * 0.50) + c;
+    }
+    return charts;
+}
 Mat CCheckerImpl::getChartsRGB()
 {
     return chartsRGB;
@@ -435,70 +468,40 @@ Ptr<CCheckerDraw> CCheckerDraw::create(Ptr<CChecker> pChecker, cv::Scalar color 
     return makePtr<CCheckerDrawImpl>(pChecker, color, thickness);
 }
 
-void CCheckerDrawImpl::
-    draw(InputOutputArray img)
+void CCheckerDrawImpl::draw(InputOutputArray img)
 {
-
-    // color chart classic model
-    CChartModel cccm(m_pChecker->getTarget());
-    cv::Mat lab;
-    size_t N;
-    std::vector<cv::Point2f> fbox = cccm.box;
-    std::vector<cv::Point2f> cellchart = cccm.cellchart;
-
-    // tranformation
-    cv::Matx33f ccT = cv::getPerspectiveTransform(fbox, m_pChecker->getBox());
-
-    std::vector<cv::Point2f> bch(4), bcht(4);
-    N = cellchart.size() / 4;
+    std::vector<Point2f> charts = m_pChecker->getColorCharts();
+    size_t N = charts.size() / 4;
     for (size_t i = 0, k; i < N; i++)
     {
         k = 4 * i;
-        bch[0] = cellchart[k + 0];
-        bch[1] = cellchart[k + 1];
-        bch[2] = cellchart[k + 2];
-        bch[3] = cellchart[k + 3];
-
-        polyanticlockwise(bch);
-        transform_points_forward(ccT, bch, bcht);
-
-        cv::Point2f c(0, 0);
         for (size_t j = 0; j < 4; j++)
-            c += bcht[j];
-        c /= 4;
-        for (size_t j = 0; j < 4; j++)
-            bcht[j] = ((bcht[j] - c) * 0.50) + c;
-
-        cv::line(img, bcht[0], bcht[1], m_color, m_thickness, LINE_AA);
-        cv::line(img, bcht[1], bcht[2], m_color, m_thickness, LINE_AA);
-        cv::line(img, bcht[2], bcht[3], m_color, m_thickness, LINE_AA);
-        cv::line(img, bcht[3], bcht[0], m_color, m_thickness, LINE_AA);
+            cv::line(img, charts[k+j], charts[k+((j + 1) % 4)], m_color, m_thickness, LINE_AA);
     }
 }
 
-void CCheckerDrawImpl::
-    transform_points_forward(InputArray T, const std::vector<cv::Point2f> &X, std::vector<cv::Point2f> &Xt)
+void transform_points_forward(const Matx33f& T, const std::vector<Point2f> &X, std::vector<Point2f> &Xt)
 {
-
-    cv::Matx33f _T = T.getMat();
     size_t N = X.size();
-    Xt.clear();
-    Xt.resize(N);
+    if (Xt.size() != N)
+        Xt.resize(N);
+    std::fill(Xt.begin(), Xt.end(), Point2f(0.f, 0.f));
     if (N == 0)
         return;
 
-    cv::Matx31f p, xt;
-    cv::Point2f pt;
+    Matx31f p, xt;
+    Point2f pt;
     for (size_t i = 0; i < N; i++)
     {
         p(0, 0) = X[i].x;
         p(1, 0) = X[i].y;
         p(2, 0) = 1;
-        xt = _T * p;
+        xt = T * p;
         pt.x = xt(0, 0) / xt(2, 0);
         pt.y = xt(1, 0) / xt(2, 0);
         Xt[i] = pt;
     }
 }
+
 } // namespace mcc
 } // namespace cv

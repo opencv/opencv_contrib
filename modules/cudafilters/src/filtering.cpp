@@ -72,6 +72,8 @@ Ptr<Filter> cv::cuda::createColumnSumFilter(int, int, int, int, int, Scalar) { t
 Ptr<Filter> cv::cuda::createMedianFilter(int srcType, int _windowSize, int _partitions){ throw_no_cuda(); return Ptr<Filter>();}
 
 #else
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 
 namespace
 {
@@ -103,10 +105,17 @@ namespace
         void apply(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
 
     private:
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*nppFilterBox8U_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep,
+            NppiSize oSizeROI, NppiSize oMaskSize, NppiPoint oAnchor, NppStreamContext ctx);
+        typedef NppStatus(*nppFilterBox32F_t)(const Npp32f* pSrc, Npp32s nSrcStep, Npp32f* pDst, Npp32s nDstStep,
+            NppiSize oSizeROI, NppiSize oMaskSize, NppiPoint oAnchor, NppStreamContext ctx);
+#else
         typedef NppStatus (*nppFilterBox8U_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep,
                                             NppiSize oSizeROI, NppiSize oMaskSize, NppiPoint oAnchor);
         typedef NppStatus (*nppFilterBox32F_t)(const Npp32f* pSrc, Npp32s nSrcStep, Npp32f* pDst, Npp32s nDstStep,
                                             NppiSize oSizeROI, NppiSize oMaskSize, NppiPoint oAnchor);
+#endif
 
         Size ksize_;
         Point anchor_;
@@ -159,20 +168,40 @@ namespace
         {
         case CV_8U:
         {
+#if USE_NPP_STREAM_CTX
+            static const nppFilterBox8U_t funcs8U[] = { 0, nppiFilterBox_8u_C1R_Ctx, 0, 0, nppiFilterBox_8u_C4R_Ctx };
+#else
             static const nppFilterBox8U_t funcs8U[] = { 0, nppiFilterBox_8u_C1R, 0, 0, nppiFilterBox_8u_C4R };
+#endif
             const nppFilterBox8U_t func8U = funcs8U[cn];
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func8U(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
+                dst.ptr<Npp8u>(), static_cast<int>(dst.step),
+                oSizeROI, oMaskSize, oAnchor, h));
+#else
             nppSafeCall(func8U(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
                 dst.ptr<Npp8u>(), static_cast<int>(dst.step),
                 oSizeROI, oMaskSize, oAnchor));
+#endif
         }
             break;
         case CV_32F:
         {
+#if USE_NPP_STREAM_CTX
+            static const nppFilterBox32F_t funcs32F[] = { 0, nppiFilterBox_32f_C1R_Ctx, 0, 0, 0 };
+#else
             static const nppFilterBox32F_t funcs32F[] = { 0, nppiFilterBox_32f_C1R, 0, 0, 0 };
+#endif
             const nppFilterBox32F_t func32F = funcs32F[cn];
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func32F(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step),
+                dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+                oSizeROI, oMaskSize, oAnchor, h));
+#else
             nppSafeCall(func32F(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step),
                 dst.ptr<Npp32f>(), static_cast<int>(dst.step),
                 oSizeROI, oMaskSize, oAnchor));
+#endif
         }
             break;
         }
@@ -384,28 +413,38 @@ namespace
         const int cn = CV_MAT_CN(srcType);
         const int ddepth = CV_MAT_DEPTH(dstType);
 
-        Mat rowKernel = _rowKernel.getMat();
-        Mat columnKernel = _columnKernel.getMat();
+        CV_Assert( _rowKernel.empty() || _rowKernel.isMat() );
+        CV_Assert( _columnKernel.empty() || _columnKernel.isMat() );
+        Mat rowKernel = _rowKernel.empty() ? cv::Mat() : _rowKernel.getMat();
+        Mat columnKernel = _columnKernel.empty() ? cv::Mat() : _columnKernel.getMat();
 
         CV_Assert( sdepth <= CV_64F && cn <= 4 );
-        CV_Assert( rowKernel.channels() == 1 );
-        CV_Assert( columnKernel.channels() == 1 );
+        CV_Assert( rowKernel.empty() || rowKernel.channels() == 1 );
+        CV_Assert( columnKernel.empty() || columnKernel.channels() == 1 );
         CV_Assert( rowBorderMode == BORDER_REFLECT101 || rowBorderMode == BORDER_REPLICATE || rowBorderMode == BORDER_CONSTANT || rowBorderMode == BORDER_REFLECT || rowBorderMode == BORDER_WRAP );
         CV_Assert( columnBorderMode == BORDER_REFLECT101 || columnBorderMode == BORDER_REPLICATE || columnBorderMode == BORDER_CONSTANT || columnBorderMode == BORDER_REFLECT || columnBorderMode == BORDER_WRAP );
 
         Mat kernel32F;
 
-        rowKernel.convertTo(kernel32F, CV_32F);
-        rowKernel_.upload(kernel32F.reshape(1, 1));
+        if (!rowKernel.empty())
+        {
+            rowKernel.convertTo(kernel32F, CV_32F);
+            rowKernel_.upload(kernel32F.reshape(1, 1));
+        }
 
-        columnKernel.convertTo(kernel32F, CV_32F);
-        columnKernel_.upload(kernel32F.reshape(1, 1));
+        if (!columnKernel.empty())
+        {
+            columnKernel.convertTo(kernel32F, CV_32F);
+            columnKernel_.upload(kernel32F.reshape(1, 1));
+        }
 
-        CV_Assert( rowKernel_.cols > 0 && rowKernel_.cols <= 32 );
-        CV_Assert( columnKernel_.cols > 0 && columnKernel_.cols <= 32 );
+        CV_Assert( rowKernel_.empty() || (rowKernel_.cols > 0 && rowKernel_.cols <= 32 ));
+        CV_Assert( columnKernel_.empty() || (columnKernel_.cols > 0 && columnKernel_.cols <= 32 ));
 
-        normalizeAnchor(anchor_.x, rowKernel_.cols);
-        normalizeAnchor(anchor_.y, columnKernel_.cols);
+        if (!rowKernel_.empty())
+          normalizeAnchor(anchor_.x, rowKernel_.cols);
+        if (!columnKernel_.empty())
+          normalizeAnchor(anchor_.y, columnKernel_.cols);
 
         bufType_ = CV_MAKE_TYPE(CV_32F, cn);
 
@@ -424,15 +463,45 @@ namespace
         _dst.create(src.size(), dstType_);
         GpuMat dst = _dst.getGpuMat();
 
-        ensureSizeIsEnough(src.size(), bufType_, buf_);
+        const bool isInPlace = (src.data == dst.data);
+        const bool hasRowKernel = !rowKernel_.empty();
+        const bool hasColKernel = !columnKernel_.empty();
+        const bool hasSingleKernel = (hasRowKernel ^ hasColKernel);
+        const bool needsSrcAdaptation = !hasRowKernel &&  hasColKernel && (srcType_ != bufType_);
+        const bool needsDstAdaptation =  hasRowKernel && !hasColKernel && (dstType_ != bufType_);
+        const bool needsBufForIntermediateStorage = (hasRowKernel && hasColKernel) || (hasSingleKernel && isInPlace);
+        const bool needsBuf = needsSrcAdaptation || needsDstAdaptation || needsBufForIntermediateStorage;
+        if (needsBuf)
+            ensureSizeIsEnough(src.size(), bufType_, buf_);
+
+        if (needsSrcAdaptation)
+            src.convertTo(buf_, bufType_, _stream);
+        GpuMat& srcAdapted = needsSrcAdaptation ? buf_ : src;
 
         DeviceInfo devInfo;
         const int cc = devInfo.majorVersion() * 10 + devInfo.minorVersion();
 
         cudaStream_t stream = StreamAccessor::getStream(_stream);
 
-        rowFilter_(src, buf_, rowKernel_.ptr<float>(), rowKernel_.cols, anchor_.x, rowBorderMode_, cc, stream);
-        columnFilter_(buf_, dst, columnKernel_.ptr<float>(), columnKernel_.cols, anchor_.y, columnBorderMode_, cc, stream);
+        if (!hasRowKernel && !hasColKernel && !isInPlace)
+            srcAdapted.convertTo(dst, dstType_, _stream);
+        else if (hasRowKernel || hasColKernel)
+        {
+            GpuMat& rowFilterSrc = srcAdapted;
+            GpuMat& rowFilterDst = !hasRowKernel ? srcAdapted : needsBuf ? buf_ : dst;
+            GpuMat& colFilterSrc = hasColKernel && needsBuf ? buf_ : srcAdapted;
+            GpuMat& colFilterTo = dst;
+
+            if (hasRowKernel)
+                rowFilter_(rowFilterSrc, rowFilterDst, rowKernel_.ptr<float>(), rowKernel_.cols, anchor_.x, rowBorderMode_, cc, stream);
+            else if (hasColKernel && (needsBufForIntermediateStorage && !needsSrcAdaptation))
+                rowFilterSrc.convertTo(buf_, bufType_, _stream);
+
+            if (hasColKernel)
+                columnFilter_(colFilterSrc, colFilterTo, columnKernel_.ptr<float>(), columnKernel_.cols, anchor_.y, columnBorderMode_, cc, stream);
+            else if (needsBuf)
+                buf_.convertTo(dst, dstType_, _stream);
+        }
     }
 }
 
@@ -524,10 +593,18 @@ namespace
         void apply(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
 
     private:
+#if USE_NPP_STREAM_CTX
         typedef NppStatus (*nppMorfFilter8u_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep, NppiSize oSizeROI,
-                                               const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor);
+                                               const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor, NppStreamContext streamCtx);
         typedef NppStatus (*nppMorfFilter32f_t)(const Npp32f* pSrc, Npp32s nSrcStep, Npp32f* pDst, Npp32s nDstStep, NppiSize oSizeROI,
-                                                const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor);
+                                                const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor, NppStreamContext streamCtx);
+#else
+        typedef NppStatus(*nppMorfFilter8u_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep, NppiSize oSizeROI,
+            const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor);
+        typedef NppStatus(*nppMorfFilter32f_t)(const Npp32f* pSrc, Npp32s nSrcStep, Npp32f* pDst, Npp32s nDstStep, NppiSize oSizeROI,
+            const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor);
+
+#endif
 
         int type_;
         GpuMat kernel_;
@@ -543,6 +620,18 @@ namespace
     MorphologyFilter::MorphologyFilter(int op, int srcType, InputArray _kernel, Point anchor, int iterations) :
         type_(srcType), anchor_(anchor), iters_(iterations)
     {
+#if USE_NPP_STREAM_CTX
+        static const nppMorfFilter8u_t funcs8u[2][5] =
+        {
+            {0, nppiErode_8u_C1R_Ctx, 0, 0, nppiErode_8u_C4R_Ctx },
+            {0, nppiDilate_8u_C1R_Ctx, 0, 0, nppiDilate_8u_C4R_Ctx }
+        };
+        static const nppMorfFilter32f_t funcs32f[2][5] =
+        {
+            {0, nppiErode_32f_C1R_Ctx, 0, 0, nppiErode_32f_C4R_Ctx },
+            {0, nppiDilate_32f_C1R_Ctx, 0, 0, nppiDilate_32f_C4R_Ctx }
+        };
+#else
         static const nppMorfFilter8u_t funcs8u[2][5] =
         {
             {0, nppiErode_8u_C1R, 0, 0, nppiErode_8u_C4R },
@@ -553,6 +642,7 @@ namespace
             {0, nppiErode_32f_C1R, 0, 0, nppiErode_32f_C4R },
             {0, nppiDilate_32f_C1R, 0, 0, nppiDilate_32f_C4R }
         };
+#endif
 
         CV_Assert( op == MORPH_ERODE || op == MORPH_DILATE );
         CV_Assert( srcType == CV_8UC1 || srcType == CV_8UC4 || srcType == CV_32FC1 || srcType == CV_32FC4 );
@@ -634,28 +724,46 @@ namespace
 
         if (type_ == CV_8UC1 || type_ == CV_8UC4)
         {
+#if USE_NPP_STREAM_CTX
             nppSafeCall( func8u_(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
-                                 oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor) );
+                                 oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor, h) );
+#else
+            nppSafeCall(func8u_(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
+                oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor));
+#endif
 
             for(int i = 1; i < iters_; ++i)
             {
                 dst.copyTo(bufRoi, _stream);
-
+#if USE_NPP_STREAM_CTX
                 nppSafeCall( func8u_(bufRoi.ptr<Npp8u>(), static_cast<int>(bufRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
-                                     oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor) );
+                                     oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor, h) );
+#else
+                nppSafeCall(func8u_(bufRoi.ptr<Npp8u>(), static_cast<int>(bufRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
+                    oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor));
+#endif
             }
         }
         else if (type_ == CV_32FC1 || type_ == CV_32FC4)
         {
+#if USE_NPP_STREAM_CTX
             nppSafeCall( func32f_(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
-                                  oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor) );
-
+                                  oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor, h) );
+#else
+            nppSafeCall(func32f_(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+                oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor));
+#endif
             for(int i = 1; i < iters_; ++i)
             {
                 dst.copyTo(bufRoi, _stream);
 
+#if USE_NPP_STREAM_CTX
                 nppSafeCall( func32f_(bufRoi.ptr<Npp32f>(), static_cast<int>(bufRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
-                                      oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor) );
+                                      oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor, h) );
+#else
+                nppSafeCall(func32f_(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+                    oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor));
+#endif
             }
         }
 
@@ -845,8 +953,13 @@ namespace
         void apply(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
 
     private:
+#if USE_NPP_STREAM_CTX
         typedef NppStatus (*nppFilterRank_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep, NppiSize oSizeROI,
-                                             NppiSize oMaskSize, NppiPoint oAnchor);
+                                             NppiSize oMaskSize, NppiPoint oAnchor, NppStreamContext);
+#else
+        typedef NppStatus(*nppFilterRank_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep, NppiSize oSizeROI,
+            NppiSize oMaskSize, NppiPoint oAnchor);
+#endif
 
         int type_;
         Size ksize_;
@@ -861,8 +974,13 @@ namespace
     NPPRankFilter::NPPRankFilter(int op, int srcType, Size ksize, Point anchor, int borderMode, Scalar borderVal) :
         type_(srcType), ksize_(ksize), anchor_(anchor), borderMode_(borderMode), borderVal_(borderVal)
     {
-        static const nppFilterRank_t maxFuncs[] = {0, nppiFilterMax_8u_C1R, 0, 0, nppiFilterMax_8u_C4R};
+#if USE_NPP_STREAM_CTX
+        static const nppFilterRank_t maxFuncs[] = {0, nppiFilterMax_8u_C1R_Ctx, 0, 0, nppiFilterMax_8u_C4R_Ctx};
+        static const nppFilterRank_t minFuncs[] = { 0, nppiFilterMin_8u_C1R_Ctx, 0, 0, nppiFilterMin_8u_C4R_Ctx };
+#else
+        static const nppFilterRank_t maxFuncs[] = { 0, nppiFilterMax_8u_C1R, 0, 0, nppiFilterMax_8u_C4R };
         static const nppFilterRank_t minFuncs[] = {0, nppiFilterMin_8u_C1R, 0, 0, nppiFilterMin_8u_C4R};
+#endif
 
         CV_Assert( srcType == CV_8UC1 || srcType == CV_8UC4 );
 
@@ -901,8 +1019,13 @@ namespace
         oAnchor.x = anchor_.x;
         oAnchor.y = anchor_.y;
 
+#if USE_NPP_STREAM_CTX
+        nppSafeCall(func_(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
+            oSizeROI, oMaskSize, oAnchor, h));
+#else
         nppSafeCall( func_(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
                            oSizeROI, oMaskSize, oAnchor) );
+#endif
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
@@ -969,9 +1092,15 @@ namespace
         oSizeROI.width = src.cols;
         oSizeROI.height = src.rows;
 
+#if USE_NPP_STREAM_CTX
+        nppSafeCall(nppiSumWindowRow_8u32f_C1R_Ctx(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
+            dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+            oSizeROI, ksize_, anchor_, h));
+#else
         nppSafeCall( nppiSumWindowRow_8u32f_C1R(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
                                                 dst.ptr<Npp32f>(), static_cast<int>(dst.step),
                                                 oSizeROI, ksize_, anchor_) );
+#endif
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
@@ -1030,9 +1159,15 @@ namespace
         oSizeROI.width = src.cols;
         oSizeROI.height = src.rows;
 
-        nppSafeCall( nppiSumWindowColumn_8u32f_C1R(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
+#if USE_NPP_STREAM_CTX
+        nppSafeCall( nppiSumWindowColumn_8u32f_C1R_Ctx(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
                                                    dst.ptr<Npp32f>(), static_cast<int>(dst.step),
-                                                   oSizeROI, ksize_, anchor_) );
+                                                   oSizeROI, ksize_, anchor_, h) );
+#else
+        nppSafeCall(nppiSumWindowColumn_8u32f_C1R(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step),
+            dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+            oSizeROI, ksize_, anchor_) );
+#endif
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
@@ -1047,12 +1182,20 @@ Ptr<Filter> cv::cuda::createColumnSumFilter(int srcType, int dstType, int ksize,
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Median Filter
 
+// The CUB library is used for the Median Filter with Wavelet Matrix,
+// which has become a standard library since CUDA 11.
+#include "cuda/wavelet_matrix_feature_support_checks.h"
 
 
 namespace cv { namespace cuda { namespace device
 {
     void medianFiltering_gpu(const PtrStepSzb src, PtrStepSzb dst, PtrStepSzi devHist,
         PtrStepSzi devCoarseHist,int kernel, int partitions, cudaStream_t stream);
+
+#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+    template<typename T>
+    void medianFiltering_wavelet_matrix_gpu(const PtrStepSz<T> src, PtrStepSz<T> dst, int radius, const int num_channels, cudaStream_t stream);
+#endif
 }}}
 
 namespace
@@ -1074,7 +1217,15 @@ namespace
     MedianFilter::MedianFilter(int srcType, int _windowSize, int _partitions) :
         windowSize(_windowSize),partitions(_partitions)
     {
-        CV_Assert( srcType == CV_8UC1 );
+#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+        CV_Assert(srcType == CV_8UC1  || srcType == CV_8UC3  || srcType == CV_8UC4
+               || srcType == CV_16UC1 || srcType == CV_16UC3 || srcType == CV_16UC4
+               || srcType == CV_32FC1 || srcType == CV_32FC3 || srcType == CV_32FC4);
+#else
+        if (srcType != CV_8UC1) {
+            CV_Error(Error::StsNotImplemented, "If CUDA version is below 10, only implementations that support CV_8UC1 are available");
+        }
+#endif
         CV_Assert(windowSize>=3);
         CV_Assert(_partitions>=1);
 
@@ -1094,6 +1245,18 @@ namespace
         // Kernel needs to be half window size
         int kernel=windowSize/2;
 
+#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+        const int depth = src.depth();
+        if (depth == CV_8U) {
+            medianFiltering_wavelet_matrix_gpu<uint8_t>(src, dst, kernel, src.channels(), StreamAccessor::getStream(_stream));
+        } else if (depth == CV_16U) {
+            medianFiltering_wavelet_matrix_gpu<uint16_t>(src, dst, kernel, src.channels(), StreamAccessor::getStream(_stream));
+        } else if (depth == CV_32F) {
+            medianFiltering_wavelet_matrix_gpu<float>(src, dst, kernel, src.channels(), StreamAccessor::getStream(_stream));
+        } else {
+            CV_Assert(depth == CV_8U || depth == CV_16U || depth == CV_32F);
+        }
+#else
         CV_Assert(kernel < src.rows);
         CV_Assert(kernel < src.cols);
 
@@ -1107,6 +1270,7 @@ namespace
         devCoarseHist.setTo(0, _stream);
 
         medianFiltering_gpu(src,dst,devHist, devCoarseHist,kernel,partitions,StreamAccessor::getStream(_stream));
+# endif
     }
 }
 

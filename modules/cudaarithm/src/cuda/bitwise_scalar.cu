@@ -92,7 +92,11 @@ namespace
     {
         typedef typename NPPTypeTraits<DEPTH>::npp_type npp_type;
 
+#if USE_NPP_STREAM_CTX
+        typedef NppStatus(*func_t)(const npp_type* pSrc1, int nSrc1Step, const npp_type* pConstants, npp_type* pDst, int nDstStep, NppiSize oSizeROI, NppStreamContext ctx);
+#else
         typedef NppStatus (*func_t)(const npp_type* pSrc1, int nSrc1Step, const npp_type* pConstants, npp_type* pDst, int nDstStep, NppiSize oSizeROI);
+#endif
     };
 
     template <int DEPTH, int cn, typename NppBitwiseCFunc<DEPTH, cn>::func_t func> struct NppBitwiseC
@@ -116,7 +120,11 @@ namespace
                 cv::saturate_cast<npp_type>(value[3])
             };
 
+#if USE_NPP_STREAM_CTX
+            nppSafeCall(func(src.ptr<npp_type>(), static_cast<int>(src.step), pConstants, dst.ptr<npp_type>(), static_cast<int>(dst.step), oSizeROI, h));
+#else
             nppSafeCall( func(src.ptr<npp_type>(), static_cast<int>(src.step), pConstants, dst.ptr<npp_type>(), static_cast<int>(dst.step), oSizeROI) );
+#endif
 
             if (stream == 0)
                 CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
@@ -131,13 +139,39 @@ void bitScalar(const GpuMat& src, cv::Scalar value, bool, GpuMat& dst, const Gpu
     typedef void (*func_t)(const GpuMat& src, cv::Scalar value, GpuMat& dst, Stream& stream);
     static const func_t funcs[3][6][4] =
     {
+#if USE_NPP_STREAM_CTX
         {
-            {BitScalar<uchar, bitScalarOp<bit_and, uchar> >::call  , 0, NppBitwiseC<CV_8U , 3, nppiAndC_8u_C3R >::call, BitScalar4< bitScalarOp<bit_and, uint> >::call},
-            {BitScalar<uchar, bitScalarOp<bit_and, uchar> >::call  , 0, NppBitwiseC<CV_8U , 3, nppiAndC_8u_C3R >::call, BitScalar4< bitScalarOp<bit_and, uint> >::call},
-            {BitScalar<ushort, bitScalarOp<bit_and, ushort> >::call, 0, NppBitwiseC<CV_16U, 3, nppiAndC_16u_C3R>::call, NppBitwiseC<CV_16U, 4, nppiAndC_16u_C4R>::call},
-            {BitScalar<ushort, bitScalarOp<bit_and, ushort> >::call, 0, NppBitwiseC<CV_16U, 3, nppiAndC_16u_C3R>::call, NppBitwiseC<CV_16U, 4, nppiAndC_16u_C4R>::call},
-            {BitScalar<uint, bitScalarOp<bit_and, uint> >::call    , 0, NppBitwiseC<CV_32S, 3, nppiAndC_32s_C3R>::call, NppBitwiseC<CV_32S, 4, nppiAndC_32s_C4R>::call},
-            {BitScalar<uint, bitScalarOp<bit_and, uint> >::call    , 0, NppBitwiseC<CV_32S, 3, nppiAndC_32s_C3R>::call, NppBitwiseC<CV_32S, 4, nppiAndC_32s_C4R>::call}
+            {BitScalar<uchar, bitScalarOp<bit_and, uchar> >::call  , 0, NppBitwiseC<CV_8U , 3, nppiAndC_8u_C3R_Ctx >::call, BitScalar4< bitScalarOp<bit_and, uint> >::call},
+            {BitScalar<uchar, bitScalarOp<bit_and, uchar> >::call  , 0, NppBitwiseC<CV_8U , 3, nppiAndC_8u_C3R_Ctx >::call, BitScalar4< bitScalarOp<bit_and, uint> >::call},
+            {BitScalar<ushort, bitScalarOp<bit_and, ushort> >::call, 0, NppBitwiseC<CV_16U, 3, nppiAndC_16u_C3R_Ctx>::call, NppBitwiseC<CV_16U, 4, nppiAndC_16u_C4R_Ctx>::call},
+            {BitScalar<ushort, bitScalarOp<bit_and, ushort> >::call, 0, NppBitwiseC<CV_16U, 3, nppiAndC_16u_C3R_Ctx>::call, NppBitwiseC<CV_16U, 4, nppiAndC_16u_C4R_Ctx>::call},
+            {BitScalar<uint, bitScalarOp<bit_and, uint> >::call    , 0, NppBitwiseC<CV_32S, 3, nppiAndC_32s_C3R_Ctx>::call, NppBitwiseC<CV_32S, 4, nppiAndC_32s_C4R_Ctx>::call},
+            {BitScalar<uint, bitScalarOp<bit_and, uint> >::call    , 0, NppBitwiseC<CV_32S, 3, nppiAndC_32s_C3R_Ctx>::call, NppBitwiseC<CV_32S, 4, nppiAndC_32s_C4R_Ctx>::call}
+        },
+        {
+            {BitScalar<uchar, bitScalarOp<bit_or, uchar> >::call  , 0, NppBitwiseC<CV_8U , 3, nppiOrC_8u_C3R_Ctx >::call, BitScalar4< bitScalarOp<bit_or, uint> >::call},
+            {BitScalar<uchar, bitScalarOp<bit_or, uchar> >::call  , 0, NppBitwiseC<CV_8U , 3, nppiOrC_8u_C3R_Ctx >::call, BitScalar4< bitScalarOp<bit_or, uint> >::call},
+            {BitScalar<ushort, bitScalarOp<bit_or, ushort> >::call, 0, NppBitwiseC<CV_16U, 3, nppiOrC_16u_C3R_Ctx>::call, NppBitwiseC<CV_16U, 4, nppiOrC_16u_C4R_Ctx>::call},
+            {BitScalar<ushort, bitScalarOp<bit_or, ushort> >::call, 0, NppBitwiseC<CV_16U, 3, nppiOrC_16u_C3R_Ctx>::call, NppBitwiseC<CV_16U, 4, nppiOrC_16u_C4R_Ctx>::call},
+            {BitScalar<uint, bitScalarOp<bit_or, uint> >::call    , 0, NppBitwiseC<CV_32S, 3, nppiOrC_32s_C3R_Ctx>::call, NppBitwiseC<CV_32S, 4, nppiOrC_32s_C4R_Ctx>::call},
+            {BitScalar<uint, bitScalarOp<bit_or, uint> >::call    , 0, NppBitwiseC<CV_32S, 3, nppiOrC_32s_C3R_Ctx>::call, NppBitwiseC<CV_32S, 4, nppiOrC_32s_C4R_Ctx>::call}
+        },
+        {
+            {BitScalar<uchar, bitScalarOp<bit_xor, uchar> >::call  , 0, NppBitwiseC<CV_8U , 3, nppiXorC_8u_C3R_Ctx >::call, BitScalar4< bitScalarOp<bit_xor, uint> >::call},
+            {BitScalar<uchar, bitScalarOp<bit_xor, uchar> >::call  , 0, NppBitwiseC<CV_8U , 3, nppiXorC_8u_C3R_Ctx >::call, BitScalar4< bitScalarOp<bit_xor, uint> >::call},
+            {BitScalar<ushort, bitScalarOp<bit_xor, ushort> >::call, 0, NppBitwiseC<CV_16U, 3, nppiXorC_16u_C3R_Ctx>::call, NppBitwiseC<CV_16U, 4, nppiXorC_16u_C4R_Ctx>::call},
+            {BitScalar<ushort, bitScalarOp<bit_xor, ushort> >::call, 0, NppBitwiseC<CV_16U, 3, nppiXorC_16u_C3R_Ctx>::call, NppBitwiseC<CV_16U, 4, nppiXorC_16u_C4R_Ctx>::call},
+            {BitScalar<uint, bitScalarOp<bit_xor, uint> >::call    , 0, NppBitwiseC<CV_32S, 3, nppiXorC_32s_C3R_Ctx>::call, NppBitwiseC<CV_32S, 4, nppiXorC_32s_C4R_Ctx>::call},
+            {BitScalar<uint, bitScalarOp<bit_xor, uint> >::call    , 0, NppBitwiseC<CV_32S, 3, nppiXorC_32s_C3R_Ctx>::call, NppBitwiseC<CV_32S, 4, nppiXorC_32s_C4R_Ctx>::call}
+        }
+#else
+        {
+            { BitScalar<uchar, bitScalarOp<bit_and, uchar> >::call, 0, NppBitwiseC<CV_8U, 3, nppiAndC_8u_C3R >::call, BitScalar4< bitScalarOp<bit_and, uint> >::call },
+            { BitScalar<uchar, bitScalarOp<bit_and, uchar> >::call  , 0, NppBitwiseC<CV_8U , 3, nppiAndC_8u_C3R >::call, BitScalar4< bitScalarOp<bit_and, uint> >::call },
+            { BitScalar<ushort, bitScalarOp<bit_and, ushort> >::call, 0, NppBitwiseC<CV_16U, 3, nppiAndC_16u_C3R>::call, NppBitwiseC<CV_16U, 4, nppiAndC_16u_C4R>::call },
+            { BitScalar<ushort, bitScalarOp<bit_and, ushort> >::call, 0, NppBitwiseC<CV_16U, 3, nppiAndC_16u_C3R>::call, NppBitwiseC<CV_16U, 4, nppiAndC_16u_C4R>::call },
+            { BitScalar<uint, bitScalarOp<bit_and, uint> >::call    , 0, NppBitwiseC<CV_32S, 3, nppiAndC_32s_C3R>::call, NppBitwiseC<CV_32S, 4, nppiAndC_32s_C4R>::call },
+            { BitScalar<uint, bitScalarOp<bit_and, uint> >::call    , 0, NppBitwiseC<CV_32S, 3, nppiAndC_32s_C3R>::call, NppBitwiseC<CV_32S, 4, nppiAndC_32s_C4R>::call }
         },
         {
             {BitScalar<uchar, bitScalarOp<bit_or, uchar> >::call  , 0, NppBitwiseC<CV_8U , 3, nppiOrC_8u_C3R >::call, BitScalar4< bitScalarOp<bit_or, uint> >::call},
@@ -155,6 +189,7 @@ void bitScalar(const GpuMat& src, cv::Scalar value, bool, GpuMat& dst, const Gpu
             {BitScalar<uint, bitScalarOp<bit_xor, uint> >::call    , 0, NppBitwiseC<CV_32S, 3, nppiXorC_32s_C3R>::call, NppBitwiseC<CV_32S, 4, nppiXorC_32s_C4R>::call},
             {BitScalar<uint, bitScalarOp<bit_xor, uint> >::call    , 0, NppBitwiseC<CV_32S, 3, nppiXorC_32s_C3R>::call, NppBitwiseC<CV_32S, 4, nppiXorC_32s_C4R>::call}
         }
+#endif
     };
 
     const int depth = src.depth();

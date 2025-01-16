@@ -49,15 +49,40 @@ namespace opencv_test { namespace {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // HistEven
 
-PARAM_TEST_CASE(HistEven, cv::cuda::DeviceInfo, cv::Size)
+typedef tuple<Size, int> hist_size_to_roi_offset_params_t;
+const hist_size_to_roi_offset_params_t hist_size_to_roi_offset_params[] =
+{
+    // uchar reads only
+    hist_size_to_roi_offset_params_t(Size(1,32), 0),
+    hist_size_to_roi_offset_params_t(Size(2,32), 0),
+    hist_size_to_roi_offset_params_t(Size(2,32), 1),
+    hist_size_to_roi_offset_params_t(Size(3,32), 0),
+    hist_size_to_roi_offset_params_t(Size(3,32), 1),
+    hist_size_to_roi_offset_params_t(Size(3,32), 2),
+    hist_size_to_roi_offset_params_t(Size(4,32), 0),
+    hist_size_to_roi_offset_params_t(Size(4,32), 1),
+    hist_size_to_roi_offset_params_t(Size(4,32), 2),
+    hist_size_to_roi_offset_params_t(Size(4,32), 3),
+    // uchar and int reads
+    hist_size_to_roi_offset_params_t(Size(129,32), 0),
+    hist_size_to_roi_offset_params_t(Size(129,32), 1),
+    hist_size_to_roi_offset_params_t(Size(129,32), 2),
+    hist_size_to_roi_offset_params_t(Size(129,32), 3),
+    // int reads only
+    hist_size_to_roi_offset_params_t(Size(128,32), 0)
+};
+
+PARAM_TEST_CASE(HistEven, cv::cuda::DeviceInfo, hist_size_to_roi_offset_params_t)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
+    int roiOffsetX;
 
     virtual void SetUp()
     {
         devInfo = GET_PARAM(0);
-        size = GET_PARAM(1);
+        size = get<0>(GET_PARAM(1));
+        roiOffsetX = get<1>(GET_PARAM(1));
 
         cv::cuda::setDevice(devInfo.deviceID());
     }
@@ -66,19 +91,21 @@ PARAM_TEST_CASE(HistEven, cv::cuda::DeviceInfo, cv::Size)
 CUDA_TEST_P(HistEven, Accuracy)
 {
     cv::Mat src = randomMat(size, CV_8UC1);
-
+    const Rect roi = Rect(roiOffsetX, 0, src.cols - roiOffsetX, src.rows);
     int hbins = 30;
     float hranges[] = {50.0f, 200.0f};
 
     cv::cuda::GpuMat hist;
-    cv::cuda::histEven(loadMat(src), hist, hbins, (int) hranges[0], (int) hranges[1]);
+    cv::cuda::GpuMat srcDevice = loadMat(src);
+    cv::cuda::histEven(srcDevice(roi), hist, hbins, (int)hranges[0], (int)hranges[1]);
 
     cv::Mat hist_gold;
 
     int histSize[] = {hbins};
     const float* ranges[] = {hranges};
     int channels[] = {0};
-    cv::calcHist(&src, 1, channels, cv::Mat(), hist_gold, 1, histSize, ranges);
+    Mat srcRoi = src(roi);
+    cv::calcHist(&srcRoi, 1, channels, cv::Mat(), hist_gold, 1, histSize, ranges);
 
     hist_gold = hist_gold.t();
     hist_gold.convertTo(hist_gold, CV_32S);
@@ -87,22 +114,24 @@ CUDA_TEST_P(HistEven, Accuracy)
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, HistEven, testing::Combine(
-    ALL_DEVICES,
-    DIFFERENT_SIZES));
+    ALL_DEVICES, testing::ValuesIn(hist_size_to_roi_offset_params)));
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // CalcHist
 
-PARAM_TEST_CASE(CalcHist, cv::cuda::DeviceInfo, cv::Size)
+PARAM_TEST_CASE(CalcHist, cv::cuda::DeviceInfo, hist_size_to_roi_offset_params_t)
 {
     cv::cuda::DeviceInfo devInfo;
 
     cv::Size size;
 
+    int roiOffsetX;
+
     virtual void SetUp()
     {
         devInfo = GET_PARAM(0);
-        size = GET_PARAM(1);
+        size = get<0>(GET_PARAM(1));
+        roiOffsetX = get<1>(GET_PARAM(1));
 
         cv::cuda::setDevice(devInfo.deviceID());
     }
@@ -111,9 +140,10 @@ PARAM_TEST_CASE(CalcHist, cv::cuda::DeviceInfo, cv::Size)
 CUDA_TEST_P(CalcHist, Accuracy)
 {
     cv::Mat src = randomMat(size, CV_8UC1);
-
+    const Rect roi = Rect(roiOffsetX, 0, src.cols - roiOffsetX, src.rows);
     cv::cuda::GpuMat hist;
-    cv::cuda::calcHist(loadMat(src), hist);
+    GpuMat srcDevice = loadMat(src);
+    cv::cuda::calcHist(srcDevice(roi), hist);
 
     cv::Mat hist_gold;
 
@@ -123,7 +153,8 @@ CUDA_TEST_P(CalcHist, Accuracy)
     const float* ranges[] = {hranges};
     const int channels[] = {0};
 
-    cv::calcHist(&src, 1, channels, cv::Mat(), hist_gold, 1, histSize, ranges);
+    const Mat srcRoi = src(roi);
+    cv::calcHist(&srcRoi, 1, channels, cv::Mat(), hist_gold, 1, histSize, ranges);
     hist_gold = hist_gold.reshape(1, 1);
     hist_gold.convertTo(hist_gold, CV_32S);
 
@@ -131,19 +162,21 @@ CUDA_TEST_P(CalcHist, Accuracy)
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, CalcHist, testing::Combine(
-    ALL_DEVICES,
-    DIFFERENT_SIZES));
+    ALL_DEVICES, testing::ValuesIn(hist_size_to_roi_offset_params)));
 
-PARAM_TEST_CASE(CalcHistWithMask, cv::cuda::DeviceInfo, cv::Size)
+PARAM_TEST_CASE(CalcHistWithMask, cv::cuda::DeviceInfo, hist_size_to_roi_offset_params_t)
 {
     cv::cuda::DeviceInfo devInfo;
 
     cv::Size size;
 
+    int roiOffsetX;
+
     virtual void SetUp()
     {
         devInfo = GET_PARAM(0);
-        size = GET_PARAM(1);
+        size = get<0>(GET_PARAM(1));
+        roiOffsetX = get<1>(GET_PARAM(1));
 
         cv::cuda::setDevice(devInfo.deviceID());
     }
@@ -152,11 +185,14 @@ PARAM_TEST_CASE(CalcHistWithMask, cv::cuda::DeviceInfo, cv::Size)
 CUDA_TEST_P(CalcHistWithMask, Accuracy)
 {
     cv::Mat src = randomMat(size, CV_8UC1);
+    const Rect roi = Rect(roiOffsetX, 0, src.cols - roiOffsetX, src.rows);
     cv::Mat mask = randomMat(size, CV_8UC1);
     cv::Mat(mask, cv::Rect(0, 0, size.width / 2, size.height / 2)).setTo(0);
 
     cv::cuda::GpuMat hist;
-    cv::cuda::calcHist(loadMat(src), loadMat(mask), hist);
+    GpuMat srcDevice = loadMat(src);
+    GpuMat maskDevice = loadMat(mask);
+    cv::cuda::calcHist(srcDevice(roi), maskDevice(roi), hist);
 
     cv::Mat hist_gold;
 
@@ -166,7 +202,8 @@ CUDA_TEST_P(CalcHistWithMask, Accuracy)
     const float* ranges[] = {hranges};
     const int channels[] = {0};
 
-    cv::calcHist(&src, 1, channels, mask, hist_gold, 1, histSize, ranges);
+    const Mat srcRoi = src(roi);
+    cv::calcHist(&srcRoi, 1, channels, mask(roi), hist_gold, 1, histSize, ranges);
     hist_gold = hist_gold.reshape(1, 1);
     hist_gold.convertTo(hist_gold, CV_32S);
 
@@ -174,8 +211,7 @@ CUDA_TEST_P(CalcHistWithMask, Accuracy)
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, CalcHistWithMask, testing::Combine(
-    ALL_DEVICES,
-    DIFFERENT_SIZES));
+    ALL_DEVICES, testing::ValuesIn(hist_size_to_roi_offset_params)));
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // EqualizeHist

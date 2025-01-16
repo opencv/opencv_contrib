@@ -6,9 +6,12 @@
 
 namespace opencv_test { namespace {
 
-static int createTestImage(Mat& src)
+static int createTestImage(Mat1b& src)
 {
-    src = Mat::zeros(Size(256, 256), CV_8UC1);
+    src = Mat1b::zeros(Size(256, 256));
+    // Create a corner point that should not be affected.
+    src(0, 0) = 255;
+
     for (int x = 50; x < src.cols - 50; x += 50)
     {
         cv::circle(src, Point(x, x/2), 30 + x/2, Scalar(255), 5);
@@ -20,13 +23,14 @@ static int createTestImage(Mat& src)
 
 TEST(ximgproc_Thinning, simple_ZHANGSUEN)
 {
-    Mat src;
+    Mat1b src;
     int src_pixels = createTestImage(src);
 
-    Mat dst;
+    Mat1b dst;
     thinning(src, dst, THINNING_ZHANGSUEN);
     int dst_pixels = countNonZero(dst);
     EXPECT_LE(dst_pixels, src_pixels);
+    EXPECT_EQ(dst(0, 0), 255);
 
 #if 0
     imshow("src", src); imshow("dst", dst); waitKey();
@@ -35,13 +39,14 @@ TEST(ximgproc_Thinning, simple_ZHANGSUEN)
 
 TEST(ximgproc_Thinning, simple_GUOHALL)
 {
-    Mat src;
+    Mat1b src;
     int src_pixels = createTestImage(src);
 
-    Mat dst;
+    Mat1b dst;
     thinning(src, dst, THINNING_GUOHALL);
     int dst_pixels = countNonZero(dst);
     EXPECT_LE(dst_pixels, src_pixels);
+    EXPECT_EQ(dst(0, 0), 255);
 
 #if 0
     imshow("src", src); imshow("dst", dst); waitKey();

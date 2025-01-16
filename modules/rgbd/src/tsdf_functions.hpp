@@ -16,11 +16,13 @@ namespace cv
 namespace kinfu
 {
 
+#if USE_INTRINSICS
 inline v_float32x4 tsdfToFloat_INTR(const v_int32x4& num)
 {
     v_float32x4 num128 = v_setall_f32(-1.f / 128.f);
-    return v_cvt_f32(num) * num128;
+    return v_mul(v_cvt_f32(num), num128);
 }
+#endif
 
 inline TsdfType floatToTsdf(float num)
 {

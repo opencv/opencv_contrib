@@ -1,6 +1,8 @@
 Retina and real-world vision {#tutorial_bioinspired_retina_model}
 =============================================================
 
+@tableofcontents
+
 Goal
 ----
 
@@ -382,7 +384,7 @@ need to know if mean luminance information is required or not. If not, the the r
 significantly reduce its energy thus giving more visibility to higher spatial frequency details.
 
 
-#### Basic parameters
+## Basic parameters
 
 The simplest parameters are as follows :
 
@@ -397,7 +399,7 @@ processing. You can expect much faster processing using gray levels : it would r
 product per pixel for all of the retina processes and it has recently been parallelized for multicore
 architectures.
 
-#### Photo-receptors parameters
+## Photo-receptors parameters
 
 The following parameters act on the entry point of the retina - photo-receptors - and has impact on all
  of the following processes. These sensors are low pass spatio-temporal filters that smooth temporal and
@@ -421,7 +423,7 @@ and high frequency noise canceling.
     A good compromise for color images is a 0.53 value since such choice won't affect too much the color spectrum.
     Higher values would lead to gray and blurred output images.
 
-#### Horizontal cells parameters
+## Horizontal cells parameters
 
 This parameter set tunes the neural network connected to the photo-receptors, the horizontal cells.
 It modulates photo-receptors sensitivity and completes the processing for final spectral whitening
@@ -446,7 +448,7 @@ It modulates photo-receptors sensitivity and completes the processing for final 
 and luminance is already partly enhanced. The following parameters act on the last processing stages
 of the two outing retina signals.
 
-#### Parvo (details channel) dedicated parameter
+## Parvo (details channel) dedicated parameter
 
 -   **ganglionCellsSensitivity** specifies the strength of the final local adaptation occurring at
     the output of this details' dedicated channel. Parameter values remain between 0 and 1. Low value
@@ -455,7 +457,7 @@ of the two outing retina signals.
 **Note :** this parameter can correct eventual burned images by favoring low energetic details of
 the visual scene, even in bright areas.
 
-#### IPL Magno (motion/transient channel) parameters
+## IPL Magno (motion/transient channel) parameters
 
 Once image's information are cleaned, this channel acts as a high pass temporal filter that
 selects only the signals related to transient signals (events, motion, etc.). A low pass spatial filter

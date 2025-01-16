@@ -12,8 +12,6 @@ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<rep
 
 - **aruco**: ArUco and ChArUco Markers — Augmented reality ArUco marker and "ChARUco" markers where ArUco markers embedded inside the white areas of the checker board.
 
-- **barcode**: Barcode detecting and decoding methods.
-
 - **bgsegm**: Background segmentation algorithm combining statistical background image estimation and per-pixel Bayesian segmentation.
 
 - **bioinspired**: Biological Vision — Biologically inspired vision model: minimize noise and luminance variance, transient event segmentation, high dynamic range tone mapping methods.
@@ -74,7 +72,9 @@ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<rep
 
 - **saliency**: Saliency API — Where humans would look in a scene. Has routines for static, motion and "objectness" saliency.
 
-- **sfm**: Structure from Motion — This module contains algorithms to perform 3d reconstruction from 2d images. The core of the module is a light version of Libmv.
+- **signal**: Signal processing algorithms
+
+- **sfm**: Structure from Motion -- This module contains algorithms to perform 3d reconstruction from 2d images. The core of the module is a light version of Libmv.
 
 - **shape**: Shape Distance and Matching
 

@@ -75,7 +75,7 @@ This module has been originally developed as a project for Google Summer of Code
   - Notice that it is compiled only when Eigen, GLog and GFlags are correctly installed.\n
     Check installation instructions in the following tutorial: @ref tutorial_sfm_installation
 
-  @{
+@{
     @defgroup conditioning Conditioning
     @defgroup fundamental Fundamental
     @defgroup io Input/Output
@@ -85,18 +85,17 @@ This module has been originally developed as a project for Google Summer of Code
     @defgroup triangulation Triangulation
 
     @defgroup reconstruction Reconstruction
-      @note
-        - Notice that it is compiled only when Ceres Solver is correctly installed.\n
-          Check installation instructions in the following tutorial: @ref tutorial_sfm_installation
 
+    @note
+    - Notice that it is compiled only when Ceres Solver is correctly installed.\n
+        Check installation instructions in the following tutorial: @ref tutorial_sfm_installation
 
     @defgroup simple_pipeline Simple Pipeline
-      @note
-          - Notice that it is compiled only when Ceres Solver is correctly installed.\n
-            Check installation instructions in the following tutorial: @ref tutorial_sfm_installation
 
-  @}
-
+    @note
+        - Notice that it is compiled only when Ceres Solver is correctly installed.\n
+        Check installation instructions in the following tutorial: @ref tutorial_sfm_installation
+@}
 */
 
 #endif

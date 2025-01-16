@@ -78,8 +78,6 @@ private:
     bool allowFrameDrop_ = false;
 
     // Called when the decoder encounters a video format change (or initial sequence header)
-    // This particular implementation of the callback returns 0 in case the video format changes
-    // to something different than the original format. Returning 0 causes a stop of the app.
     static int CUDAAPI HandleVideoSequence(void* pUserData, CUVIDEOFORMAT* pFormat);
 
     // Called by the video parser to decode a single picture

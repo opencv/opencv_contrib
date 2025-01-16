@@ -238,7 +238,7 @@ namespace cv { namespace cuda { namespace device
             cudaSafeCall( cudaMemcpyAsync(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost, stream) );
             cudaSafeCall( cudaStreamSynchronize(stream) );
 
-            totalCount = ::min(totalCount, maxCircles);
+            totalCount = std::min(totalCount, maxCircles);
 
             return totalCount;
         }
