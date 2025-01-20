@@ -24,6 +24,7 @@ int main(int argc, char** argv)
 
     if( image.empty() )
     {
+        parser.printMessage();
         return -1;
     }
 
@@ -54,7 +55,7 @@ int main(int argc, char** argv)
     vector<Vec4f> lines;
 
     // Because of some CPU's power strategy, it seems that the first running of
-    // an algorithm takes much longer. So here we run the algorithm 10 times
+    // an algorithm takes much longer. So here we run the algorithm 5 times
     // to see the algorithm's processing time with sufficiently warmed-up
     // CPU performance.
     for (int run_count = 0; run_count < 5; run_count++) {
@@ -71,64 +72,7 @@ int main(int argc, char** argv)
     Mat line_image_fld(image);
     fld->drawSegments(line_image_fld, lines);
     imshow("FLD result", line_image_fld);
-
-    waitKey(1);
-
-    Ptr<EdgeDrawing> ed = createEdgeDrawing();
-    ed->params.EdgeDetectionOperator = EdgeDrawing::SOBEL;
-    ed->params.GradientThresholdValue = 38;
-    ed->params.AnchorThresholdValue = 8;
-
-    vector<Vec6d> ellipses;
-
-    for (int run_count = 0; run_count < 5; run_count++) {
-        double freq = getTickFrequency();
-        lines.clear();
-        int64 start = getTickCount();
-
-        // Detect edges
-        //you should call this before detectLines() and detectEllipses()
-        ed->detectEdges(image);
-
-        // Detect lines
-        ed->detectLines(lines);
-        double duration_ms = double(getTickCount() - start) * 1000 / freq;
-        cout << "Elapsed time for EdgeDrawing detectLines " << duration_ms << " ms." << endl;
-
-        start = getTickCount();
-        // Detect circles and ellipses
-        ed->detectEllipses(ellipses);
-        duration_ms = double(getTickCount() - start) * 1000 / freq;
-        cout << "Elapsed time for EdgeDrawing detectEllipses " << duration_ms << " ms." << endl;
-    }
-
-    Mat edge_image_ed = Mat::zeros(image.size(), CV_8UC3);
-    vector<vector<Point> > segments = ed->getSegments();
-
-    for (size_t i = 0; i < segments.size(); i++)
-    {
-        const Point* pts = &segments[i][0];
-        int n = (int)segments[i].size();
-        polylines(edge_image_ed, &pts, &n, 1, false, Scalar((rand() & 255), (rand() & 255), (rand() & 255)), 1);
-    }
-
-    imshow("EdgeDrawing detected edges", edge_image_ed);
-
-    Mat line_image_ed(image);
-    fld->drawSegments(line_image_ed, lines);
-
-    // Draw circles and ellipses
-    for (size_t i = 0; i < ellipses.size(); i++)
-    {
-        Point center((int)ellipses[i][0], (int)ellipses[i][1]);
-        Size axes((int)ellipses[i][2] + (int)ellipses[i][3], (int)ellipses[i][2] + (int)ellipses[i][4]);
-        double angle(ellipses[i][5]);
-        Scalar color = ellipses[i][2] == 0 ? Scalar(255, 255, 0) : Scalar(0, 255, 0);
-
-        ellipse(line_image_ed, center, axes, angle, 0, 360, color, 2, LINE_AA);
-    }
-
-    imshow("EdgeDrawing result", line_image_ed);
     waitKey();
+
     return 0;
 }
