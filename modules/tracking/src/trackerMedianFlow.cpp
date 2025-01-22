@@ -77,6 +77,12 @@ public:
     TrackerMedianFlowImpl(TrackerMedianFlow::Params paramsIn = TrackerMedianFlow::Params()) {params=paramsIn;isInit=false;}
     void read( const FileNode& fn ) CV_OVERRIDE;
     void write( FileStorage& fs ) const CV_OVERRIDE;
+    void setPointsInGrid(int pointsInGrid) CV_OVERRIDE {params.pointsInGrid = pointsInGrid;}
+    void setWinSize(Size winSize) CV_OVERRIDE {params.winSize = winSize;}
+    void setMaxLevel(int maxLevel) CV_OVERRIDE {params.maxLevel = maxLevel;}
+    void setTermCriteria(TermCriteria termCriteria) CV_OVERRIDE {params.termCriteria = termCriteria;}
+    void setWinSizeNCC(Size winSizeNCC) CV_OVERRIDE {params.winSizeNCC = winSizeNCC;}
+    void setMaxMedianLengthOfDisplacementDifference(double maxMedianLengthOfDisplacementDifference) CV_OVERRIDE {params.maxMedianLengthOfDisplacementDifference = maxMedianLengthOfDisplacementDifference;}
 private:
     bool initImpl( const Mat& image, const Rect2d& boundingBox ) CV_OVERRIDE;
     bool updateImpl( const Mat& image, Rect2d& boundingBox ) CV_OVERRIDE;
