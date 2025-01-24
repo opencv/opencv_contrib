@@ -78,9 +78,6 @@ std::pair<cv::Scalar, _mat_type> QualitySSIM::_mat_data::compute(const _mat_data
     mat_type
         I1_I2
         , mu1_mu2
-        , t1
-        , t2
-        , t3
         , sigma12
         ;
 
@@ -89,13 +86,16 @@ std::pair<cv::Scalar, _mat_type> QualitySSIM::_mat_data::compute(const _mat_data
     cv::subtract(::blur(I1_I2), mu1_mu2, sigma12);
 
     // t3 = ((2*mu1_mu2 + C1).*(2*sigma12 + C2))
+    mat_type& t1 = I1_I2;
     cv::multiply(mu1_mu2, 2., t1);
     cv::add(t1, C1, t1);// t1 += C1
 
+    mat_type& t2 = mu1_mu2;
     cv::multiply(sigma12, 2., t2);
     cv::add(t2, C2, t2);// t2 += C2
 
     // t3 = t1 * t2
+    mat_type& t3 = sigma12;
     cv::multiply(t1, t2, t3);
 
     // t1 =((mu1_2 + mu2_2 + C1).*(sigma1_2 + sigma2_2 + C2))
