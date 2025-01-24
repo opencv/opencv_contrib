@@ -458,7 +458,7 @@ bool CCheckerDetectorImpl::
                             {
                                 std::vector<cv::Point2f> restore_box;
                                 for (cv::Point2f &corner : checker->getBox()){
-                                    corner += static_cast<cv::Point2f>(region.tl());
+                                    corner += static_cast<cv::Point2f>(region.tl() + innerRegion.tl());
                                     restore_box.emplace_back(corner);
                                 }
                                 checker->setBox(restore_box);
