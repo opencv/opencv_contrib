@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - 5.x
-
 jobs:
   # Ubuntu2004-ARM64:
   #   uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-ARM64.yaml@main
