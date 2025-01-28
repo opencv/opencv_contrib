@@ -91,6 +91,6 @@ namespace cv { namespace cuda
 
 //! @endcond
 
-#endif HAVE_CUDA
+#endif // HAVE_CUDA
 
 #endif // OPENCV_CORE_CUDALEGACY_PRIVATE_HPP
