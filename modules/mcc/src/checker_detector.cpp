@@ -234,8 +234,8 @@ bool CCheckerDetectorImpl::
                     {
                         const std::vector<cv::Point2f>& checkerBox = checker->getBox();
                         std::vector<cv::Point2f> restore_box(checkerBox.size());
-                        for (size_t i = 0; i < checkerBox.size(); ++i) {
-                            restore_box[i] = checkerBox[i] + static_cast<cv::Point2f>(region.tl());
+                        for (size_t a = 0; a < checkerBox.size(); ++a) {
+                            restore_box[a] = checkerBox[a] + static_cast<cv::Point2f>(region.tl());
                         }
                         checker->setBox(restore_box);
                         {
@@ -458,8 +458,8 @@ bool CCheckerDetectorImpl::
                             {
                                 const std::vector<cv::Point2f>& checkerBox = checker->getBox();
                                 std::vector<cv::Point2f> restore_box(checkerBox.size());
-                                for (size_t i = 0; i < checkerBox.size(); ++i) {
-                                    restore_box[i] = checkerBox[i] + static_cast<cv::Point2f>(region.tl() + innerRegion.tl());
+                                for (size_t a = 0; a < checkerBox.size(); ++a) {
+                                    restore_box[a] = checkerBox[a] + static_cast<cv::Point2f>(region.tl() + innerRegion.tl());
                                 }
                                 checker->setBox(restore_box);
                                 {
