@@ -103,7 +103,9 @@ public:
 
         cuSafeCall( cuvidMapVideoFrame(decoder_, picIdx, &ptr, &pitch, &videoProcParams) );
 
-        return cuda::GpuMat(targetHeight() * 3 / 2, targetWidth(), CV_8UC1, (void*) ptr, pitch);
+        const int height = (videoFormat_.surfaceFormat == cudaVideoSurfaceFormat_NV12 || videoFormat_.surfaceFormat == cudaVideoSurfaceFormat_P016) ? targetHeight() * 3 / 2 : targetHeight() * 3;
+        const int type = (videoFormat_.surfaceFormat == cudaVideoSurfaceFormat_NV12 || videoFormat_.surfaceFormat == cudaVideoSurfaceFormat_YUV444) ? CV_8U : CV_16U;
+        return cuda::GpuMat(height, targetWidth(), type, (void*) ptr, pitch);
     }
 
     void unmapFrame(cuda::GpuMat& frame)

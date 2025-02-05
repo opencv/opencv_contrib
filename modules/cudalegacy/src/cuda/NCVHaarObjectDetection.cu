@@ -192,7 +192,7 @@ __global__ void applyHaarClassifierAnchorParallel(cv::cudev::TexturePtr<Ncv32u> 
             if (tbDoAtomicCompaction) bInactiveThread = true; else return;
         }
 
-        if (!tbDoAtomicCompaction || tbDoAtomicCompaction && !bInactiveThread)
+        if (!tbDoAtomicCompaction || (tbDoAtomicCompaction && !bInactiveThread))
         {
             outMaskVal = d_inMask[maskOffset];
             y_offs = outMaskVal >> 16;
@@ -209,7 +209,7 @@ __global__ void applyHaarClassifierAnchorParallel(cv::cudev::TexturePtr<Ncv32u> 
             if (tbDoAtomicCompaction) bInactiveThread = true; else return;
         }
 
-        if (!tbDoAtomicCompaction || tbDoAtomicCompaction && !bInactiveThread)
+        if (!tbDoAtomicCompaction || (tbDoAtomicCompaction && !bInactiveThread))
         {
             maskOffset = y_offs * mask2Dstride + x_offs;
 

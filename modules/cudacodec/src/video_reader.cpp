@@ -55,51 +55,6 @@ void cv::cudacodec::MapHist(const GpuMat&, Mat&) { throw_no_cuda(); }
 #else // HAVE_NVCUVID
 
 void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const bool videoFullRangeFlag, cudaStream_t stream);
-bool ValidColorFormat(const ColorFormat colorFormat);
-
-void cvtFromNv12(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const ColorFormat colorFormat, const bool videoFullRangeFlag,
-    Stream stream)
-{
-    CV_Assert(decodedFrame.cols == width && decodedFrame.rows == height * 1.5f);
-    if (colorFormat == ColorFormat::BGRA) {
-        nv12ToBgra(decodedFrame, outFrame, width, height, videoFullRangeFlag, StreamAccessor::getStream(stream));
-    }
-    else if (colorFormat == ColorFormat::BGR) {
-        outFrame.create(height, width, CV_8UC3);
-        Npp8u* pSrc[2] = { decodedFrame.data, &decodedFrame.data[decodedFrame.step * height] };
-        NppiSize oSizeROI = { width,height };
-        cv::cuda::NppStreamHandler h(stream);
-#if USE_NPP_STREAM_CTX
-        if (videoFullRangeFlag)
-            nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, h));
-        else {
-#if (CUDART_VERSION < 11000)
-            nppSafeCall(nppiNV12ToBGR_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, h));
-#else
-            nppSafeCall(nppiNV12ToBGR_709CSC_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, h));
-#endif
-        }
-#else
-        if (videoFullRangeFlag)
-            nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI));
-        else {
-            nppSafeCall(nppiNV12ToBGR_8u_P2C3R(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI));
-        }
-#endif
-    }
-    else if (colorFormat == ColorFormat::GRAY) {
-        outFrame.create(height, width, CV_8UC1);
-        if(videoFullRangeFlag)
-            cudaSafeCall(cudaMemcpy2DAsync(outFrame.ptr(), outFrame.step, decodedFrame.ptr(), decodedFrame.step, width, height, cudaMemcpyDeviceToDevice, StreamAccessor::getStream(stream)));
-        else {
-            cv::cuda::subtract(decodedFrame(Rect(0,0,width,height)), 16, outFrame, noArray(), CV_8U, stream);
-            cv::cuda::multiply(outFrame, 255.0f / 219.0f, outFrame, 1.0, CV_8U, stream);
-        }
-    }
-    else if (colorFormat == ColorFormat::NV_NV12) {
-        decodedFrame.copyTo(outFrame, stream);
-    }
-}
 
 using namespace cv::cudacodec::detail;
 
@@ -124,7 +79,7 @@ namespace
 
         bool set(const VideoReaderProps propertyId, const double propertyVal) CV_OVERRIDE;
 
-        bool set(const ColorFormat colorFormat_) CV_OVERRIDE;
+        bool set(const ColorFormat colorFormat, const BitDepth bitDepth = BitDepth::UNCHANGED, const bool planar = false) CV_OVERRIDE;
 
         bool get(const VideoReaderProps propertyId, double& propertyVal) const CV_OVERRIDE;
         bool getVideoReaderProps(const VideoReaderProps propertyId, double& propertyValOut, double propertyValIn) const CV_OVERRIDE;
@@ -137,6 +92,7 @@ namespace
         void releaseFrameInfo(const std::pair<CUVIDPARSERDISPINFO, CUVIDPROCPARAMS>& frameInfo);
         bool internalGrab(GpuMat & frame, GpuMat & histogram, Stream & stream);
         void waitForDecoderInit();
+        void cvtFromYuv(const GpuMat& decodedFrame, GpuMat& outFrame, const SurfaceFormat surfaceFormat, const bool videoFullRangeFlag, Stream& stream);
 
         Ptr<VideoSource> videoSource_;
 
@@ -152,7 +108,10 @@ namespace
         static const int decodedFrameIdx = 0;
         static const int extraDataIdx = 1;
         static const int rawPacketsBaseIdx = 2;
+        Ptr<NVSurfaceToColorConverter> yuvConverter = 0;
         ColorFormat colorFormat = ColorFormat::BGRA;
+        BitDepth bitDepth = BitDepth::UNCHANGED;
+        bool planar = false;
         static const String errorMsg;
         int iFrame = 0;
     };
@@ -191,9 +150,17 @@ namespace
         videoSource_->setVideoParser(videoParser_);
         videoSource_->start();
         waitForDecoderInit();
+        FormatInfo format = videoDecoder_->format();
+        if (format.colorSpaceStandard == ColorSpaceStandard::Unspecified) {
+            if (format.width > 1280 || format.height > 720)
+                format.colorSpaceStandard = ColorSpaceStandard::BT709;
+            else
+                format.colorSpaceStandard = ColorSpaceStandard::BT601;
+        }
+        yuvConverter = createNVSurfaceToColorConverter(format.colorSpaceStandard, format.videoFullRangeFlag);
         for(iFrame = videoSource_->getFirstFrameIdx(); iFrame < firstFrameIdx; iFrame++)
             CV_Assert(skipFrame());
-        videoSource_->updateFormat(videoDecoder_->format());
+        videoSource_->updateFormat(format);
     }
 
     VideoReaderImpl::~VideoReaderImpl()
@@ -287,14 +254,13 @@ namespace
             // map decoded video frame to CUDA surface
             GpuMat decodedFrame = videoDecoder_->mapFrame(frameInfo.first.picture_index, frameInfo.second);
 
-            cvtFromNv12(decodedFrame, frame, videoDecoder_->targetWidth(), videoDecoder_->targetHeight(), colorFormat, videoDecoder_->format().videoFullRangeFlag, stream);
-
             if (fmt.enableHistogram) {
                 const size_t histogramSz = 4 * fmt.nMaxHistogramBins;
                 histogram.create(1, fmt.nMaxHistogramBins, CV_32S);
                 cuSafeCall(cuMemcpyDtoDAsync((CUdeviceptr)(histogram.data), cuHistogramPtr, histogramSz, StreamAccessor::getStream(stream)));
             }
 
+            cvtFromYuv(decodedFrame, frame, videoDecoder_->format().surfaceFormat, videoDecoder_->format().videoFullRangeFlag, stream);
             // unmap video frame
             // unmapFrame() synchronizes with the VideoDecode API (ensures the frame has finished decoding)
             videoDecoder_->unmapFrame(decodedFrame);
@@ -350,23 +316,21 @@ namespace
     }
 
     bool ValidColorFormat(const ColorFormat colorFormat) {
-        if (colorFormat == ColorFormat::BGRA || colorFormat == ColorFormat::BGR || colorFormat == ColorFormat::GRAY || colorFormat == ColorFormat::NV_NV12)
+        if (colorFormat == ColorFormat::BGRA || colorFormat == ColorFormat::BGR || colorFormat == ColorFormat::RGB || colorFormat == ColorFormat::RGBA || colorFormat == ColorFormat::GRAY || colorFormat == ColorFormat::NV_YUV_SURFACE_FORMAT || colorFormat == ColorFormat::NV_YUV444)
             return true;
         return false;
     }
 
-    bool VideoReaderImpl::set(const ColorFormat colorFormat_) {
-        if (!ValidColorFormat(colorFormat_)) return false;
-        if (colorFormat_ == ColorFormat::BGR) {
-#if (CUDART_VERSION < 9020)
-            CV_LOG_DEBUG(NULL, "ColorFormat::BGR is not supported until CUDA 9.2, use default ColorFormat::BGRA.");
-            return false;
-#elif (CUDART_VERSION < 11000)
-            if (!videoDecoder_->format().videoFullRangeFlag)
-                CV_LOG_INFO(NULL, "Color reproduction may be inaccurate due CUDA version <= 11.0, for better results upgrade CUDA runtime or try ColorFormat::BGRA.");
-#endif
+    bool VideoReaderImpl::set(const ColorFormat colorFormat_, const BitDepth bitDepth_, const bool planar_) {
+        ColorFormat tmpFormat = colorFormat_;
+        if (tmpFormat == ColorFormat::NV_NV12) {
+            CV_LOG_WARNING(NULL, "ColorFormat::NV_NV12 is depreciated forcing ColorFormat::NV_YUV_SURFACE_FORMAT instead.");
+            tmpFormat = ColorFormat::NV_YUV_SURFACE_FORMAT;
         }
-        colorFormat = colorFormat_;
+        if (!ValidColorFormat(tmpFormat)) return false;
+        colorFormat = tmpFormat;
+        bitDepth = bitDepth_;
+        planar = planar_;
         return true;
     }
 
@@ -410,6 +374,12 @@ namespace
         case VideoReaderProps::PROP_COLOR_FORMAT:
             propertyVal = static_cast<double>(colorFormat);
             return true;
+        case VideoReaderProps::PROP_BIT_DEPTH:
+            propertyVal = static_cast<double>(bitDepth);
+            return true;
+        case VideoReaderProps::PROP_PLANAR:
+            propertyVal = static_cast<double>(planar);
+            return true;
         default:
             break;
         }
@@ -442,6 +412,15 @@ namespace
         if (!internalGrab(frame, histogram, stream))
             return false;
         return true;
+    }
+
+    void VideoReaderImpl::cvtFromYuv(const GpuMat& decodedFrame, GpuMat& outFrame, const SurfaceFormat surfaceFormat, const bool videoFullRangeFlag, Stream& stream)
+    {
+        if (colorFormat == ColorFormat::NV_YUV_SURFACE_FORMAT) {
+            decodedFrame.copyTo(outFrame, stream);
+            return;
+        }
+        yuvConverter->convert(decodedFrame, outFrame, surfaceFormat, colorFormat, bitDepth, planar, videoFullRangeFlag, stream);
     }
 }
 

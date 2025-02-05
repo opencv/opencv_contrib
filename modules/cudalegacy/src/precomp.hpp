@@ -84,6 +84,8 @@
 #endif
 
 #include "opencv2/core/private.cuda.hpp"
+#if defined (HAVE_CUDA) && !defined (CUDA_DISABLER)
 #include "opencv2/cudalegacy/private.hpp"
+#endif
 
 #endif /* __OPENCV_PRECOMP_H__ */
