@@ -46,11 +46,9 @@ namespace ximgproc
     {
         CV_Assert(!src_.empty());
 
-        Mat guidance = src_.getMat();
         Mat src = src_.getMat();
 
-        CV_Assert(src.size() == guidance.size());
-        CV_Assert(src.depth() == guidance.depth() && (src.depth() == CV_8U || src.depth() == CV_32F) );
+        CV_Assert(src.depth() == CV_8U || src.depth() == CV_32F);
 
         if (sigmaColor <= 0)
             sigmaColor = 1;
@@ -59,9 +57,8 @@ namespace ximgproc
 
         dst_.create(src.size(), src.type());
         Mat dst = dst_.getMat();
+        Mat& guidance = dst;  // dst and guidance are the same
 
-        if (src.data == guidance.data)
-            guidance = guidance.clone();
         if (dst.data == src.data)
             src = src.clone();
 
@@ -69,8 +66,15 @@ namespace ximgproc
 
         if (srcCnNum == 1 || srcCnNum == 3)
         {
-            while(numOfIter--){
-                jointBilateralFilter(guidance, src, guidance, d, sigmaColor, sigmaSpace, borderType);
+            if (numOfIter > 0) {
+                GaussianBlur(src, guidance, Size(0, 0), sigmaSpace, sigmaSpace, borderType);
+                numOfIter--;
+                while (numOfIter--) {
+                    jointBilateralFilter(guidance, src, guidance, d, sigmaColor, sigmaSpace, borderType);
+                }
+            }
+            else {
+                guidance = Scalar::all(0);
             }
             guidance.copyTo(dst_);
         }

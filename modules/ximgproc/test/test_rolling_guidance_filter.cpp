@@ -137,9 +137,9 @@ INSTANTIATE_TEST_CASE_P(TypicalSet1, RollingGuidanceFilterTest,
 //////////////////////////////////////////////////////////////////////////
 
 typedef tuple<double, string, int> RGFBFParam;
-typedef TestWithParam<RGFBFParam> RollingGuidanceFilterTest_BilateralRef;
+typedef TestWithParam<RGFBFParam> RollingGuidanceFilterTest_GaussianRef;
 
-TEST_P(RollingGuidanceFilterTest_BilateralRef, Accuracy)
+TEST_P(RollingGuidanceFilterTest_GaussianRef, Accuracy)
 {
     RGFBFParam params = GetParam();
     double sigmaS       = get<0>(params);
@@ -154,15 +154,15 @@ TEST_P(RollingGuidanceFilterTest_BilateralRef, Accuracy)
     double sigmaC = rnd.uniform(0.0, 255.0);
 
     Mat resRef;
-    bilateralFilter(src, resRef, 0, sigmaC, sigmaS);
+    GaussianBlur(src, resRef, Size(0, 0), sigmaS);
 
-    Mat res, joint = src.clone();
+    Mat res;
     rollingGuidanceFilter(src, res, 0, sigmaC, sigmaS, 1);
 
     checkSimilarity(res, resRef);
 }
 
-INSTANTIATE_TEST_CASE_P(TypicalSet2, RollingGuidanceFilterTest_BilateralRef,
+INSTANTIATE_TEST_CASE_P(TypicalSet2, RollingGuidanceFilterTest_GaussianRef,
     Combine(
     Values(4.0, 6.0, 8.0),
     Values("/cv/shared/pic2.png", "/cv/shared/lena.png", "cv/shared/box_in_scene.png"),
