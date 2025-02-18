@@ -7,4 +7,5 @@ ocv_create_module()
 
 ocv_add_accuracy_tests()
 ocv_add_perf_tests()
-ocv_add_samples(opencv_imgproc opencv_objdetect opencv_video)
+# dnn is transitive dependency pf opencv_video
+ocv_add_samples(opencv_imgproc opencv_objdetect opencv_video opencv_dnn)
