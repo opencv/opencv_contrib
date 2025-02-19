@@ -101,7 +101,7 @@ void NvEncoder::CreateDefaultEncoderParams(NV_ENC_INITIALIZE_PARAMS* pIntializeP
 #endif
     pIntializeParams->tuningInfo = tuningInfo;
     pIntializeParams->encodeConfig->rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
-#if (NVENCAPI_MAJOR_VERSION >= 12 && NVENCAPI_MINOR_VERSION >= 2)
+#if ((NVENCAPI_MAJOR_VERSION == 12 && NVENCAPI_MINOR_VERSION >= 2) || NVENCAPI_MAJOR_VERSION > 12)
     NV_ENC_PRESET_CONFIG presetConfig = { NV_ENC_PRESET_CONFIG_VER, 0, { NV_ENC_CONFIG_VER } };
 #else
     NV_ENC_PRESET_CONFIG presetConfig = { NV_ENC_PRESET_CONFIG_VER, { NV_ENC_CONFIG_VER } };
@@ -119,7 +119,7 @@ void NvEncoder::CreateDefaultEncoderParams(NV_ENC_INITIALIZE_PARAMS* pIntializeP
     }
     else if (pIntializeParams->encodeGUID == NV_ENC_CODEC_HEVC_GUID)
     {
-#if (NVENCAPI_MAJOR_VERSION >= 12 && NVENCAPI_MINOR_VERSION >= 2)
+#if ((NVENCAPI_MAJOR_VERSION == 12 && NVENCAPI_MINOR_VERSION >= 2) || NVENCAPI_MAJOR_VERSION > 12)
         pIntializeParams->encodeConfig->encodeCodecConfig.hevcConfig.inputBitDepth = pIntializeParams->encodeConfig->encodeCodecConfig.hevcConfig.outputBitDepth =
             (m_eBufferFormat == NV_ENC_BUFFER_FORMAT_YUV420_10BIT || m_eBufferFormat == NV_ENC_BUFFER_FORMAT_YUV444_10BIT) ? NV_ENC_BIT_DEPTH_10 : NV_ENC_BIT_DEPTH_8;
 #else
@@ -179,7 +179,7 @@ void NvEncoder::CreateEncoder(const NV_ENC_INITIALIZE_PARAMS* pEncoderParams)
     if (pEncoderParams->encodeGUID == NV_ENC_CODEC_HEVC_GUID)
     {
         bool yuv10BitFormat = (m_eBufferFormat == NV_ENC_BUFFER_FORMAT_YUV420_10BIT || m_eBufferFormat == NV_ENC_BUFFER_FORMAT_YUV444_10BIT) ? true : false;
-#if (NVENCAPI_MAJOR_VERSION >= 12 && NVENCAPI_MINOR_VERSION >= 2)
+#if ((NVENCAPI_MAJOR_VERSION == 12 && NVENCAPI_MINOR_VERSION >= 2) || NVENCAPI_MAJOR_VERSION > 12)
         if (yuv10BitFormat && pEncoderParams->encodeConfig->encodeCodecConfig.hevcConfig.inputBitDepth != NV_ENC_BIT_DEPTH_10)
 #else
         if (yuv10BitFormat && pEncoderParams->encodeConfig->encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 != 2)
@@ -205,7 +205,7 @@ void NvEncoder::CreateEncoder(const NV_ENC_INITIALIZE_PARAMS* pEncoderParams)
     }
     else
     {
-#if (NVENCAPI_MAJOR_VERSION >= 12 && NVENCAPI_MINOR_VERSION >= 2)
+#if ((NVENCAPI_MAJOR_VERSION == 12 && NVENCAPI_MINOR_VERSION >= 2) || NVENCAPI_MAJOR_VERSION > 12)
         NV_ENC_PRESET_CONFIG presetConfig = { NV_ENC_PRESET_CONFIG_VER, 0, { NV_ENC_CONFIG_VER } };
 #else
         NV_ENC_PRESET_CONFIG presetConfig = { NV_ENC_PRESET_CONFIG_VER, { NV_ENC_CONFIG_VER } };

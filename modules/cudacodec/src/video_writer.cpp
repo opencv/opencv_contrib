@@ -53,10 +53,6 @@ Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const C
 
 #else // !defined HAVE_NVCUVENC
 
-#if defined(WIN32)  // remove when FFmpeg wrapper includes PR25874
-#define WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE
-#endif
-
 NV_ENC_BUFFER_FORMAT EncBufferFormat(const ColorFormat colorFormat);
 int NChannels(const ColorFormat colorFormat);
 GUID CodecGuid(const Codec codec);
@@ -86,7 +82,7 @@ private:
 FFmpegVideoWriter::FFmpegVideoWriter(const String& fileName, const Codec codec, const int fps, const Size sz, const int idrPeriod) {
     if (!videoio_registry::hasBackend(CAP_FFMPEG))
         CV_Error(Error::StsNotImplemented, "FFmpeg backend not found");
-    const int fourcc = codec == Codec::H264 ? cv::VideoWriter::fourcc('a', 'v', 'c', '1') : cv::VideoWriter::fourcc('h', 'e', 'v', '1');
+    const int fourcc = codec == Codec::H264 ? cv::VideoWriter::fourcc('a', 'v', 'c', '1') : cv::VideoWriter::fourcc('h', 'v', 'c', '1');
     writer.open(fileName, fourcc, fps, sz, { VideoWriterProperties::VIDEOWRITER_PROP_RAW_VIDEO, 1, VideoWriterProperties::VIDEOWRITER_PROP_KEY_INTERVAL, idrPeriod });
     if (!writer.isOpened())
         CV_Error(Error::StsUnsupportedFormat, "Unsupported video sink");
@@ -107,9 +103,7 @@ void FFmpegVideoWriter::onEncoded(const std::vector<std::vector<uint8_t>>& vPack
         Mat wrappedPacket(1, packet.size(), CV_8UC1, (void*)packet.data());
         const double ptsDouble = static_cast<double>(pts.at(i));
         CV_Assert(static_cast<uint64_t>(ptsDouble) == pts.at(i));
-#if !defined(WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE)
         CV_Assert(writer.set(VIDEOWRITER_PROP_PTS, ptsDouble));
-#endif
         writer.write(wrappedPacket);
     }
 }
@@ -321,6 +315,13 @@ GUID EncodingPresetGuid(const EncodePreset nvPreset) {
     CV_Error(Error::StsUnsupportedFormat, msg);
 }
 
+std::string GetVideoCodecString(const GUID codec) {
+    if (codec == NV_ENC_CODEC_H264_GUID) return "AVC/H.264";
+    else if (codec == NV_ENC_CODEC_HEVC_GUID) return "H.265/HEVC";
+    else if (codec == NV_ENC_CODEC_AV1_GUID) return "AV1";
+    else return "Unknown";
+}
+
 void VideoWriterImpl::InitializeEncoder(const GUID codec, const double fps)
 {
     NV_ENC_INITIALIZE_PARAMS initializeParams = {};
@@ -337,15 +338,27 @@ void VideoWriterImpl::InitializeEncoder(const GUID codec, const double fps)
     initializeParams.encodeConfig->rcParams.maxBitRate = encoderParams.maxBitRate;
     initializeParams.encodeConfig->rcParams.targetQuality = encoderParams.targetQuality;
     initializeParams.encodeConfig->gopLength = encoderParams.gopLength;
-#if !defined(WIN32_WAIT_FOR_FFMPEG_WRAPPER_UPDATE)
     if (initializeParams.encodeConfig->frameIntervalP > 1) {
         CV_Assert(encoderCallback->setFrameIntervalP(initializeParams.encodeConfig->frameIntervalP));
     }
-#endif
-    if (codec == NV_ENC_CODEC_H264_GUID)
+    if (codec == NV_ENC_CODEC_H264_GUID) {
         initializeParams.encodeConfig->encodeCodecConfig.h264Config.idrPeriod = encoderParams.idrPeriod;
-    else if (codec == NV_ENC_CODEC_HEVC_GUID)
+        if (encoderParams.videoFullRangeFlag) {
+            initializeParams.encodeConfig->encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1;
+            initializeParams.encodeConfig->encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 1;
+        }
+    }
+    else if (codec == NV_ENC_CODEC_HEVC_GUID) {
         initializeParams.encodeConfig->encodeCodecConfig.hevcConfig.idrPeriod = encoderParams.idrPeriod;
+        if (encoderParams.videoFullRangeFlag) {
+            initializeParams.encodeConfig->encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFullRangeFlag = 1;
+            initializeParams.encodeConfig->encodeCodecConfig.hevcConfig.hevcVUIParameters.videoSignalTypePresentFlag = 1;
+        }
+    }
+    else {
+        std::string msg = "videoFullRangeFlag is not supported by codec: " + GetVideoCodecString(codec);
+        CV_LOG_WARNING(NULL, msg);
+    }
     pEnc->CreateEncoder(&initializeParams);
 }
 
