@@ -167,6 +167,7 @@ namespace cv {
                         // Generate mask
                         Mat mask = regions == r;
 
+
                         // Compute histogram for each channels
                         float tt = 0;
 
