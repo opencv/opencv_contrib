@@ -292,7 +292,7 @@ int hashtableWrite(const hashtable_int * hashtbl, const size_t dataSize, FILE* f
         while (node)
         {
             fwrite(&node->key, sizeof(KeyType), 1, f);
-            fwrite(&node->data, dataSize, 1, f);
+            fwrite(node->data, dataSize, 1, f);
             node=node->next;
         }
     }
