@@ -48,15 +48,7 @@ namespace cv
 class ThinPlateSplineShapeTransformerImpl CV_FINAL : public ThinPlateSplineShapeTransformer
 {
 public:
-    /* Constructors */
-    ThinPlateSplineShapeTransformerImpl()
-    {
-        regularizationParameter=0;
-        name_ = "ShapeTransformer.TPS";
-        tpsComputed=false;
-        transformCost = 0;
-    }
-
+    /* Constructor */
     ThinPlateSplineShapeTransformerImpl(double _regularizationParameter)
     {
         regularizationParameter=_regularizationParameter;
@@ -86,6 +78,13 @@ public:
         writeFormat(fs);
         fs << "name" << name_
            << "regularization" << regularizationParameter;
+        if( tpsComputed )
+        {
+            fs << "tpsComputed" << tpsComputed
+               << "transformCost" << transformCost
+               << "tpsParameters" << tpsParameters
+               << "shapeReference" << shapeReference;
+        }
     }
 
     virtual void read(const FileNode& fn) CV_OVERRIDE
@@ -175,6 +174,9 @@ float ThinPlateSplineShapeTransformerImpl::applyTransformation(InputArray inPts,
     CV_Assert(tpsComputed);
     Mat pts1 = inPts.getMat();
     CV_Assert((pts1.channels()==2) && (pts1.cols>0));
+
+    if (pts1.type() != CV_32F)
+        pts1.convertTo(pts1, CV_32F);
 
     //Apply transformation in the complete set of points
     // Ensambling output //
