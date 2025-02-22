@@ -17,9 +17,9 @@ if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
 
 endif()
 
-ocv_add_module(cudev opencv_core ${extra_dependencies} OPTIONAL ${optional_dependencies} WRAP python)
+ocv_add_module(cudev ${extra_dependencies} OPTIONAL ${optional_dependencies} WRAP python)
 
-ocv_module_include_directories()
+ocv_module_include_directories(opencv_core)
 ocv_glob_module_sources()
 ocv_create_module()
 
