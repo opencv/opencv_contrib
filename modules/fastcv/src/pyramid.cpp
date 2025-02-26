@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -63,6 +63,12 @@ void sobelPyramid(InputArrayOfArrays _pyr, OutputArrayOfArrays _dx, OutputArrayO
     if (retCodey != 0)
     {
         CV_Error(cv::Error::StsInternal, cv::format("fcvPyramidAllocate returned code %d", retCodey));
+    }
+
+    for(size_t i=0; i<nLevels; i++)
+    {
+        memset((void*)ldx[i].ptr, 0, ldx[i].width * ldx[i].height * pyrElemSz);
+        memset((void*)ldy[i].ptr, 0, ldy[i].width * ldy[i].height * pyrElemSz);
     }
 
     int returnCode = -1;

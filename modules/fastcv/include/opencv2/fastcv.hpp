@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -11,6 +11,7 @@
 #include "opencv2/fastcv/arithm.hpp"
 #include "opencv2/fastcv/bilateralFilter.hpp"
 #include "opencv2/fastcv/blur.hpp"
+#include "opencv2/fastcv/channel.hpp"
 #include "opencv2/fastcv/cluster.hpp"
 #include "opencv2/fastcv/draw.hpp"
 #include "opencv2/fastcv/edges.hpp"

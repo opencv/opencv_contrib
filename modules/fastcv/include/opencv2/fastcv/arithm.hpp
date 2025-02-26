@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -7,6 +7,10 @@
 #define OPENCV_FASTCV_ARITHM_HPP
 
 #include <opencv2/core.hpp>
+
+#define FCV_CMP_EQ(val1,val2) (fabs(val1 - val2) < FLT_EPSILON)
+
+#define FCV_OPTYPE(depth,op) ((depth<<3) + op)
 
 namespace cv {
 namespace fastcv {
@@ -23,6 +27,41 @@ namespace fastcv {
  * @param dst Resulting matrix of type CV_32S
  */
 CV_EXPORTS_W void matmuls8s32(InputArray src1, InputArray src2, OutputArray dst);
+
+//! @}
+
+//! @addtogroup fastcv
+//! @{
+
+/**
+ * @brief Arithmetic add and subtract operations for two matrices
+ *        It is optimized for Qualcomm's processors
+ * @param src1 First source matrix, can be of type CV_8U, CV_16S, CV_32F.
+ *             Note: CV_32F not supported for subtract
+ * @param src2 Second source matrix of same type and size as src1
+ * @param dst Resulting matrix of type as src mats
+ * @param op  type of operation - 0 for add and 1 for subtract
+ */
+CV_EXPORTS_W void arithmetic_op(InputArray src1, InputArray src2, OutputArray dst, int op);
+
+//! @}
+
+//! @addtogroup fastcv
+//! @{
+
+/**
+ * @brief Matrix multiplication of two float type matrices
+ *        R = a*A*B + b*C where A,B,C,R are matrices and a,b are constants
+ *        It is optimized for Qualcomm's processors
+ * @param src1 First source matrix of type CV_32F
+ * @param src2 Second source matrix of type CV_32F with same rows as src1 cols
+ * @param dst Resulting matrix of type CV_32F
+ * @param alpha multiplying factor for src1 and src2
+ * @param src3 Optional third matrix of type CV_32F to be added to matrix product
+ * @param beta multiplying factor for src3
+ */
+CV_EXPORTS_W void gemm(InputArray src1, InputArray src2, OutputArray dst, float alpha = 1.0,
+                           InputArray src3 = noArray(), float beta = 0.0);
 
 //! @}
 
