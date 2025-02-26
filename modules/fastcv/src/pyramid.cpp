@@ -8,7 +8,7 @@
 namespace cv {
 namespace fastcv {
 
-void sobelPyramid(InputArrayOfArrays _pyr, OutputArrayOfArrays _dx, OutputArrayOfArrays _dy, int outType)
+void sobelPyramid(InputArrayOfArrays _pyr, OutputArrayOfArrays _dx, OutputArrayOfArrays _dy, int outType, int clearBuffers)
 {
     INITIALIZATION_CHECK;
 
@@ -65,11 +65,14 @@ void sobelPyramid(InputArrayOfArrays _pyr, OutputArrayOfArrays _dx, OutputArrayO
         CV_Error(cv::Error::StsInternal, cv::format("fcvPyramidAllocate returned code %d", retCodey));
     }
 
-    for(size_t i=0; i<nLevels; i++)
-    {
-        memset((void*)ldx[i].ptr, 0, ldx[i].width * ldx[i].height * pyrElemSz);
-        memset((void*)ldy[i].ptr, 0, ldy[i].width * ldy[i].height * pyrElemSz);
-    }
+    if(clearBuffers == 1)
+	{
+        for(size_t i=0; i<nLevels; i++)
+        {
+            memset((void*)ldx[i].ptr, 0, ldx[i].width * ldx[i].height * pyrElemSz);
+            memset((void*)ldy[i].ptr, 0, ldy[i].width * ldy[i].height * pyrElemSz);
+        }
+	}
 
     int returnCode = -1;
     switch (outType)
