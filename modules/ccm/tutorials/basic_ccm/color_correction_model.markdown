@@ -17,13 +17,13 @@ When building OpenCV, run the following command to build all the contrib modules
 cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules/
 ```
 
-Or only build the mcc module:
+Or only build the ccm module:
 
 ```make
-cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules/mcc
+cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules/ccm
 ```
 
-Or make sure you check the mcc module in the GUI version of CMake: cmake-gui.
+Or make sure you check the ccm module in the GUI version of CMake: cmake-gui.
 
 Source Code of the sample
 -----------

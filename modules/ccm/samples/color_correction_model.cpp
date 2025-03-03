@@ -4,13 +4,13 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/mcc.hpp>
+#include <opencv2/ccm.hpp>
 #include <iostream>
 
 using namespace std;
 using namespace cv;
 using namespace mcc;
 using namespace ccm;
-using namespace std;
 
 const char *about = "Basic chart detection";
 const char *keys =
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 
         //compte color correction matrix
         //! [get_ccm_Matrix]
-        ColorCorrectionModel model1(src, COLORCHECKER_Vinyl);
+        ColorCorrectionModel model1(src, COLORCHECKER_Macbeth);
         model1.run();
         Mat ccm = model1.getCCM();
         std::cout<<"ccm "<<ccm<<std::endl;
