@@ -25,8 +25,8 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-#ifndef __OPENCV_MCC_OPERATIONS_HPP__
-#define __OPENCV_MCC_OPERATIONS_HPP__
+#ifndef __OPENCV_CCM_OPERATIONS_HPP__
+#define __OPENCV_CCM_OPERATIONS_HPP__
 
 #include "utils.hpp"
 

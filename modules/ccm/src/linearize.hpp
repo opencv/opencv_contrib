@@ -25,13 +25,13 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-#ifndef __OPENCV_MCC_LINEARIZE_HPP__
-#define __OPENCV_MCC_LINEARIZE_HPP__
+#ifndef __OPENCV_CCM_LINEARIZE_HPP__
+#define __OPENCV_CCM_LINEARIZE_HPP__
 
 #include <opencv2/core.hpp>
 #include <map>
 #include "color.hpp"
-#include "opencv2/mcc/ccm.hpp"
+#include "opencv2/ccm.hpp"
 namespace cv {
 namespace ccm {
 

@@ -25,7 +25,7 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-#include "opencv2/mcc/ccm.hpp"
+#include "opencv2/ccm.hpp"
 #include "linearize.hpp"
 namespace cv {
 namespace ccm {
