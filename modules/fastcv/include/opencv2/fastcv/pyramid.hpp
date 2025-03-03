@@ -22,7 +22,7 @@ namespace fastcv {
  * @param dx Horizontal Sobel gradient pyramid of the same size as pyr
  * @param dy Verical Sobel gradient pyramid of the same size as pyr
  * @param outType Type of output data, can be CV_8S, CV_16S or CV_32F
- * @param clearBuffers If set to 1, output buffers are set to 0 before computation, to remove garbage values. 
+ * @param clearBuffers If set to 1, output buffers are set to 0 before computation, to remove garbage values.
  */
 CV_EXPORTS_W void sobelPyramid(InputArrayOfArrays pyr, OutputArrayOfArrays dx, OutputArrayOfArrays dy, int outType = CV_8S,
                                int clearBuffers = 0);

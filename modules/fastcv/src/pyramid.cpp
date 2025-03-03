@@ -66,13 +66,13 @@ void sobelPyramid(InputArrayOfArrays _pyr, OutputArrayOfArrays _dx, OutputArrayO
     }
 
     if(clearBuffers == 1)
-	{
+    {
         for(size_t i=0; i<nLevels; i++)
         {
             memset((void*)ldx[i].ptr, 0, ldx[i].width * ldx[i].height * pyrElemSz);
             memset((void*)ldy[i].ptr, 0, ldy[i].width * ldy[i].height * pyrElemSz);
         }
-	}
+    }
 
     int returnCode = -1;
     switch (outType)

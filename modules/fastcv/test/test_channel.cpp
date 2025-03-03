@@ -46,23 +46,23 @@ TEST_P(ChannelSplitTest, accuracy)
 {
     Size sz = std::get<0>(GetParam());
     int cn = std::get<1>(GetParam());
-    std::vector<Mat> dst_mats;
-    
+    std::vector<Mat> dst_mats(cn), ref_mats(cn);
+
     RNG& rng = cv::theRNG();
     Mat src(sz, CV_MAKE_TYPE(CV_8U,cn));
     cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(127));
 
-    Mat dst;
     cv::fastcv::split(src, dst_mats);
 
-    Mat ref;
-    cv::split(src, dst_mats);
+    cv::split(src, ref_mats);
 
-    double normInf = cvtest::norm(ref, dst, cv::NORM_INF);
-    double normL2  = cvtest::norm(ref, dst, cv::NORM_L2);
-
-    EXPECT_EQ(normInf, 0);
-    EXPECT_EQ(normL2, 0);
+    for(int i=0; i<cn; i++)
+    {
+        double normInf = cvtest::norm(ref_mats[i], dst_mats[i], cv::NORM_INF);
+        double normL2  = cvtest::norm(ref_mats[i], dst_mats[i], cv::NORM_L2);
+        EXPECT_EQ(normInf, 0);
+        EXPECT_EQ(normL2, 0);
+    }
 }
 
 INSTANTIATE_TEST_CASE_P(FastCV_Extension, ChannelMergeTest,

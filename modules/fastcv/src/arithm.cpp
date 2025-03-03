@@ -45,11 +45,11 @@ void arithmetic_op(InputArray _src1, InputArray _src2, OutputArray _dst, int op)
     Mat dst = _dst.getMat();
 
     INITIALIZATION_CHECK;
-    
+
     fcvConvertPolicy policy = FASTCV_CONVERT_POLICY_SATURATE;
-    
+
     int nStripes = cv::getNumThreads();
-    
+
     int func = FCV_OPTYPE(_src1.depth(), op);
     switch(func)
     {
@@ -118,23 +118,23 @@ void gemm(InputArray _src1, InputArray _src2, OutputArray _dst, float alpha, Inp
 
     CV_Assert(!_src2.empty() && _src2.type() == CV_32FC1);
     Mat src2 = _src2.getMat();
-    
+
     bool isSrc3 = !_src3.empty();
-    
+
     Mat src3 = _src3.getMat();
 
     _dst.create(_src1.rows(), _src2.cols(), CV_32FC1);
 
     Mat dst = _dst.getMat();
 
-    CV_Assert(!FCV_CMP_EQ(alpha,0));    
-    
+    CV_Assert(!FCV_CMP_EQ(alpha,0));
+
     cv::Mat dst_temp1, dst_temp2;
     float *dstp = NULL;
     bool inplace = false;
     size_t dst_stride;
     fcvStatus status = FASTCV_SUCCESS;
-    
+
     int n = src1.cols, m = src1.rows, k = src2.cols;
 
     INITIALIZATION_CHECK;

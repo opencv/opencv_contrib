@@ -65,7 +65,7 @@ TEST_P(ArithmOpTest, accuracy)
 
     Mat dst;
     cv::fastcv::arithmetic_op(src1, src2, dst, op);
-    
+
     Mat ref;
     if(op == 0)
         cv::add(src1, src2, ref);
