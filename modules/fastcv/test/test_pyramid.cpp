@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -98,7 +98,7 @@ TEST_P(SobelPyramidTest, accuracy)
     cv::fastcv::buildPyramid(src, pyr, nLevels);
 
     std::vector<cv::Mat> pyrDx, pyrDy;
-    cv::fastcv::sobelPyramid(pyr, pyrDx, pyrDy, type);
+    cv::fastcv::sobelPyramid(pyr, pyrDx, pyrDy, type, 1);
 
     ASSERT_EQ(pyrDx.size(), nLevels);
     ASSERT_EQ(pyrDy.size(), nLevels);
