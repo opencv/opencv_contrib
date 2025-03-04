@@ -28,7 +28,7 @@ Or make sure you check the ccm module in the GUI version of CMake: cmake-gui.
 Source Code of the sample
 -----------
 
-The sample has two parts of code, the first is the color checker detector model, see details at @ref tutorial_mcc_basic_chart_detection, the second part is to make collor calibration.
+The sample has two parts of code, the first is the color checker detector model, the second part is to make color calibration.
 
 ```
 Here are the parameters for ColorCorrectionModel
