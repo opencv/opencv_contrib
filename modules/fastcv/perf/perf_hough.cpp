@@ -21,7 +21,7 @@ PERF_TEST_P(HoughLinesPerfTest, run,
 {
     auto p = GetParam();
     std::string fname = std::get<0>(p);
-    double threshold  = std::get<1>(p);
+    double thrld  = std::get<1>(p);
 
     cv::Mat src = imread(cvtest::findDataFile(fname), cv::IMREAD_GRAYSCALE);
     // make it aligned by 8
@@ -34,7 +34,7 @@ PERF_TEST_P(HoughLinesPerfTest, run,
     {
         std::vector<cv::Vec4f> lines;
         startTimer();
-        cv::fastcv::houghLines(src, lines, threshold);
+        cv::fastcv::houghLines(src, lines, thrld);
         stopTimer();
     }
 

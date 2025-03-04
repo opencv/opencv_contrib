@@ -81,12 +81,12 @@ TEST_P(MSERTest, accuracy)
     // find pair of contours by similar moments
     typedef cv::Matx<double, 10, 1> MomentVec;
 
-    auto calcEstimate = [](const std::vector<std::vector<Point>>& contours, Size srcSize) -> std::vector<std::pair<Mat, MomentVec>>
+    auto calcEstimate = [](const std::vector<std::vector<Point>>& ctrs, Size srcSize) -> std::vector<std::pair<Mat, MomentVec>>
     {
         std::vector<std::pair<Mat, MomentVec>> res;
-        for (size_t i = 0; i < contours.size(); i++)
+        for (size_t i = 0; i < ctrs.size(); i++)
         {
-            const std::vector<Point>& contour = contours[i];
+            const std::vector<Point>& contour = ctrs[i];
             Mat ptsMap(srcSize, CV_8U, Scalar(255));
             for(size_t j = 0; j < contour.size(); ++j)
             {

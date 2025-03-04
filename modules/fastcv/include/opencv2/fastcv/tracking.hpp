@@ -29,13 +29,12 @@ namespace fastcv {
  * @param winSize Size of window for optical flow searching. Width and height ust be odd numbers. Suggested values are 5, 7 or 9
  * @param termCriteria Termination criteria containing max number of iterations, max epsilon and stop condition
  */
-void trackOpticalFlowLK(InputArray src, InputArray dst,
-                        InputArrayOfArrays srcPyr, InputArrayOfArrays dstPyr,
-                        InputArray ptsIn, OutputArray ptsOut, InputArray ptsEst,
-                        OutputArray statusVec, cv::Size winSize = {7, 7},
-                        cv::TermCriteria termCriteria = {cv::TermCriteria::MAX_ITER | cv::TermCriteria::EPS,
-                                                         /* maxIterations */ 7,
-                                                         /* maxEpsilon */ 0.03f * 0.03f});
+CV_EXPORTS_W void trackOpticalFlowLK(InputArray src, InputArray dst,
+                                     InputArrayOfArrays srcPyr, InputArrayOfArrays dstPyr,
+                                     InputArray ptsIn, OutputArray ptsOut, InputArray ptsEst,
+                                     OutputArray statusVec, cv::Size winSize = cv::Size(7, 7),
+                                     cv::TermCriteria termCriteria = cv::TermCriteria(cv::TermCriteria::MAX_ITER | cv::TermCriteria::EPS,
+                                                                                      /* maxIterations */ 7, /* maxEpsilon */ 0.03f * 0.03f));
 
 /**
  * @brief Overload for v1 of the LK tracking function
@@ -52,11 +51,11 @@ void trackOpticalFlowLK(InputArray src, InputArray dst,
  * @param winSize Size of window for optical flow searching. Width and height ust be odd numbers. Suggested values are 5, 7 or 9
  * @param maxIterations Maximum number of iterations to try
  */
-void trackOpticalFlowLK(InputArray src, InputArray dst,
-                        InputArrayOfArrays srcPyr, InputArrayOfArrays dstPyr,
-                        InputArrayOfArrays srcDxPyr, InputArrayOfArrays srcDyPyr,
-                        InputArray ptsIn, OutputArray ptsOut,
-                        OutputArray statusVec, cv::Size winSize = {7, 7}, int maxIterations = 7);
+CV_EXPORTS_W void trackOpticalFlowLK(InputArray src, InputArray dst,
+                                     InputArrayOfArrays srcPyr, InputArrayOfArrays dstPyr,
+                                     InputArrayOfArrays srcDxPyr, InputArrayOfArrays srcDyPyr,
+                                     InputArray ptsIn, OutputArray ptsOut,
+                                     OutputArray statusVec, cv::Size winSize = cv::Size(7, 7), int maxIterations = 7);
 
 //! @}
 
