@@ -101,13 +101,7 @@ Here are the parameters for ColorCorrectionModel
 
 ## Explanation
 
-The first part is to detect the ColorChecker position.
-@snippet samples/color_correction_model.cpp get_color_checker
-@snippet samples/color_correction_model.cpp get_messages_of_image
-Preparation for ColorChecker detection to get messages for the image.
-
-@snippet samples/color_correction_model.cpp create
-The CCheckerDetectorobject is created and uses getListColorChecker function to get ColorChecker message.
+The first part is to detect the ColorChecker position which can be done with the help of MCC module.
 
 @snippet samples/color_correction_model.cpp get_ccm_Matrix
 For every ColorChecker, we can compute a ccm matrix for color correction. Model1 is an object of ColorCorrectionModel class. The parameters should be changed to get the best effect of color correction. See other parameters' detail at the Parameters.
