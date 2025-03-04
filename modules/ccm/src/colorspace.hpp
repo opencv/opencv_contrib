@@ -25,12 +25,12 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-#ifndef __OPENCV_MCC_COLORSPACE_HPP__
-#define __OPENCV_MCC_COLORSPACE_HPP__
+#ifndef __OPENCV_CCM_COLORSPACE_HPP__
+#define __OPENCV_CCM_COLORSPACE_HPP__
 
 #include "operations.hpp"
 #include "io.hpp"
-#include "opencv2/mcc/ccm.hpp"
+#include "opencv2/ccm.hpp"
 
 namespace cv {
 namespace ccm {

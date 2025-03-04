@@ -25,8 +25,8 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-#ifndef __OPENCV_MCC_UTILS_HPP__
-#define __OPENCV_MCC_UTILS_HPP__
+#ifndef __OPENCV_CCM_UTILS_HPP__
+#define __OPENCV_CCM_UTILS_HPP__
 
 #include <opencv2/core.hpp>
 
