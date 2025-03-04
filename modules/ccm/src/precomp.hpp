@@ -41,4 +41,4 @@
 
 #include "opencv2/ccm.hpp"
 
-#endif //_MCC_PRECOMP_HPP
+#endif //_CCM_PRECOMP_HPP
