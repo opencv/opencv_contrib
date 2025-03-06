@@ -15,17 +15,14 @@ namespace fastcv {
 //! @{
 
 /**
- * @brief Creates a gradient pyramid from an image pyramid.
+ * @brief Creates a gradient pyramid from an image pyramid
  *        Note: The borders are ignored during gradient calculation.
- *
  * @param pyr Input pyramid of 1-channel 8-bit images. Only continuous images are supported.
  * @param dx Horizontal Sobel gradient pyramid of the same size as pyr
  * @param dy Verical Sobel gradient pyramid of the same size as pyr
  * @param outType Type of output data, can be CV_8S, CV_16S or CV_32F
- * @param clearBuffers If set to 1, output buffers are set to 0 before computation, to remove garbage values.
  */
-CV_EXPORTS_W void sobelPyramid(InputArrayOfArrays pyr, OutputArrayOfArrays dx, OutputArrayOfArrays dy, int outType = CV_8S,
-                               int clearBuffers = 0);
+CV_EXPORTS_W void sobelPyramid(InputArrayOfArrays pyr, OutputArrayOfArrays dx, OutputArrayOfArrays dy, int outType = CV_8S);
 
 /**
  * @brief Builds an image pyramid of float32 arising from a single

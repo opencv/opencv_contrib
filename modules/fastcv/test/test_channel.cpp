@@ -36,10 +36,8 @@ TEST_P(ChannelMergeTest, accuracy)
     cv::merge(src_mats, ref);
 
     double normInf = cvtest::norm(ref, dst, cv::NORM_INF);
-    double normL2  = cvtest::norm(ref, dst, cv::NORM_L2);
 
     EXPECT_EQ(normInf, 0);
-    EXPECT_EQ(normL2, 0);
 }
 
 TEST_P(ChannelSplitTest, accuracy)
@@ -59,9 +57,7 @@ TEST_P(ChannelSplitTest, accuracy)
     for(int i=0; i<cn; i++)
     {
         double normInf = cvtest::norm(ref_mats[i], dst_mats[i], cv::NORM_INF);
-        double normL2  = cvtest::norm(ref_mats[i], dst_mats[i], cv::NORM_L2);
         EXPECT_EQ(normInf, 0);
-        EXPECT_EQ(normL2, 0);
     }
 }
 
