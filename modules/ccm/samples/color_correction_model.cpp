@@ -12,11 +12,8 @@ using namespace ccm;
 
 const char *about = "Basic chart detection";
 const char *keys =
-    "{ help h  |    | show this message }"
-    "{v        |      | Input from video file, if ommited, input comes from camera }"
-    "{ci       | 0    | Camera id if input doesnt come from video (-v) }"
-    "{f        | 1    | Path of the file to process (-v) }"
-    "{nc       | 1    | Maximum number of charts in the image }";
+    "{ help h  |      | show this message }"
+    "{ f       | 1    | Path of the file to process (-v) }";
 
 int main(int argc, char *argv[])
 {
@@ -34,7 +31,6 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    int nc = parser.get<int>("nc");
     string filepath = parser.get<string>("f");
 
     if (!parser.check())
