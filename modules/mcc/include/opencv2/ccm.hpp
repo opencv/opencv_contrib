@@ -25,8 +25,8 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-#ifndef __OPENCV_MCC_CCM_HPP__
-#define __OPENCV_MCC_CCM_HPP__
+#ifndef __OPENCV_CCM_HPP__
+#define __OPENCV_CCM_HPP__
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -35,7 +35,8 @@ namespace cv
 {
 namespace ccm
 {
-/** @addtogroup color_correction
+    
+/** @defgroup ccm Color Correction module
 @{
 
 Introduction

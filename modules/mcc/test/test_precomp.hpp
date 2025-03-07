@@ -7,12 +7,10 @@
 
 #include "opencv2/ts.hpp"
 #include "opencv2/ts/cuda_test.hpp"
-#include "opencv2/mcc.hpp"
-#include "opencv2/mcc/ccm.hpp"
+#include "opencv2/ccm.hpp"
 
 namespace opencv_test
 {
-using namespace cv::mcc;
 using namespace cv::ccm;
 }
 

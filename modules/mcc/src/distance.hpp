@@ -25,11 +25,11 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-#ifndef __OPENCV_MCC_DISTANCE_HPP__
-#define __OPENCV_MCC_DISTANCE_HPP__
+#ifndef __OPENCV_CCM_DISTANCE_HPP__
+#define __OPENCV_CCM_DISTANCE_HPP__
 
 #include "utils.hpp"
-#include "opencv2/mcc/ccm.hpp"
+#include "opencv2/ccm.hpp"
 
 namespace cv {
 namespace ccm {

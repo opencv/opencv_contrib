@@ -26,8 +26,8 @@
  * SOFTWARE.
  */
 
-#ifndef _MCC_PRECOMP_HPP
-#define _MCC_PRECOMP_HPP
+#ifndef _CCM_PRECOMP_HPP
+#define _CCM_PRECOMP_HPP
 
 #include <limits>
 
@@ -39,8 +39,6 @@
 #include <vector>
 #include <string>
 
-#include "opencv2/mcc.hpp"
+#include "opencv2/ccm.hpp"
 
-#include "common.hpp"
-
-#endif //_MCC_PRECOMP_HPP
+#endif //_CCM_PRECOMP_HPP

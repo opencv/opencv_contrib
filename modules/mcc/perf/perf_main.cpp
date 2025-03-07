@@ -1,3 +1,3 @@
 #include "perf_precomp.hpp"
 
-CV_PERF_TEST_MAIN(mcc)
+CV_PERF_TEST_MAIN(ccm)
