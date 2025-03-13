@@ -160,15 +160,15 @@ __global__ static void YuvToColorKernel(uint8_t* pYuv, int nYuvPitch, uint8_t* p
 
     union ColorOutx2 {
         Colorx2 d;
-        Color Color[2];
+        Color ColorArray[2];
     };
     ColorOutx2 l1Out;
-    l1Out.Color[0] = YuvToColorForPixel<Color>(l0.x, ch.x, ch.y, videoFullRangeFlag);
-    l1Out.Color[1] = YuvToColorForPixel<Color>(l0.y, ch.x, ch.y, videoFullRangeFlag);
+    l1Out.ColorArray[0] = YuvToColorForPixel<Color>(l0.x, ch.x, ch.y, videoFullRangeFlag);
+    l1Out.ColorArray[1] = YuvToColorForPixel<Color>(l0.y, ch.x, ch.y, videoFullRangeFlag);
     *(Colorx2*)pDst = l1Out.d;
     ColorOutx2 l2Out;
-    l2Out.Color[0] = YuvToColorForPixel<Color>(l1.x, ch.x, ch.y, videoFullRangeFlag);
-    l2Out.Color[1] = YuvToColorForPixel<Color>(l1.y, ch.x, ch.y, videoFullRangeFlag);
+    l2Out.ColorArray[0] = YuvToColorForPixel<Color>(l1.x, ch.x, ch.y, videoFullRangeFlag);
+    l2Out.ColorArray[1] = YuvToColorForPixel<Color>(l1.y, ch.x, ch.y, videoFullRangeFlag);
     *(Colorx2*)(pDst + nColorPitch) = l2Out.d;
 }
 
@@ -214,11 +214,11 @@ __global__ static void Yuv444ToColorKernel(uint8_t* pYuv, int nYuvPitch, uint8_t
 
     union ColorOutx2 {
         Colorx2 d;
-        Color Color[2];
+        Color ColorArray[2];
     };
     ColorOutx2 out;
-    out.Color[0] = YuvToColorForPixel<Color>(l0.x, ch1.x, ch2.x, videoFullRangeFlag);
-    out.Color[1] = YuvToColorForPixel<Color>(l0.y, ch1.y, ch2.y, videoFullRangeFlag);
+    out.ColorArray[0] = YuvToColorForPixel<Color>(l0.x, ch1.x, ch2.x, videoFullRangeFlag);
+    out.ColorArray[1] = YuvToColorForPixel<Color>(l0.y, ch1.y, ch2.y, videoFullRangeFlag);
     *(Colorx2*)pDst = out.d;
 }
 
