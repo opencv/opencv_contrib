@@ -85,10 +85,17 @@ void DnnSuperResImpl::readModel(const String& weights, const String& definition)
     }
 }
 
-void DnnSuperResImpl::setModel(const String& algo, int scale)
+void DnnSuperResImpl::setModel(const String& algorithm, int scale)
 {
+    this->alg = algorithm;
+    
+    // Validate scale
+    if (scale <= 0)
+    {
+        CV_Error(Error::StsBadArg, "Upscaling ratio must be positive");
+    }
+    
     this->sc = scale;
-    this->alg = algo;
 }
 
 void DnnSuperResImpl::setPreferableBackend(int backendId)
@@ -113,6 +120,9 @@ void DnnSuperResImpl::upsample(InputArray img, OutputArray result)
 {
     if (net.empty())
         CV_Error(Error::StsError, "Model not specified. Please set model via setModel().");
+
+    if (this->sc <= 0)
+        CV_Error(Error::StsBadArg, "Upscaling ratio must be positive");
 
     if (this->alg == "espcn" || this->alg == "lapsrn" || this->alg == "fsrcnn")
     {
@@ -165,6 +175,63 @@ void DnnSuperResImpl::upsample(InputArray img, OutputArray result)
         dnn::imagesFromBlob(blob_output, model_outs);
 
         //Post-process: add mean.
+        Mat(model_outs[0] + mean).convertTo(result, CV_8U);
+    }
+    else if (this->alg == "srgan")
+    {
+        // SRGAN uses the same preprocessing as EDSR (RGB processing)
+        // but might have different normalization values
+
+        // BGR mean typically used for SRGAN models
+        Scalar mean = Scalar(103.939, 116.779, 123.68); // Common ImageNet mean
+
+        // Convert to float
+        Mat float_img;
+        img.getMat().convertTo(float_img, CV_32F, 1.0);
+
+        // Create blob from image
+        cv::Mat blob;
+        dnn::blobFromImage(float_img, blob, 1/127.5, Size(), mean, true); // Normalize to [-1,1]
+
+        // Get the HR output
+        this->net.setInput(blob);
+        Mat blob_output = this->net.forward();
+
+        // Convert from blob
+        std::vector<Mat> model_outs;
+        dnn::imagesFromBlob(blob_output, model_outs);
+
+        // SRGAN typically outputs images in range [0,1] or [-1,1]
+        // Denormalize the output
+        Mat normalized;
+        cv::add(model_outs[0], 1.0, normalized); // Convert from [-1,1] to [0,2]
+        cv::multiply(normalized, 127.5, normalized); // Scale to [0,255]
+        normalized.convertTo(result, CV_8U);
+    }
+    else if (this->alg == "rdn")
+    {
+        // RDN (Residual Dense Network) typically follows EDSR-like preprocessing
+        
+        // BGR mean of the training dataset (usually DIV2K)
+        Scalar mean = Scalar(103.1545782, 111.561547, 114.35629928);
+
+        // Convert to float
+        Mat float_img;
+        img.getMat().convertTo(float_img, CV_32F, 1.0);
+
+        // Create blob from image
+        cv::Mat blob;
+        dnn::blobFromImage(float_img, blob, 1.0, Size(), mean);
+
+        // Get the HR output
+        this->net.setInput(blob);
+        Mat blob_output = this->net.forward();
+
+        // Convert from blob
+        std::vector<Mat> model_outs;
+        dnn::imagesFromBlob(blob_output, model_outs);
+
+        // Post-process: add mean
         Mat(model_outs[0] + mean).convertTo(result, CV_8U);
     }
     else
