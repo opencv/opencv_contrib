@@ -10,11 +10,12 @@
 #include <opencv2/imgproc.hpp>
 #include "opencv2/core/private.hpp"
 #include "opencv2/core/utils/logger.hpp"
-
+#include <opencv2/core/core_c.h>
 #include <opencv2/fastcv.hpp>
 #include <map>
 
 #include "fastcv.h"
+#include "fastcvDsp.h"
 
 namespace cv {
 namespace fastcv {
@@ -30,6 +31,7 @@ namespace fastcv {
 
 #define FCV_KernelSize_SHIFT 3
 #define FCV_MAKETYPE(ksize,depth) ((ksize<<FCV_KernelSize_SHIFT) + depth)
+#define MIN_REMOTE_BUF_SIZE 176*144*sizeof(uint8_t)
 
 const std::map<fcvStatus, std::string> fcvStatusStrings =
 {
@@ -72,6 +74,39 @@ public:
     bool isInitialized;
 };
 
+namespace dsp {
+
+    struct FastCvDspContext
+    {
+    public:
+        // Initialize at first call
+        // Defines a static local variable context.
+        static FastCvDspContext& getContext()
+        {
+            //Instance is created only once.
+            static FastCvDspContext context;
+            return context;
+        }
+
+        //Constructor is called when the FastCvDspContext instance is created
+        FastCvDspContext()
+        {
+            if (fcvQ6Init() != 0)
+            {
+                CV_LOG_WARNING(NULL, "Failed to switch FastCV DSP operation mode");
+                isDspInitialized = false;
+            }
+            else
+            {
+                CV_LOG_INFO(NULL, "FastCV DSP Operation Mode Switched");
+                isDspInitialized = true;
+            }
+        }
+
+        bool isDspInitialized;
+    };
+
+} // namespace dsp
 } // namespace fastcv
 } // namespace cv
 
