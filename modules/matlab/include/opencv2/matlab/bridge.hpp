@@ -55,6 +55,21 @@
 #include <opencv2/photo.hpp>
 #include <opencv2/stitching.hpp>
 #include <opencv2/video.hpp>
+#include <opencv2/optflow.hpp>
+#include <opencv2/xphoto.hpp>
+
+/* This 'using' line was added in order to fix the following Error.
+ * Failed to compile currentUIFramework:
+ * modules/matlab/src/currentUIFramework.cpp:
+ * In function void mexFunction(int, mxArray**, int, const mxArray**)
+ * error: string was not declared in this scope
+ * string retval; in line 41
+ *
+ * This error happens at the last stage of opencv build, when compiling the mex bindings
+ * TODO: This is NOT the optimal fix, and needs to be addressed
+ */
+using std::string;
+
 
 namespace cv {
 namespace bridge {
@@ -85,17 +100,21 @@ typedef cv::Ptr<AlignMTB> Ptr_AlignMTB;
 typedef cv::Ptr<CalibrateDebevec> Ptr_CalibrateDebevec;
 typedef cv::Ptr<CalibrateRobertson> Ptr_CalibrateRobertson;
 typedef cv::Ptr<DenseOpticalFlow> Ptr_DenseOpticalFlow;
-typedef cv::Ptr<DualTVL1OpticalFlow> Ptr_DualTVL1OpticalFlow;
+typedef cv::Ptr<cv::optflow::DualTVL1OpticalFlow> Ptr_DualTVL1OpticalFlow;
 typedef cv::Ptr<MergeDebevec> Ptr_MergeDebevec;
 typedef cv::Ptr<MergeMertens> Ptr_MergeMertens;
 typedef cv::Ptr<MergeRobertson> Ptr_MergeRobertson;
 typedef cv::Ptr<Stitcher> Ptr_Stitcher;
 typedef cv::Ptr<Tonemap> Ptr_Tonemap;
 typedef cv::Ptr<TonemapDrago> Ptr_TonemapDrago;
-typedef cv::Ptr<TonemapDurand> Ptr_TonemapDurand;
+typedef cv::Ptr<cv::xphoto::TonemapDurand> Ptr_TonemapDurand;
 typedef cv::Ptr<TonemapMantiuk> Ptr_TonemapMantiuk;
 typedef cv::Ptr<TonemapReinhard> Ptr_TonemapReinhard;
 typedef cv::Ptr<float> Ptr_float;
+typedef cv::Ptr<cv::GeneralizedHoughBallard> Ptr_GeneralizedHoughBallard;
+typedef cv::Ptr<cv::GeneralizedHoughGuil> Ptr_GeneralizedHoughGuil;
+
+
 
 // ----------------------------------------------------------------------------
 //                          PREDECLARATIONS
@@ -527,6 +546,15 @@ public:
   Bridge& operator=(const Ptr_float& ) { return *this; }
   Ptr_float toPtrFloat() { return Ptr_float(); }
   operator Ptr_float() { return toPtrFloat(); }
+
+  // ---------------------------   Ptr_GeneralizedHoughBallard   --------------
+  Bridge& operator=(const Ptr_GeneralizedHoughBallard& obj) { return *this; }
+  operator Ptr_GeneralizedHoughBallard() { return Ptr_GeneralizedHoughBallard(); }
+
+  // ---------------------------   Ptr_GeneralizedHoughGuil   ----------------------
+  Bridge& operator=(const Ptr_GeneralizedHoughGuil& obj) { return *this; }
+  operator Ptr_GeneralizedHoughGuil() { return Ptr_GeneralizedHoughGuil(); }
+
 }; // class Bridge
 
 
