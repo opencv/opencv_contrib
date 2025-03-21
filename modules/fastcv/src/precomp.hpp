@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -76,6 +76,13 @@ public:
 
 namespace dsp {
 
+    #define IS_FASTCV_ALLOCATED(mat) \
+    ((mat.u && mat.u->userdata && \
+      *static_cast<std::string*>(mat.u->userdata) == "QCOM") ? true : \
+     (std::cerr << "Allocation check failed for " #mat \
+                << ". Please ensure that cv::fastcv::dsp::fastcvq6init() has been called." \
+                << std::endl, false))
+    
     struct FastCvDspContext
     {
     public:

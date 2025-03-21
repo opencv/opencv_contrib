@@ -49,13 +49,14 @@ cv::UMatData* FastCVAllocator::allocate(int dims, const int* sizes, int type,
         }
         total *= sizes[i];
     }
-    uchar* data = data0 ? (uchar*)data0 : (uchar*)fcvMemAlloc(total, 16);
+    uchar* data = data0 ? (uchar*)data0 : (uchar*)fcvHwMemAlloc(total, 16);
     cv::UMatData* u = new cv::UMatData(this);
     u->data = u->origdata = data;
     u->size = total;
     if(data0)
         u->flags |= cv::UMatData::USER_ALLOCATED;
-
+    
+    u->userdata = new std::string("QCOM");
     return u;
 }
 
@@ -76,9 +77,16 @@ void FastCVAllocator::deallocate(cv::UMatData* u) const
     CV_Assert(u->refcount == 0);
     if( !(u->flags & cv::UMatData::USER_ALLOCATED) )
     {
-        fcvMemFree(u->origdata);
+        fcvHwMemFree(u->origdata);
         u->origdata = 0;
     }
+
+    if (u->userdata)
+    {
+        delete static_cast<std::string*>(u->userdata);
+        u->userdata = nullptr;
+    }
+
     delete u;
 }
 
