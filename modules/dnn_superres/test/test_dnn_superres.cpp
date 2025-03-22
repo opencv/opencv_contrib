@@ -44,6 +44,38 @@ void runSingleModel(std::string algorithm, int scale, std::string model_filename
     ASSERT_EQ(new_rows, result.rows);
 }
 
+// Test model parameter validation
+TEST(CV_DnnSuperResParameterValidationTest, validate_parameters)
+{
+    Ptr <DnnSuperResImpl> dnn_sr = makePtr<DnnSuperResImpl>();
+    
+    // Test invalid algorithm
+    try {
+        dnn_sr->setModel("invalid_algorithm", 2);
+        FAIL() << "Expected exception for invalid algorithm not thrown";
+    } catch (const cv::Exception& e) {
+        EXPECT_TRUE(std::string(e.what()).find("Unknown/unsupported superres algorithm") != std::string::npos);
+    }
+
+    // Test invalid scale (0 or negative)
+    try {
+        dnn_sr->setModel("espcn", 0);
+        FAIL() << "Expected exception for invalid scale not thrown";
+    } catch (const cv::Exception& e) {
+        EXPECT_TRUE(std::string(e.what()).find("Upscaling ratio must be positive") != std::string::npos);
+    }
+    
+    // Test empty model
+    Mat img = Mat::zeros(100, 100, CV_8UC3);
+    Mat result;
+    try {
+        dnn_sr->upsample(img, result);
+        FAIL() << "Expected exception for empty model not thrown";
+    } catch (const cv::Exception& e) {
+        EXPECT_TRUE(std::string(e.what()).find("Model not specified") != std::string::npos);
+    }
+}
+
 TEST(CV_DnnSuperResSingleOutputTest, accuracy_espcn_2)
 {
     runSingleModel("espcn", 2, "ESPCN_x2.pb");
@@ -59,6 +91,79 @@ TEST(CV_DnnSuperResSingleOutputTest, accuracy_fsrcnn_3)
     runSingleModel("fsrcnn", 3, "FSRCNN_x3.pb");
 }
 
+TEST(CV_DnnSuperResSingleOutputTest, accuracy_srgan_4)
+{
+    runSingleModel("srgan", 4, "SRGAN_x4.pb");
+}
+
+TEST(CV_DnnSuperResSingleOutputTest, accuracy_rdn_3)
+{
+    runSingleModel("rdn", 3, "RDN_x3.pb");
+}
+
+// Extended tests for SRGAN
+TEST(CV_DnnSuperResSRGANTest, various_input_sizes)
+{
+    SCOPED_TRACE("srgan");
+
+    Ptr <DnnSuperResImpl> dnn_sr = makePtr<DnnSuperResImpl>();
+    std::string path = cvtest::findDataFile(DNN_SUPERRES_DIR + "/" + IMAGE_FILENAME);
+    Mat img = imread(path);
+    ASSERT_FALSE(img.empty()) << "Test image can't be loaded: " << path;
+    
+    std::string pb_path = cvtest::findDataFile(DNN_SUPERRES_DIR + "/SRGAN_x4.pb");
+    dnn_sr->readModel(pb_path);
+    dnn_sr->setModel("srgan", 4);
+    
+    // Test with different input sizes
+    std::vector<Size> sizes = {Size(32, 32), Size(64, 64), Size(128, 96)};
+    
+    for (const auto& size : sizes) {
+        Mat resized;
+        resize(img, resized, size);
+        
+        Mat result;
+        dnn_sr->upsample(resized, result);
+        
+        ASSERT_FALSE(result.empty()) << "Could not perform upsampling for input size " << size;
+        ASSERT_EQ(size.width * 4, result.cols);
+        ASSERT_EQ(size.height * 4, result.rows);
+    }
+}
+
+// Extended tests for RDN
+TEST(CV_DnnSuperResRDNTest, different_input_channels)
+{
+    SCOPED_TRACE("rdn");
+
+    Ptr <DnnSuperResImpl> dnn_sr = makePtr<DnnSuperResImpl>();
+    std::string path = cvtest::findDataFile(DNN_SUPERRES_DIR + "/" + IMAGE_FILENAME);
+    Mat img = imread(path);
+    ASSERT_FALSE(img.empty()) << "Test image can't be loaded: " << path;
+    
+    std::string pb_path = cvtest::findDataFile(DNN_SUPERRES_DIR + "/RDN_x3.pb");
+    dnn_sr->readModel(pb_path);
+    dnn_sr->setModel("rdn", 3);
+    
+    // Test with color image
+    Mat color_result;
+    dnn_sr->upsample(img, color_result);
+    ASSERT_FALSE(color_result.empty()) << "Could not perform upsampling for color image";
+    ASSERT_EQ(img.cols * 3, color_result.cols);
+    ASSERT_EQ(img.rows * 3, color_result.rows);
+    ASSERT_EQ(img.channels(), color_result.channels());
+    
+    // Test with grayscale image
+    Mat gray;
+    cvtColor(img, gray, COLOR_BGR2GRAY);
+    
+    Mat gray_result;
+    dnn_sr->upsample(gray, gray_result);
+    ASSERT_FALSE(gray_result.empty()) << "Could not perform upsampling for grayscale image";
+    ASSERT_EQ(gray.cols * 3, gray_result.cols);
+    ASSERT_EQ(gray.rows * 3, gray_result.rows);
+    ASSERT_EQ(gray.channels(), gray_result.channels());
+}
 
 /****************************************************************************************\
 *                                Test multi output models                               *

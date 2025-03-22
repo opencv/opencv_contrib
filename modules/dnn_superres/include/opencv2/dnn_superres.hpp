@@ -8,12 +8,14 @@
 /** @defgroup dnn_superres DNN used for super resolution
 
 This module contains functionality for upscaling an image via convolutional neural networks.
-The following four models are implemented:
+The following models are implemented:
 
 - EDSR <https://arxiv.org/abs/1707.02921>
 - ESPCN <https://arxiv.org/abs/1609.05158>
 - FSRCNN <https://arxiv.org/abs/1608.00367>
 - LapSRN <https://arxiv.org/abs/1710.01992>
+- SRGAN <https://arxiv.org/abs/1609.04802>
+- RDN <https://arxiv.org/abs/1802.08797>
 
 */
 
@@ -29,12 +31,14 @@ namespace dnn_superres
 //! @{
 
 /** @brief A class to upscale images via convolutional neural networks.
-The following four models are implemented:
+The following models are implemented:
 
 - edsr
 - espcn
 - fsrcnn
 - lapsrn
+- srgan
+- rdn
  */
 
 class CV_EXPORTS_W DnnSuperResImpl
@@ -59,8 +63,8 @@ public:
      */
     CV_WRAP static Ptr<DnnSuperResImpl> create();
 
-    // /** @brief Empty constructor
-    //  */
+    /** @brief Empty constructor
+     */
     DnnSuperResImpl();
 
     /** @brief Constructor which immediately sets the desired model
@@ -69,6 +73,8 @@ public:
         - __espcn__
         - __fsrcnn__
         - __lapsrn__
+        - __srgan__
+        - __rdn__
     @param scale Integer specifying the upscale factor
      */
     DnnSuperResImpl(const String& algo, int scale);
@@ -90,6 +96,8 @@ public:
         - __espcn__
         - __fsrcnn__
         - __lapsrn__
+        - __srgan__
+        - __rdn__
     @param scale Integer specifying the upscale factor
      */
     CV_WRAP void setModel(const String& algo, int scale);
