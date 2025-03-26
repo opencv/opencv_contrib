@@ -113,6 +113,33 @@ supported for now.
  */
 CV_EXPORTS_W void resize(InputArray src, OutputArray dst, Size dsize, double fx=0, double fy=0, int interpolation = INTER_LINEAR, Stream& stream = Stream::Null());
 
+/** @brief onnx resize op
+https://github.com/onnx/onnx/blob/main/docs/Operators.md#Resize
+https://github.com/onnx/onnx/blob/main/onnx/reference/ops/op_resize.py
+
+Not support `tf_crop_resize` yet.
+
+To get a similar result to `cv::resize`, give dsize and:
+    INTER_NEAREST : ASYMMETRIC + NEAREST_FLOOR
+    INTER_LINEAR  : HALF_PIXEL
+    INTER_CUBIC   : HALF_PIXEL + cubicCoeff(-0.75)
+
+@param src input image.
+@param dst output image; it has the size dsize (when it is non-zero) or the size computed from src.size(), scale; the type of dst is the same as of src.
+@param dsize output image size; if it equals to zero, it is computed as:
+\f[\texttt{dsize = Size(int(scale.x * src.cols), int(scale.y * src.rows))}\f]
+Either dsize or scale must be non-zero.
+@param scale scale factor; use same definition as ONNX, if scale > 1, it's upsampling.
+@param interpolation interpolation flags, see #InterpolationFlags and #ResizeONNXFlags
+@param cubicCoeff cubic sampling coefficient, range \f[[-1.0, 0)\f]
+@param stream Stream for the asynchronous version.
+
+@sa resize, resizeOnnx
+ */
+CV_EXPORTS_W void resizeOnnx(InputArray src, OutputArray dst, Size dsize,
+    Point2d scale = Point2d(), int interpolation = INTER_LINEAR,
+    float cubicCoeff = -0.75f, Stream& stream = Stream::Null());
+
 /** @brief Applies an affine transformation to an image.
 
 @param src Source image. CV_8U , CV_16U , CV_32S , or CV_32F depth and 1, 3, or 4 channels are
