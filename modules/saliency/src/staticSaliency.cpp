@@ -40,6 +40,9 @@
  //M*/
 
 #include "precomp.hpp"
+#include <iostream>
+#include <vector>
+#include <algorithm>
 
 namespace cv
 {
@@ -49,6 +52,7 @@ namespace saliency
 /**
  * StaticSaliency
  */
+
 
 bool StaticSaliency::computeBinaryMap( InputArray _saliencyMap, OutputArray _binaryMap )
 {
