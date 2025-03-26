@@ -27,8 +27,76 @@ bool FacemarkKazemiImpl::setFaceDetector(FN_FaceDetector f, void* userData){
 }
 bool FacemarkKazemiImpl::getFaces(InputArray image, OutputArray faces)
 {
-    CV_Assert(faceDetector);
+    if (!faceDetector)
+    {
+        std::vector<Rect> faces_;
+        defaultFaceDetector(image.getMat(), faces_);
+        Mat(faces_).copyTo(faces);
+        return true;
+    }
     return faceDetector(image, faces, faceDetectorData);
+}
+bool FacemarkKazemiImpl::defaultFaceDetector(const Mat& image, std::vector<Rect>& faces){
+    Mat gray;
+
+    faces.clear();
+
+    if (image.channels() > 1)
+    {
+        cvtColor(image, gray, COLOR_BGR2GRAY);
+    }
+    else
+    {
+        gray = image;
+    }
+
+    equalizeHist(gray, gray);
+
+    if (face_cascade.empty())
+    {
+        { /* check the cascade classifier file */
+            std::ifstream infile;
+            infile.open(params.faceCascadefile.c_str(), std::ios::in);
+            if (!infile)
+                CV_Error_(Error::StsBadArg, ("The cascade classifier model is not found: %s", params.faceCascadefile.c_str()));
+        }
+        face_cascade.load(params.faceCascadefile.c_str());
+        CV_Assert(!face_cascade.empty());
+    }
+    face_cascade.detectMultiScale(gray, faces, 1.05, 2, CASCADE_SCALE_IMAGE, Size(30, 30) );
+    return true;
+}
+bool FacemarkKazemiImpl::getData(void * items){
+    CV_UNUSED(items);
+    return false;
+}
+bool FacemarkKazemiImpl::addTrainingSample(InputArray image, std::vector<Point2f> & landmarks){
+  std::vector<Point2f> & _landmarks = landmarks;
+  training_images.push_back(image.getMat());
+  training_facePoints.push_back(_landmarks);
+  return true;
+}
+bool FacemarkKazemiImpl::setParams(const String& face_cascade_name,const String& facemark_model_name, const String& config_file_path, InputArray scale){
+  if(face_cascade_name.empty() && facemark_model_name.empty() && config_file_path.empty() && scale.empty())
+  {
+    CV_Error_(Error::StsBadArg, ("face cascade name, facemark model name, config file and scale all are empty"));
+  }
+  if(!face_cascade_name.empty())
+      params.faceCascadefile = face_cascade_name;
+  if(!facemark_model_name.empty())
+      params.modelfile = facemark_model_name;
+  if(!config_file_path.empty())
+      params.configfile = config_file_path;
+
+  Mat scale_mat = scale.getMat();
+  std::vector<int> _scale = scale_mat.reshape(1, scale_mat.rows);
+  if(_scale.size() != 2){
+    CV_Error(Error::StsBadArg, "Please set the scale argument properly");
+    return false;
+  }
+  params.scale = Size(_scale[0], _scale[1]);
+  CV_UNUSED(config_file_path);
+  return true;
 }
 FacemarkKazemiImpl::FacemarkKazemiImpl(const FacemarkKazemi::Params& parameters) :
     faceDetector(NULL),
@@ -45,6 +113,9 @@ FacemarkKazemi::Params::Params(){
     //These variables are used for training data
     //These are initialised as described in the research paper
     //referenced above
+    configfile = "";
+    modelfile = "";
+    faceCascadefile = "";
     cascade_depth = 15;
     tree_depth = 5;
     num_trees_per_cascade_level = 500;
