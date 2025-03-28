@@ -162,5 +162,66 @@ TEST(CV_ccmRunColorCorrection, test_masks_weights_2)
     ASSERT_MAT_NEAR(model2.getMask(), mask, 0.0);
 }
 
+TEST(CV_mcc_ccm_test, compute_ccm)
+{
+    // read gold chartsRGB
+    string path = cvtest::findDataFile("mcc/mcc_ccm_test.yml");
+    FileStorage fs(path, FileStorage::READ);
+    Mat chartsRGB;
+    FileNode node = fs["chartsRGB"];
+    node >> chartsRGB;
+
+    // compute CCM
+    ColorCorrectionModel model(chartsRGB.col(1).clone().reshape(3, chartsRGB.rows/3) / 255., COLORCHECKER_Macbeth);
+    model.run();
+
+    // read gold CCM
+    node = fs["ccm"];
+    ASSERT_FALSE(node.empty());
+    Mat gold_ccm;
+    node >> gold_ccm;
+    fs.release();
+
+    // check CCM
+    Mat ccm = model.getCCM();
+    EXPECT_MAT_NEAR(gold_ccm, ccm, 1e-8);
+
+    const double gold_loss = 4.6386569120323129;
+    // check loss
+    const double loss = model.getLoss();
+    EXPECT_NEAR(gold_loss, loss, 1e-8);
+}
+
+TEST(CV_mcc_ccm_test, infer)
+{
+    string path = cvtest::findDataFile("mcc/mcc_ccm_test.jpg");
+    Mat img = imread(path, IMREAD_COLOR);
+    // read gold calibrate img
+    path = cvtest::findDataFile("mcc/mcc_ccm_test_res.png");
+    Mat gold_img = imread(path);
+
+    // read gold chartsRGB
+    path = cvtest::findDataFile("mcc/mcc_ccm_test.yml");
+    FileStorage fs(path, FileStorage::READ);
+    Mat chartsRGB;
+    FileNode node = fs["chartsRGB"];
+    node >> chartsRGB;
+    fs.release();
+
+    // compute CCM
+    ColorCorrectionModel model(chartsRGB.col(1).clone().reshape(3, chartsRGB.rows/3) / 255., COLORCHECKER_Macbeth);
+    model.run();
+
+    // compute calibrate image
+    Mat calibratedImage;
+    cvtColor(img, calibratedImage, COLOR_BGR2RGB);
+    calibratedImage.convertTo(calibratedImage, CV_64F, 1. / 255.);
+    calibratedImage = model.infer(calibratedImage);
+    calibratedImage.convertTo(calibratedImage, CV_8UC3, 255.);
+    cvtColor(calibratedImage, calibratedImage, COLOR_RGB2BGR);
+    // check calibrated image
+    EXPECT_MAT_NEAR(gold_img, calibratedImage, 0.1);
+}
+
 } // namespace
 } // namespace opencv_test

@@ -1,4 +1,4 @@
-set(the_description "Macbeth Chart Detection")
+set(the_description "Color Correction Module")
 ocv_define_module(mcc
     opencv_core
     opencv_imgproc
