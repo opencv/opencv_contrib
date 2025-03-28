@@ -177,3 +177,28 @@ endif ()
 if(Ceres_FOUND)
   ocv_add_samples(opencv_viz)
 endif ()
+
+# Required OpenCV modules
+set(OPENCV_MODULE_DEPS
+    core
+    calib3d
+)
+
+# Define the module
+ocv_add_module(sfm OPTIONAL opencv_contrib)
+
+# Install Python files if OpenCV Python is enabled
+if(BUILD_opencv_python3 AND NOT BUILD_opencv_world)
+  file(GLOB PYTHON_FILES "${CMAKE_CURRENT_SOURCE_DIR}/python/*.py")
+  file(GLOB PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/python/test/*.py")
+  
+  install(
+    FILES ${PYTHON_FILES}
+    DESTINATION "${PYTHON3_PACKAGES_PATH}/cv2/sfm"
+  )
+  
+  install(
+    FILES ${PYTHON_TEST_FILES}
+    DESTINATION "${PYTHON3_PACKAGES_PATH}/cv2/sfm/test"
+  )
+endif()
