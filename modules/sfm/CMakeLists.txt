@@ -184,6 +184,9 @@ set(OPENCV_MODULE_DEPS
     calib3d
 )
 
+# Near other python bindings:
+set(OPENCV_PYTHON_MODULES_PATH "${OPENCV_MODULES_BUILD_PATH}/python")
+
 # Define the module
 ocv_add_module(sfm OPTIONAL opencv_contrib)
 
