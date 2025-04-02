@@ -1,0 +1,21 @@
+﻿name: OpenCV Windows CI
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup OpenCV
+      run: |
+        choco install cmake -y
+        git clone https://github.com/opencv/opencv.git
+        mkdir opencv/build
+        cd opencv/build
+        cmake ..
+        cmake --build . --config Release
+    - name: Build Module
+      run: |
+        mkdir build
+        cd build
+        cmake -DOPENCV_DIR=../opencv/build ..
+        cmake --build . --config Release
