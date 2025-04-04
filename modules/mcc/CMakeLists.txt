@@ -1,9 +1,0 @@
-set(the_description "Color Correction Module")
-ocv_define_module(mcc
-    opencv_core
-    opencv_imgproc
-    opencv_3d
-    opencv_dnn
-    WRAP
-      python
-)
