@@ -105,10 +105,9 @@ public:
     void setVarInit(double varInit) CV_OVERRIDE { constantsHost_.varInit_ = (float)varInit; }
 
     double getVarMin() const CV_OVERRIDE { return constantsHost_.varMin_; }
-    void setVarMin(double varMin) CV_OVERRIDE { constantsHost_.varMin_ = ::fminf((float)varMin, constantsHost_.varMax_); }
-
+    void setVarMin(double varMin) CV_OVERRIDE { constantsHost_.varMin_ = (float)varMin; }
     double getVarMax() const CV_OVERRIDE { return constantsHost_.varMax_; }
-    void setVarMax(double varMax) CV_OVERRIDE { constantsHost_.varMax_ = ::fmaxf(constantsHost_.varMin_, (float)varMax); }
+    void setVarMax(double varMax) CV_OVERRIDE { constantsHost_.varMax_ = (float)varMax; }
 
     double getComplexityReductionThreshold() const CV_OVERRIDE { return ct_; }
     void setComplexityReductionThreshold(double ct) CV_OVERRIDE { ct_ = (float)ct; }
@@ -238,6 +237,11 @@ void MOG2Impl::initialize(cv::Size frameSize, int frameType, Stream &stream)
     //make the array for keeping track of the used modes per pixel - all zeros at start
     bgmodelUsedModes_.create(frameSize_, CV_8UC1);
     bgmodelUsedModes_.setTo(Scalar::all(0));
+
+    float real_varMin = ::fminf(constantsHost_.varMin_, constantsHost_.varMax_);
+    float real_varMax = ::fmaxf(constantsHost_.varMin_, constantsHost_.varMax_);
+    constantsHost_.varMin_ = real_varMin;
+    constantsHost_.varMax_ = real_varMax;
 
     cudaSafeCall(cudaMemcpyAsync(constantsDevice_, &constantsHost_, sizeof(Constants), cudaMemcpyHostToDevice, StreamAccessor::getStream(stream)));
 }
