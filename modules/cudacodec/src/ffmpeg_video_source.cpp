@@ -90,23 +90,6 @@ Codec FourccToCodec(int codec)
 }
 
 static
-void FourccToChromaFormat(const int pixelFormat, ChromaFormat &chromaFormat, int & nBitDepthMinus8)
-{
-    switch (pixelFormat)
-    {
-    case CV_FOURCC_MACRO('I', '4', '2', '0'):
-        chromaFormat = YUV420;
-        nBitDepthMinus8 = 0;
-        break;
-    default:
-        CV_LOG_WARNING(NULL, cv::format("ChromaFormat not recognized: 0x%08X (%s). Assuming I420", pixelFormat, fourccToString(pixelFormat).c_str()));
-        chromaFormat = YUV420;
-        nBitDepthMinus8 = 0;
-        break;
-    }
-}
-
-static
 int StartCodeLen(unsigned char* data, const int sz) {
     if (sz >= 3 && data[0] == 0 && data[1] == 0 && data[2] == 1)
         return 3;
@@ -145,14 +128,12 @@ cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname,
         extraData = tmpExtraData.clone();
 
     int codec = (int)cap.get(CAP_PROP_FOURCC);
-    int pixelFormat = (int)cap.get(CAP_PROP_CODEC_PIXEL_FORMAT);
     format_.codec = FourccToCodec(codec);
     format_.height = cap.get(CAP_PROP_FRAME_HEIGHT);
     format_.width = cap.get(CAP_PROP_FRAME_WIDTH);
     format_.displayArea = Rect(0, 0, format_.width, format_.height);
     format_.valid = false;
     format_.fps = cap.get(CAP_PROP_FPS);
-    FourccToChromaFormat(pixelFormat, format_.chromaFormat, format_.nBitDepthMinus8);
 }
 
 cv::cudacodec::detail::FFmpegVideoSource::~FFmpegVideoSource()

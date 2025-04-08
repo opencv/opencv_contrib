@@ -317,19 +317,19 @@ void BlockBasedKomuraEquivalence(const cv::cuda::GpuMat& img, cv::cuda::GpuMat& 
     grid_size = dim3((((img.cols + 1) / 2) - 1) / kblock_cols + 1, (((img.rows + 1) / 2) - 1) / kblock_rows + 1, 1);
     block_size = dim3(kblock_cols, kblock_rows, 1);
 
-    InitLabeling << <grid_size, block_size >> > (img, labels, last_pixel);
+    InitLabeling <<<grid_size, block_size >>> (img, labels, last_pixel);
     cudaSafeCall(cudaGetLastError());
 
-    Compression << <grid_size, block_size >> > (labels);
+    Compression <<<grid_size, block_size >>> (labels);
     cudaSafeCall(cudaGetLastError());
 
-    Merge << <grid_size, block_size >> > (labels, last_pixel);
+    Merge <<<grid_size, block_size >>> (labels, last_pixel);
     cudaSafeCall(cudaGetLastError());
 
-    Compression << <grid_size, block_size >> > (labels);
+    Compression <<<grid_size, block_size >>> (labels);
     cudaSafeCall(cudaGetLastError());
 
-    FinalLabeling << <grid_size, block_size >> > (img, labels);
+    FinalLabeling <<<grid_size, block_size >>> (img, labels);
     cudaSafeCall(cudaGetLastError());
 
     if (last_pixel_allocated) {

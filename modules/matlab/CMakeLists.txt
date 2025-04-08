@@ -113,6 +113,8 @@ ocv_add_module(matlab   BINDINGS
                                  opencv_calib opencv_calib3d
                                  opencv_stitching opencv_superres
                                  opencv_xfeatures2d
+				 opencv_optflow
+				 opencv_xphoto
 )
 
 # get the commit information
@@ -156,6 +158,8 @@ endforeach()
 # add extra headers by hand
 list(APPEND opencv_extra_hdrs "core=${OPENCV_MODULE_opencv_core_LOCATION}/include/opencv2/core/base.hpp")
 list(APPEND opencv_extra_hdrs "video=${OPENCV_MODULE_opencv_video_LOCATION}/include/opencv2/video/tracking.hpp")
+list(APPEND opencv_extra_hdrs "optflow=${OPENCV_MODULE_opencv_optflow_LOCATION}/include/opencv2/optflow.hpp")
+
 
 # pass the OPENCV_CXX_EXTRA_FLAGS through to the mex compiler
 # remove the visibility modifiers, so the mex gateway is visible

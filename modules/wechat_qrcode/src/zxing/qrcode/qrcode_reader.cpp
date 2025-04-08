@@ -49,7 +49,8 @@ vector<Ref<Result>> QRCodeReader::decode(Ref<BinaryBitmap> image, DecodeHints hi
         Ref<BitMatrix> invertedMatrix = image->getInvertedMatrix(err_handler);
         if (err_handler.ErrCode() || invertedMatrix == NULL) return result_list;
         vector<Ref<Result>> tmp_rst = decodeMore(image, invertedMatrix, hints, err_handler);
-        if (err_handler.ErrCode() || tmp_rst.empty()) return tmp_rst;
+        if (err_handler.ErrCode() || tmp_rst.empty()) return result_list;
+        return tmp_rst;
     }
 
     return rst;

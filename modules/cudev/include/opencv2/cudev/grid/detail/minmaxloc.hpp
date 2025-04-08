@@ -148,8 +148,8 @@ namespace grid_minmaxloc_detail
         block = dim3(Policy::block_size_x, Policy::block_size_y);
         grid = dim3(divUp(cols, block.x * Policy::patch_size_x), divUp(rows, block.y * Policy::patch_size_y));
 
-        grid.x = ::min(grid.x, block.x);
-        grid.y = ::min(grid.y, block.y);
+        grid.x = std::min(grid.x, block.x);
+        grid.y = std::min(grid.y, block.y);
     }
 
     template <class Policy, class SrcPtr, typename ResType, class MaskPtr>
