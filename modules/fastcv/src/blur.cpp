@@ -368,7 +368,7 @@ void normalizeLocalBox(InputArray _src, OutputArray _dst, Size pSize, bool useSt
     CV_Assert(type == CV_8UC1 || type == CV_32FC1);
 
     Size size = _src.size();
-    int dst_type = type == CV_8UC1 ? CV_8SC1 : CV_32FC1; 
+    int dst_type = type == CV_8UC1 ? CV_8SC1 : CV_32FC1;
     _dst.create(size, dst_type);
 
     Mat src = _src.getMat();

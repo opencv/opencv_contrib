@@ -65,8 +65,8 @@ CV_EXPORTS_W void sepFilter2D(InputArray _src, OutputArray _dst, int ddepth, Inp
  * @brief Calculates the local subtractive and contrastive normalization of the image.
  *        Each pixel of the image is normalized by the mean and standard deviation of the patch centred at the pixel.
  *        It is optimized for Qualcomm's processors.
- * @param src Input image, should have one channel CV_8U or CV_32F
- * @param dst Output array, should be one channel, CV_8S if src of type CV_8U, or CV_32F if src of CV_32F
+ * @param _src Input image, should have one channel CV_8U or CV_32F
+ * @param _dst Output array, should be one channel, CV_8S if src of type CV_8U, or CV_32F if src of CV_32F
  * @param pSize Patch size for mean and std dev calculation
  * @param useStdDev If 1, bot mean and std dev will be used for normalization, if 0, only mean used
  */

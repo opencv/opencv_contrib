@@ -125,7 +125,7 @@ typedef perf::TestBaseWithParam<tuple<Size, int, Size, int>> NormalizeLocalBoxPe
 PERF_TEST_P(NormalizeLocalBoxPerfTest, run,
     ::testing::Combine(::testing::Values(perf::szVGA, perf::sz720p, perf::sz1080p), // image size
                        ::testing::Values(CV_8U,CV_32F),                             // src image depth
-					   ::testing::Values(Size(3,3),Size(5,5)),                      // patch size
+                       ::testing::Values(Size(3,3),Size(5,5)),                      // patch size
                        ::testing::Values(0,1)                                       // use std dev or not
                        )
            )
@@ -140,12 +140,7 @@ PERF_TEST_P(NormalizeLocalBoxPerfTest, run,
     RNG& rng = cv::theRNG();
     cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(255));
 
-    while (next())
-    {
-        startTimer();
-        cv::fastcv::normalizeLocalBox(src, dst, sz, useStdDev);
-        stopTimer();
-    }
+    TEST_CYCLE() cv::fastcv::normalizeLocalBox(src, dst, sz, useStdDev);
 
     SANITY_CHECK_NOTHING();
 }

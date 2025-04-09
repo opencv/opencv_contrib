@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -108,6 +108,24 @@ TEST_P(SepFilter2DTest, accuracy)
     EXPECT_LT(num_diff_pixels, (src.rows+src.cols)*ksize);
 }
 
+typedef testing::TestWithParam<tuple<int>> NormalizeLocalBoxTest;
+
+TEST_P(NormalizeLocalBoxTest, accuracy)
+{
+    bool use_stddev = get<0>(GetParam());
+    cv::Mat src, dst;
+    src = imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
+
+    cv::fastcv::normalizeLocalBox(src, dst, Size(5,5), use_stddev);
+    Scalar s = cv::mean(dst);
+
+    if(use_stddev)
+       EXPECT_LT(s[0],1);
+    else
+       EXPECT_LT(s[0],50);
+}
+
+
 INSTANTIATE_TEST_CASE_P(FastCV_Extension, GaussianBlurTest, Combine(
 /*image size*/     ::testing::Values(perf::szVGA, perf::sz720p, perf::sz1080p),
 /*image depth*/    ::testing::Values(CV_8U,CV_16S,CV_32S),
@@ -125,5 +143,8 @@ INSTANTIATE_TEST_CASE_P(FastCV_Extension, SepFilter2DTest, Combine(
 /*image size*/      Values(perf::szVGA, perf::sz720p, perf::sz1080p),
 /*kernel size*/    Values(3, 5, 7, 9, 11)
 ));
+
+INSTANTIATE_TEST_CASE_P(FastCV_Extension, NormalizeLocalBoxTest, Values(0,1));
+
 
 }} // namespaces opencv_test, ::
