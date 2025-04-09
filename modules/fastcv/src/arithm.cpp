@@ -180,5 +180,29 @@ void gemm(InputArray _src1, InputArray _src2, OutputArray _dst, float alpha, Inp
     }
 }
 
+void integrateYUV(InputArray _Y, InputArray _CbCr, OutputArray _IY, OutputArray _ICb, OutputArray _ICr)
+{
+    CV_Assert(!_Y.empty() && !_CbCr.empty());
+    CV_Assert(_Y.type() == _CbCr.type() && _Y.type() == CV_8UC1);
+    Mat Y = _Y.getMat();
+    Mat CbCr = _CbCr.getMat();
+    int Ywidth = Y.cols;
+    int Yheight = Y.rows;
+
+    INITIALIZATION_CHECK;
+
+    _IY.create(Yheight + 1, Ywidth + 1, CV_32SC1);
+    _ICb.create(Yheight/2 + 1, Ywidth/2 + 1, CV_32SC1);
+    _ICr.create(Yheight/2 + 1, Ywidth/2 + 1, CV_32SC1);
+
+    Mat IY_ = _IY.getMat();
+    Mat ICb_ = _ICb.getMat();
+    Mat ICr_ = _ICr.getMat();
+
+    fcvIntegrateImageYCbCr420PseudoPlanaru8(Y.data, CbCr.data, Ywidth, Yheight, Y.step[0],
+                                            CbCr.step[0], (uint32_t*)IY_.data, (uint32_t*)ICb_.data, (uint32_t*)ICr_.data,
+                                            IY_.step[0], ICb_.step[0], ICr_.step[0]);
+}
+
 } // fastcv::
 } // cv::
