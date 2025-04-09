@@ -31,7 +31,7 @@ In the following, we will have a look at two algorithms from the `bgsegm` module
 
 It is a Gaussian Mixture-based Background/Foreground Segmentation Algorithm. It was introduced in
 the paper "An improved adaptive background mixture model for real-time tracking with shadow
-detection" by P. KadewTraKuPong and R. Bowden in 2001. It uses a method to model each background
+detection" by P. KaewTraKulPong and R. Bowden in 2001. It uses a method to model each background
 pixel by a mixture of K Gaussian distributions (K = 3 to 5). The weights of the mixture represent
 the time proportions that those colours stay in the scene. The probable background colours are the
 ones which stay longer and more static.
