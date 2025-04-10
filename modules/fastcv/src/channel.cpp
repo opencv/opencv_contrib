@@ -86,7 +86,7 @@ void split(InputArray _src, OutputArrayOfArrays _mv)
 
     CV_Assert(depth == CV_8U && (cn == 2 || cn == 3 || cn == 4));
     CV_Assert(src.dims <= 2);
-
+    _mv.create(cn, 1, depth);
     for( int k = 0; k < cn; k++ )
     {
         _mv.create(src.dims, src.size, depth, k);

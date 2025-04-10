@@ -65,6 +65,24 @@ CV_EXPORTS_W void gemm(InputArray src1, InputArray src2, OutputArray dst, float 
 
 //! @}
 
+//! @addtogroup fastcv
+//! @{
+
+/**
+ * @brief Integral of a YCbCr420 image.
+ *        Note: Input height should be multiple of 2. Input width and stride should be multiple of 16.
+ *              Output stride should be multiple of 8.
+ *              It is optimized for Qualcomm's processors
+ * @param Y Input Y component of 8UC1 YCbCr420 image.
+ * @param CbCr Input CbCr component(interleaved) of 8UC1 YCbCr420 image.
+ * @param IY Output Y integral of CV_32S one channel, size (Y height + 1)*(Y width + 1)
+ * @param ICb Output Cb integral of CV_32S one channel, size (Y height/2 + 1)*(Y width/2 + 1)
+ * @param ICr Output Cr integral of CV_32S one channel, size (Y height/2 + 1)*(Y width/2 + 1)
+ */
+CV_EXPORTS_W void integrateYUV(InputArray Y, InputArray CbCr, OutputArray IY, OutputArray ICb, OutputArray ICr);
+
+//! @}
+
 } // fastcv::
 } // cv::
 
