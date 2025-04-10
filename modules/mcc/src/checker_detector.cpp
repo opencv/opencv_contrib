@@ -217,8 +217,9 @@ bool CCheckerDetectorImpl::
                     // checker color analysis
                     //-------------------------------------------------------------------
                     std::vector<Ptr<CChecker>> checkers;
+                    Point2f total_offset = static_cast<Point2f>(region.tl());
                     checkerAnalysis(img_rgb_f, chartType, nc, colorCharts, checkers, asp, params,
-                                    img_rgb_org, img_ycbcr_org, rgb_planes, ycbcr_planes);
+                                    img_rgb_org, img_ycbcr_org, rgb_planes, ycbcr_planes, total_offset);
 
 #ifdef MCC_DEBUG
                     cv::Mat image_checker;
@@ -232,16 +233,8 @@ bool CCheckerDetectorImpl::
 #endif
                     for (Ptr<CChecker> checker : checkers)
                     {
-                        const std::vector<cv::Point2f>& checkerBox = checker->getBox();
-                        std::vector<cv::Point2f> restore_box(checkerBox.size());
-                        for (size_t a = 0; a < checkerBox.size(); ++a) {
-                            restore_box[a] = checkerBox[a] + static_cast<cv::Point2f>(region.tl());
-                        }
-                        checker->setBox(restore_box);
-                        {
-                            cv::AutoLock lock(mtx);
-                            m_checkers.push_back(checker);
-                        }
+                        cv::AutoLock lock(mtx);
+                        m_checkers.push_back(checker);
                     }
                 }
 #ifdef MCC_DEBUG
@@ -442,8 +435,9 @@ bool CCheckerDetectorImpl::
                             // checker color analysis
                             //-------------------------------------------------------------------
                             std::vector<Ptr<CChecker>> checkers;
+                            Point2f total_offset = static_cast<Point2f>(region.tl() + innerRegion.tl());
                             checkerAnalysis(img_rgb_f, chartType, nc, colorCharts, checkers, asp, params,
-                                            img_rgb_org, img_ycbcr_org, rgb_planes, ycbcr_planes);
+                                            img_rgb_org, img_ycbcr_org, rgb_planes, ycbcr_planes, total_offset);
 #ifdef MCC_DEBUG
                             cv::Mat image_checker;
                             innerCroppedImage.copyTo(image_checker);
@@ -456,16 +450,8 @@ bool CCheckerDetectorImpl::
 #endif
                             for (Ptr<CChecker> checker : checkers)
                             {
-                                const std::vector<cv::Point2f>& checkerBox = checker->getBox();
-                                std::vector<cv::Point2f> restore_box(checkerBox.size());
-                                for (size_t a = 0; a < checkerBox.size(); ++a) {
-                                    restore_box[a] = checkerBox[a] + static_cast<cv::Point2f>(region.tl() + innerRegion.tl());
-                                }
-                                checker->setBox(restore_box);
-                                {
-                                    cv::AutoLock lock(mtx);
-                                    m_checkers.push_back(checker);
-                                }
+                                cv::AutoLock lock(mtx);
+                                m_checkers.push_back(checker);
                             }
                         }
 #ifdef MCC_DEBUG
@@ -983,7 +969,8 @@ void CCheckerDetectorImpl::
         const cv::Mat &img_rgb_org,
         const cv::Mat &img_ycbcr_org,
         std::vector<cv::Mat> &rgb_planes,
-        std::vector<cv::Mat> &ycbcr_planes)
+        std::vector<cv::Mat> &ycbcr_planes,
+        const Point2f& offset)
 {
     size_t N;
     std::vector<cv::Point2f> ibox;
@@ -1019,9 +1006,9 @@ void CCheckerDetectorImpl::
         if (J[i] > params->maxError)
             continue;
 
-        // redimention box
+        // redimension box
         for (size_t j = 0; j < 4; j++)
-            ibox[j] = invAsp * ibox[j];
+            ibox[j] = invAsp * ibox[j] + offset;
 
         cv::Mat charts_rgb, charts_ycbcr;
         get_profile(ibox, chartType, charts_rgb, charts_ycbcr, img_rgb_org,
