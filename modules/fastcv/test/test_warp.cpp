@@ -45,10 +45,10 @@ TEST_P(WarpPerspective2Plane, accuracy)
 {
     cv::Size dstSize = GetParam();
     cv::Mat src = imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
+    EXPECT_FALSE(src.empty());
+
     cv::Mat dst1, dst2, matrix, ref1, ref2;
     matrix.create(3, 3, CV_32FC1);
-    dst1.create(dstSize, CV_8UC1);
-    dst2.create(dstSize, CV_8UC1);
 
     getInvertMatrix(src, dst1, matrix);
 
@@ -81,9 +81,10 @@ TEST_P(WarpPerspective, accuracy)
     cv::Scalar borderValue = Scalar::all(100);
 
     cv::Mat src = imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
+    EXPECT_FALSE(src.empty());
+
     cv::Mat dst, matrix, ref;
     matrix.create(3, 3, CV_32FC1);
-    dst.create(dstSize, src.type());
 
     getInvertMatrix(src, dst, matrix);
 

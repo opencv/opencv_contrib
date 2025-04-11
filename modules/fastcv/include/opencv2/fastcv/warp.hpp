@@ -19,8 +19,8 @@ namespace fastcv {
 
 /**
  * @brief   Transform an image using perspective transformation, same as cv::warpPerspective but not bit-exact.
- * @param _src          Input 8-bit image. Size of buffer is srcStride*srcHeight bytes.
- * @param _dst          Output 8-bit image. Size of buffer is dstStride*dstHeight bytes.
+ * @param _src          Input 8-bit image.
+ * @param _dst          Output 8-bit image.
  * @param _M0           3x3 perspective transformation matrix.
  * @param dsize         Size of the output image.
  * @param interpolation Interpolation method. Only cv::INTER_NEAREST, cv::INTER_LINEAR and cv::INTER_AREA are supported.

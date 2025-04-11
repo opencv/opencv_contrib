@@ -50,8 +50,6 @@ PERF_TEST_P(WarpPerspective2PlanePerfTest, run,
     cvtColor(img,src,cv::COLOR_BGR2GRAY);
     cv::Mat dst1, dst2, matrix;
     matrix.create(3,3,CV_32FC1);
-    dst1.create(dstSize,CV_8UC1);
-    dst2.create(dstSize,CV_8UC1);
 
     getInvertMatrix(src, dst1, matrix);
 
@@ -78,9 +76,10 @@ PERF_TEST_P(WarpPerspectivePerfTest, run,
     cv::Scalar borderValue = Scalar::all(100);
 
     cv::Mat src = imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
+    EXPECT_FALSE(src.empty());
+
     cv::Mat dst, matrix, ref;
     matrix.create(3, 3, CV_32FC1);
-    dst.create(dstSize, src.type());
 
     getInvertMatrix(src, dst, matrix);
 
