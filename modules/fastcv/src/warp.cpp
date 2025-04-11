@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -12,49 +12,52 @@ class FcvWarpPerspectiveLoop_Invoker : public cv::ParallelLoopBody
 {
     public:
 
-    FcvWarpPerspectiveLoop_Invoker(InputArray _src1, InputArray _src2, OutputArray _dst1, OutputArray _dst2, InputArray _M0,
-        Size _dsize) : cv::ParallelLoopBody()
-    {
-        src1 = _src1.getMat();
-        src2 = _src2.getMat();
-        dsize = _dsize;
-
-        _dst1.create(dsize, src1.type());
-        _dst2.create(dsize, src2.type());
-        dst1 = _dst1.getMat();
-        dst2 = _dst2.getMat();
-
-        M = _M0.getMat();
-    }
+    FcvWarpPerspectiveLoop_Invoker(const Mat& _src1, const Mat& _src2, Mat& _dst1, Mat& _dst2,
+        const float * _M, fcvInterpolationType _interpolation = FASTCV_INTERPOLATION_TYPE_NEAREST_NEIGHBOR,
+        fcvBorderType _borderType = fcvBorderType::FASTCV_BORDER_UNDEFINED, const int _borderValue = 0)
+        : ParallelLoopBody(), src1(_src1), src2(_src2), dst1(_dst1), dst2(_dst2), M(_M), interpolation(_interpolation),
+        borderType(_borderType), borderValue(_borderValue)
+    {}
 
     virtual void operator()(const cv::Range& range) const CV_OVERRIDE
     {
-        uchar* dst1_ptr = dst1.data + range.start*dst1.step;
-        uchar* dst2_ptr = dst2.data + range.start*dst2.step;
+        uchar* dst1_ptr = dst1.data + range.start * dst1.step;
         int rangeHeight = range.end - range.start;
 
         float rangeMatrix[9];
-        rangeMatrix[0] = M.at<float>(0,0);
-        rangeMatrix[1] = M.at<float>(0,1);
-        rangeMatrix[2] = M.at<float>(0,2)+range.start*M.at<float>(0,1);
-        rangeMatrix[3] = M.at<float>(1,0);
-        rangeMatrix[4] = M.at<float>(1,1);
-        rangeMatrix[5] = M.at<float>(1,2)+range.start*M.at<float>(1,1);
-        rangeMatrix[6] = M.at<float>(2,0);
-        rangeMatrix[7] = M.at<float>(2,1);
-        rangeMatrix[8] = M.at<float>(2,2)+range.start*M.at<float>(2,1);
+        rangeMatrix[0] = M[0];
+        rangeMatrix[1] = M[1];
+        rangeMatrix[2] = M[2]+range.start*M[1];
+        rangeMatrix[3] = M[3];
+        rangeMatrix[4] = M[4];
+        rangeMatrix[5] = M[5]+range.start*M[4];
+        rangeMatrix[6] = M[6];
+        rangeMatrix[7] = M[7];
+        rangeMatrix[8] = M[8]+range.start*M[7];
 
-        fcv2PlaneWarpPerspectiveu8(src1.data, src2.data, src1.cols, src1.rows, src1.step, src2.step, dst1_ptr, dst2_ptr,
-            dsize.width, rangeHeight, dst1.step, dst2.step, rangeMatrix);
+        if ((src2.empty()) || (dst2.empty()))
+        {
+            fcvWarpPerspectiveu8_v5(src1.data, src1.cols, src1.rows, src1.step, src1.channels(), dst1_ptr, dst1.cols, rangeHeight,
+                dst1.step, rangeMatrix, interpolation, borderType, borderValue);
+        }
+        else
+        {
+            uchar* dst2_ptr = dst2.data + range.start * dst2.step;
+            fcv2PlaneWarpPerspectiveu8(src1.data, src2.data, src1.cols, src1.rows, src1.step, src2.step, dst1_ptr, dst2_ptr,
+                dst1.cols, rangeHeight, dst1.step, dst2.step, rangeMatrix);
+        }
     }
 
     private:
-    Mat         src1;
-    Mat         src2;
-    Mat         dst1;
-    Mat         dst2;
-    Mat         M;
-    Size        dsize;
+
+    const Mat&              src1;
+    const Mat&              src2;
+    Mat&                    dst1;
+    Mat&                    dst2;
+    const float*            M;
+    fcvInterpolationType    interpolation;
+    fcvBorderType           borderType;
+    int                     borderValue;
 
     FcvWarpPerspectiveLoop_Invoker(const FcvWarpPerspectiveLoop_Invoker &);  // = delete;
     const FcvWarpPerspectiveLoop_Invoker& operator= (const FcvWarpPerspectiveLoop_Invoker &);  // = delete;
@@ -68,8 +71,108 @@ void warpPerspective2Plane(InputArray _src1, InputArray _src2, OutputArray _dst1
     CV_Assert(!_src2.empty() && _src2.type() == CV_8UC1);
     CV_Assert(!_M0.empty());
 
+    Mat src1 = _src1.getMat();
+    Mat src2 = _src2.getMat();
+
+    _dst1.create(dsize, src1.type());
+    _dst2.create(dsize, src2.type());
+    Mat dst1 = _dst1.getMat();
+    Mat dst2 = _dst2.getMat();
+
+    Mat M0 = _M0.getMat();
+    CV_Assert((M0.type() == CV_32F || M0.type() == CV_64F) && M0.rows == 3 && M0.cols == 3);
+    float matrix[9];
+    Mat M(3, 3, CV_32F, matrix);
+    M0.convertTo(M, M.type());
+
+    int nThreads = getNumThreads();
+    int nStripes = nThreads > 1 ? 2*nThreads : 1;
+
     cv::parallel_for_(cv::Range(0, dsize.height),
-        FcvWarpPerspectiveLoop_Invoker(_src1, _src2, _dst1, _dst2, _M0, dsize), 1);
+        FcvWarpPerspectiveLoop_Invoker(src1, src2, dst1, dst2, matrix), nStripes);
+}
+
+void warpPerspective(InputArray _src, OutputArray _dst, InputArray _M0, Size dsize, int interpolation, int borderType,
+    const Scalar&  borderValue)
+{
+    Mat src = _src.getMat();
+
+    _dst.create(dsize, src.type());
+    Mat dst = _dst.getMat();
+
+    Mat M0 = _M0.getMat();
+    CV_Assert((M0.type() == CV_32F || M0.type() == CV_64F) && M0.rows == 3 && M0.cols == 3);
+    float matrix[9];
+    Mat M(3, 3, CV_32F, matrix);
+    M0.convertTo(M, M.type());
+
+    // Do not support inplace case
+    CV_Assert(src.data != dst.data);
+    // Only support CV_8U
+    CV_Assert(src.depth() == CV_8U);
+
+    INITIALIZATION_CHECK;
+
+    fcvBorderType           fcvBorder;
+    uint8_t                 fcvBorderValue = 0;
+    fcvInterpolationType    fcvInterpolation;
+
+    switch (borderType)
+    {
+        case BORDER_CONSTANT:
+        {
+            // Border value should be same
+            CV_Assert((borderValue[0] == borderValue[1]) &&
+                      (borderValue[0] == borderValue[2]) &&
+                      (borderValue[0] == borderValue[3]));
+
+            fcvBorder       = fcvBorderType::FASTCV_BORDER_CONSTANT;
+            fcvBorderValue  = static_cast<uint8_t>(borderValue[0]);
+            break;
+        }
+        case BORDER_REPLICATE:
+        {
+            fcvBorder = fcvBorderType::FASTCV_BORDER_REPLICATE;
+            break;
+        }
+        case BORDER_TRANSPARENT:
+        {
+            fcvBorder = fcvBorderType::FASTCV_BORDER_UNDEFINED;
+            break;
+        }
+        default:
+            CV_Error(cv::Error::StsBadArg, cv::format("Border type:%d is not supported", borderType));
+    }
+
+    switch(interpolation)
+    {
+        case INTER_NEAREST:
+        {
+            fcvInterpolation = FASTCV_INTERPOLATION_TYPE_NEAREST_NEIGHBOR;
+            break;
+        }
+        case INTER_LINEAR:
+        {
+            fcvInterpolation = FASTCV_INTERPOLATION_TYPE_BILINEAR;
+            break;
+        }
+        case INTER_AREA:
+        {
+            fcvInterpolation = FASTCV_INTERPOLATION_TYPE_AREA;
+            break;
+        }
+        default:
+            CV_Error(cv::Error::StsBadArg, cv::format("Interpolation type:%d is not supported", interpolation));
+    }
+
+    int nThreads = cv::getNumThreads();
+    int nStripes = nThreads > 1 ? 2*nThreads : 1;
+
+    // placeholder
+    Mat tmp;
+
+    cv::parallel_for_(cv::Range(0, dsize.height),
+        FcvWarpPerspectiveLoop_Invoker(src, tmp, dst, tmp, matrix, fcvInterpolation, fcvBorder, fcvBorderValue), nStripes);
 }
 
 } // fastcv::
