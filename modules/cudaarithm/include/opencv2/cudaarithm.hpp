@@ -740,6 +740,16 @@ CV_EXPORTS void split(InputArray src, GpuMat* dst, Stream& stream = Stream::Null
 /** @overload */
 CV_EXPORTS_W void split(InputArray src, CV_OUT std::vector<GpuMat>& dst, Stream& stream = Stream::Null());
 
+/** @brief Extracts a plane of a multi-channel matrix into an single channel matrix.
+
+@param src Source matrix.
+@param dst Destination single-channel matrix.
+@param stream Stream for the asynchronous version.
+
+@sa split
+ */
+CV_EXPORTS void extractChannel(const GpuMat& src, GpuMat& dst, int channel_index, Stream& stream = Stream::Null());
+
 /** @brief Transposes a matrix.
 
 @param src1 Source matrix. 1-, 4-, 8-byte element sizes are supported for now.
