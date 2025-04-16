@@ -15,7 +15,7 @@ jobs:
     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-ARM64.yaml@main
 
   Ubuntu2004-ARM64-FastCV:
-    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-ARM64-FastCV.yaml@as/more_fastcv_supp
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-ARM64-FastCV.yaml@main
 
   Ubuntu2004-x64-CUDA:
     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-U20-Cuda.yaml@main
