@@ -53,7 +53,7 @@ enum PatternPositionType {
  * @sa PatternPositionType, solvePnP()
  */
 struct CV_EXPORTS_W_SIMPLE EstimateParameters {
-    CV_PROP_RW PatternPositionType pattern;
+    CV_PROP_RW aruco::PatternPositionType pattern;
     CV_PROP_RW bool useExtrinsicGuess;
     CV_PROP_RW int solvePnPMethod;
 
