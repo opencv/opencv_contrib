@@ -36,6 +36,7 @@
 #include "opencv2/fastcv/thresh_dsp.hpp"
 #include "opencv2/fastcv/fft_dsp.hpp"
 #include "opencv2/fastcv/edges_dsp.hpp"
+#include "opencv2/fastcv/blur_dsp.hpp"
 
 /**
  * @defgroup fastcv Module-wrapper for FastCV hardware accelerated functions
