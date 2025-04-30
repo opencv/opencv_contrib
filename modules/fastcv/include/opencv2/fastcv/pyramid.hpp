@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -16,7 +16,7 @@ namespace fastcv {
 
 /**
  * @brief Creates a gradient pyramid from an image pyramid
- *
+ *        Note: The borders are ignored during gradient calculation.
  * @param pyr Input pyramid of 1-channel 8-bit images. Only continuous images are supported.
  * @param dx Horizontal Sobel gradient pyramid of the same size as pyr
  * @param dy Verical Sobel gradient pyramid of the same size as pyr

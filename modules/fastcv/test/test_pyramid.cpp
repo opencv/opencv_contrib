@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -126,16 +126,17 @@ TEST_P(SobelPyramidTest, accuracy)
     {
         cv::Mat ref, dst;
         double normInf, normL2;
-        ref = refPyrDx[i];
-        dst = pyrDx[i];
+        cv::Rect roi(1, 1, pyr[i].cols - 2, pyr[i].rows - 2);
+        ref = refPyrDx[i](roi);
+        dst = pyrDx[i](roi);
         normInf = cvtest::norm(dst, ref, cv::NORM_INF);
         normL2  = cvtest::norm(dst, ref, cv::NORM_L2) / dst.total();
 
         EXPECT_LE(normInf, 76.1);
         EXPECT_LT(normL2,   0.4);
 
-        ref = refPyrDy[i];
-        dst = pyrDy[i];
+        ref = refPyrDy[i](roi);
+        dst = pyrDy[i](roi);
         normInf = cvtest::norm(dst, ref, cv::NORM_INF);
         normL2  = cvtest::norm(dst, ref, cv::NORM_L2) / dst.total();
 

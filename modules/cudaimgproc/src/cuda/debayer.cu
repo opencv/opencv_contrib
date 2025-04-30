@@ -390,6 +390,17 @@ namespace cv { namespace cuda { namespace device
     //
     // ported to CUDA
 
+    template<typename Depth> __device__
+    typename TypeVec<Depth, 3>::vec_type make_3(Depth x, Depth y, Depth z);
+
+    template<> __device__ TypeVec<uchar, 3>::vec_type make_3<uchar>(uchar x, uchar y, uchar z) {
+        return make_uchar3(x, y, z);
+    }
+
+    template<> __device__ TypeVec<ushort, 3>::vec_type make_3<ushort>(ushort x, ushort y, ushort z) {
+        return make_ushort3(x, y, z);
+    }
+
     template <typename DstType, class Ptr2D>
     __global__ void MHCdemosaic(PtrStepSz<DstType> dst, Ptr2D src, const int2 firstRed)
     {
@@ -506,34 +517,36 @@ namespace cv { namespace cuda { namespace device
         alternate.x = (x + firstRed.x) % 2;
         alternate.y = (y + firstRed.y) % 2;
 
-        // in BGR sequence;
-        uchar3 pixelColor =
+        typedef typename VecTraits<DstType>::elem_type SrcElemType;
+        typedef typename TypeVec<SrcElemType, 3>::vec_type SrcType;
+
+        SrcType pixelColor =
             (alternate.y == 0) ?
                 ((alternate.x == 0) ?
-                    make_uchar3(saturate_cast<uchar>(PATTERN.y), saturate_cast<uchar>(PATTERN.x), saturate_cast<uchar>(C)) :
-                    make_uchar3(saturate_cast<uchar>(PATTERN.w), saturate_cast<uchar>(C), saturate_cast<uchar>(PATTERN.z))) :
+                    make_3<SrcElemType>(saturate_cast<SrcElemType>(PATTERN.y), saturate_cast<SrcElemType>(PATTERN.x), saturate_cast<SrcElemType>(C)) :
+                    make_3<SrcElemType>(saturate_cast<SrcElemType>(PATTERN.w), saturate_cast<SrcElemType>(C), saturate_cast<SrcElemType>(PATTERN.z))) :
                 ((alternate.x == 0) ?
-                    make_uchar3(saturate_cast<uchar>(PATTERN.z), saturate_cast<uchar>(C), saturate_cast<uchar>(PATTERN.w)) :
-                    make_uchar3(saturate_cast<uchar>(C), saturate_cast<uchar>(PATTERN.x), saturate_cast<uchar>(PATTERN.y)));
+                    make_3<SrcElemType>(saturate_cast<SrcElemType>(PATTERN.z), saturate_cast<SrcElemType>(C), saturate_cast<SrcElemType>(PATTERN.w)) :
+                    make_3<SrcElemType>(saturate_cast<SrcElemType>(C), saturate_cast<SrcElemType>(PATTERN.x), saturate_cast<SrcElemType>(PATTERN.y)));
 
         dst(y, x) = toDst<DstType>(pixelColor);
     }
 
-    template <int cn>
-    void MHCdemosaic(PtrStepSzb src, int2 sourceOffset, PtrStepSzb dst, int2 firstRed, cudaStream_t stream)
+    template <int cn, typename Depth>
+    void MHCdemosaic(PtrStepSz<Depth> src, int2 sourceOffset, PtrStepSz<Depth> dst, int2 firstRed, cudaStream_t stream)
     {
-        typedef typename TypeVec<uchar, cn>::vec_type dst_t;
+        typedef typename TypeVec<Depth, cn>::vec_type dst_t;
 
         const dim3 block(32, 8);
         const dim3 grid(divUp(src.cols, block.x), divUp(src.rows, block.y));
 
         if (sourceOffset.x || sourceOffset.y) {
-            cv::cudev::TextureOff<uchar> texSrc(src, sourceOffset.y, sourceOffset.x);
-            MHCdemosaic<dst_t, cv::cudev::TextureOffPtr<uchar>><<<grid, block, 0, stream>>>((PtrStepSz<dst_t>)dst, texSrc, firstRed);
+            cv::cudev::TextureOff<Depth> texSrc(src, sourceOffset.y, sourceOffset.x);
+            MHCdemosaic<dst_t, cv::cudev::TextureOffPtr<Depth>><<<grid, block, 0, stream>>>((PtrStepSz<dst_t>)dst, texSrc, firstRed);
         }
         else {
-            cv::cudev::Texture<uchar> texSrc(src);
-            MHCdemosaic<dst_t, cv::cudev::TexturePtr<uchar>><<<grid, block, 0, stream>>>((PtrStepSz<dst_t>)dst, texSrc, firstRed);
+            cv::cudev::Texture<Depth> texSrc(src);
+            MHCdemosaic<dst_t, cv::cudev::TexturePtr<Depth>><<<grid, block, 0, stream>>>((PtrStepSz<dst_t>)dst, texSrc, firstRed);
         }
 
         cudaSafeCall( cudaGetLastError() );
@@ -542,9 +555,12 @@ namespace cv { namespace cuda { namespace device
             cudaSafeCall( cudaDeviceSynchronize() );
     }
 
-    template void MHCdemosaic<1>(PtrStepSzb src, int2 sourceOffset, PtrStepSzb dst, int2 firstRed, cudaStream_t stream);
-    template void MHCdemosaic<3>(PtrStepSzb src, int2 sourceOffset, PtrStepSzb dst, int2 firstRed, cudaStream_t stream);
-    template void MHCdemosaic<4>(PtrStepSzb src, int2 sourceOffset, PtrStepSzb dst, int2 firstRed, cudaStream_t stream);
+    template void MHCdemosaic<1, uchar>(PtrStepSzb src, int2 sourceOffset, PtrStepSzb dst, int2 firstRed, cudaStream_t stream);
+    template void MHCdemosaic<3, uchar>(PtrStepSzb src, int2 sourceOffset, PtrStepSzb dst, int2 firstRed, cudaStream_t stream);
+    template void MHCdemosaic<4, uchar>(PtrStepSzb src, int2 sourceOffset, PtrStepSzb dst, int2 firstRed, cudaStream_t stream);
+    template void MHCdemosaic<1, ushort>(PtrStepSz<ushort> src, int2 sourceOffset, PtrStepSz<ushort> dst, int2 firstRed, cudaStream_t stream);
+    template void MHCdemosaic<3, ushort>(PtrStepSz<ushort> src, int2 sourceOffset, PtrStepSz<ushort> dst, int2 firstRed, cudaStream_t stream);
+    template void MHCdemosaic<4, ushort>(PtrStepSz<ushort> src, int2 sourceOffset, PtrStepSz<ushort> dst, int2 firstRed, cudaStream_t stream);
 }}}
 
 #endif /* CUDA_DISABLER */

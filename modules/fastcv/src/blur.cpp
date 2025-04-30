@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -359,6 +359,27 @@ void sepFilter2D(InputArray _src, OutputArray _dst, int ddepth, InputArray _kern
             break;
         }
     }
+}
+
+void normalizeLocalBox(InputArray _src, OutputArray _dst, Size pSize, bool useStdDev)
+{
+    CV_Assert(!_src.empty());
+    int type = _src.type();
+    CV_Assert(type == CV_8UC1 || type == CV_32FC1);
+
+    Size size = _src.size();
+    int dst_type = type == CV_8UC1 ? CV_8SC1 : CV_32FC1;
+    _dst.create(size, dst_type);
+
+    Mat src = _src.getMat();
+    Mat dst = _dst.getMat();
+
+    if(type == CV_8UC1)
+        fcvNormalizeLocalBoxu8(src.data, src.cols, src.rows, src.step[0],
+                              pSize.width, pSize.height, useStdDev, (int8_t*)dst.data, dst.step[0]);
+    else if(type == CV_32FC1)
+        fcvNormalizeLocalBoxf32((float*)src.data, src.cols, src.rows, src.step[0],
+                              pSize.width, pSize.height, useStdDev, (float*)dst.data, dst.step[0]);
 }
 
 } // fastcv::

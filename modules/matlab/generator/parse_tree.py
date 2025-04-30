@@ -1,4 +1,10 @@
-import collections
+import sys
+if sys.version_info >= (3, 10):
+    import collections.abc
+    IterableType = collections.abc.Iterable
+else:
+    import collections
+    IterableType = collections.Iterable
 from textwrap import fill
 from filters import *
 try:
@@ -371,7 +377,7 @@ def todict(obj):
         return obj
     elif isinstance(obj, dict):
         return dict((key, todict(val)) for key, val in obj.items())
-    elif isinstance(obj, collections.Iterable):
+    elif isinstance(obj, IterableType):
         return [todict(val) for val in obj]
     elif hasattr(obj, '__dict__'):
         return todict(vars(obj))
