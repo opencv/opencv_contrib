@@ -27,7 +27,7 @@ namespace dsp {
  * 
  * @return int Returns 0 on success, and a non-zero value on failure.
  */
-CV_EXPORTS_W int fcvdspinit();
+CV_EXPORTS int fcvdspinit();
 
 /**
  * @brief Deinitializes the FastCV DSP environment.
@@ -39,7 +39,7 @@ CV_EXPORTS_W int fcvdspinit();
  * @note This function must be called at the end of the use case or program, after all DSP-related 
  *       operations are complete.
  */
-CV_EXPORTS_W void fcvdspdeinit();
+CV_EXPORTS void fcvdspdeinit();
 //! @}
 
 } // dsp::

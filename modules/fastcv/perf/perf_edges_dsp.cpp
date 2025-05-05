@@ -41,7 +41,7 @@ PERF_TEST_P(CannyPerfTest, run,
     while (next())
     {
         startTimer();
-        cv::fastcv::dsp::canny(src, dst, lowThreshold, highThreshold, apertureSize, L2gradient);
+        cv::fastcv::dsp::Canny(src, dst, lowThreshold, highThreshold, apertureSize, L2gradient);
         stopTimer();
     }
     

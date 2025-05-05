@@ -24,7 +24,7 @@ namespace dsp {
  *
  * @sa Filter2D
  */
-CV_EXPORTS_W void filter2D(InputArray _src, OutputArray _dst, int ddepth, InputArray _kernel);
+CV_EXPORTS void filter2D(InputArray _src, OutputArray _dst, int ddepth, InputArray _kernel);
 
 //! @}
 } // dsp::

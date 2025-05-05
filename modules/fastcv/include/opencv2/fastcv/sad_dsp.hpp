@@ -24,7 +24,7 @@ namespace dsp {
  * @param _src The input image data, type CV_8UC1
  * @param _dst The output image data, type CV_16UC1
 */
-CV_EXPORTS_W void sumOfAbsoluteDiffs(cv::InputArray _patch, cv::InputArray _src, cv::OutputArray _dst);
+CV_EXPORTS void sumOfAbsoluteDiffs(cv::InputArray _patch, cv::InputArray _src, cv::OutputArray _dst);
 //! @}
 
 } // dsp::

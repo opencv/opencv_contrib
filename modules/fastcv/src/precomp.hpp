@@ -79,8 +79,7 @@ namespace dsp {
     struct FastCvDspContext;
 
     #define IS_FASTCV_ALLOCATED(mat) \
-    ((mat.u && mat.u->userdata && \
-        *static_cast<std::string*>(mat.u->userdata) == "QCOM") ? true : \
+    ((mat.allocator == cv::fastcv::getQcAllocator()) ? true : \
         (CV_Error(cv::Error::StsBadArg, cv::format("Matrix '%s' not allocated with FastCV allocator. " \
                                     "Please ensure that the matrix is created using " \
                                     "cv::fastcv::getQcAllocator().", #mat)), false))

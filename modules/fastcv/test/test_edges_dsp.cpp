@@ -24,7 +24,7 @@ TEST(DSP_CannyTest, accuracy)
     int lowThreshold = 0;
     int highThreshold = 150;
     
-    cv::fastcv::dsp::canny(src, dst, lowThreshold, highThreshold, 3, true);
+    cv::fastcv::dsp::Canny(src, dst, lowThreshold, highThreshold, 3, true);
 
     //De-Initialize DSP
     cv::fastcv::dsp::fcvdspdeinit();

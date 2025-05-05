@@ -25,7 +25,7 @@ namespace dsp {
 * @param dst The computed FFT matrix of type CV_32FC2. The FFT Re and Im coefficients are stored in different channels.
             Hence the dimensions of the dst are (srcWidth, srcHeight)
 */
-CV_EXPORTS_W void FFT(InputArray src, OutputArray dst);
+CV_EXPORTS void FFT(InputArray src, OutputArray dst);
 
 /**
 * @brief Computes the 1D or 2D Inverse Fast Fourier Transform of a complex valued matrix.
@@ -38,7 +38,7 @@ CV_EXPORTS_W void FFT(InputArray src, OutputArray dst);
 * @param dst The computed IFFT matrix of type CV_8U. The matrix is real valued and has no imaginary components.
             Hence the dimensions of the dst are (srcWidth , srcHeight)
 */
-CV_EXPORTS_W void IFFT(InputArray src, OutputArray dst);
+CV_EXPORTS void IFFT(InputArray src, OutputArray dst);
 
 //! @}
 

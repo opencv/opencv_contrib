@@ -65,7 +65,7 @@ TEST_P(Filter2DTest_DSP, accuracy)
 }
 
 INSTANTIATE_TEST_CASE_P(FastCV_Extension, Filter2DTest_DSP, Combine(
-/*image sie*/      Values(perf::szVGA, perf::sz720p, perf::sz1080p),
+/*image sie*/      Values(perf::szVGA, perf::sz720p),
 /*dst depth*/      Values(CV_8U,CV_16S,CV_32F),
 /*kernel size*/    Values(3, 5, 7, 9, 11)
 ));

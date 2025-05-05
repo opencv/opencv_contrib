@@ -28,7 +28,7 @@ namespace dsp {
  * @param apertureSize  The Sobel kernel size for calculating gradient. Supported sizes are 3, 5 and 7.
  * @param L2gradient    L2 Gradient or L1 Gradient
 */
-CV_EXPORTS_W void canny(InputArray _src, OutputArray _dst, int lowThreshold, int highThreshold, int apertureSize = 3, bool L2gradient = false);
+CV_EXPORTS void Canny(InputArray _src, OutputArray _dst, int lowThreshold, int highThreshold, int apertureSize = 3, bool L2gradient = false);
 //! @}
 
 } // dsp::

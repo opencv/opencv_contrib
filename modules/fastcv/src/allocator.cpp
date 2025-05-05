@@ -61,8 +61,6 @@ cv::UMatData* QcAllocator::allocate(int dims, const int* sizes, int type,
     u->size = total;
     if(data0)
         u->flags |= cv::UMatData::USER_ALLOCATED;
-    
-    u->userdata = new std::string("QCOM");
 
     // Add to active allocations
     cv::fastcv::QcResourceManager::getInstance().addAllocation(data);
@@ -92,12 +90,6 @@ void QcAllocator::deallocate(cv::UMatData* u) const
         // Remove from active allocations
         cv::fastcv::QcResourceManager::getInstance().removeAllocation(u->origdata);
         u->origdata = 0;
-    }
-
-    if (u->userdata)
-    {
-        delete static_cast<std::string*>(u->userdata);
-        u->userdata = nullptr;
     }
 
     delete u;

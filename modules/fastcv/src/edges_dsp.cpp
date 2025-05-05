@@ -9,7 +9,7 @@ namespace cv {
 namespace fastcv {
 namespace dsp {
 
-void canny(InputArray _src, OutputArray _dst, int lowThreshold, int highThreshold, int apertureSize, bool L2gradient)
+void Canny(InputArray _src, OutputArray _dst, int lowThreshold, int highThreshold, int apertureSize, bool L2gradient)
 {
     CV_Assert(
         !_src.empty() && 
