@@ -59,10 +59,8 @@ void filter2D(InputArray _src, OutputArray _dst, int ddepth, InputArray _kernel)
         {
             CV_Error(cv::Error::StsBadArg, cv::format("Kernel Size:%d, Dst type:%s is not supported", ksize.width,
                 depthToString(ddepth)));
-            break;
         }
     }
-    
 }
 
 } // dsp::
