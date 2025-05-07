@@ -7,7 +7,7 @@
 
 namespace opencv_test {
 
-static void getInvertMatrix(Mat& src, Mat& dst, Mat& M)
+static void getInvertMatrix(Mat& src, Size dstSize, Mat& M)
 {
     RNG& rng = cv::theRNG();
     Point2f s[4], d[4];
@@ -15,11 +15,11 @@ static void getInvertMatrix(Mat& src, Mat& dst, Mat& M)
     s[0] = Point2f(0,0);
     d[0] = Point2f(0,0);
     s[1] = Point2f(src.cols-1.f,0);
-    d[1] = Point2f(dst.cols-1.f,0);
+    d[1] = Point2f(dstSize.width-1.f,0);
     s[2] = Point2f(src.cols-1.f,src.rows-1.f);
-    d[2] = Point2f(dst.cols-1.f,dst.rows-1.f);
+    d[2] = Point2f(dstSize.width-1.f,dstSize.height-1.f);
     s[3] = Point2f(0,src.rows-1.f);
-    d[3] = Point2f(0,dst.rows-1.f);
+    d[3] = Point2f(0,dstSize.height-1.f);
 
     float buffer[16];
     Mat tmp( 1, 16, CV_32FC1, buffer );
@@ -29,8 +29,8 @@ static void getInvertMatrix(Mat& src, Mat& dst, Mat& M)
     {
         s[i].x += buffer[i*4]*src.cols/2;
         s[i].y += buffer[i*4+1]*src.rows/2;
-        d[i].x += buffer[i*4+2]*dst.cols/2;
-        d[i].y += buffer[i*4+3]*dst.rows/2;
+        d[i].x += buffer[i*4+2]*dstSize.width/2;
+        d[i].y += buffer[i*4+3]*dstSize.height/2;
     }
 
     cv::getPerspectiveTransform( s, d ).convertTo( M, M.depth() );
@@ -51,7 +51,7 @@ PERF_TEST_P(WarpPerspective2PlanePerfTest, run,
     cv::Mat dst1, dst2, matrix;
     matrix.create(3,3,CV_32FC1);
 
-    getInvertMatrix(src, dst1, matrix);
+    getInvertMatrix(src, dstSize, matrix);
 
     while (next())
     {
@@ -81,7 +81,7 @@ PERF_TEST_P(WarpPerspectivePerfTest, run,
     cv::Mat dst, matrix, ref;
     matrix.create(3, 3, CV_32FC1);
 
-    getInvertMatrix(src, dst, matrix);
+    getInvertMatrix(src, dstSize, matrix);
 
     while (next())
     {
