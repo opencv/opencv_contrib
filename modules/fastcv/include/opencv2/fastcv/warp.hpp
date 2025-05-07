@@ -28,7 +28,7 @@ namespace fastcv {
  *                      are supported.
  * @param borderValue   Value used in case of a constant border.
  */
-void warpPerspective(InputArray _src, OutputArray _dst, InputArray _M0, Size dsize, int interpolation, int borderType,
+CV_EXPORTS_W void warpPerspective(InputArray _src, OutputArray _dst, InputArray _M0, Size dsize, int interpolation, int borderType,
     const Scalar&  borderValue);
 
 /**
