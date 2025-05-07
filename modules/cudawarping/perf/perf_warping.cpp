@@ -224,6 +224,48 @@ PERF_TEST_P(Sz_Depth_Cn_Scale, ResizeArea,
 }
 
 //////////////////////////////////////////////////////////////////////
+// ResizeOnnx
+
+PERF_TEST_P(Sz_Depth_Cn_Scale, ResizeOnnxLinearAntialias,
+            Combine(CUDA_TYPICAL_MAT_SIZES,
+                    Values(CV_8U, CV_16U, CV_32F),
+                    CUDA_CHANNELS_1_3_4,
+                    Values(0.8, 0.5, 0.3)))
+{
+    declare.time(10.0);
+
+    const cv::Size size = GET_PARAM(0);
+    const int depth = GET_PARAM(1);
+    const int channels = GET_PARAM(2);
+    const int interpolation = cv::INTER_LINEAR | cv::INTER_ANTIALIAS;
+    const double f = GET_PARAM(3);
+    const Point2d scale = Point2d(f, f);
+
+    const int type = CV_MAKE_TYPE(depth, channels);
+
+    cv::Mat src(size, type);
+    declare.in(src, WARMUP_RNG);
+
+    if (PERF_RUN_CUDA())
+    {
+        const cv::cuda::GpuMat d_src(src);
+        cv::cuda::GpuMat dst;
+
+        TEST_CYCLE() cv::cuda::resizeOnnx(d_src, dst, cv::Size(), scale, interpolation);
+
+        CUDA_SANITY_CHECK(dst, 1);
+    }
+    else
+    {
+        cv::Mat dst;
+
+        TEST_CYCLE() cv::resizeOnnx(src, dst, cv::Size(), scale, interpolation);
+
+        CPU_SANITY_CHECK(dst);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
 // WarpAffine
 
 DEF_PARAM_TEST(Sz_Depth_Cn_Inter_Border, cv::Size, MatDepth, MatCn, Interpolation, BorderMode);
