@@ -175,5 +175,109 @@ void warpPerspective(InputArray _src, OutputArray _dst, InputArray _M0, Size dsi
         FcvWarpPerspectiveLoop_Invoker(src, tmp, dst, tmp, matrix, fcvInterpolation, fcvBorder, fcvBorderValue), nStripes);
 }
 
+void warpAffine(InputArray _src, OutputArray _dst, InputArray _M, Size dsize, int interpolation, int borderValue)
+{
+    INITIALIZATION_CHECK;
+    CV_Assert(!_src.empty() && _src.type() == CV_8UC1);
+    CV_Assert(!_M.empty());
+
+    Mat src = _src.getMat();
+    _dst.create(dsize, src.type());
+    Mat dst = _dst.getMat();
+    Mat M = _M.getMat();
+
+    fcvStatus               status;
+    fcvInterpolationType    fcvInterpolation;
+
+    float32_t affineMatrix[6] = { M.at<float>(0, 0), M.at<float>(0, 1), M.at<float>(0, 2),
+                                  M.at<float>(1, 0), M.at<float>(1, 1), M.at<float>(1, 2) };
+
+    switch (interpolation)
+    {
+        case cv::InterpolationFlags::INTER_NEAREST:
+        {
+            fcvInterpolation = FASTCV_INTERPOLATION_TYPE_NEAREST_NEIGHBOR;
+            break;
+        }
+        case cv::InterpolationFlags::INTER_LINEAR:
+        {
+            fcvInterpolation = FASTCV_INTERPOLATION_TYPE_BILINEAR;
+            break;
+        }
+        case cv::InterpolationFlags::INTER_AREA:
+        {
+            fcvInterpolation = FASTCV_INTERPOLATION_TYPE_AREA;
+            break;
+        }
+        default:
+            CV_Error(cv::Error::StsBadArg, "Unsupported interpolation type");
+    }
+
+    status = fcvTransformAffineClippedu8_v3((const uint8_t*)src.data, src.cols, src.rows, src.step, affineMatrix,
+                (uint8_t*)dst.data, dst.cols, dst.rows, dst.step, NULL, fcvInterpolation, FASTCV_BORDER_CONSTANT, borderValue);
+
+    if (status != FASTCV_SUCCESS)
+    {
+        std::string s = fcvStatusStrings.count(status) ? fcvStatusStrings.at(status) : "unknown";
+        CV_Error( cv::Error::StsInternal, "FastCV error: " + s);
+    }
+}
+
+void warpAffine3Channel(InputArray _src, OutputArray _dst, InputArray _M, Size dsize, OutputArray _dstBorder)
+{
+    INITIALIZATION_CHECK;
+
+    CV_Assert(!_src.empty() && _src.type() == CV_8UC3);
+    CV_Assert(!_M.empty());
+
+
+    Mat src = _src.getMat();
+    _dst.create(dsize, src.type());
+    Mat dst = _dst.getMat();
+    Mat M = _M.getMat();
+
+    _dstBorder.create(1, dsize.height * 2, CV_32S);
+    Mat dstBorder = _dstBorder.getMat();
+
+    float32_t affineMatrix[6] = { M.at<float>(0, 0), M.at<float>(0, 1), M.at<float>(0, 2),
+                                  M.at<float>(1, 0), M.at<float>(1, 1), M.at<float>(1, 2) };
+
+
+    fcv3ChannelTransformAffineClippedBCu8((const uint8_t*)src.data, src.cols, src.rows, src.step[0],
+                                          affineMatrix, (uint8_t*)dst.data, dst.cols, dst.rows, dst.step[0], (uint32_t*)dstBorder.data);
+}
+
+void warpAffineROI(InputArray _src, const cv::Point2f& position, InputArray _affine, OutputArray _patch, Size patchSize)
+{
+    INITIALIZATION_CHECK;
+
+    cv::Mat src = _src.getMat();
+    cv::Mat affine = _affine.getMat();
+
+    CV_Assert(!src.empty() && src.type() == CV_8UC1);
+    CV_Assert(!affine.empty() && affine.type() == CV_32FC1);
+
+    float affineMatrix[4];
+    for (int i = 0; i < 4; i++) {
+        affineMatrix[i] = affine.at<float>(i / 2, i % 2);
+    }
+
+    _patch.create(patchSize, src.type());
+    cv::Mat patch = _patch.getMat();
+
+    float positionArray[2];
+    positionArray[0] = position.x;
+    positionArray[1] = position.y;
+
+    // Perform affine transformation
+    int status = fcvTransformAffineu8_v2((const uint8_t*)src.data, src.cols, src.rows, src.step, positionArray,
+                                            affineMatrix, (uint8_t*)patch.data, patch.cols, patch.rows, patch.step);
+
+    if (status != 0)
+    {
+        CV_Error(cv::Error::StsInternal, "FastCV error: General failure");
+    }
+}
+
 } // fastcv::
 } // cv::

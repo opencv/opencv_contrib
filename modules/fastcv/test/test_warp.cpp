@@ -39,6 +39,29 @@ static void getInvertMatrix(Mat& src, Size dstSize, Mat& M)
     invert(M,M);
 }
 
+static cv::Mat getInverseAffine(const cv::Mat& affine)
+{
+    // Extract the 2x2 part
+    cv::Mat rotationScaling = affine(cv::Rect(0, 0, 2, 2));
+
+    // Invert the 2x2 part
+    cv::Mat inverseRotationScaling;
+    cv::invert(rotationScaling, inverseRotationScaling);
+
+    // Extract the translation part
+    cv::Mat translation = affine(cv::Rect(2, 0, 1, 2));
+
+    // Compute the new translation
+    cv::Mat inverseTranslation = -inverseRotationScaling * translation;
+
+    // Construct the inverse affine matrix
+    cv::Mat inverseAffine = cv::Mat::zeros(2, 3, CV_32F);
+    inverseRotationScaling.copyTo(inverseAffine(cv::Rect(0, 0, 2, 2)));
+    inverseTranslation.copyTo(inverseAffine(cv::Rect(2, 0, 1, 2)));
+
+    return inverseAffine;
+}
+
 typedef testing::TestWithParam<cv::Size> WarpPerspective2Plane;
 
 TEST_P(WarpPerspective2Plane, accuracy)
@@ -105,6 +128,82 @@ INSTANTIATE_TEST_CASE_P(FastCV_Extension, WarpPerspective,Combine(
                    ::testing::Values(BORDER_CONSTANT, BORDER_REPLICATE, BORDER_TRANSPARENT)
 ));
 INSTANTIATE_TEST_CASE_P(FastCV_Extension, WarpPerspective2Plane, Values(perf::szVGA, perf::sz720p, perf::sz1080p));
+
+TEST(WarpAffine3ChannelTest, accuracy)
+{
+    cv::Mat src = imread(cvtest::findDataFile("cv/shared/baboon.png"));
+
+    // Define the transformation matrix
+    cv::Mat M = (cv::Mat_<float>(2, 3) << 2.0, 0, -50.0, 0, 2.0, -50.0);
+
+    cv::Size dsize(src.cols, src.rows);
+
+    cv::Mat dst;
+    cv::Mat dstBorder;
+
+    cv::fastcv::warpAffine3Channel(src, dst, M, dsize, dstBorder);
+
+    EXPECT_FALSE(dst.empty());
+}
+
+TEST(WarpAffineROITest, accuracy)
+{
+    cv::Mat src = cv::imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
+
+    // Define the position and affine matrix
+    cv::Point2f position(src.cols / 2.0f, src.rows / 2.0f);
+
+    float angle = 180.0; // Rotation angle in degrees
+    float radians = angle * CV_PI / 180.0;
+    cv::Mat affine = (cv::Mat_<float>(2, 2) << cos(radians), -sin(radians), sin(radians), cos(radians));
+
+    cv::Mat patch;
+
+    cv::fastcv::warpAffineROI(src, position, affine, patch, cv::Size(100, 100));
+
+    EXPECT_FALSE(patch.empty());
+}
+
+typedef testing::TestWithParam<tuple<int, int>> WarpAffineTest;
+
+TEST_P(WarpAffineTest, accuracy)
+{
+    // Load the source image
+    cv::Mat src = cv::imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(src.empty());
+
+    float angle = 30.0;// Rotation angle in degrees
+    float scale = 0.5;// Scale factor
+    cv::Mat affine = cv::getRotationMatrix2D(cv::Point2f(100, 100), angle, scale);
+
+    // Compute the inverse affine matrix
+    cv::Mat inverseAffine = getInverseAffine(affine);
+
+    // Define the destination size
+    cv::Size dsize(src.cols, src.rows);
+
+    // Define the output matrix
+    cv::Mat dst;
+
+    // Get the parameters
+    int interpolation = std::get<0>(GetParam());
+    int borderValue = std::get<1>(GetParam());
+
+    // Perform the affine transformation
+    cv::fastcv::warpAffine(src, dst, inverseAffine, dsize, interpolation, borderValue);
+
+    // Check that the output is not empty
+    EXPECT_FALSE(dst.empty());
+}
+
+INSTANTIATE_TEST_CASE_P(
+    FastCV_Extension,
+    WarpAffineTest,
+    ::testing::Combine(
+        ::testing::Values(INTER_NEAREST, INTER_LINEAR, INTER_AREA),
+        ::testing::Values(0, 255) // Black and white borders
+    )
+);
 
 }
 }
