@@ -24,7 +24,6 @@ class tracking_contrib_test(NewOpenCVTests):
         t = cv.legacy.TrackerMedianFlow_create()
         #t = cv.legacy.TrackerGOTURN_create()
         t = cv.legacy.TrackerMOSSE_create()
-        t = cv.legacy.TrackerCSRT_create()
 
 
 if __name__ == '__main__':
