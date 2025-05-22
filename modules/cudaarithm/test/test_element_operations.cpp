@@ -2529,7 +2529,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, AddWeighted, testing::Combine(
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Threshold
 
-CV_ENUM(ThreshOp, cv::THRESH_BINARY, cv::THRESH_BINARY_INV, cv::THRESH_TRUNC, cv::THRESH_TOZERO, cv::THRESH_TOZERO_INV)
+CV_ENUM(ThreshOp, cv::THRESH_BINARY, cv::THRESH_BINARY_INV, cv::THRESH_TRUNC, cv::THRESH_TOZERO, cv::THRESH_TOZERO_INV, cv::THRESH_OTSU)
 #define ALL_THRESH_OPS testing::Values(ThreshOp(cv::THRESH_BINARY), ThreshOp(cv::THRESH_BINARY_INV), ThreshOp(cv::THRESH_TRUNC), ThreshOp(cv::THRESH_TOZERO), ThreshOp(cv::THRESH_TOZERO_INV))
 
 PARAM_TEST_CASE(Threshold, cv::cuda::DeviceInfo, cv::Size, MatType, Channels, ThreshOp, UseRoi)
@@ -2576,6 +2576,55 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Threshold, testing::Combine(
     ALL_CHANNELS,
     ALL_THRESH_OPS,
     WHOLE_SUBMAT));
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// ThresholdOtsu
+
+PARAM_TEST_CASE(ThresholdOtsu, cv::cuda::DeviceInfo, cv::Size, MatType, Channels, ThreshOp, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int type;
+    int channel;
+    int threshOp;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        type = GET_PARAM(2) | cv::THRESH_OTSU;
+        channel = GET_PARAM(3);
+        threshOp = GET_PARAM(4);
+        useRoi = GET_PARAM(5);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(ThresholdOtsu, Accuracy)
+{
+    cv::Mat src = randomMat(size, CV_MAKE_TYPE(type, channel));
+    double maxVal = randomDouble(20.0, 127.0);
+    double thresh = randomDouble(0.0, maxVal);
+
+    cv::cuda::GpuMat dst = createMat(src.size(), src.type(), useRoi);
+    cv::cuda::threshold(loadMat(src, useRoi), dst, thresh, maxVal, threshOp);
+
+    cv::Mat dst_gold;
+    cv::threshold(src, dst_gold, thresh, maxVal, threshOp);
+
+    EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, ThresholdOtsu, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    testing::Values(MatDepth(CV_8U)),
+    testing::Values(Channels(1)),
+    ALL_THRESH_OPS,
+    WHOLE_SUBMAT));
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // InRange

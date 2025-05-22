@@ -546,12 +546,16 @@ static inline void scaleAdd(InputArray src1, double alpha, InputArray src2, Outp
 
 /** @brief Applies a fixed-level threshold to each array element.
 
+The special value cv::THRESH_OTSU may be combined with one of the other types. In this case, the function determines the
+optimal threshold value using the Otsu's and uses it instead of the specified threshold. The function returns the
+computed threshold value in addititon to the thresholded matrix.
+The Otsu's method is implemented only for 8-bit matrices.
+
 @param src Source array (single-channel).
-@param dst Destination array with the same size and type as src .
+@param dst Destination array with the same size and type as src.
 @param thresh Threshold value.
 @param maxval Maximum value to use with THRESH_BINARY and THRESH_BINARY_INV threshold types.
-@param type Threshold type. For details, see threshold . The THRESH_OTSU and THRESH_TRIANGLE
-threshold types are not supported.
+@param type Threshold type. For details, see threshold. The THRESH_TRIANGLE threshold type is not supported.
 @param stream Stream for the asynchronous version.
 
 @sa threshold
