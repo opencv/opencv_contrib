@@ -95,11 +95,229 @@ namespace
     }
 }
 
-double cv::cuda::threshold(InputArray _src, OutputArray _dst, double thresh, double maxVal, int type, Stream& stream)
+template <uint n_bins>
+__global__ void otsu_mean(uint *histogram, uint *threshold_sums, unsigned long long *sums)
+{
+    extern __shared__ unsigned long long shared_memory_u64[];
+
+    uint bin_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    uint threshold = blockIdx.y * blockDim.y + threadIdx.y;
+
+    uint threshold_sum_above = 0;
+    unsigned long long sum_above = 0;
+
+    if (bin_idx >= threshold)
+    {
+        uint value = histogram[bin_idx];
+        threshold_sum_above = value;
+        sum_above = value * bin_idx;
+    }
+
+    blockReduce<n_bins>((uint *)shared_memory_u64, threshold_sum_above, bin_idx, plus<uint>());
+    blockReduce<n_bins>((unsigned long long *)shared_memory_u64, sum_above, bin_idx, plus<unsigned long long>());
+
+    if (bin_idx == 0)
+    {
+        threshold_sums[threshold] = threshold_sum_above;
+        sums[threshold] = sum_above;
+    }
+}
+
+template <uint n_bins>
+__global__ void
+otsu_variance(longlong2 *variance, uint *histogram, uint *threshold_sums, unsigned long long *sums)
+{
+    extern __shared__ signed long long shared_memory_i64[];
+
+    uint bin_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    uint threshold = blockIdx.y * blockDim.y + threadIdx.y;
+
+    uint n_samples = threshold_sums[0];
+    uint n_samples_above = threshold_sums[threshold];
+    uint n_samples_below = n_samples - n_samples_above;
+
+    unsigned long long total_sum = sums[0];
+    unsigned long long sum_above = sums[threshold];
+    unsigned long long sum_below = total_sum - sum_above;
+
+    int threshold_variance_above = 0;
+    int threshold_variance_below = 0;
+    if (bin_idx >= threshold)
+    {
+        uint mean = sum_above / n_samples_above;
+        int sigma = bin_idx - mean;
+        threshold_variance_above = sigma * sigma;
+    }
+    else
+    {
+        uint mean = sum_below / n_samples_below;
+        int sigma = bin_idx - mean;
+        threshold_variance_below = sigma * sigma;
+    }
+
+    uint bin_count = histogram[bin_idx];
+    signed long long threshold_variance_above64 = threshold_variance_above * bin_count;
+    signed long long threshold_variance_below64 = threshold_variance_below * bin_count;
+    blockReduce<n_bins>((signed long long *)shared_memory_i64, threshold_variance_above64, bin_idx, plus<signed long long>());
+    blockReduce<n_bins>((signed long long *)shared_memory_i64, threshold_variance_below64, bin_idx, plus<signed long long>());
+
+    if (bin_idx == 0)
+    {
+        variance[threshold] = make_longlong2(threshold_variance_above64, threshold_variance_below64);
+    }
+}
+
+template <uint n_thresholds>
+__global__ void
+otsu_score(uint *otsu_threshold, uint *threshold_sums, longlong2 *variance)
+{
+    extern __shared__ float shared_memory_f32[];
+
+    uint threshold = blockIdx.x * blockDim.x + threadIdx.x;
+
+    uint n_samples = threshold_sums[0];
+    uint n_samples_above = threshold_sums[threshold];
+    uint n_samples_below = n_samples - n_samples_above;
+
+    float threshold_mean_above = (float)n_samples_above / n_samples;
+    float threshold_mean_below = (float)n_samples_below / n_samples;
+
+    longlong2 variances = variance[threshold];
+    float variance_above = (float)variances.x / n_samples_above;
+    float variance_below = (float)variances.y / n_samples_below;
+
+    float above = threshold_mean_above * variance_above;
+    float below = threshold_mean_below * variance_below;
+    float score = above + below;
+
+    float original_score = score;
+
+    blockReduce<n_thresholds>((float *)shared_memory_f32, score, threshold, minimum<float>());
+
+    if (threshold == 0)
+    {
+        shared_memory_f32[0] = score;
+    }
+    __syncthreads();
+
+    score = shared_memory_f32[0];
+
+    // We found the minimum score, but we need to find the threshold. If we find the thread with the minimum score, we
+    // know which threshold it is
+    if (original_score == score)
+    {
+        *otsu_threshold = threshold - 1;
+    }
+}
+
+template <uint n_bins, uint n_thresholds>
+void compute_otsu_async(uint *histogram, uint *otsu_threshold, Stream &stream)
+{
+    CV_Assert(n_bins == 256);
+    CV_Assert(n_thresholds == 256);
+
+    cudaStream_t cuda_stream = StreamAccessor::getStream(stream);
+
+    dim3 block_all = dim3(n_bins, 1, 1);
+    dim3 grid_all = dim3(divUp((int)n_bins, block_all.x), divUp((int)n_thresholds, block_all.y), 1);
+    dim3 block_score = dim3(n_thresholds, 1, 1);
+    dim3 grid_score = dim3(divUp((int)n_thresholds, block_score.x), 1, 1);
+
+    GpuMat gpu_threshold_sums = GpuMat(1, n_bins, CV_32SC1);
+    GpuMat gpu_sums = GpuMat(1, n_bins, CV_64FC1);
+    GpuMat gpu_variances = GpuMat(1, n_bins, CV_32SC4);
+
+    uint shared_memory;
+    shared_memory = n_bins * sizeof(unsigned long long);
+    otsu_mean<256><<<grid_all, block_all, shared_memory, cuda_stream>>>(histogram, gpu_threshold_sums.ptr<uint>(), gpu_sums.ptr<unsigned long long>());
+    otsu_variance<256><<<grid_all, block_all, shared_memory, cuda_stream>>>(gpu_variances.ptr<longlong2>(), histogram, gpu_threshold_sums.ptr<uint>(), gpu_sums.ptr<unsigned long long>());
+
+    shared_memory = n_bins * sizeof(float);
+    otsu_score<256><<<grid_score, block_score, shared_memory, cuda_stream>>>(
+        otsu_threshold, gpu_threshold_sums.ptr<uint>(), gpu_variances.ptr<longlong2>());
+}
+
+// TODO: Replace this is cv::cuda::calcHist
+template <uint n_bins>
+__global__ void histogram_kernel(
+    uint *histogram, const uint8_t *image, uint width,
+    uint height, uint pitch)
+{
+    __shared__ uint local_histogram[n_bins];
+
+    uint x = blockIdx.x * blockDim.x + threadIdx.x;
+    uint y = blockIdx.y * blockDim.y + threadIdx.y;
+    uint tid = threadIdx.y * blockDim.x + threadIdx.x;
+
+    if (tid < n_bins)
+    {
+        local_histogram[tid] = 0;
+    }
+
+    __syncthreads();
+
+    if (x < width && y < height)
+    {
+        uint8_t value = image[y * pitch + x];
+        atomicInc(&local_histogram[value], 0xFFFFFFFF);
+    }
+
+    __syncthreads();
+
+    if (tid < n_bins)
+    {
+        cv::cudev::atomicAdd(&histogram[tid], local_histogram[tid]);
+    }
+}
+
+// TODO: Replace this with cv::cuda::calcHist
+void calcHist(
+    const GpuMat src, GpuMat histogram, Stream stream)
+{
+    const uint n_bins = 256;
+
+    cudaStream_t cuda_stream = StreamAccessor::getStream(stream);
+
+    dim3 block(128, 4, 1);
+    dim3 grid = dim3(divUp(src.cols, block.x), divUp(src.rows, block.y), 1);
+    CV_CUDEV_SAFE_CALL(cudaMemsetAsync(histogram.ptr<uint>(), 0, n_bins * sizeof(uint), cuda_stream));
+    histogram_kernel<n_bins>
+        <<<grid, block, 0, cuda_stream>>>(
+            histogram.ptr<uint>(), src.ptr<uint8_t>(), (uint) src.cols, (uint) src.rows, (uint) src.step);
+}
+
+double cv::cuda::threshold(InputArray _src, OutputArray _dst, double thresh, double maxVal, int type, Stream &stream)
 {
     GpuMat src = getInputMat(_src, stream);
 
     const int depth = src.depth();
+
+    // TODO: How can we access precomp.hpp to avoid defining THRESH_OTSU?
+    const int THRESH_OTSU = 8;
+    if ((type & THRESH_OTSU) == THRESH_OTSU)
+    {
+        CV_Assert(depth == CV_8U);
+        CV_Assert(src.channels() == 1);
+        CV_Assert(maxVal == 255.0);
+
+        const uint n_bins = 256;
+        const uint n_thresholds = 256;
+
+        // Find the threshold using Otsu and then run the normal thresholding algorithm
+        GpuMat gpu_histogram = GpuMat(n_bins, 1, CV_32SC1);
+        calcHist(src, gpu_histogram, stream);
+
+        GpuMat gpu_otsu_threshold(1, 1, CV_32SC1);
+        compute_otsu_async<n_bins, n_thresholds>(gpu_histogram.ptr<uint>(), gpu_otsu_threshold.ptr<uint>(), stream);
+
+        cv::Mat mat_otsu_threshold;
+        gpu_otsu_threshold.download(mat_otsu_threshold, stream);
+        stream.waitForCompletion();
+
+        // Overwrite the threshold value with the Otsu value and remove the Otsu flag from the type
+        type = type & ~THRESH_OTSU;
+        thresh = (double) mat_otsu_threshold.at<int>(0);
+    }
 
     CV_Assert( depth <= CV_64F );
     CV_Assert( type <= 4 /*THRESH_TOZERO_INV*/ );
