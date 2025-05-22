@@ -114,6 +114,7 @@ __global__ void otsu_mean(uint *histogram, uint *threshold_sums, unsigned long l
     }
 
     blockReduce<n_bins>((uint *)shared_memory_u64, threshold_sum_above, bin_idx, plus<uint>());
+    __syncthreads();
     blockReduce<n_bins>((unsigned long long *)shared_memory_u64, sum_above, bin_idx, plus<unsigned long long>());
 
     if (bin_idx == 0)
@@ -159,6 +160,7 @@ otsu_variance(longlong2 *variance, uint *histogram, uint *threshold_sums, unsign
     signed long long threshold_variance_above64 = threshold_variance_above * bin_count;
     signed long long threshold_variance_below64 = threshold_variance_below * bin_count;
     blockReduce<n_bins>((signed long long *)shared_memory_i64, threshold_variance_above64, bin_idx, plus<signed long long>());
+    __syncthreads();
     blockReduce<n_bins>((signed long long *)shared_memory_i64, threshold_variance_below64, bin_idx, plus<signed long long>());
 
     if (bin_idx == 0)
