@@ -11,6 +11,8 @@ typedef testing::TestWithParam<tuple<Size, int, int>> Filter2DTest_DSP;
 
 TEST_P(Filter2DTest_DSP, accuracy)
 {
+    applyTestTag(CV_TEST_TAG_DSP);
+
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();
     ASSERT_EQ(initStatus, 0) << "Failed to initialize FastCV DSP";
