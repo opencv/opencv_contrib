@@ -141,31 +141,31 @@ otsu_variance(longlong2 *variance, uint *histogram, uint *threshold_sums, unsign
     unsigned long long sum_above = sums[threshold];
     unsigned long long sum_below = total_sum - sum_above;
 
-    int threshold_variance_above = 0;
-    int threshold_variance_below = 0;
+    float threshold_variance_above_f32 = 0;
+    float threshold_variance_below_f32 = 0;
     if (bin_idx >= threshold)
     {
-        uint mean = sum_above / n_samples_above;
-        int sigma = bin_idx - mean;
-        threshold_variance_above = sigma * sigma;
+        float mean = (float) sum_above / n_samples_above;
+        float sigma = bin_idx - mean;
+        threshold_variance_above_f32 = sigma * sigma;
     }
     else
     {
-        uint mean = sum_below / n_samples_below;
-        int sigma = bin_idx - mean;
-        threshold_variance_below = sigma * sigma;
+        float mean = (float) sum_below / n_samples_below;
+        float sigma = bin_idx - mean;
+        threshold_variance_below_f32 = sigma * sigma;
     }
 
     uint bin_count = histogram[bin_idx];
-    signed long long threshold_variance_above64 = threshold_variance_above * bin_count;
-    signed long long threshold_variance_below64 = threshold_variance_below * bin_count;
-    blockReduce<n_bins>((signed long long *)shared_memory_i64, threshold_variance_above64, bin_idx, plus<signed long long>());
+    signed long long threshold_variance_above_i64 = (signed long long)(threshold_variance_above_f32 * bin_count);
+    signed long long threshold_variance_below_i64 = (signed long long)(threshold_variance_below_f32 * bin_count);
+    blockReduce<n_bins>((signed long long *)shared_memory_i64, threshold_variance_above_i64, bin_idx, plus<signed long long>());
     __syncthreads();
-    blockReduce<n_bins>((signed long long *)shared_memory_i64, threshold_variance_below64, bin_idx, plus<signed long long>());
+    blockReduce<n_bins>((signed long long *)shared_memory_i64, threshold_variance_below_i64, bin_idx, plus<signed long long>());
 
     if (bin_idx == 0)
     {
-        variance[threshold] = make_longlong2(threshold_variance_above64, threshold_variance_below64);
+        variance[threshold] = make_longlong2(threshold_variance_above_i64, threshold_variance_below_i64);
     }
 }
 

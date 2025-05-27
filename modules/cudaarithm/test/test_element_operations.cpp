@@ -2593,9 +2593,9 @@ PARAM_TEST_CASE(ThresholdOtsu, cv::cuda::DeviceInfo, cv::Size, MatType, Channels
     {
         devInfo = GET_PARAM(0);
         size = GET_PARAM(1);
-        type = GET_PARAM(2) | cv::THRESH_OTSU;
+        type = GET_PARAM(2);
         channel = GET_PARAM(3);
-        threshOp = GET_PARAM(4);
+        threshOp = GET_PARAM(4) | cv::THRESH_OTSU;
         useRoi = GET_PARAM(5);
 
         cv::cuda::setDevice(devInfo.deviceID());
@@ -2605,15 +2605,14 @@ PARAM_TEST_CASE(ThresholdOtsu, cv::cuda::DeviceInfo, cv::Size, MatType, Channels
 CUDA_TEST_P(ThresholdOtsu, Accuracy)
 {
     cv::Mat src = randomMat(size, CV_MAKE_TYPE(type, channel));
-    double maxVal = randomDouble(20.0, 127.0);
-    double thresh = randomDouble(0.0, maxVal);
 
     cv::cuda::GpuMat dst = createMat(src.size(), src.type(), useRoi);
-    cv::cuda::threshold(loadMat(src, useRoi), dst, thresh, maxVal, threshOp);
+    double otsu_gpu = cv::cuda::threshold(loadMat(src, useRoi), dst, 0, 255, threshOp);
 
     cv::Mat dst_gold;
-    cv::threshold(src, dst_gold, thresh, maxVal, threshOp);
+    double otsu_cpu = cv::threshold(src, dst_gold, 0, 255, threshOp);
 
+    EXPECT_NEAR(otsu_gpu, otsu_cpu, 1e-5);
     EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
 }
 
