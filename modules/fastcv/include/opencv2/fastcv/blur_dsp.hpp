@@ -11,9 +11,9 @@
 namespace cv {
 namespace fastcv {
 namespace dsp {
-/**
- * @defgroup fastcv Module-wrapper for FastCV hardware accelerated functions
- */
+
+//! @addtogroup fastcv
+//! @{
 
 /**
  * @brief Filter an image with non-separable kernel
@@ -21,12 +21,11 @@ namespace dsp {
  * @param _dst Output image with type CV_8UC1, CV_16SC1 or CV_32FC1
  * @param ddepth The depth of output image
  * @param _kernel Filer kernel data
- *
- * @sa Filter2D
  */
 CV_EXPORTS void filter2D(InputArray _src, OutputArray _dst, int ddepth, InputArray _kernel);
 
 //! @}
+
 } // dsp::
 } // fastcv::
 } // cv::
