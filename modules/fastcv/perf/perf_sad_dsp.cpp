@@ -16,7 +16,7 @@ PERF_TEST_P(SumOfAbsDiffsPerfTest, run,
         cv::Size(1920, 1080))              // 1080p
 )
 {
-    applyTestTag(CV_TEST_TAG_DSP);
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
 
     // Initialize FastCV DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();

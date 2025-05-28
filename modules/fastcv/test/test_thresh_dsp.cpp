@@ -9,7 +9,7 @@ namespace opencv_test { namespace {
 
 TEST(ThresholdOtsuTest, accuracy)
 {
-    applyTestTag(CV_TEST_TAG_DSP);
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
 
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();
@@ -48,7 +48,7 @@ TEST(ThresholdOtsuTest, accuracy)
 
 TEST(ThresholdOtsuTest, inPlaceAccuracy)
 {
-    applyTestTag(CV_TEST_TAG_DSP);
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
 
     // Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();

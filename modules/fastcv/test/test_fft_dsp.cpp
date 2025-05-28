@@ -11,7 +11,7 @@ class FFT_DSPExtTest : public ::testing::TestWithParam<cv::Size> {};
 
 TEST_P(FFT_DSPExtTest, forward)
 {
-    applyTestTag(CV_TEST_TAG_DSP);
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
 
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();
@@ -48,7 +48,7 @@ TEST_P(FFT_DSPExtTest, forward)
 
 TEST_P(FFT_DSPExtTest, inverse)
 {
-    applyTestTag(CV_TEST_TAG_DSP);
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
 
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();

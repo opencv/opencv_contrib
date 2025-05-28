@@ -14,4 +14,6 @@ namespace opencv_test {
 using namespace perf;
 } // namespace
 
+#define CV_TEST_TAG_FASTCV_SKIP_DSP "fastcv_skip_dsp"
+
 #endif

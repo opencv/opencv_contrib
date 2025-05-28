@@ -11,7 +11,7 @@ typedef perf::TestBaseWithParam<cv::Size> FFT_DSPExtPerfTest;
 
 PERF_TEST_P_(FFT_DSPExtPerfTest, forward)
 {
-    applyTestTag(CV_TEST_TAG_DSP);
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
 
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();
@@ -44,7 +44,7 @@ PERF_TEST_P_(FFT_DSPExtPerfTest, forward)
 
 PERF_TEST_P_(FFT_DSPExtPerfTest, inverse)
 {
-    applyTestTag(CV_TEST_TAG_DSP);
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
 
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();

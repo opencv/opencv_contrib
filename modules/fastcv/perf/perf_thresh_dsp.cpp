@@ -16,7 +16,7 @@ PERF_TEST_P(ThresholdOtsuPerfTest, run,
     )
 )
 {
-    applyTestTag(CV_TEST_TAG_DSP);
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
 
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();

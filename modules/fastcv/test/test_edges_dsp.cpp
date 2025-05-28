@@ -9,7 +9,7 @@ namespace opencv_test { namespace {
 
 TEST(DSP_CannyTest, accuracy)
 {
-    applyTestTag(CV_TEST_TAG_DSP);
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
 
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();

@@ -5,4 +5,9 @@
 
 #include "perf_precomp.hpp"
 
-CV_PERF_TEST_MAIN(imgproc)
+static void initFastCVTests()
+{
+    cvtest::registerGlobalSkipTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
+}
+
+CV_PERF_TEST_MAIN(imgproc, initFastCVTests())
