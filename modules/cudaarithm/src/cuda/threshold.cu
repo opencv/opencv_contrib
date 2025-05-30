@@ -229,9 +229,10 @@ void compute_otsu(uint *histogram, uint *otsu_threshold, Stream &stream)
     dim3 block_score(n_thresholds);
     dim3 grid_score(1);
 
-    GpuMat gpu_threshold_sums = GpuMat(1, n_bins, CV_32SC1);
-    GpuMat gpu_sums = GpuMat(1, n_bins, CV_64FC1);
-    GpuMat gpu_variances = GpuMat(1, n_bins, CV_32SC4);
+    BufferPool pool(stream);
+    GpuMat gpu_threshold_sums(1, n_bins, CV_32SC1, pool.getAllocator());
+    GpuMat gpu_sums(1, n_bins, CV_64FC1, pool.getAllocator());
+    GpuMat gpu_variances(1, n_bins, CV_32SC4, pool.getAllocator());
 
     uint shared_memory;
     shared_memory = n_bins * sizeof(unsigned long long);
@@ -305,11 +306,13 @@ double cv::cuda::threshold(InputArray _src, OutputArray _dst, double thresh, dou
         CV_Assert(depth == CV_8U);
         CV_Assert(src.channels() == 1);
 
+        BufferPool pool(stream);
+
         // Find the threshold using Otsu and then run the normal thresholding algorithm
-        GpuMat gpu_histogram = GpuMat(256, 1, CV_32SC1);
+        GpuMat gpu_histogram(256, 1, CV_32SC1, pool.getAllocator());
         calcHist(src, gpu_histogram, stream);
 
-        GpuMat gpu_otsu_threshold(1, 1, CV_32SC1);
+        GpuMat gpu_otsu_threshold(1, 1, CV_32SC1, pool.getAllocator());
         compute_otsu(gpu_histogram.ptr<uint>(), gpu_otsu_threshold.ptr<uint>(), stream);
 
         cv::Mat mat_otsu_threshold;
