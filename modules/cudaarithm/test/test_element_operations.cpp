@@ -2612,7 +2612,7 @@ CUDA_TEST_P(ThresholdOtsu, Accuracy)
     cv::Mat dst_gold;
     double otsu_cpu = cv::threshold(src, dst_gold, 0, 255, threshOp);
 
-    EXPECT_NEAR(otsu_gpu, otsu_cpu, 1e-5);
+    ASSERT_DOUBLE_EQ(otsu_gpu, otsu_cpu);
     EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
 }
 

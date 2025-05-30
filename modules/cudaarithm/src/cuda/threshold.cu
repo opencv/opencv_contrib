@@ -95,13 +95,16 @@ namespace
     }
 }
 
-template <uint n_bins>
-__global__ void otsu_mean(uint *histogram, uint *threshold_sums, unsigned long long *sums)
-{
-    extern __shared__ unsigned long long shared_memory_u64[];
 
-    uint bin_idx = blockIdx.x * blockDim.x + threadIdx.x;
-    uint threshold = blockIdx.y * blockDim.y + threadIdx.y;
+__global__ void otsu_sums(uint *histogram, uint *threshold_sums, unsigned long long *sums)
+{
+    const uint32_t n_bins = 256;
+
+    __shared__ uint shared_memory_ts[n_bins / WARP_SIZE];
+    __shared__ unsigned long long shared_memory_s[n_bins / WARP_SIZE];
+
+    int bin_idx = threadIdx.x;
+    int threshold = blockIdx.x;
 
     uint threshold_sum_above = 0;
     unsigned long long sum_above = 0;
@@ -113,9 +116,8 @@ __global__ void otsu_mean(uint *histogram, uint *threshold_sums, unsigned long l
         sum_above = value * bin_idx;
     }
 
-    blockReduce<n_bins>((uint *)shared_memory_u64, threshold_sum_above, bin_idx, plus<uint>());
-    __syncthreads();
-    blockReduce<n_bins>((unsigned long long *)shared_memory_u64, sum_above, bin_idx, plus<unsigned long long>());
+    blockReduce<n_bins>(shared_memory_ts, threshold_sum_above, bin_idx, plus<uint>());
+    blockReduce<n_bins>(shared_memory_s, sum_above, bin_idx, plus<unsigned long long>());
 
     if (bin_idx == 0)
     {
@@ -124,14 +126,16 @@ __global__ void otsu_mean(uint *histogram, uint *threshold_sums, unsigned long l
     }
 }
 
-template <uint n_bins>
 __global__ void
 otsu_variance(longlong2 *variance, uint *histogram, uint *threshold_sums, unsigned long long *sums)
 {
-    extern __shared__ signed long long shared_memory_i64[];
+    const uint32_t n_bins = 256;
 
-    uint bin_idx = blockIdx.x * blockDim.x + threadIdx.x;
-    uint threshold = blockIdx.y * blockDim.y + threadIdx.y;
+    __shared__ signed long long shared_memory_a[n_bins / WARP_SIZE];
+    __shared__ signed long long shared_memory_b[n_bins / WARP_SIZE];
+
+    int bin_idx = threadIdx.x;
+    int threshold = blockIdx.x;
 
     uint n_samples = threshold_sums[0];
     uint n_samples_above = threshold_sums[threshold];
@@ -159,9 +163,8 @@ otsu_variance(longlong2 *variance, uint *histogram, uint *threshold_sums, unsign
     uint bin_count = histogram[bin_idx];
     signed long long threshold_variance_above_i64 = (signed long long)(threshold_variance_above_f32 * bin_count);
     signed long long threshold_variance_below_i64 = (signed long long)(threshold_variance_below_f32 * bin_count);
-    blockReduce<n_bins>((signed long long *)shared_memory_i64, threshold_variance_above_i64, bin_idx, plus<signed long long>());
-    __syncthreads();
-    blockReduce<n_bins>((signed long long *)shared_memory_i64, threshold_variance_below_i64, bin_idx, plus<signed long long>());
+    blockReduce<n_bins>(shared_memory_a, threshold_variance_above_i64, bin_idx, plus<signed long long>());
+    blockReduce<n_bins>(shared_memory_b, threshold_variance_below_i64, bin_idx, plus<signed long long>());
 
     if (bin_idx == 0)
     {
@@ -169,13 +172,15 @@ otsu_variance(longlong2 *variance, uint *histogram, uint *threshold_sums, unsign
     }
 }
 
-template <uint n_thresholds>
+
 __global__ void
 otsu_score(uint *otsu_threshold, uint *threshold_sums, longlong2 *variance)
 {
-    extern __shared__ float shared_memory_f32[];
+    const uint32_t n_thresholds = 256;
 
-    uint threshold = blockIdx.x * blockDim.x + threadIdx.x;
+    __shared__ float shared_memory[n_thresholds / WARP_SIZE];
+
+    int threshold = threadIdx.x;
 
     uint n_samples = threshold_sums[0];
     uint n_samples_above = threshold_sums[threshold];
@@ -194,15 +199,15 @@ otsu_score(uint *otsu_threshold, uint *threshold_sums, longlong2 *variance)
 
     float original_score = score;
 
-    blockReduce<n_thresholds>((float *)shared_memory_f32, score, threshold, minimum<float>());
+    blockReduce<n_thresholds>(shared_memory, score, threshold, minimum<float>());
 
     if (threshold == 0)
     {
-        shared_memory_f32[0] = score;
+        shared_memory[0] = score;
     }
     __syncthreads();
 
-    score = shared_memory_f32[0];
+    score = shared_memory[0];
 
     // We found the minimum score, but we need to find the threshold. If we find the thread with the minimum score, we
     // know which threshold it is
@@ -212,18 +217,17 @@ otsu_score(uint *otsu_threshold, uint *threshold_sums, longlong2 *variance)
     }
 }
 
-template <uint n_bins, uint n_thresholds>
-void compute_otsu_async(uint *histogram, uint *otsu_threshold, Stream &stream)
+void compute_otsu(uint *histogram, uint *otsu_threshold, Stream &stream)
 {
-    CV_Assert(n_bins == 256);
-    CV_Assert(n_thresholds == 256);
+    const uint n_bins = 256;
+    const uint n_thresholds = 256;
 
     cudaStream_t cuda_stream = StreamAccessor::getStream(stream);
 
-    dim3 block_all = dim3(n_bins, 1, 1);
-    dim3 grid_all = dim3(divUp((int)n_bins, block_all.x), divUp((int)n_thresholds, block_all.y), 1);
-    dim3 block_score = dim3(n_thresholds, 1, 1);
-    dim3 grid_score = dim3(divUp((int)n_thresholds, block_score.x), 1, 1);
+    dim3 block_all(n_bins);
+    dim3 grid_all(n_thresholds);
+    dim3 block_score(n_thresholds);
+    dim3 grid_score(1);
 
     GpuMat gpu_threshold_sums = GpuMat(1, n_bins, CV_32SC1);
     GpuMat gpu_sums = GpuMat(1, n_bins, CV_64FC1);
@@ -231,11 +235,11 @@ void compute_otsu_async(uint *histogram, uint *otsu_threshold, Stream &stream)
 
     uint shared_memory;
     shared_memory = n_bins * sizeof(unsigned long long);
-    otsu_mean<256><<<grid_all, block_all, shared_memory, cuda_stream>>>(histogram, gpu_threshold_sums.ptr<uint>(), gpu_sums.ptr<unsigned long long>());
-    otsu_variance<256><<<grid_all, block_all, shared_memory, cuda_stream>>>(gpu_variances.ptr<longlong2>(), histogram, gpu_threshold_sums.ptr<uint>(), gpu_sums.ptr<unsigned long long>());
+    otsu_sums<<<grid_all, block_all, shared_memory, cuda_stream>>>(histogram, gpu_threshold_sums.ptr<uint>(), gpu_sums.ptr<unsigned long long>());
+    otsu_variance<<<grid_all, block_all, shared_memory, cuda_stream>>>(gpu_variances.ptr<longlong2>(), histogram, gpu_threshold_sums.ptr<uint>(), gpu_sums.ptr<unsigned long long>());
 
     shared_memory = n_bins * sizeof(float);
-    otsu_score<256><<<grid_score, block_score, shared_memory, cuda_stream>>>(
+    otsu_score<<<grid_score, block_score, shared_memory, cuda_stream>>>(
         otsu_threshold, gpu_threshold_sums.ptr<uint>(), gpu_variances.ptr<longlong2>());
 }
 
@@ -300,17 +304,13 @@ double cv::cuda::threshold(InputArray _src, OutputArray _dst, double thresh, dou
     {
         CV_Assert(depth == CV_8U);
         CV_Assert(src.channels() == 1);
-        CV_Assert(maxVal == 255.0);
-
-        const uint n_bins = 256;
-        const uint n_thresholds = 256;
 
         // Find the threshold using Otsu and then run the normal thresholding algorithm
-        GpuMat gpu_histogram = GpuMat(n_bins, 1, CV_32SC1);
+        GpuMat gpu_histogram = GpuMat(256, 1, CV_32SC1);
         calcHist(src, gpu_histogram, stream);
 
         GpuMat gpu_otsu_threshold(1, 1, CV_32SC1);
-        compute_otsu_async<n_bins, n_thresholds>(gpu_histogram.ptr<uint>(), gpu_otsu_threshold.ptr<uint>(), stream);
+        compute_otsu(gpu_histogram.ptr<uint>(), gpu_otsu_threshold.ptr<uint>(), stream);
 
         cv::Mat mat_otsu_threshold;
         gpu_otsu_threshold.download(mat_otsu_threshold, stream);
