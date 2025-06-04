@@ -16,6 +16,8 @@ PERF_TEST_P(ThresholdOtsuPerfTest, run,
     )
 )
 {
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
+
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();
     ASSERT_EQ(initStatus, 0) << "Failed to initialize FastCV DSP";
@@ -34,7 +36,7 @@ PERF_TEST_P(ThresholdOtsuPerfTest, run,
 
     cv::Mat dst;
     dst.allocator = cv::fastcv::getQcAllocator();
-    
+
     while (next())
     {
         startTimer();

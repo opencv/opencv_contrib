@@ -17,6 +17,8 @@ PERF_TEST_P(CannyPerfTest, run,
     )
 )
 {
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
+
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();
     ASSERT_EQ(initStatus, 0) << "Failed to initialize FastCV DSP";
@@ -29,7 +31,7 @@ PERF_TEST_P(CannyPerfTest, run,
     cv::Mat src;
     src.allocator = cv::fastcv::getQcAllocator();
     src.create(srcSize, CV_8UC1);
-    
+
     cv::Mat dst;
     dst.allocator = cv::fastcv::getQcAllocator();
 
@@ -44,7 +46,7 @@ PERF_TEST_P(CannyPerfTest, run,
         cv::fastcv::dsp::Canny(src, dst, lowThreshold, highThreshold, apertureSize, L2gradient);
         stopTimer();
     }
-    
+
     //De-Initialize DSP
     cv::fastcv::dsp::fcvdspdeinit();
 

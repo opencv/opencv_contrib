@@ -11,6 +11,8 @@ typedef perf::TestBaseWithParam<cv::Size> FFT_DSPExtPerfTest;
 
 PERF_TEST_P_(FFT_DSPExtPerfTest, forward)
 {
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
+
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();
     ASSERT_EQ(initStatus, 0) << "Failed to initialize FastCV DSP";
@@ -33,7 +35,7 @@ PERF_TEST_P_(FFT_DSPExtPerfTest, forward)
         cv::fastcv::dsp::FFT(src, dst);
         stopTimer();
     }
-    
+
     //De-Initialize DSP
     cv::fastcv::dsp::fcvdspdeinit();
 
@@ -42,6 +44,8 @@ PERF_TEST_P_(FFT_DSPExtPerfTest, forward)
 
 PERF_TEST_P_(FFT_DSPExtPerfTest, inverse)
 {
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
+
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();
     ASSERT_EQ(initStatus, 0) << "Failed to initialize FastCV DSP";
@@ -53,13 +57,13 @@ PERF_TEST_P_(FFT_DSPExtPerfTest, inverse)
     Mat src;
     src.allocator = cv::fastcv::getQcAllocator();
     src.create(size, CV_8UC1);
-    
+
     cvtest::randUni(rng, src, Scalar::all(0), Scalar::all(256));
 
     Mat fwd, back;
     fwd.allocator = cv::fastcv::getQcAllocator();
     back.allocator = cv::fastcv::getQcAllocator();
-    
+
     cv::fastcv::dsp::FFT(src, fwd);
 
     while (next())

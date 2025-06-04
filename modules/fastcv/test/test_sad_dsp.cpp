@@ -11,6 +11,8 @@ namespace opencv_test { namespace {
 
 TEST(SadTest, accuracy)
 {
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
+
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();
     ASSERT_EQ(initStatus, 0) << "Failed to initialize FastCV DSP";

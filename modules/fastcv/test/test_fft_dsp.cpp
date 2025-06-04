@@ -11,6 +11,8 @@ class FFT_DSPExtTest : public ::testing::TestWithParam<cv::Size> {};
 
 TEST_P(FFT_DSPExtTest, forward)
 {
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
+
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();
     ASSERT_EQ(initStatus, 0) << "Failed to initialize FastCV DSP";
@@ -46,6 +48,8 @@ TEST_P(FFT_DSPExtTest, forward)
 
 TEST_P(FFT_DSPExtTest, inverse)
 {
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
+
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();
     ASSERT_EQ(initStatus, 0) << "Failed to initialize FastCV DSP";
@@ -53,7 +57,7 @@ TEST_P(FFT_DSPExtTest, inverse)
     Size size = GetParam();
 
     RNG& rng = cv::theRNG();
-    
+
     Mat src;
     src.allocator = cv::fastcv::getQcAllocator();
     src.create(size, CV_8UC1);

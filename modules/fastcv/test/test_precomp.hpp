@@ -9,3 +9,5 @@
 #include <opencv2/video.hpp>
 
 #include <opencv2/fastcv.hpp>
+
+#define CV_TEST_TAG_FASTCV_SKIP_DSP "fastcv_skip_dsp"

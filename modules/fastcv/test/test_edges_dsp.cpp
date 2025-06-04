@@ -9,6 +9,8 @@ namespace opencv_test { namespace {
 
 TEST(DSP_CannyTest, accuracy)
 {
+    applyTestTag(CV_TEST_TAG_FASTCV_SKIP_DSP);
+
     //Initialize DSP
     int initStatus = cv::fastcv::dsp::fcvdspinit();
     ASSERT_EQ(initStatus, 0) << "Failed to initialize FastCV DSP";
@@ -23,7 +25,7 @@ TEST(DSP_CannyTest, accuracy)
 
     int lowThreshold = 0;
     int highThreshold = 150;
-    
+
     cv::fastcv::dsp::Canny(src, dst, lowThreshold, highThreshold, 3, true);
 
     //De-Initialize DSP
