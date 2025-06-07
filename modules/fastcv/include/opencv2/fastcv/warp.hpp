@@ -45,55 +45,44 @@ CV_EXPORTS_W void warpPerspective2Plane(InputArray _src1, InputArray _src2, Outp
     InputArray _M0, Size dsize);
 
 /**
- * @brief Applies an affine transformation to a grayscale image using a 2x3 matrix.
- * @param _src              Input grayscale image of type 'CV_8UC1'.
- * @param _dst              Output image after transformation.
- * @param _M                2x3 affine transformation matrix.
- * @param dsize             Size of the output image.
- * @param interpolation     Interpolation method, Supported methods include:
- *                          'INTER_NEAREST': Nearest neighbor interpolation.
- *                          'INTER_LINEAR': Bilinear interpolation.
- *                          'INTER_AREA': Area interpolation.
- * @param borderValue       Constant pixel value for border pixels.
+ * @brief Performs an affine transformation on an input image using a provided transformation matrix.
+ * 
+ * This function performs two types of operations based on the transformation matrix:
+ * 
+ * 1. Standard Affine Transformation (2x3 matrix):
+ *    - Transforms the entire input image using the affine matrix
+ *    - Supports both CV_8UC1 and CV_8UC3 types
+ * 
+ * 2. Patch Extraction with Transformation (2x2 matrix):
+ *    - Extracts and transforms a patch from the input image
+ *    - Only supports CV_8UC1 type
+ *    - If input is a ROI: patch is extracted from ROI center in the original image
+ *    - If input is full image: patch is extracted from image center
+ * 
+ * @param _src              Input image. Supported formats:
+ *                          - CV_8UC1: 8-bit single-channel
+ *                          - CV_8UC3: 8-bit three-channel - only for 2x3 matrix 
+ * @param _dst              Output image. Will have the same type as src and size specified by dsize
+ * @param _M                2x2/2x3 affine transformation matrix (inversed map)
+ * @param dsize             Output size:
+ *                          - For 2x3 matrix: Size of the output image
+ *                          - For 2x2 matrix: Size of the extracted patch
+ * @param interpolation     Interpolation method. Only applicable for 2x3 transformation with CV_8UC1 input.
+ *                          Options:
+ *                          - INTER_NEAREST: Nearest-neighbor interpolation
+ *                          - INTER_LINEAR: Bilinear interpolation (default)
+ *                          - INTER_AREA: Area-based interpolation
+ *                          - INTER_CUBIC: Bicubic interpolation
+ *                          Note: CV_8UC3 input always use bicubic interpolation internally
+ * @param borderValue       Constant pixel value for border pixels. Only applicable for 2x3 transformations 
+ *                          with single-channel input.
  *
  * @note                    The affine matrix follows the inverse mapping convention, applied to destination coordinates
  *                          to produce corresponding source coordinates.
  * @note                    The function uses 'FASTCV_BORDER_CONSTANT' for border handling, with the specified 'borderValue'.
 */
-CV_EXPORTS_W void warpAffine(InputArray _src, OutputArray _dst, InputArray _M, Size dsize, int interpolation, int borderValue);
-
-/**
- * @brief Applies an affine transformation on a 3-color channel image using a 2x3 matrix with bicubic interpolation.
- *        Pixels that would be sampled from outside the source image are not modified in the target image.
- *        The left-most and right-most pixel coordinates of each scanline are written to dstBorder.
- * @param _src       Input image (3-channel RGB). Size of buffer is src.step[0] * src.rows bytes.
- *                   WARNING: data should be 128-bit aligned.
- * @param _dst       Warped output image (3-channel RGB). Size of buffer is dst.step[0] * dst.rows bytes.
- *                   WARNING: data should be 128-bit aligned.
- * @param _M         2x3 perspective transformation matrix. The matrix stored in affineMatrix is using row major ordering:
- *                   | a11, a12, a13 |
- *                   | a21, a22, a23 |
- *                   The affine matrix follows the inverse mapping convention.
- * @param dsize      The output image size.
- * @param _dstBorder Output array receiving the x-coordinates of left-most and right-most pixels for each scanline.
- *                   The format of the array is: l0,r0,l1,r1,l2,r2,... where l0 is the left-most pixel coordinate in scanline 0
- *                   and r0 is the right-most pixel coordinate in scanline 0.
- *                   The buffer must therefore be 2 * dsize.height integers in size.
- *                   NOTE: data should be 128-bit aligned.
- */
-CV_EXPORTS_W void warpAffine3Channel(InputArray _src, OutputArray _dst, InputArray _M, Size dsize, OutputArray _dstBorder);
-
-/**
- * @brief Warps a patch centered at a specified position in the input image using an affine transformation.
- * @param src          Input grayscale image of type 'CV_8UC1'.
- * @param position     Position in the image where the patch is centered.
- * @param affine       2x2 affine transformation matrix of type 'CV_32FC1'.
- * @param patch        Output image patch after transformation.
- * @param patchSize    Size of the output patch.
- *
- * @return Returns 0 if the transformation is valid.
- */
-CV_EXPORTS_W void warpAffineROI(InputArray _src, const cv::Point2f& position, InputArray _affine, OutputArray _patch, Size patchSize);
+CV_EXPORTS_W void warpAffine(InputArray _src, OutputArray _dst, InputArray _M, Size dsize, int interpolation = INTER_LINEAR, 
+                            int borderValue = 0);
 
 //! @}
 

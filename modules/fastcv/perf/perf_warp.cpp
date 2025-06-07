@@ -148,7 +148,7 @@ PERF_TEST_P(WarpAffine3ChannelPerf, run, Combine(
     while (next())
     {
         startTimer();
-        cv::fastcv::warpAffine3Channel(src, dst, inverseAffine, sz, dstBorder);
+        cv::fastcv::warpAffine(src, dst, inverseAffine, sz);
         stopTimer();
     }
 
@@ -169,12 +169,20 @@ PERF_TEST_P(WarpAffineROIPerfTest, run, ::testing::Combine(
     cv::Mat affine = std::get<2>(GetParam());
 
     cv::Mat src = cv::imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
+    
+    // Create ROI with top-left at the specified position
+    cv::Rect roiRect(static_cast<int>(position.x), static_cast<int>(position.y), patchSize.width, patchSize.height);
+
+    // Ensure ROI is within image bounds
+    roiRect = roiRect & cv::Rect(0, 0, src.cols, src.rows);
+    cv::Mat roi = src(roiRect);
+
     cv::Mat patch;
 
     while (next())
     {
         startTimer();
-        cv::fastcv::warpAffineROI(src, position, affine, patch, patchSize);
+        cv::fastcv::warpAffine(roi, patch, affine, patchSize);
         stopTimer();
     }
 

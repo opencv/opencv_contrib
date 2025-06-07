@@ -139,9 +139,8 @@ TEST(WarpAffine3ChannelTest, accuracy)
     cv::Size dsize(src.cols, src.rows);
 
     cv::Mat dst;
-    cv::Mat dstBorder;
 
-    cv::fastcv::warpAffine3Channel(src, dst, M, dsize, dstBorder);
+    cv::fastcv::warpAffine(src, dst, M, dsize);
 
     EXPECT_FALSE(dst.empty());
 }
@@ -158,10 +157,12 @@ TEST(WarpAffineROITest, accuracy)
     cv::Mat affine = (cv::Mat_<float>(2, 2) << cos(radians), -sin(radians), sin(radians), cos(radians));
 
     cv::Mat patch;
-
-    cv::fastcv::warpAffineROI(src, position, affine, patch, cv::Size(100, 100));
+    cv::Mat roi = src(cv::Rect(0, 0, 100, 100));
+    cv::fastcv::warpAffine(roi, patch, affine, cv::Size(100, 100));
 
     EXPECT_FALSE(patch.empty());
+    EXPECT_EQ(patch.size(), cv::Size(100, 100));
+    EXPECT_EQ(patch.type(), CV_8UC1);
 }
 
 typedef testing::TestWithParam<tuple<int, int>> WarpAffineTest;
