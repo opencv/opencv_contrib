@@ -131,6 +131,18 @@ Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
     return p;
 }
 
+Ptr<Params> Params::coloredHashTSDFParams(bool isCoarse)
+{
+    Ptr<Params> p;
+    if (isCoarse)
+        p = coarseParams();
+    else
+        p = defaultParams();
+    p->volumeType = VolumeType::COLOREDHASHTSDF;
+    p->truncateThreshold = rgbd::Odometry::DEFAULT_MAX_DEPTH();
+    return p;
+}
+
 // MatType should be Mat or UMat
 template< typename MatType>
 class ColoredKinFuImpl : public ColoredKinFu
