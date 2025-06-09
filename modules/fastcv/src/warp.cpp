@@ -175,5 +175,146 @@ void warpPerspective(InputArray _src, OutputArray _dst, InputArray _M0, Size dsi
         FcvWarpPerspectiveLoop_Invoker(src, tmp, dst, tmp, matrix, fcvInterpolation, fcvBorder, fcvBorderValue), nStripes);
 }
 
+void warpAffine(InputArray _src, OutputArray _dst, InputArray _M, Size dsize,
+                int interpolation, int borderValue)
+{
+    INITIALIZATION_CHECK;
+    CV_Assert(!_src.empty());
+    CV_Assert(!_M.empty());
+
+    Mat src = _src.getMat();
+    Mat M = _M.getMat();
+
+    CV_CheckEQ(M.rows, 2, "Affine Matrix must have 2 rows");
+    CV_Check(M.cols, M.cols == 2 || M.cols == 3, "Affine Matrix must be 2x2 or 2x3");
+
+    if (M.rows == 2 && M.cols == 2)
+    {
+        CV_CheckTypeEQ(src.type(), CV_8UC1, "2x2 matrix transformation only supports CV_8UC1");
+
+        // Check if src is a ROI
+        Size wholeSize;
+        Point ofs;
+        src.locateROI(wholeSize, ofs);
+        bool isROI = (wholeSize.width > src.cols || wholeSize.height > src.rows);
+
+        Mat fullImage;
+        Point2f center;
+
+        if (isROI)
+        {
+            center.x = ofs.x + src.cols / 2.0f;
+            center.y = ofs.y + src.rows / 2.0f;
+
+            CV_Check(center.x, center.x >= 0 && center.x < wholeSize.width, "ROI center X is outside full image bounds");
+            CV_Check(center.y, center.y >= 0 && center.y < wholeSize.height, "ROI center Y is outside full image bounds");
+
+            size_t offset = ofs.y * src.step + ofs.x * src.elemSize();
+            fullImage = Mat(wholeSize, src.type(), src.data - offset);
+        }
+        else
+        {
+            // Use src as is, center at image center
+            fullImage = src;
+            center.x = src.cols / 2.0f;
+            center.y = src.rows / 2.0f;
+
+            CV_LOG_WARNING(NULL, "2x2 matrix with non-ROI input. Using image center for patch extraction.");
+        }
+
+        float affineMatrix[4] = {
+            M.at<float>(0, 0), M.at<float>(0, 1),
+            M.at<float>(1, 0), M.at<float>(1, 1)};
+
+        float position[2] = {center.x, center.y};
+
+        _dst.create(dsize, src.type());
+        Mat dst = _dst.getMat();
+        dst.step = dst.cols * src.elemSize();
+
+        int status = fcvTransformAffineu8_v2(
+            (const uint8_t *)fullImage.data,
+            fullImage.cols, fullImage.rows, fullImage.step,
+            position,
+            affineMatrix,
+            (uint8_t *)dst.data,
+            dst.cols, dst.rows, dst.step);
+
+        if (status != 0)
+        {
+            CV_Error(Error::StsInternal, "FastCV patch extraction failed");
+        }
+
+        return;
+    }
+
+    // Validate 2x3 matrix for standard transformation
+    CV_CheckEQ(M.cols, 3, "Matrix must be 2x3 for standard affine transformation");
+    CV_Check(src.type(), src.type() == CV_8UC1 || src.type() == CV_8UC3, "Standard transformation supports CV_8UC1 or CV_8UC3");
+
+    float32_t affineMatrix[6] = {
+        M.at<float>(0, 0), M.at<float>(0, 1), M.at<float>(0, 2),
+        M.at<float>(1, 0), M.at<float>(1, 1), M.at<float>(1, 2)};
+
+    _dst.create(dsize, src.type());
+    Mat dst = _dst.getMat();
+
+    if (src.channels() == 1)
+    {
+        fcvStatus status;
+        fcvInterpolationType fcvInterpolation;
+
+        switch (interpolation)
+        {
+        case cv::InterpolationFlags::INTER_NEAREST:
+            fcvInterpolation = FASTCV_INTERPOLATION_TYPE_NEAREST_NEIGHBOR;
+            break;
+        case cv::InterpolationFlags::INTER_LINEAR:
+            fcvInterpolation = FASTCV_INTERPOLATION_TYPE_BILINEAR;
+            break;
+        case cv::InterpolationFlags::INTER_AREA:
+            fcvInterpolation = FASTCV_INTERPOLATION_TYPE_AREA;
+            break;
+        default:
+            CV_Error(cv::Error::StsBadArg, "Unsupported interpolation type");
+        }
+
+        status = fcvTransformAffineClippedu8_v3(
+            (const uint8_t *)src.data, src.cols, src.rows, src.step,
+            affineMatrix,
+            (uint8_t *)dst.data, dst.cols, dst.rows, dst.step,
+            NULL,
+            fcvInterpolation,
+            FASTCV_BORDER_CONSTANT,
+            borderValue);
+
+        if (status != FASTCV_SUCCESS)
+        {
+            std::string s = fcvStatusStrings.count(status) ? fcvStatusStrings.at(status) : "unknown";
+            CV_Error(cv::Error::StsInternal, "FastCV error: " + s);
+        }
+    }
+    else if (src.channels() == 3)
+    {
+        CV_LOG_INFO(NULL, "warpAffine: 3-channel images use bicubic interpolation internally.");
+
+        std::vector<uint32_t> dstBorder;
+        try
+        {
+            dstBorder.resize(dsize.height * 2);
+        }
+        catch (const std::bad_alloc &)
+        {
+            CV_Error(Error::StsNoMem, "Failed to allocate border array");
+        }
+
+        fcv3ChannelTransformAffineClippedBCu8(
+            (const uint8_t *)src.data, src.cols, src.rows, src.step[0],
+            affineMatrix,
+            (uint8_t *)dst.data, dst.cols, dst.rows, dst.step[0],
+            dstBorder.data());
+    }
+}
+
 } // fastcv::
 } // cv::
