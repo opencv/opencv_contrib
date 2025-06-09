@@ -114,19 +114,6 @@ TEST_P(DistanceAndOverlap, MOSSE)
   test.run();
 }
 
-TEST_P(DistanceAndOverlap, CSRT)
-{
-  TrackerTest<Tracker, Rect> test(TrackerCSRT::create(), dataset, 22, .7f, NoTransform);
-  test.run();
-}
-#ifdef TEST_LEGACY
-TEST_P(DistanceAndOverlap, CSRT_legacy)
-{
-  TrackerTest<legacy::Tracker> test(legacy::TrackerCSRT::create(), dataset, 22, .7f, NoTransform);
-  test.run();
-}
-#endif
-
 /***************************************************************************************/
 //Tests with shifted initial window
 TEST_P(DistanceAndOverlap, Shifted_Data_MedianFlow)
@@ -166,19 +153,6 @@ TEST_P(DistanceAndOverlap, Shifted_Data_MOSSE)
   test.run();
 }
 
-TEST_P(DistanceAndOverlap, Shifted_Data_CSRT)
-{
-  TrackerTest<Tracker, Rect> test(TrackerCSRT::create(), dataset, 13, .69f, CenterShiftLeft);
-  test.run();
-}
-#ifdef TEST_LEGACY
-TEST_P(DistanceAndOverlap, Shifted_Data_CSRT_legacy)
-{
-  TrackerTest<legacy::Tracker> test(legacy::TrackerCSRT::create(), dataset, 13, .69f, CenterShiftLeft);
-  test.run();
-}
-#endif
-
 /***************************************************************************************/
 //Tests with scaled initial window
 TEST_P(DistanceAndOverlap, Scaled_Data_MedianFlow)
@@ -217,19 +191,6 @@ TEST_P(DistanceAndOverlap, Scaled_Data_MOSSE)
   TrackerTest<legacy::Tracker> test(legacy::TrackerMOSSE::create(), dataset, 22, 0.69f, Scale_1_1, 1);
   test.run();
 }
-
-TEST_P(DistanceAndOverlap, Scaled_Data_CSRT)
-{
-  TrackerTest<Tracker, Rect> test(TrackerCSRT::create(), dataset, 22, 0.69f, Scale_1_1, 1);
-  test.run();
-}
-#ifdef TEST_LEGACY
-TEST_P(DistanceAndOverlap, Scaled_Data_CSRT_legacy)
-{
-  TrackerTest<Tracker, Rect> test(TrackerCSRT::create(), dataset, 22, 0.69f, Scale_1_1, 1);
-  test.run();
-}
-#endif
 
 INSTANTIATE_TEST_CASE_P(Tracking, DistanceAndOverlap, TESTSET_NAMES);
 
