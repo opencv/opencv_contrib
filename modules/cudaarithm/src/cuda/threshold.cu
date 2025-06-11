@@ -100,8 +100,8 @@ __global__ void otsu_sums(uint *histogram, uint *threshold_sums, unsigned long l
 {
     const uint32_t n_bins = 256;
 
-    __shared__ uint shared_memory_ts[n_bins / WARP_SIZE];
-    __shared__ unsigned long long shared_memory_s[n_bins / WARP_SIZE];
+    __shared__ uint shared_memory_ts[n_bins];
+    __shared__ unsigned long long shared_memory_s[n_bins];
 
     int bin_idx = threadIdx.x;
     int threshold = blockIdx.x;
@@ -127,12 +127,12 @@ __global__ void otsu_sums(uint *histogram, uint *threshold_sums, unsigned long l
 }
 
 __global__ void
-otsu_variance(longlong2 *variance, uint *histogram, uint *threshold_sums, unsigned long long *sums)
+otsu_variance(float2 *variance, uint *histogram, uint *threshold_sums, unsigned long long *sums)
 {
     const uint32_t n_bins = 256;
 
-    __shared__ signed long long shared_memory_a[n_bins / WARP_SIZE];
-    __shared__ signed long long shared_memory_b[n_bins / WARP_SIZE];
+    __shared__ signed long long shared_memory_a[n_bins];
+    __shared__ signed long long shared_memory_b[n_bins];
 
     int bin_idx = threadIdx.x;
     int threshold = blockIdx.x;
@@ -168,13 +168,13 @@ otsu_variance(longlong2 *variance, uint *histogram, uint *threshold_sums, unsign
 
     if (bin_idx == 0)
     {
-        variance[threshold] = make_longlong2(threshold_variance_above_i64, threshold_variance_below_i64);
+        variance[threshold] = make_float2(threshold_variance_above_i64, threshold_variance_below_i64);
     }
 }
 
 
 __global__ void
-otsu_score(uint *otsu_threshold, uint *threshold_sums, longlong2 *variance)
+otsu_score(uint *otsu_threshold, uint *threshold_sums, float2 *variance)
 {
     const uint32_t n_thresholds = 256;
 
@@ -189,9 +189,9 @@ otsu_score(uint *otsu_threshold, uint *threshold_sums, longlong2 *variance)
     float threshold_mean_above = (float)n_samples_above / n_samples;
     float threshold_mean_below = (float)n_samples_below / n_samples;
 
-    longlong2 variances = variance[threshold];
-    float variance_above = (float)variances.x / n_samples_above;
-    float variance_below = (float)variances.y / n_samples_below;
+    float2 variances = variance[threshold];
+    float variance_above = variances.x / n_samples_above;
+    float variance_below = variances.y / n_samples_below;
 
     float above = threshold_mean_above * variance_above;
     float below = threshold_mean_below * variance_below;
@@ -232,16 +232,14 @@ void compute_otsu(uint *histogram, uint *otsu_threshold, Stream &stream)
     BufferPool pool(stream);
     GpuMat gpu_threshold_sums(1, n_bins, CV_32SC1, pool.getAllocator());
     GpuMat gpu_sums(1, n_bins, CV_64FC1, pool.getAllocator());
-    GpuMat gpu_variances(1, n_bins, CV_32SC4, pool.getAllocator());
+    GpuMat gpu_variances(1, n_bins, CV_32FC2, pool.getAllocator());
 
-    uint shared_memory;
-    shared_memory = n_bins * sizeof(unsigned long long);
-    otsu_sums<<<grid_all, block_all, shared_memory, cuda_stream>>>(histogram, gpu_threshold_sums.ptr<uint>(), gpu_sums.ptr<unsigned long long>());
-    otsu_variance<<<grid_all, block_all, shared_memory, cuda_stream>>>(gpu_variances.ptr<longlong2>(), histogram, gpu_threshold_sums.ptr<uint>(), gpu_sums.ptr<unsigned long long>());
-
-    shared_memory = n_bins * sizeof(float);
-    otsu_score<<<grid_score, block_score, shared_memory, cuda_stream>>>(
-        otsu_threshold, gpu_threshold_sums.ptr<uint>(), gpu_variances.ptr<longlong2>());
+    otsu_sums<<<grid_all, block_all, 0, cuda_stream>>>(
+        histogram, gpu_threshold_sums.ptr<uint>(), gpu_sums.ptr<unsigned long long>());
+    otsu_variance<<<grid_all, block_all, 0, cuda_stream>>>(
+        gpu_variances.ptr<float2>(), histogram, gpu_threshold_sums.ptr<uint>(), gpu_sums.ptr<unsigned long long>());
+    otsu_score<<<grid_score, block_score, 0, cuda_stream>>>(
+        otsu_threshold, gpu_threshold_sums.ptr<uint>(), gpu_variances.ptr<float2>());
 }
 
 // TODO: Replace this is cv::cuda::calcHist
@@ -299,7 +297,6 @@ double cv::cuda::threshold(InputArray _src, OutputArray _dst, double thresh, dou
 
     const int depth = src.depth();
 
-    // TODO: How can we access precomp.hpp to avoid defining THRESH_OTSU?
     const int THRESH_OTSU = 8;
     if ((type & THRESH_OTSU) == THRESH_OTSU)
     {
