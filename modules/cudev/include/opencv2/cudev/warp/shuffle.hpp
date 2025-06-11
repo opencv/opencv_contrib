@@ -332,6 +332,16 @@ __device__ __forceinline__ uint shfl_down(uint val, uint delta, int width = warp
     return (uint) __shfl_down((int) val, delta, width);
 }
 
+__device__ __forceinline__ signed long long shfl_down(signed long long val, uint delta, int width = warpSize)
+{
+    return __shfl_down(val, delta, width);
+}
+
+__device__ __forceinline__ unsigned long long shfl_down(unsigned long long val, uint delta, int width = warpSize)
+{
+    return (unsigned long long) __shfl_down(val, delta, width);
+}
+
 __device__ __forceinline__ float shfl_down(float val, uint delta, int width = warpSize)
 {
     return __shfl_down(val, delta, width);
