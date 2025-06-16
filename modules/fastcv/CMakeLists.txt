@@ -1,6 +1,7 @@
+message(STATUS "HAVE_FASTCV status ${HAVE_FASTCV}")
 if(HAVE_FASTCV)
   set(the_description "Qualcomm FastCV accelerated functions")
-  ocv_define_module(fastcv opencv_core opencv_imgproc opencv_features2d opencv_video WRAP python java)
+  ocv_define_module(fastcv opencv_core opencv_imgproc opencv_features opencv_video WRAP python java)
   ocv_module_include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     ${FastCV_INCLUDE_PATH})

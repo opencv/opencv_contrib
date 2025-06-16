@@ -130,7 +130,7 @@ PERF_TEST_P(WarpAffine3ChannelPerf, run, Combine(
 
     cv::Mat src(szSrc, dataType), dst(sz, dataType);
 
-    cvtest::fillGradient(src);
+    cvtest::fillGradient<uint8_t>(src);
 
     //Affine matrix
     float angle = 30.0; // Rotation angle in degrees
@@ -169,7 +169,7 @@ PERF_TEST_P(WarpAffineROIPerfTest, run, ::testing::Combine(
     cv::Mat affine = std::get<2>(GetParam());
 
     cv::Mat src = cv::imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
-    
+
     // Create ROI with top-left at the specified position
     cv::Rect roiRect(static_cast<int>(position.x), static_cast<int>(position.y), patchSize.width, patchSize.height);
 
