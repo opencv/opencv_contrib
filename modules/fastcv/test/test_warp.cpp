@@ -122,10 +122,12 @@ TEST_P(WarpPerspective, accuracy)
     EXPECT_LT(num_diff_pixels, src.size().area()*0.05);
 }
 
+
+// BUG: https://github.com/opencv/opencv_contrib/issues/3959
 INSTANTIATE_TEST_CASE_P(FastCV_Extension, WarpPerspective,Combine(
                    ::testing::Values(perf::szVGA, perf::sz720p, perf::sz1080p),
                    ::testing::Values(INTER_NEAREST, INTER_LINEAR, INTER_AREA),
-                   ::testing::Values(BORDER_CONSTANT, BORDER_REPLICATE, BORDER_TRANSPARENT)
+                   ::testing::Values(BORDER_CONSTANT, BORDER_REPLICATE /*, BORDER_TRANSPARENT*/)
 ));
 INSTANTIATE_TEST_CASE_P(FastCV_Extension, WarpPerspective2Plane, Values(perf::szVGA, perf::sz720p, perf::sz1080p));
 

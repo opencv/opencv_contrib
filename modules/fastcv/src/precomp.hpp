@@ -10,7 +10,6 @@
 #include <opencv2/imgproc.hpp>
 #include "opencv2/core/private.hpp"
 #include "opencv2/core/utils/logger.hpp"
-#include <opencv2/core/core_c.h>
 #include <opencv2/fastcv.hpp>
 #include <map>
 #include <atomic>
@@ -83,14 +82,14 @@ namespace dsp {
         (CV_Error(cv::Error::StsBadArg, cv::format("Matrix '%s' not allocated with FastCV allocator. " \
                                     "Please ensure that the matrix is created using " \
                                     "cv::fastcv::getQcAllocator().", #mat)), false))
-    
+
     #define FASTCV_CHECK_DSP_INIT() \
     if (!FastCvDspContext::getContext().isInitialized() && \
         fcvdspinit() != 0) \
     { \
         CV_Error(cv::Error::StsError, "Failed to initialize DSP"); \
     }
-                                
+
     struct FastCvDspContext
     {
     private:
@@ -113,7 +112,7 @@ namespace dsp {
 
         bool initialize() {
             cv::AutoLock lock(initMutex);
-            
+
             if (isDspInitialized.load(std::memory_order_acquire)) {
                 CV_LOG_INFO(NULL, "FastCV DSP already initialized, skipping initialization");
                 return true;
@@ -124,33 +123,33 @@ namespace dsp {
             if (fcvQ6Init() == 0) {
                 isDspInitialized.store(true, std::memory_order_release);
                 initializationCount++;
-                CV_LOG_DEBUG(NULL, cv::format("FastCV DSP initialized (init count: %lu, deinit count: %lu)", 
+                CV_LOG_DEBUG(NULL, cv::format("FastCV DSP initialized (init count: %lu, deinit count: %lu)",
                 initializationCount.load(), deInitializationCount.load()));
 
                 return true;
             }
-    
+
             CV_LOG_ERROR(NULL, "FastCV DSP initialization failed");
             return false;
         }
 
         bool deinitialize() {
             cv::AutoLock lock(initMutex);
-            
+
             if (!isDspInitialized.load(std::memory_order_acquire)) {
                 CV_LOG_DEBUG(NULL, "FastCV DSP already deinitialized, skipping deinitialization");
                 return true;
             }
 
             CV_LOG_INFO(NULL, "Deinitializing FastCV DSP");
-            
+
             try {
                 fcvQ6DeInit();
                 isDspInitialized.store(false, std::memory_order_release);
                 deInitializationCount++;
-                CV_LOG_DEBUG(NULL, cv::format("FastCV DSP deinitialized (init count: %lu, deinit count: %lu)", 
+                CV_LOG_DEBUG(NULL, cv::format("FastCV DSP deinitialized (init count: %lu, deinit count: %lu)",
                     initializationCount.load(), deInitializationCount.load()));
-         
+
                 return true;
             }
             catch (...) {
@@ -174,7 +173,7 @@ namespace dsp {
         const cv::Mutex& getInitMutex() const {
             return initMutex;
         }
-    
+
     private:
         FastCvDspContext() = default;
 };
