@@ -11,9 +11,10 @@ Before compiling, take a look at the following details in order to give a proper
 
 In addition, it depends on some open source libraries:
 
-- [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) 3.2.2 or later. **Required**
-- [Google Log](http://code.google.com/p/google-glog) 0.3.1 or later. **Required**
-- [Google Flags](http://code.google.com/p/gflags). **Required**
+- [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page) 3.2.2 or later. **Required**
+- [ng-log](https://github.com/ng-log/ng-log) 0.9.0 or later. **Required, use instead of Google glog**
+- [Google Logging Library(glog)](https://github.com/google/glog) 0.3.1 or later. **Not recommended**
+- [Google Flags](https://github.com/gflags/gflags). **Required**
 - [Ceres Solver](http://ceres-solver.org). Needed by the reconstruction API in order to solve part of the Bundle Adjustment plus the points Intersect. If Ceres Solver is not installed on your system, the reconstruction funcionality will be disabled. **Recommended**
 
 Installation
@@ -30,8 +31,10 @@ Start by installing all the dependencies.
 
     # CMake
     sudo apt-get install cmake
-    # google-glog + gflags
-    sudo apt-get install libgoogle-glog-dev
+    # gflags
+    sudo apt-get install libgflag-dev
+    # google-glog(not recommended)
+    # sudo apt-get install libgoogle-glog-dev
     # BLAS & LAPACK
     sudo apt-get install libatlas-base-dev
     # Eigen3
@@ -46,6 +49,15 @@ Start by installing all the dependencies.
     sudo add-apt-repository ppa:bzindovic/suitesparse-bugfix-1319687
     sudo apt-get update
     sudo apt-get install libsuitesparse-dev
+
+We are now ready to build, test, and install ng-log.
+    git clone https://github.com/ng-log/ng-log.git
+    cd ng-log
+    mkdir build && cd build
+    cmake ..
+    make -j4
+    make test
+    sudo make install
 
 We are now ready to build, test, and install Ceres.
 
@@ -116,3 +128,4 @@ Future Work
 * Decide which functions are kept since most of them are the same in calib3d.
 * Finish to implement computeOrientation().
 * Find a good features matchig algorithm for reconstruction() in case we provide pure images for autocalibration (look into OpenMVG).
+* If Ceres supports ng-log, update CMakeFile.txt to drop supporting Google glog.
