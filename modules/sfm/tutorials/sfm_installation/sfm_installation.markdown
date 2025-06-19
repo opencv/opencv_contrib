@@ -14,7 +14,7 @@ The Structure from Motion module depends on some open source libraries.
 
 @warning
 - Google glog is deprecated. Use ng-log 0.9.0 or later.
-- If ng-log 0.8.x or earlier is used, many configuration and build warnings will shown. Update to 0.9.0 or later.
+- If ng-log 0.8.x or earlier is used, many configuration and build warnings will be shown. Update ng-log 0.9.0 or later.
 - If both ng-log and Google glog are installed, sfm uses Google glog. If you require ng-log, uninstall Google glog.
 
 
