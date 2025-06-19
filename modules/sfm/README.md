@@ -17,13 +17,39 @@ In addition, it depends on some open source libraries:
 - [Google Flags](https://github.com/gflags/gflags). **Required**
 - [Ceres Solver](http://ceres-solver.org). Needed by the reconstruction API in order to solve part of the Bundle Adjustment plus the points Intersect. If Ceres Solver is not installed on your system, the reconstruction funcionality will be disabled. **Recommended**
 
+Notice
+
+- Google glog is deprecated. Use ng-log 0.9.0 or later.
+- If ng-log 0.8.x or earlier is used, many configuration and build warnings will shown. Update to 0.9.0 or later.    - If both ng-log and Google glog are installed, sfm uses Google glog. If you require ng-log, uninstall Google glog.
+
+
 Installation
 ------------
 **Required Dependencies**
 
 In case you are on [Ubuntu](http://www.ubuntu.com/) you can simply install the required dependencies by typing the following command.
 
-    sudo apt-get install libeigen3-dev libgflags-dev libgoogle-glog-dev
+    sudo apt-get install libeigen3-dev libgflags-dev
+
+**ng-log**
+
+See https://ng-log.github.io/ng-log/stable/build/#cmake
+
+Start by installing all the dependencies.
+
+    # CMake
+    sudo apt-get install cmake
+    # gflags
+    sudo apt-get install libgflags-dev
+
+We are now ready to build, test, and install ng-log.
+    git clone https://github.com/ng-log/ng-log.git
+    cd ng-log
+    mkdir build && cd build
+    cmake ..
+    make -j4
+    make test
+    sudo make install
 
 **Ceres Solver**
 
@@ -31,10 +57,8 @@ Start by installing all the dependencies.
 
     # CMake
     sudo apt-get install cmake
-    # gflags
-    sudo apt-get install libgflag-dev
-    # google-glog(not recommended)
-    # sudo apt-get install libgoogle-glog-dev
+    # google-glog + gflags
+    sudo apt-get install libgoogle-glog-dev
     # BLAS & LAPACK
     sudo apt-get install libatlas-base-dev
     # Eigen3
@@ -49,15 +73,6 @@ Start by installing all the dependencies.
     sudo add-apt-repository ppa:bzindovic/suitesparse-bugfix-1319687
     sudo apt-get update
     sudo apt-get install libsuitesparse-dev
-
-We are now ready to build, test, and install ng-log.
-    git clone https://github.com/ng-log/ng-log.git
-    cd ng-log
-    mkdir build && cd build
-    cmake ..
-    make -j4
-    make test
-    sudo make install
 
 We are now ready to build, test, and install Ceres.
 
@@ -128,4 +143,4 @@ Future Work
 * Decide which functions are kept since most of them are the same in calib3d.
 * Finish to implement computeOrientation().
 * Find a good features matchig algorithm for reconstruction() in case we provide pure images for autocalibration (look into OpenMVG).
-* If Ceres supports ng-log, update CMakeFile.txt to drop supporting Google glog.
+* After Ceres supports ng-log, drop to support Google glog.
