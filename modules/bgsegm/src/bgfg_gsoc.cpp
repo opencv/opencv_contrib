@@ -70,7 +70,7 @@ const float LSBPtau = 0.05f;
 inline int LSBPDist32(unsigned n) {
 #if defined(__GNUC__) || defined(__clang__)
     return __builtin_popcount(n);
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && !(defined(_M_ARM) || (defined(_M_ARM64) && _MSC_VER < 1941))
     return __popcnt(n);
 #else
     // Taken from http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
