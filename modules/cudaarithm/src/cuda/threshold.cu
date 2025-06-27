@@ -178,7 +178,7 @@ otsu_score(uint *otsu_threshold, uint *threshold_sums, float2 *variance)
 {
     const uint32_t n_thresholds = 256;
 
-    __shared__ float shared_memory[n_thresholds / WARP_SIZE];
+    __shared__ float shared_memory[n_thresholds];
 
     int threshold = threadIdx.x;
 
