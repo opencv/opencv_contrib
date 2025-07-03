@@ -36,12 +36,15 @@ private:
 /**
  * @brief Qualcomm's custom allocator.
  * This allocator uses Qualcomm's memory management functions.
+ *
+ * Note: The userdata field of cv::UMatData is used to store the file descriptor (fd) of the allocated memory.
+ *
  */
 class QcAllocator : public cv::MatAllocator {
     public:
         QcAllocator();
         ~QcAllocator();
-    
+
         cv::UMatData* allocate(int dims, const int* sizes, int type, void* data0, size_t* step, cv::AccessFlag flags, cv::UMatUsageFlags usageFlags) const CV_OVERRIDE;
         bool allocate(cv::UMatData* u, cv::AccessFlag accessFlags, cv::UMatUsageFlags usageFlags) const CV_OVERRIDE;
         void deallocate(cv::UMatData* u) const CV_OVERRIDE;
