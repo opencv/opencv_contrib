@@ -1,3 +1,7 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
 #include <opencv2/core.hpp>
 
 namespace cv
@@ -5,10 +9,6 @@ namespace cv
 namespace fastcv
 {
 
-/** the color conversion codes
-@see @ref imgproc_color_conversions
-@ingroup imgproc_color_conversions
- */
 enum ColorConversionCodes {
     // FastCV-specific color conversion codes (avoid collision with OpenCV core)
     COLOR_YUV2YUV444sp_NV12 = 1, //!< FastCV: YCbCr420PseudoPlanar to YCbCr444PseudoPlanar
