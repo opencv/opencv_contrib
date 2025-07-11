@@ -2,6 +2,10 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+
+#ifndef OPENCV_FASTCV_COLOR_HPP
+#define OPENCV_FASTCV_COLOR_HPP
+
 #include <opencv2/core.hpp>
 
 namespace cv
@@ -35,3 +39,5 @@ enum ColorConversionCodes {
 CV_EXPORTS_W void cvtColor(InputArray src, OutputArray dst, int code);
 
 }}; //cv::fastcv namespace end
+
+#endif // OPENCV_FASTCV_COLOR_HPP
