@@ -98,7 +98,7 @@ namespace
 
 __global__ void otsu_sums(uint *histogram, uint *threshold_sums, unsigned long long *sums)
 {
-    const uint32_t n_bins = 256;
+    const uint n_bins = 256;
 
     __shared__ uint shared_memory_ts[n_bins];
     __shared__ unsigned long long shared_memory_s[n_bins];
@@ -129,7 +129,7 @@ __global__ void otsu_sums(uint *histogram, uint *threshold_sums, unsigned long l
 __global__ void
 otsu_variance(float2 *variance, uint *histogram, uint *threshold_sums, unsigned long long *sums)
 {
-    const uint32_t n_bins = 256;
+    const uint n_bins = 256;
 
     __shared__ signed long long shared_memory_a[n_bins];
     __shared__ signed long long shared_memory_b[n_bins];
@@ -200,7 +200,7 @@ __device__ bool has_lowest_score(
 __global__ void
 otsu_score(uint *otsu_threshold, uint *threshold_sums, float2 *variance)
 {
-    const uint32_t n_thresholds = 256;
+    const uint n_thresholds = 256;
 
     __shared__ float shared_memory[n_thresholds];
 
