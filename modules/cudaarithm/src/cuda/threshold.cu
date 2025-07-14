@@ -109,7 +109,7 @@ __global__ void otsu_sums(uint *histogram, uint *threshold_sums, unsigned long l
     uint threshold_sum_above = 0;
     unsigned long long sum_above = 0;
 
-    if (bin_idx >= threshold)
+    if (bin_idx > threshold)
     {
         uint value = histogram[bin_idx];
         threshold_sum_above = value;
@@ -147,7 +147,7 @@ otsu_variance(float2 *variance, uint *histogram, uint *threshold_sums, unsigned 
 
     float threshold_variance_above_f32 = 0;
     float threshold_variance_below_f32 = 0;
-    if (bin_idx >= threshold)
+    if (bin_idx > threshold)
     {
         float mean = (float) sum_above / n_samples_above;
         float sigma = bin_idx - mean;
@@ -213,7 +213,7 @@ otsu_score(uint *otsu_threshold, uint *threshold_sums, float2 *variance)
     // know which threshold it is
     if (original_score == score)
     {
-        *otsu_threshold = threshold - 1;
+        *otsu_threshold = threshold;
     }
 }
 
