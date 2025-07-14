@@ -172,6 +172,30 @@ otsu_variance(float2 *variance, uint *histogram, uint *threshold_sums, unsigned 
     }
 }
 
+template <uint n_thresholds>
+__device__ bool has_lowest_score(
+    uint threshold, float original_score, float score, uint *shared_memory
+) {
+    // It may happen that multiple threads have the same minimum score. In that case, we want to find the thread with
+    // the lowest threshold. This is done by calling '__syncthreads_count' to count how many threads have a score
+    // that matches to the minimum score found. Since this is rare, we will optimize towards the common case where only
+    // one thread has the minimum score. If multiple threads have the same minimum score, we will find the minimum
+    // threshold that satifies the condition
+    bool has_match = original_score == score;
+    uint matches = __syncthreads_count(has_match);
+
+    if(matches > 1) {
+        // If this thread has a match, we use it; otherwise we give it a value that is larger than the maximum
+        // threshold, so it will never get picked
+        uint min_threshold = has_match ? threshold : n_thresholds;
+
+        blockReduce<n_thresholds>(shared_memory, min_threshold, threshold, minimum<uint>());
+
+        return min_threshold == threshold;
+    } else {
+        return has_match;
+    }
+}
 
 __global__ void
 otsu_score(uint *otsu_threshold, uint *threshold_sums, float2 *variance)
@@ -209,9 +233,9 @@ otsu_score(uint *otsu_threshold, uint *threshold_sums, float2 *variance)
 
     score = shared_memory[0];
 
-    // We found the minimum score, but we need to find the threshold. If we find the thread with the minimum score, we
-    // know which threshold it is
-    if (original_score == score)
+    // We found the minimum score, but in some cases multiple threads can have the same score, so we need to find the
+    // lowest threshold
+    if (has_lowest_score<n_thresholds>(threshold, original_score, score, (uint *) shared_memory))
     {
         *otsu_threshold = threshold;
     }
