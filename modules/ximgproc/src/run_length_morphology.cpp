@@ -36,6 +36,7 @@
 #include "precomp.hpp"
 #include <math.h>
 #include <vector>
+#include <stack>
 #include <iostream>
 
 
@@ -805,6 +806,150 @@ CV_EXPORTS void morphologyEx(InputArray rlSrc, OutputArray rlDest, int op, Input
         }
         convertToOutputArray(runsDestination, sizeSource, rlDest);
     }
+}
+
+static void getNeighborLookup(std::vector<int>& lutNeighbor, int connectivity, const rlVec& runs, const std::vector<int>& pIdxChord1, const std::vector<int>& pIdxNextRow, int emptyValue)
+{
+    CV_Assert(connectivity == 8 || connectivity == 4);
+    CV_Assert(lutNeighbor.size() != 0 && lutNeighbor.size() == 4u * runs.size());
+    CV_Assert(runs.back().r - runs[0].r + 1 == (int)pIdxChord1.size() && pIdxChord1.size() == pIdxNextRow.size());
+    const int connectionOffset = (connectivity == 4) ? 1 : 0;
+    int nRows = (int)pIdxChord1.size();
+    for (int i = 0; i < nRows - 1; ++i)
+    {
+        int firstRowStart = pIdxChord1[i];
+        int secondRowStart = pIdxChord1[i + 1];
+        int firstRowEnd = pIdxNextRow[i] - 1;
+        int secondRowEnd = pIdxNextRow[i + 1] - 1;
+        if (firstRowStart != emptyValue && secondRowStart != emptyValue)
+        {
+            while (firstRowStart <= firstRowEnd && secondRowStart <= secondRowEnd)
+            {
+                const rlType& first = runs[firstRowStart];
+                const rlType& second = runs[secondRowStart];
+                // Compare runs between two consecutive rows sequentially
+                if ((first.ce + connectionOffset < second.cb))
+                {
+                    firstRowStart++;
+                }
+                else if ((first.cb > second.ce + connectionOffset))
+                {
+                    secondRowStart++;
+                }
+                else
+                {
+                    // Each run stores indices of its 4-connected neighbors in lutNeighbor:
+                    // [0] = Top-leftmost neighbor
+                    // [1] = Top-rightmost neighbor
+                    // [2] = Bottom-leftmost neighbor
+                    // [3] = Bottom-rightmost neighbor
+                    lutNeighbor[firstRowStart * 4 + 3] = secondRowStart;
+                    lutNeighbor[secondRowStart * 4 + 1] = firstRowStart;
+                    if (lutNeighbor[firstRowStart * 4 + 2] == emptyValue)
+                    {
+                        lutNeighbor[firstRowStart * 4 + 2] = secondRowStart;
+                    }
+                    if (lutNeighbor[secondRowStart * 4] == emptyValue)
+                    {
+                        lutNeighbor[secondRowStart * 4] = firstRowStart;
+                    }
+                    if ((first.ce == second.ce))
+                    {
+                        firstRowStart++;
+                        secondRowStart++;
+                    }
+                    else if ((first.ce > second.ce))
+                    {
+                        secondRowStart++;
+                    }
+                    else
+                    {
+                        firstRowStart++;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// @author Yu Changming, yuchangminghit@gmail.com, https://github.com/yuchangminghit
+CV_EXPORTS void fillHoles(InputArray rlSrc, OutputArray rlDest, int connectivity)
+{
+    CV_Assert(connectivity == 8 || connectivity == 4);
+    rlVec runsSource, runsDestination;
+    Size sizeSource;
+    convertInputArrayToRuns(rlSrc, runsSource, sizeSource);
+    if ((int)runsSource.size() <= 3)
+    {
+        convertToOutputArray(runsSource, sizeSource, rlDest);
+        return;
+    }
+    rlVec borderRect, backgroundRuns;
+    cv::Rect boundingRect = getBoundingRectangle(runsSource);
+    if (boundingRect.width < 3 || boundingRect.height < 3)
+    {
+        convertToOutputArray(runsSource, sizeSource, rlDest);
+        return;
+    }
+    createUprightRectangle(cv::Rect(boundingRect.x - 1, boundingRect.y - 1, boundingRect.width + 2, boundingRect.height + 2), borderRect);
+    subtract_rle(borderRect, runsSource, backgroundRuns);
+    int nMinRow = backgroundRuns[0].r;
+    int nMaxRow = backgroundRuns.back().r;
+    int nRows = nMaxRow - nMinRow + 1;
+    const int EMPTY = -1;
+    std::vector<int> pIdxChord1(nRows, EMPTY);
+    std::vector<int> pIdxNextRow(nRows, EMPTY);
+    pIdxChord1[0] = 0;
+    pIdxNextRow[nRows - 1] = (int)backgroundRuns.size();
+    for (int i = 1; i < (int)backgroundRuns.size(); i++) {
+        if (backgroundRuns[i].r != backgroundRuns[i - 1].r) {
+            pIdxChord1[backgroundRuns[i].r - nMinRow] = i;
+            pIdxNextRow[backgroundRuns[i - 1].r - nMinRow] = i;
+        }
+    }
+    std::vector<int> neighborLUT(4u * backgroundRuns.size(), EMPTY);
+    getNeighborLookup(neighborLUT, connectivity, backgroundRuns, pIdxChord1, pIdxNextRow, EMPTY);
+    // Stack stores run indices to be processed
+    std::stack<int> indexStack;
+    indexStack.push(0);
+    // Flags for each run:
+    //   0: Run is adjacent to the outer background (not part of a hole)
+    //   255: Run is isolated from the outer background (part of a hole region)
+    std::vector<uchar> selectedFlags(backgroundRuns.size(), EMPTY);
+    const int SELECTED = 0;
+    selectedFlags[0] = SELECTED;
+    const int neighborOffsets[] = { 0, 2 };
+    while (!indexStack.empty())
+    {
+        int currentIdx = indexStack.top();
+        indexStack.pop();
+        for (int i = 0; i < 2; i++)
+        {
+            if (neighborLUT[4 * currentIdx + neighborOffsets[i]] != EMPTY)
+            {
+                int startIdx = neighborLUT[4 * currentIdx + neighborOffsets[i]];
+                int endIdx = neighborLUT[4 * currentIdx + neighborOffsets[i] + 1];
+                for (int nbrIdx = startIdx; nbrIdx <= endIdx; ++nbrIdx)
+                {
+                    if (selectedFlags[nbrIdx] != SELECTED)
+                    {
+                        selectedFlags[nbrIdx] = SELECTED;
+                        indexStack.push(nbrIdx);
+                    }
+                }
+            }
+        }
+    }
+    rlVec holesBackground;
+    for (int i = 0; i < (int)selectedFlags.size(); i++)
+    {
+        if (selectedFlags[i] == SELECTED)
+        {
+            holesBackground.push_back(backgroundRuns[i]);
+        }
+    }
+    invertRegion(holesBackground, runsDestination);
+    convertToOutputArray(runsDestination, sizeSource, rlDest);
 }
 
 }
