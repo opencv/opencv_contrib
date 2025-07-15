@@ -915,7 +915,7 @@ CV_EXPORTS void fillHoles(InputArray rlSrc, OutputArray rlDest, int connectivity
     // Flags for each run:
     //   0: Run is adjacent to the outer background (not part of a hole)
     //   255: Run is isolated from the outer background (part of a hole region)
-    std::vector<uchar> selectedFlags(backgroundRuns.size(), EMPTY);
+    std::vector<uchar> selectedFlags(backgroundRuns.size(), (uchar)255);
     const int SELECTED = 0;
     selectedFlags[0] = SELECTED;
     const int neighborOffsets[] = { 0, 2 };
