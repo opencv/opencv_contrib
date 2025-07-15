@@ -2625,6 +2625,50 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, ThresholdOtsu, testing::Combine(
     WHOLE_SUBMAT));
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// ThresholdOtsuMulti Multiple Valid Thresholds
+
+PARAM_TEST_CASE(ThresholdOtsuMulti, cv::cuda::DeviceInfo, cv::Size, MatType, Channels)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int type;
+    int channel;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        type = GET_PARAM(2);
+        channel = GET_PARAM(3);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(ThresholdOtsuMulti, Accuracy)
+{
+    cv::Mat src = Mat(size, CV_MAKE_TYPE(type, channel), cv::Scalar(0));
+    src.colRange(src.cols / 2, src.cols).setTo(255);
+
+    cv::cuda::GpuMat dst = createMat(src.size(), src.type());
+    double otsu_gpu = cv::cuda::threshold(loadMat(src), dst, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+
+    cv::Mat dst_gold;
+    double otsu_cpu = cv::threshold(src, dst_gold, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+
+    ASSERT_DOUBLE_EQ(otsu_gpu, otsu_cpu);
+    ASSERT_DOUBLE_EQ(otsu_gpu, 0);
+    EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, ThresholdOtsuMulti, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(cv::Size(1, 100)),
+    testing::Values(MatDepth(CV_8U)),
+    testing::Values(Channels(1))));
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // InRange
 
