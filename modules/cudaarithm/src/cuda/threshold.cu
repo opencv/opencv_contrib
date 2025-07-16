@@ -214,8 +214,8 @@ otsu_score(uint *otsu_threshold, uint *threshold_sums, float2 *variance)
     float threshold_mean_below = (float)n_samples_below / n_samples;
 
     float2 variances = variance[threshold];
-    float variance_above = variances.x / n_samples_above;
-    float variance_below = variances.y / n_samples_below;
+    float variance_above = n_samples_above > 0 ? variances.x / n_samples_above : 0.0f;
+    float variance_below = n_samples_below > 0 ? variances.y / n_samples_below : 0.0f;
 
     float above = threshold_mean_above * variance_above;
     float below = threshold_mean_below * variance_below;
