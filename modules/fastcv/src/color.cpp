@@ -99,7 +99,31 @@ void fastcvColorWrapper(const Mat& src, Mat& dst, int code)
 
     const int dstRows = static_cast<int>(height * heightFactor(dstFmt));   // 1.5·H  or  2·H
 
-    dst.create(dstRows, width, CV_8UC1);
+    int dstType = CV_8UC1; // default for planar/semi-planar YUV formats (1 byte per pixel)
+
+    switch (dstFmt)
+    {
+        case 420: case 422: case 444: 
+            dstType = CV_8UC1; 
+            break;
+
+        case 565:  // RGB565 – 16-bit packed RGB, 2 bytes per pixel
+            dstType = CV_8UC2;
+            break;
+
+        case 888:  // RGB888 – 3 bytes per pixel
+            dstType = CV_8UC3;
+            break;
+
+        case 8888: // RGBA8888 – 4 bytes per pixel
+            dstType = CV_8UC4;
+            break;
+
+        default:
+            CV_Error(cv::Error::StsBadArg, "Unsupported destination pixel format for FastCV");
+    }
+
+    dst.create(dstRows, width, dstType);
 
     CV_Assert(dst.isContinuous());
     CV_Assert(reinterpret_cast<uintptr_t>(dst.data) % 16 == 0);
