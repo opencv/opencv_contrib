@@ -52,8 +52,6 @@ inline cv::Ptr<cv::legacy::Tracker> createTrackerByName_legacy(const std::string
         CV_Error(cv::Error::StsNotImplemented, "FIXIT: migration on new API is required");
     else if (name == "MOSSE")
         tracker = legacy::TrackerMOSSE::create();
-    else if (name == "CSRT")
-        tracker = legacy::TrackerCSRT::create();
     else
         CV_Error(cv::Error::StsBadArg, "Invalid tracking algorithm name\n");
 

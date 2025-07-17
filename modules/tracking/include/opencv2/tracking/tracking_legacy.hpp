@@ -492,40 +492,6 @@ public:
   bool update_opt(InputArray image);
 };
 
-/*********************************** CSRT ************************************/
-/** @brief the CSRT tracker
-
-The implementation is based on @cite Lukezic_IJCV2018 Discriminative Correlation Filter with Channel and Spatial Reliability
-*/
-class CV_EXPORTS_W TrackerCSRT : public cv::legacy::Tracker
-{
-public:
-  struct CV_EXPORTS Params : cv::tracking::TrackerCSRT::Params
-  {
-    /**
-    * \brief Read parameters from a file
-    */
-    void read(const FileNode& /*fn*/);
-
-    /**
-    * \brief Write parameters to a file
-    */
-    void write(cv::FileStorage& fs) const;
-  };
-
-  /** @brief Constructor
-  @param parameters CSRT parameters TrackerCSRT::Params
-  */
-  static Ptr<legacy::TrackerCSRT> create(const TrackerCSRT::Params &parameters);
-
-  CV_WRAP static Ptr<legacy::TrackerCSRT> create();
-
-  CV_WRAP virtual void setInitialMask(InputArray mask) = 0;
-
-  virtual ~TrackerCSRT() CV_OVERRIDE {}
-};
-
-
 CV_EXPORTS_W Ptr<cv::Tracker> upgradeTrackingAPI(const Ptr<legacy::Tracker>& legacy_tracker);
 
 //! @}
