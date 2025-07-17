@@ -98,7 +98,7 @@ namespace
 
 __global__ void otsu_sums(uint *histogram, uint *threshold_sums, unsigned long long *sums)
 {
-    const uint32_t n_bins = 256;
+    const uint n_bins = 256;
 
     __shared__ uint shared_memory_ts[n_bins];
     __shared__ unsigned long long shared_memory_s[n_bins];
@@ -109,7 +109,7 @@ __global__ void otsu_sums(uint *histogram, uint *threshold_sums, unsigned long l
     uint threshold_sum_above = 0;
     unsigned long long sum_above = 0;
 
-    if (bin_idx >= threshold)
+    if (bin_idx > threshold)
     {
         uint value = histogram[bin_idx];
         threshold_sum_above = value;
@@ -129,7 +129,7 @@ __global__ void otsu_sums(uint *histogram, uint *threshold_sums, unsigned long l
 __global__ void
 otsu_variance(float2 *variance, uint *histogram, uint *threshold_sums, unsigned long long *sums)
 {
-    const uint32_t n_bins = 256;
+    const uint n_bins = 256;
 
     __shared__ signed long long shared_memory_a[n_bins];
     __shared__ signed long long shared_memory_b[n_bins];
@@ -147,7 +147,7 @@ otsu_variance(float2 *variance, uint *histogram, uint *threshold_sums, unsigned 
 
     float threshold_variance_above_f32 = 0;
     float threshold_variance_below_f32 = 0;
-    if (bin_idx >= threshold)
+    if (bin_idx > threshold)
     {
         float mean = (float) sum_above / n_samples_above;
         float sigma = bin_idx - mean;
@@ -172,11 +172,35 @@ otsu_variance(float2 *variance, uint *histogram, uint *threshold_sums, unsigned 
     }
 }
 
+template <uint n_thresholds>
+__device__ bool has_lowest_score(
+    uint threshold, float original_score, float score, uint *shared_memory
+) {
+    // It may happen that multiple threads have the same minimum score. In that case, we want to find the thread with
+    // the lowest threshold. This is done by calling '__syncthreads_count' to count how many threads have a score
+    // that matches to the minimum score found. Since this is rare, we will optimize towards the common case where only
+    // one thread has the minimum score. If multiple threads have the same minimum score, we will find the minimum
+    // threshold that satifies the condition
+    bool has_match = original_score == score;
+    uint matches = __syncthreads_count(has_match);
+
+    if(matches > 1) {
+        // If this thread has a match, we use it; otherwise we give it a value that is larger than the maximum
+        // threshold, so it will never get picked
+        uint min_threshold = has_match ? threshold : n_thresholds;
+
+        blockReduce<n_thresholds>(shared_memory, min_threshold, threshold, minimum<uint>());
+
+        return min_threshold == threshold;
+    } else {
+        return has_match;
+    }
+}
 
 __global__ void
 otsu_score(uint *otsu_threshold, uint *threshold_sums, float2 *variance)
 {
-    const uint32_t n_thresholds = 256;
+    const uint n_thresholds = 256;
 
     __shared__ float shared_memory[n_thresholds];
 
@@ -190,8 +214,8 @@ otsu_score(uint *otsu_threshold, uint *threshold_sums, float2 *variance)
     float threshold_mean_below = (float)n_samples_below / n_samples;
 
     float2 variances = variance[threshold];
-    float variance_above = variances.x / n_samples_above;
-    float variance_below = variances.y / n_samples_below;
+    float variance_above = n_samples_above > 0 ? variances.x / n_samples_above : 0.0f;
+    float variance_below = n_samples_below > 0 ? variances.y / n_samples_below : 0.0f;
 
     float above = threshold_mean_above * variance_above;
     float below = threshold_mean_below * variance_below;
@@ -209,11 +233,11 @@ otsu_score(uint *otsu_threshold, uint *threshold_sums, float2 *variance)
 
     score = shared_memory[0];
 
-    // We found the minimum score, but we need to find the threshold. If we find the thread with the minimum score, we
-    // know which threshold it is
-    if (original_score == score)
+    // We found the minimum score, but in some cases multiple threads can have the same score, so we need to find the
+    // lowest threshold
+    if (has_lowest_score<n_thresholds>(threshold, original_score, score, (uint *) shared_memory))
     {
-        *otsu_threshold = threshold - 1;
+        *otsu_threshold = threshold;
     }
 }
 
