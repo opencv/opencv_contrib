@@ -62,6 +62,8 @@ template <typename T> __device__ __forceinline__ T saturate_cast(ushort v) { ret
 template <typename T> __device__ __forceinline__ T saturate_cast(short v) { return T(v); }
 template <typename T> __device__ __forceinline__ T saturate_cast(uint v) { return T(v); }
 template <typename T> __device__ __forceinline__ T saturate_cast(int v) { return T(v); }
+template <typename T> __device__ __forceinline__ T saturate_cast(signed long long v) { return T(v); }
+template <typename T> __device__ __forceinline__ T saturate_cast(unsigned long long v) { return T(v); }
 template <typename T> __device__ __forceinline__ T saturate_cast(float v) { return T(v); }
 template <typename T> __device__ __forceinline__ T saturate_cast(double v) { return T(v); }
 
