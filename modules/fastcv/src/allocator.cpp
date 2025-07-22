@@ -55,12 +55,18 @@ cv::UMatData* QcAllocator::allocate(int dims, const int* sizes, int type,
         }
         total *= sizes[i];
     }
-    uchar* data = data0 ? (uchar*)data0 : (uchar*)fcvHwMemAlloc(total, 16);
+
+    int fd = -1;
+    uchar* data = data0 ? (uchar*)data0 : (uchar*)fcvHwMemAlloc(total, 16, &fd);
     cv::UMatData* u = new cv::UMatData(this);
     u->data = u->origdata = data;
     u->size = total;
     if(data0)
         u->flags |= cv::UMatData::USER_ALLOCATED;
+
+    // Store FD in userdata (cast to void*)
+    if (fd >= 0)
+    u->userdata = reinterpret_cast<void*>(static_cast<intptr_t>(fd));
 
     // Add to active allocations
     cv::fastcv::QcResourceManager::getInstance().addAllocation(data);
