@@ -13,7 +13,8 @@ inline double heightFactor(int fmt /*420 / 422 / 444*/)
     switch (fmt)
     {
         case 420:           return 1.5;  // YUV420 has 1.5× rows
-        case 422: case 444:           return 2.0;  // YUV422/444 have 2× rows
+        case 422:           return 2.0;  // YUV422 have 2× rows
+        case 444:           return 2.0;  // YUV444 have 3× rows
         default:            return 1.0;  // packed RGB565/RGB888 → no extra plane
     }
 }
