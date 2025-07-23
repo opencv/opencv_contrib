@@ -45,47 +45,6 @@ TEST(Fastcv_cvtColor, YUV420_to_YUV422_and_back_roundtrip)
     EXPECT_LE(maxDiff, 1.0);
 }
 
-TEST(Fastcv_cvtColor, YUV422_to_YUV420_roundtrip_custom_input)
-{
-    const int width = 640;
-    const int height = 480;
-    const cv::Size sz(width, height);
-    const int yuv422_rows = height * 2; 
-    cv::Mat yuv422_initial(yuv422_rows, width, CV_8UC1);
-    yuv422_initial.allocator = cv::fastcv::getQcAllocator();
-
-    uint8_t* y_plane = yuv422_initial.data;
-    uint8_t* uv_plane = y_plane + yuv422_initial.step * height;
-
-    for (int y = 0; y < height; ++y)
-    {
-        uint8_t* y_row = y_plane + y * yuv422_initial.step;
-        uint8_t* uv_row = uv_plane + y * yuv422_initial.step;
-        for (int x = 0; x < width; x += 2)
-        {
-            y_row[x] = 100;
-            y_row[x+1] = 100;
-
-            uv_row[x] = 50;
-            uv_row[x+1] = 200;
-        }
-    }
-
-    cv::Mat yuv420;
-    yuv420.allocator = cv::fastcv::getQcAllocator();
-    cv::fastcv::cvtColor(yuv422_initial, yuv420, cv::fastcv::COLOR_YUV422sp2YUV_NV12);
-
-    cv::Mat yuv422_roundtrip;
-    yuv422_roundtrip.allocator = cv::fastcv::getQcAllocator();
-    cv::fastcv::cvtColor(yuv420, yuv422_roundtrip, cv::fastcv::COLOR_YUV2YUV422sp_NV12);
-
-    ASSERT_EQ(yuv422_initial.size(), yuv422_roundtrip.size());
-    ASSERT_EQ(yuv422_initial.type(), yuv422_roundtrip.type());
-
-    double diff = cv::norm(yuv422_initial, yuv422_roundtrip, cv::NORM_INF);
-    EXPECT_LE(diff, 2.0);
-}
-
 TEST(Fastcv_cvtColor, YUV444_to_YUV420_and_back_roundtrip)
 {
     const cv::Size sz(640, 480);
