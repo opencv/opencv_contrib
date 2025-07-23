@@ -11,6 +11,7 @@ if(NOT Gflags_FOUND)  # Ceres find gflags on the own, so separate search isn't n
 endif()
 if(NOT (Glog_FOUND OR glog_FOUND))  # Ceres find glog on the own, so separate search isn't necessary
   find_package(Glog QUIET)
+  add_compile_definitions(GLOG_USE_GLOG_EXPORT)
 endif()
 
 if(NOT Gflags_FOUND OR NOT (Glog_FOUND OR glog_FOUND))
@@ -21,6 +22,7 @@ if(NOT Gflags_FOUND OR NOT (Glog_FOUND OR glog_FOUND))
   endif()
   if(NOT (Glog_FOUND OR glog_FOUND))
     find_package(Glog QUIET)
+    add_compile_definitions(GLOG_USE_GLOG_EXPORT)
   endif()
 endif()
 
