@@ -113,6 +113,19 @@ CV_EXPORTS void createRLEImage(const std::vector<cv::Point3i>& runs, OutputArray
 CV_EXPORTS void morphologyEx(InputArray rlSrc, OutputArray rlDest, int op, InputArray rlKernel,
     bool bBoundaryOnForErosion = true, Point anchor = Point(0,0));
 
+/**
+* @brief   Fills holes in a run-length encoded binary image
+*
+* The function fills holes in the input binary image. A hole is defined as a background region surrounded
+* by connected foreground pixels.
+*
+* @param   rlSrc           input run-length encoded binary image
+* @param   rlDest          output run-length encoded image with holes filled
+* @param   connectivity    connectivity for hole filling, either 4 or 8 (default: 8)
+*
+*/
+CV_EXPORTS void fillHoles(InputArray rlSrc, OutputArray rlDest, int connectivity = 8);
+
 //! @}
 
 }
