@@ -520,11 +520,29 @@ void AdaptiveManifoldFilterN::h_filter(const Mat1f& src, Mat& dst, float sigma)
         float* dst_row = dst.ptr<float>(y);
 
         dst_row[0] = src_row[0];
-        for (int x = 1; x < src.cols; ++x)
+        int x = 1;
+    #if defined(_M_ARM64)
+        for ( ; x + 1 < src.cols; x += 2 )
+        {
+            dst_row[x] = src_row[x] + a * (dst_row[x - 1] - src_row[x]);
+            dst_row[x + 1] = src_row[x + 1] + a * (dst_row[x] - src_row[x + 1]);
+        }
+    #endif
+        for ( ; x < src.cols; ++x )
         {
             dst_row[x] = src_row[x] + a * (dst_row[x - 1] - src_row[x]);
         }
-        for (int x = src.cols - 2; x >= 0; --x)
+
+        x = src.cols - 2;
+
+    #if defined(_M_ARM64)
+        for ( ; x - 1 >= 0; x -= 2 )
+        {
+            dst_row[x] = dst_row[x] + a * (dst_row[x + 1] - dst_row[x]);
+            dst_row[x - 1] = dst_row[x - 1] + a * (dst_row[x] - dst_row[x - 1]);
+        }
+    #endif
+        for ( ; x >= 0; --x )
         {
             dst_row[x] = dst_row[x] + a * (dst_row[x + 1] - dst_row[x]);
         }
