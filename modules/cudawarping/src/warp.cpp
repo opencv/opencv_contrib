@@ -208,6 +208,19 @@ void cv::cuda::warpAffine(InputArray _src, OutputArray _dst, InputArray _M, Size
     _dst.create(dsize, src.type());
     GpuMat dst = _dst.getGpuMat();
 
+    const uchar* src_start = src.data;
+    const uchar* dst_start = dst.data;
+
+    size_t src_size = src.step * src.rows;
+    size_t dst_size = dst.step * dst.rows;
+
+    const uchar* src_end = src_start + src_size;
+    const uchar* dst_end = dst_start + dst_size;
+
+    bool overlap = src_end > dst_start && dst_end > src_start;
+
+    CV_Assert(!overlap && "In-place operation not supported for cv::cuda::warpAffine");
+
     Size wholeSize;
     Point ofs;
     src.locateROI(wholeSize, ofs);
