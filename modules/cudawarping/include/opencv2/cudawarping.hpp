@@ -118,6 +118,7 @@ CV_EXPORTS_W void resize(InputArray src, OutputArray dst, Size dsize, double fx=
 @param src Source image. CV_8U , CV_16U , CV_32S , or CV_32F depth and 1, 3, or 4 channels are
 supported.
 @param dst Destination image with the same type as src . The size is dsize .
+    **In-place operation (src == dst) is not supported and will result in an error.**
 @param M *2x3* Mat or UMat transformation matrix.
 @param dsize Size of the destination image.
 @param flags Combination of interpolation methods (see resize) and the optional flag
@@ -127,6 +128,7 @@ INTER_NEAREST , INTER_LINEAR , and INTER_CUBIC interpolation methods are support
 @param borderValue
 @param stream Stream for the asynchronous version.
 
+@note In-place operation is not supported. If src and dst refer to the same data, the behavior is undefined.
 @sa warpAffine
  */
 CV_EXPORTS void warpAffine(InputArray src, OutputArray dst, InputArray M, Size dsize, int flags = INTER_LINEAR,
