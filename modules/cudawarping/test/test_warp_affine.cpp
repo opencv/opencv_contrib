@@ -222,6 +222,36 @@ CUDA_TEST_P(WarpAffine, Accuracy)
     EXPECT_MAT_NEAR(dst_gold, dst, src.depth() == CV_32F ? 1e-1 : 1.0);
 }
 
+CUDA_TEST_P(WarpAffine, OverlapDetection)
+{
+    cv::Mat src = randomMat(size, type);
+    ASSERT_FALSE(src.empty());
+    cv::cuda::GpuMat gpuSrc;
+    gpuSrc.upload(src);
+
+    cv::Mat M = cv::Mat::eye(2, 3, CV_64FC1);
+    int flags = interpolation;
+    if (inverse)
+        flags |= cv::WARP_INVERSE_MAP;
+
+    {
+        cv::cuda::GpuMat gpuDst(gpuSrc, cv::Rect(0, 0, size.width, size.height));
+
+        EXPECT_THROW(
+            cv::cuda::warpAffine(gpuSrc, gpuDst, M, size, flags, borderType, cv::Scalar::all(0)),
+            cv::Exception);
+    }
+
+    {
+        cv::cuda::GpuMat gpuDst(size, gpuSrc.type());
+        ASSERT_NE(gpuSrc.data, gpuDst.data); // Confirm they are distinct
+
+        EXPECT_NO_THROW({
+            cv::cuda::warpAffine(gpuSrc, gpuDst, M, size, flags, borderType, cv::Scalar::all(0));
+        });
+    }
+}
+
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, WarpAffine, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,

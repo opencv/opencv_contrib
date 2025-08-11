@@ -208,6 +208,8 @@ void cv::cuda::warpAffine(InputArray _src, OutputArray _dst, InputArray _M, Size
     _dst.create(dsize, src.type());
     GpuMat dst = _dst.getGpuMat();
 
+    CV_Assert( src.data != dst.data && "In-place operation not supported for cv::cuda::warpAffine" );
+
     Size wholeSize;
     Point ofs;
     src.locateROI(wholeSize, ofs);
