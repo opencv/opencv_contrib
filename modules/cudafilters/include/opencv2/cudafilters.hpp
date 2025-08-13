@@ -97,6 +97,9 @@ center.
 @param borderMode Pixel extrapolation method. For details, see borderInterpolate .
 @param borderVal Default border value.
 
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
+
 @sa boxFilter
  */
 CV_EXPORTS_W Ptr<Filter> createBoxFilter(int srcType, int dstType, Size ksize, Point anchor = Point(-1, -1),
@@ -114,6 +117,9 @@ CV_EXPORTS_W Ptr<Filter> createBoxFilter(int srcType, int dstType, Size ksize, P
 center.
 @param borderMode Pixel extrapolation method. For details, see borderInterpolate .
 @param borderVal Default border value.
+
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
 
 @sa filter2D
  */
@@ -133,6 +139,9 @@ must be positive and odd. Only ksize = 1 and ksize = 3 are supported.
 applied (see getDerivKernels ).
 @param borderMode Pixel extrapolation method. For details, see borderInterpolate .
 @param borderVal Default border value.
+
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
 
 @sa Laplacian
  */
@@ -156,6 +165,9 @@ the aperture center.
 borderInterpolate.
 @param columnBorderMode Pixel extrapolation method in the horizontal direction.
 
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
+
 @sa sepFilter2D
  */
 CV_EXPORTS_W Ptr<Filter> createSeparableLinearFilter(int srcType, int dstType, InputArray rowKernel, InputArray columnKernel,
@@ -178,6 +190,9 @@ applied. For details, see getDerivKernels .
 @param rowBorderMode Pixel extrapolation method in the vertical direction. For details, see
 borderInterpolate.
 @param columnBorderMode Pixel extrapolation method in the horizontal direction.
+
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
  */
 CV_EXPORTS_W Ptr<Filter> createDerivFilter(int srcType, int dstType, int dx, int dy,
                                          int ksize, bool normalize = false, double scale = 1,
@@ -196,6 +211,9 @@ applied. For details, see getDerivKernels .
 borderInterpolate.
 @param columnBorderMode Pixel extrapolation method in the horizontal direction.
 
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
+
 @sa Sobel
  */
 CV_EXPORTS_W Ptr<Filter> createSobelFilter(int srcType, int dstType, int dx, int dy, int ksize = 3,
@@ -212,6 +230,9 @@ applied. See getDerivKernels for details.
 @param rowBorderMode Pixel extrapolation method in the vertical direction. For details, see
 borderInterpolate.
 @param columnBorderMode Pixel extrapolation method in the horizontal direction.
+
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
 
 @sa Scharr
  */
@@ -232,6 +253,9 @@ CV_EXPORTS_W Ptr<Filter> createScharrFilter(int srcType, int dstType, int dx, in
 @param rowBorderMode Pixel extrapolation method in the vertical direction. For details, see
 borderInterpolate.
 @param columnBorderMode Pixel extrapolation method in the horizontal direction.
+
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
 
 @sa GaussianBlur
  */
@@ -258,6 +282,9 @@ CV_EXPORTS_W Ptr<Filter> createGaussianFilter(int srcType, int dstType, Size ksi
 is at the center.
 @param iterations Number of times erosion and dilation to be applied.
 
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
+
 @sa morphologyEx
  */
 CV_EXPORTS_W Ptr<Filter> createMorphologyFilter(int op, int srcType, InputArray kernel, Point anchor = Point(-1, -1), int iterations = 1);
@@ -272,6 +299,9 @@ CV_EXPORTS_W Ptr<Filter> createMorphologyFilter(int op, int srcType, InputArray 
 @param anchor Anchor point. The default value (-1) means that the anchor is at the kernel center.
 @param borderMode Pixel extrapolation method. For details, see borderInterpolate .
 @param borderVal Default border value.
+
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
  */
 CV_EXPORTS_W Ptr<Filter> createBoxMaxFilter(int srcType, Size ksize,
                                           Point anchor = Point(-1, -1),
@@ -284,6 +314,9 @@ CV_EXPORTS_W Ptr<Filter> createBoxMaxFilter(int srcType, Size ksize,
 @param anchor Anchor point. The default value (-1) means that the anchor is at the kernel center.
 @param borderMode Pixel extrapolation method. For details, see borderInterpolate .
 @param borderVal Default border value.
+
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
  */
 CV_EXPORTS_W Ptr<Filter> createBoxMinFilter(int srcType, Size ksize,
                                           Point anchor = Point(-1, -1),
@@ -300,6 +333,9 @@ CV_EXPORTS_W Ptr<Filter> createBoxMinFilter(int srcType, Size ksize,
 @param anchor Anchor point. The default value (-1) means that the anchor is at the kernel center.
 @param borderMode Pixel extrapolation method. For details, see borderInterpolate .
 @param borderVal Default border value.
+
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
  */
 CV_EXPORTS_W Ptr<Filter> createRowSumFilter(int srcType, int dstType, int ksize, int anchor = -1, int borderMode = BORDER_DEFAULT, Scalar borderVal = Scalar::all(0));
 
@@ -311,6 +347,9 @@ CV_EXPORTS_W Ptr<Filter> createRowSumFilter(int srcType, int dstType, int ksize,
 @param anchor Anchor point. The default value (-1) means that the anchor is at the kernel center.
 @param borderMode Pixel extrapolation method. For details, see borderInterpolate .
 @param borderVal Default border value.
+
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
  */
 CV_EXPORTS_W Ptr<Filter> createColumnSumFilter(int srcType, int dstType, int ksize, int anchor = -1, int borderMode = BORDER_DEFAULT, Scalar borderVal = Scalar::all(0));
 
@@ -329,6 +368,9 @@ Outputs an image that has been filtered using a median-filtering formulation.
 Details on this algorithm can be found in:
 Green, O., 2017. "Efficient scalable median filtering using histogram-based operations",
                   IEEE Transactions on Image Processing, 27(5), pp.2217-2228.
+
+@note
+If applied in a CUDA Stream, a distinct filter instance must be created for each Stream. Sharing a single instance across multiple streams is unsupported and may lead to undefined behavior due to stream-specific internal state.
  */
 CV_EXPORTS_W Ptr<Filter> createMedianFilter(int srcType, int windowSize, int partition = 128);
 
