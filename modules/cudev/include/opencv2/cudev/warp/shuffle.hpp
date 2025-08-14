@@ -334,12 +334,28 @@ __device__ __forceinline__ uint shfl_down(uint val, uint delta, int width = warp
 
 __device__ __forceinline__ signed long long shfl_down(signed long long val, uint delta, int width = warpSize)
 {
+#if defined __CUDACC_VER_MAJOR__ < 9
+    union { long long ll; int2 i2; } u;
+    u.ll = val;
+    u.i2.x = __shfl_down(u.i2.x, delta, width);
+    u.i2.y = __shfl_down(u.i2.y, delta, width);
+    return u.ll;
+#else
     return __shfl_down(val, delta, width);
+#endif
 }
 
 __device__ __forceinline__ unsigned long long shfl_down(unsigned long long val, uint delta, int width = warpSize)
 {
-    return (unsigned long long) __shfl_down(val, delta, width);
+#if defined __CUDACC_VER_MAJOR__ < 9
+    union { unsigned long long ull; uint2 u2; } u;
+    u.ull = val;
+    u.u2.x = __shfl_down(static_cast<int>(u.u2.x), delta, width);
+    u.u2.y = __shfl_down(static_cast<int>(u.u2.y), delta, width);
+    return u.ull;
+#else
+    return __shfl_down(val, delta, width);
+#endif
 }
 
 __device__ __forceinline__ float shfl_down(float val, uint delta, int width = warpSize)
