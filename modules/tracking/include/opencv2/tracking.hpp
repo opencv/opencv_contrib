@@ -42,28 +42,28 @@ public:
     {
         CV_WRAP Params();
 
-        CV_PROP_RW bool use_hog;
-        CV_PROP_RW bool use_color_names;
-        CV_PROP_RW bool use_gray;
-        CV_PROP_RW bool use_rgb;
-        CV_PROP_RW bool use_channel_weights;
-        CV_PROP_RW bool use_segmentation;
+        CV_PROP_RW bool use_hog; //!< Use HOG features
+        CV_PROP_RW bool use_color_names; //!< Use color name features
+        CV_PROP_RW bool use_gray; //!< Use graylevel features
+        CV_PROP_RW bool use_rgb; //!< Use RGB features
+        CV_PROP_RW bool use_channel_weights; //!< Weight feature channels with their estimated reliability
+        CV_PROP_RW bool use_segmentation; //!< Apply spatial reliability segmentation to bounding box
 
         CV_PROP_RW std::string window_function; //!<  Window function: "hann", "cheb", "kaiser"
         CV_PROP_RW float kaiser_alpha;
         CV_PROP_RW float cheb_attenuation;
 
-        CV_PROP_RW float template_size;
-        CV_PROP_RW float gsl_sigma;
-        CV_PROP_RW float hog_orientations;
-        CV_PROP_RW float hog_clip;
-        CV_PROP_RW float padding;
-        CV_PROP_RW float filter_lr;
-        CV_PROP_RW float weights_lr;
-        CV_PROP_RW int num_hog_channels_used;
-        CV_PROP_RW int admm_iterations;
-        CV_PROP_RW int histogram_bins;
-        CV_PROP_RW float histogram_lr;
+        CV_PROP_RW float template_size; //!<  Size of the tracking template (??)
+        CV_PROP_RW float gsl_sigma; //!<  Sigma of the spatial prior (??)
+        CV_PROP_RW float hog_orientations;  //!< Unused??
+        CV_PROP_RW float hog_clip; //!< Unused??
+        CV_PROP_RW float padding; //!< Padding around bounding box
+        CV_PROP_RW float filter_lr; //!< Learning rate for filter update
+        CV_PROP_RW float weights_lr; //!< Learning rate for channels weights update
+        CV_PROP_RW int num_hog_channels_used; //!< Number of HOG channels
+        CV_PROP_RW int admm_iterations; //!< Number of iterations for the optimization of target templates
+        CV_PROP_RW int histogram_bins; //!< Number of histogram bins for spatial reliability segmentation
+        CV_PROP_RW float histogram_lr; //!< Learning rate for histograms in spatial reliability segmentation
         CV_PROP_RW int background_ratio;
         CV_PROP_RW int number_of_scales;
         CV_PROP_RW float scale_sigma_factor;
