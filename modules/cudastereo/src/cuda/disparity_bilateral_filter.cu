@@ -117,11 +117,11 @@ namespace cv { namespace cuda { namespace device
 
                             const T disp_reg = disp_y[xi];
 
-                            cost[0] += ::min(cmax_disc, ::abs(disp_reg - dp[0])) * weight;
-                            cost[1] += ::min(cmax_disc, ::abs(disp_reg - dp[1])) * weight;
-                            cost[2] += ::min(cmax_disc, ::abs(disp_reg - dp[2])) * weight;
-                            cost[3] += ::min(cmax_disc, ::abs(disp_reg - dp[3])) * weight;
-                            cost[4] += ::min(cmax_disc, ::abs(disp_reg - dp[4])) * weight;
+                            cost[0] += ::min((float)cmax_disc, (float)::abs(disp_reg - dp[0])) * weight;
+                            cost[1] += ::min((float)cmax_disc, (float)::abs(disp_reg - dp[1])) * weight;
+                            cost[2] += ::min((float)cmax_disc, (float)::abs(disp_reg - dp[2])) * weight;
+                            cost[3] += ::min((float)cmax_disc, (float)::abs(disp_reg - dp[3])) * weight;
+                            cost[4] += ::min((float)cmax_disc, (float)::abs(disp_reg - dp[4])) * weight;
                         }
                     }
 
@@ -199,6 +199,7 @@ namespace cv { namespace cuda { namespace device
 
         template void disp_bilateral_filter<uchar>(PtrStepSz<uchar> disp, PtrStepSzb img, int channels, int iters, const float *table_color, const float *table_space, size_t table_step, int radius, short, short, cudaStream_t stream);
         template void disp_bilateral_filter<short>(PtrStepSz<short> disp, PtrStepSzb img, int channels, int iters, const float *table_color, const float *table_space, size_t table_step, int radius, short, short, cudaStream_t stream);
+        template void disp_bilateral_filter<float>(PtrStepSz<float> disp, PtrStepSzb img, int channels, int iters, const float *table_color, const float *table_space, size_t table_step, int radius, short, short, cudaStream_t stream);
     } // namespace bilateral_filter
 }}} // namespace cv { namespace cuda { namespace cudev
 
