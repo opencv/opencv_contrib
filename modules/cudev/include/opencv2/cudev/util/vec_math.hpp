@@ -48,8 +48,11 @@
 
 #include "vec_traits.hpp"
 #include "saturate_cast.hpp"
+#include "opencv2/core/cuda/cuda_compat.hpp"
 
 namespace cv { namespace cudev {
+
+    using cv::cuda::device::compat::double4;
 
 //! @addtogroup cudev
 //! @{

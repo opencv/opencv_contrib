@@ -49,6 +49,7 @@
 #else
 
 #include "opencv2/cudev.hpp"
+#include "opencv2/core/cuda/cuda_compat.hpp"
 
 using namespace cv::cudev;
 
@@ -56,6 +57,7 @@ void divScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
 
 namespace
 {
+    using cv::cuda::device::compat::double4Compat;
     template <typename T, int cn> struct SafeDiv;
     template <typename T> struct SafeDiv<T, 1>
     {
@@ -170,7 +172,7 @@ void divScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {divScalarImpl<uchar, float, short>, divScalarImpl<uchar2, float, short2>, divScalarImpl<uchar3, float, short3>, divScalarImpl<uchar4, float, short4>},
             {divScalarImpl<uchar, float, int>, divScalarImpl<uchar2, float, int2>, divScalarImpl<uchar3, float, int3>, divScalarImpl<uchar4, float, int4>},
             {divScalarImpl<uchar, float, float>, divScalarImpl<uchar2, float, float2>, divScalarImpl<uchar3, float, float3>, divScalarImpl<uchar4, float, float4>},
-            {divScalarImpl<uchar, double, double>, divScalarImpl<uchar2, double, double2>, divScalarImpl<uchar3, double, double3>, divScalarImpl<uchar4, double, double4>}
+            {divScalarImpl<uchar, double, double>, divScalarImpl<uchar2, double, double2>, divScalarImpl<uchar3, double, double3>, divScalarImpl<uchar4, double, double4Compat>}
         },
         {
             {divScalarImpl<schar, float, uchar>, divScalarImpl<char2, float, uchar2>, divScalarImpl<char3, float, uchar3>, divScalarImpl<char4, float, uchar4>},
@@ -179,7 +181,7 @@ void divScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {divScalarImpl<schar, float, short>, divScalarImpl<char2, float, short2>, divScalarImpl<char3, float, short3>, divScalarImpl<char4, float, short4>},
             {divScalarImpl<schar, float, int>, divScalarImpl<char2, float, int2>, divScalarImpl<char3, float, int3>, divScalarImpl<char4, float, int4>},
             {divScalarImpl<schar, float, float>, divScalarImpl<char2, float, float2>, divScalarImpl<char3, float, float3>, divScalarImpl<char4, float, float4>},
-            {divScalarImpl<schar, double, double>, divScalarImpl<char2, double, double2>, divScalarImpl<char3, double, double3>, divScalarImpl<char4, double, double4>}
+            {divScalarImpl<schar, double, double>, divScalarImpl<char2, double, double2>, divScalarImpl<char3, double, double3>, divScalarImpl<char4, double, double4Compat>}
         },
         {
             {0 /*divScalarImpl<ushort, float, uchar>*/, 0 /*divScalarImpl<ushort2, float, uchar2>*/, 0 /*divScalarImpl<ushort3, float, uchar3>*/, 0 /*divScalarImpl<ushort4, float, uchar4>*/},
@@ -188,7 +190,7 @@ void divScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {divScalarImpl<ushort, float, short>, divScalarImpl<ushort2, float, short2>, divScalarImpl<ushort3, float, short3>, divScalarImpl<ushort4, float, short4>},
             {divScalarImpl<ushort, float, int>, divScalarImpl<ushort2, float, int2>, divScalarImpl<ushort3, float, int3>, divScalarImpl<ushort4, float, int4>},
             {divScalarImpl<ushort, float, float>, divScalarImpl<ushort2, float, float2>, divScalarImpl<ushort3, float, float3>, divScalarImpl<ushort4, float, float4>},
-            {divScalarImpl<ushort, double, double>, divScalarImpl<ushort2, double, double2>, divScalarImpl<ushort3, double, double3>, divScalarImpl<ushort4, double, double4>}
+            {divScalarImpl<ushort, double, double>, divScalarImpl<ushort2, double, double2>, divScalarImpl<ushort3, double, double3>, divScalarImpl<ushort4, double, double4Compat>}
         },
         {
             {0 /*divScalarImpl<short, float, uchar>*/, 0 /*divScalarImpl<short2, float, uchar2>*/, 0 /*divScalarImpl<short3, float, uchar3>*/, 0 /*divScalarImpl<short4, float, uchar4>*/},
@@ -197,7 +199,7 @@ void divScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {divScalarImpl<short, float, short>, divScalarImpl<short2, float, short2>, divScalarImpl<short3, float, short3>, divScalarImpl<short4, float, short4>},
             {divScalarImpl<short, float, int>, divScalarImpl<short2, float, int2>, divScalarImpl<short3, float, int3>, divScalarImpl<short4, float, int4>},
             {divScalarImpl<short, float, float>, divScalarImpl<short2, float, float2>, divScalarImpl<short3, float, float3>, divScalarImpl<short4, float, float4>},
-            {divScalarImpl<short, double, double>, divScalarImpl<short2, double, double2>, divScalarImpl<short3, double, double3>, divScalarImpl<short4, double, double4>}
+            {divScalarImpl<short, double, double>, divScalarImpl<short2, double, double2>, divScalarImpl<short3, double, double3>, divScalarImpl<short4, double, double4Compat>}
         },
         {
             {0 /*divScalarImpl<int, float, uchar>*/, 0 /*divScalarImpl<int2, float, uchar2>*/, 0 /*divScalarImpl<int3, float, uchar3>*/, 0 /*divScalarImpl<int4, float, uchar4>*/},
@@ -206,7 +208,7 @@ void divScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {0 /*divScalarImpl<int, float, short>*/, 0 /*divScalarImpl<int2, float, short2>*/, 0 /*divScalarImpl<int3, float, short3>*/, 0 /*divScalarImpl<int4, float, short4>*/},
             {divScalarImpl<int, float, int>, divScalarImpl<int2, float, int2>, divScalarImpl<int3, float, int3>, divScalarImpl<int4, float, int4>},
             {divScalarImpl<int, float, float>, divScalarImpl<int2, float, float2>, divScalarImpl<int3, float, float3>, divScalarImpl<int4, float, float4>},
-            {divScalarImpl<int, double, double>, divScalarImpl<int2, double, double2>, divScalarImpl<int3, double, double3>, divScalarImpl<int4, double, double4>}
+            {divScalarImpl<int, double, double>, divScalarImpl<int2, double, double2>, divScalarImpl<int3, double, double3>, divScalarImpl<int4, double, double4Compat>}
         },
         {
             {0 /*divScalarImpl<float, float, uchar>*/, 0 /*divScalarImpl<float2, float, uchar2>*/, 0 /*divScalarImpl<float3, float, uchar3>*/, 0 /*divScalarImpl<float4, float, uchar4>*/},
@@ -215,7 +217,7 @@ void divScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {0 /*divScalarImpl<float, float, short>*/, 0 /*divScalarImpl<float2, float, short2>*/, 0 /*divScalarImpl<float3, float, short3>*/, 0 /*divScalarImpl<float4, float, short4>*/},
             {0 /*divScalarImpl<float, float, int>*/, 0 /*divScalarImpl<float2, float, int2>*/, 0 /*divScalarImpl<float3, float, int3>*/, 0 /*divScalarImpl<float4, float, int4>*/},
             {divScalarImpl<float, float, float>, divScalarImpl<float2, float, float2>, divScalarImpl<float3, float, float3>, divScalarImpl<float4, float, float4>},
-            {divScalarImpl<float, double, double>, divScalarImpl<float2, double, double2>, divScalarImpl<float3, double, double3>, divScalarImpl<float4, double, double4>}
+            {divScalarImpl<float, double, double>, divScalarImpl<float2, double, double2>, divScalarImpl<float3, double, double3>, divScalarImpl<float4, double, double4Compat>}
         },
         {
             {0 /*divScalarImpl<double, double, uchar>*/, 0 /*divScalarImpl<double2, double, uchar2>*/, 0 /*divScalarImpl<double3, double, uchar3>*/, 0 /*divScalarImpl<double4, double, uchar4>*/},
@@ -224,7 +226,7 @@ void divScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {0 /*divScalarImpl<double, double, short>*/, 0 /*divScalarImpl<double2, double, short2>*/, 0 /*divScalarImpl<double3, double, short3>*/, 0 /*divScalarImpl<double4, double, short4>*/},
             {0 /*divScalarImpl<double, double, int>*/, 0 /*divScalarImpl<double2, double, int2>*/, 0 /*divScalarImpl<double3, double, int3>*/, 0 /*divScalarImpl<double4, double, int4>*/},
             {0 /*divScalarImpl<double, double, float>*/, 0 /*divScalarImpl<double2, double, float2>*/, 0 /*divScalarImpl<double3, double, float3>*/, 0 /*divScalarImpl<double4, double, float4>*/},
-            {divScalarImpl<double, double, double>, divScalarImpl<double2, double, double2>, divScalarImpl<double3, double, double3>, divScalarImpl<double4, double, double4>}
+            {divScalarImpl<double, double, double>, divScalarImpl<double2, double, double2>, divScalarImpl<double3, double, double3>, divScalarImpl<double4Compat, double, double4Compat>}
         }
     };
 

@@ -49,6 +49,7 @@
 #else
 
 #include "opencv2/cudev.hpp"
+#include "opencv2/core/cuda/cuda_compat.hpp"
 
 using namespace cv::cudev;
 
@@ -56,6 +57,8 @@ void subScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
 
 namespace
 {
+    using cv::cuda::device::compat::double4Compat;
+
     template <typename SrcType, typename ScalarType, typename DstType> struct SubScalarOp : unary_function<SrcType, DstType>
     {
         ScalarType val;
@@ -128,7 +131,7 @@ void subScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {subScalarImpl<uchar, float, short>, subScalarImpl<uchar2, float, short2>, subScalarImpl<uchar3, float, short3>, subScalarImpl<uchar4, float, short4>},
             {subScalarImpl<uchar, float, int>, subScalarImpl<uchar2, float, int2>, subScalarImpl<uchar3, float, int3>, subScalarImpl<uchar4, float, int4>},
             {subScalarImpl<uchar, float, float>, subScalarImpl<uchar2, float, float2>, subScalarImpl<uchar3, float, float3>, subScalarImpl<uchar4, float, float4>},
-            {subScalarImpl<uchar, double, double>, subScalarImpl<uchar2, double, double2>, subScalarImpl<uchar3, double, double3>, subScalarImpl<uchar4, double, double4>}
+            {subScalarImpl<uchar, double, double>, subScalarImpl<uchar2, double, double2>, subScalarImpl<uchar3, double, double3>, subScalarImpl<uchar4, double, double4Compat>}
         },
         {
             {subScalarImpl<schar, float, uchar>, subScalarImpl<char2, float, uchar2>, subScalarImpl<char3, float, uchar3>, subScalarImpl<char4, float, uchar4>},
@@ -137,7 +140,7 @@ void subScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {subScalarImpl<schar, float, short>, subScalarImpl<char2, float, short2>, subScalarImpl<char3, float, short3>, subScalarImpl<char4, float, short4>},
             {subScalarImpl<schar, float, int>, subScalarImpl<char2, float, int2>, subScalarImpl<char3, float, int3>, subScalarImpl<char4, float, int4>},
             {subScalarImpl<schar, float, float>, subScalarImpl<char2, float, float2>, subScalarImpl<char3, float, float3>, subScalarImpl<char4, float, float4>},
-            {subScalarImpl<schar, double, double>, subScalarImpl<char2, double, double2>, subScalarImpl<char3, double, double3>, subScalarImpl<char4, double, double4>}
+            {subScalarImpl<schar, double, double>, subScalarImpl<char2, double, double2>, subScalarImpl<char3, double, double3>, subScalarImpl<char4, double, double4Compat>}
         },
         {
             {0 /*subScalarImpl<ushort, float, uchar>*/, 0 /*subScalarImpl<ushort2, float, uchar2>*/, 0 /*subScalarImpl<ushort3, float, uchar3>*/, 0 /*subScalarImpl<ushort4, float, uchar4>*/},
@@ -146,7 +149,7 @@ void subScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {subScalarImpl<ushort, float, short>, subScalarImpl<ushort2, float, short2>, subScalarImpl<ushort3, float, short3>, subScalarImpl<ushort4, float, short4>},
             {subScalarImpl<ushort, float, int>, subScalarImpl<ushort2, float, int2>, subScalarImpl<ushort3, float, int3>, subScalarImpl<ushort4, float, int4>},
             {subScalarImpl<ushort, float, float>, subScalarImpl<ushort2, float, float2>, subScalarImpl<ushort3, float, float3>, subScalarImpl<ushort4, float, float4>},
-            {subScalarImpl<ushort, double, double>, subScalarImpl<ushort2, double, double2>, subScalarImpl<ushort3, double, double3>, subScalarImpl<ushort4, double, double4>}
+            {subScalarImpl<ushort, double, double>, subScalarImpl<ushort2, double, double2>, subScalarImpl<ushort3, double, double3>, subScalarImpl<ushort4, double, double4Compat>}
         },
         {
             {0 /*subScalarImpl<short, float, uchar>*/, 0 /*subScalarImpl<short2, float, uchar2>*/, 0 /*subScalarImpl<short3, float, uchar3>*/, 0 /*subScalarImpl<short4, float, uchar4>*/},
@@ -155,7 +158,7 @@ void subScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {subScalarImpl<short, float, short>, subScalarImpl<short2, float, short2>, subScalarImpl<short3, float, short3>, subScalarImpl<short4, float, short4>},
             {subScalarImpl<short, float, int>, subScalarImpl<short2, float, int2>, subScalarImpl<short3, float, int3>, subScalarImpl<short4, float, int4>},
             {subScalarImpl<short, float, float>, subScalarImpl<short2, float, float2>, subScalarImpl<short3, float, float3>, subScalarImpl<short4, float, float4>},
-            {subScalarImpl<short, double, double>, subScalarImpl<short2, double, double2>, subScalarImpl<short3, double, double3>, subScalarImpl<short4, double, double4>}
+            {subScalarImpl<short, double, double>, subScalarImpl<short2, double, double2>, subScalarImpl<short3, double, double3>, subScalarImpl<short4, double, double4Compat>}
         },
         {
             {0 /*subScalarImpl<int, float, uchar>*/, 0 /*subScalarImpl<int2, float, uchar2>*/, 0 /*subScalarImpl<int3, float, uchar3>*/, 0 /*subScalarImpl<int4, float, uchar4>*/},
@@ -164,7 +167,7 @@ void subScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {0 /*subScalarImpl<int, float, short>*/, 0 /*subScalarImpl<int2, float, short2>*/, 0 /*subScalarImpl<int3, float, short3>*/, 0 /*subScalarImpl<int4, float, short4>*/},
             {subScalarImpl<int, float, int>, subScalarImpl<int2, float, int2>, subScalarImpl<int3, float, int3>, subScalarImpl<int4, float, int4>},
             {subScalarImpl<int, float, float>, subScalarImpl<int2, float, float2>, subScalarImpl<int3, float, float3>, subScalarImpl<int4, float, float4>},
-            {subScalarImpl<int, double, double>, subScalarImpl<int2, double, double2>, subScalarImpl<int3, double, double3>, subScalarImpl<int4, double, double4>}
+            {subScalarImpl<int, double, double>, subScalarImpl<int2, double, double2>, subScalarImpl<int3, double, double3>, subScalarImpl<int4, double, double4Compat>}
         },
         {
             {0 /*subScalarImpl<float, float, uchar>*/, 0 /*subScalarImpl<float2, float, uchar2>*/, 0 /*subScalarImpl<float3, float, uchar3>*/, 0 /*subScalarImpl<float4, float, uchar4>*/},
@@ -173,7 +176,7 @@ void subScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {0 /*subScalarImpl<float, float, short>*/, 0 /*subScalarImpl<float2, float, short2>*/, 0 /*subScalarImpl<float3, float, short3>*/, 0 /*subScalarImpl<float4, float, short4>*/},
             {0 /*subScalarImpl<float, float, int>*/, 0 /*subScalarImpl<float2, float, int2>*/, 0 /*subScalarImpl<float3, float, int3>*/, 0 /*subScalarImpl<float4, float, int4>*/},
             {subScalarImpl<float, float, float>, subScalarImpl<float2, float, float2>, subScalarImpl<float3, float, float3>, subScalarImpl<float4, float, float4>},
-            {subScalarImpl<float, double, double>, subScalarImpl<float2, double, double2>, subScalarImpl<float3, double, double3>, subScalarImpl<float4, double, double4>}
+            {subScalarImpl<float, double, double>, subScalarImpl<float2, double, double2>, subScalarImpl<float3, double, double3>, subScalarImpl<float4, double, double4Compat>}
         },
         {
             {0 /*subScalarImpl<double, double, uchar>*/, 0 /*subScalarImpl<double2, double, uchar2>*/, 0 /*subScalarImpl<double3, double, uchar3>*/, 0 /*subScalarImpl<double4, double, uchar4>*/},
@@ -182,7 +185,7 @@ void subScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
             {0 /*subScalarImpl<double, double, short>*/, 0 /*subScalarImpl<double2, double, short2>*/, 0 /*subScalarImpl<double3, double, short3>*/, 0 /*subScalarImpl<double4, double, short4>*/},
             {0 /*subScalarImpl<double, double, int>*/, 0 /*subScalarImpl<double2, double, int2>*/, 0 /*subScalarImpl<double3, double, int3>*/, 0 /*subScalarImpl<double4, double, int4>*/},
             {0 /*subScalarImpl<double, double, float>*/, 0 /*subScalarImpl<double2, double, float2>*/, 0 /*subScalarImpl<double3, double, float3>*/, 0 /*subScalarImpl<double4, double, float4>*/},
-            {subScalarImpl<double, double, double>, subScalarImpl<double2, double, double2>, subScalarImpl<double3, double, double3>, subScalarImpl<double4, double, double4>}
+            {subScalarImpl<double, double, double>, subScalarImpl<double2, double, double2>, subScalarImpl<double3, double, double3>, subScalarImpl<double4Compat, double, double4Compat>}
         }
     };
 
