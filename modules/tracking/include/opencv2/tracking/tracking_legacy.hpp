@@ -401,7 +401,7 @@ public:
   /**
   * \brief Returns a pointer to a new instance of MultiTracker
   */
-  CV_WRAP static Ptr<MultiTracker> create();
+  CV_WRAP static Ptr<legacy::MultiTracker> create();
 
 protected:
   //!<  storage for the tracker algorithms.
