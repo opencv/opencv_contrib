@@ -46,8 +46,10 @@
 #include <string>
 #include <iostream>
 #include <stdint.h>
+#include <vector>
 #include "saliencyBaseClasses.hpp"
 #include "opencv2/core.hpp"
+#include "opencv2/dnn.hpp"
 
 namespace cv
 {
@@ -151,6 +153,248 @@ private:
   void mixOnOff(Mat intensityOn, Mat intensityOff, Mat intensity);
   void getIntensity(Mat srcArg, Mat dstArg,  Mat dstOnArg,  Mat dstOffArg, bool generateOnOff);
 };
+
+/** @brief the Deep Gaze 1 Saliency approach from @cite kummerer2014deep
+
+This method uses the linear combination of the fifth convolution layers of the pretrained AlexNet, center bias and softmax to generate saliency map.
+You can passes your own DNN layers into the DeepGaze1 object and retrain it with "training" method to take advantage of the cutting-edge DNN in future.
+*/
+class CV_EXPORTS_W DeepGaze1 : public StaticSaliency
+{
+private:
+    /** @brief This is the field to store the input DNN
+     * @sa dnn::Net
+     */
+    dnn::Net net;
+    /** @brief This is the field to store the name of selected layer
+     */
+    std::vector<std::string> layers_names;
+    /** @brief This is the field to store the weight of selected layer
+    */
+    std::vector<double> weights;
+
+public:
+    /** @brief This is the simplest constructor. It works with AlexNet caffe implementation.
+     * You can put the prototxt file and caffemodel file in the project default path or pass the path of required files into the constructor.
+     * The weights for AlexNet have been tuned and validated.
+     * @param net_proto The path of AlexNet prototxt file
+     * @param net_caffemodel The path of AlexNet caffemodel file
+     * @sa dnn::Net , dnn:readNetFromCaffe
+    */
+    DeepGaze1( std::string net_proto = "deploy.prototxt", std::string net_caffemodel = "bvlc_alexnet.caffemodel" );
+    /** @brief This is the constructor works with your own DNN caffe implementation.
+     * You can put the prototxt file and caffemodel file in the project default path or pass the path of required files into the constructor.
+     * The weights of the selected layers are randomly initialized. Need to call training method to tune them.
+     * To download the caffemodel of Alexnet: http://dl.caffe.berkeleyvision.org/bvlc_alexnet.caffemodel
+     * The prototxt we use is slightly different from the one in the bvlc github: https://github.com/BVLC/caffe/blob/master/models/bvlc_alexnet/deploy.prototxt
+     * To find the modified "deploy.prototxt" specific for DeepGaze1 module: https://github.com/opencv/opencv_contrib/tree/master/modules/cnn_3dobj/testdata/cv/deploy.prototxt
+     * @param net_proto The path of DNN prototxt file. The default is "deploy.prototxt"
+     * @param net_caffemodel The path of DNN caffemodel file. The default is "bvlc_alexnet.caffemodel"
+     * @param selected_layers The name of the layers you selected
+     * @param n_weights The number of weights you want to initialized
+     * @sa dnn::Net , dnn:readNetFromCaffe
+    */
+    DeepGaze1( std::string net_proto, std::string net_caffemodel, std::vector<std::string> selected_layers, unsigned n_weights);
+    /** @brief This is the constructor works with your own DNN caffe implementation with your own tuned weights.
+     * You can put the prototxt file and caffemodel file in the project default path or pass the path of required files into the constructor.
+     * @param net_proto The path of DNN prototxt file
+     * @param net_caffemodel The path of DNN caffemodel file
+     * @param selected_layers The name of the layers you selected
+     * @param i_weights The weights you want to initializedcv
+     * @sa dnn::Net , dnn:readNetFromCaffe
+    */
+    DeepGaze1( std::string net_proto, std::string net_caffemodel, std::vector<std::string> selected_layers, std::vector<double> i_weights);
+    virtual ~DeepGaze1();
+    CV_WRAP static Ptr<DeepGaze1> create()
+    {
+        return makePtr<DeepGaze1>();
+    }
+    CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap )
+    {
+        if( image.empty() )
+            return false;
+        return computeSaliencyImpl( image, saliencyMap );
+    }
+    /** @brief This is the method you can use to generate saliency map with your own input image size.
+     * The input image size you set must fit your own DNN structure.
+     * @param input_image The Mat you want to be processed
+     * @param input_size The image size that fit your DNN structure. The default setting is 227 * 227 which fits AlexNet
+    */
+    Mat saliencyMapGenerator( Mat input_image, Size input_size = Size(227, 227) );
+    /** @brief This is the method you can use to train untuned linear combination weights of DNN selected layers.
+     * Be careful about decayed momentum SGD hyperparameter you set like the batch size, the learning rate, the momentum, the number iteration, the decay rate.
+     * The default hyperparameter is not for pretrained AlexNet weights.
+     * Do not be shock by the saliency map you generated. It needs to be thresholded before revealing saliency objects. You can use Otsu's method to threshold the saliency map and get the foreground object.
+     * @param images The training set images
+     * @param fixMaps The saliency map of training set
+     * @param iteration The number of times you iterate on the same batch. The default is 1
+     * @param batch_size The size of the batch. The default is 100
+     * @param momentum The value of momentum. The default is 0.9
+     * @param alpha The value of SGD learnin rate. The default is 0.01. Inproper setting may make performance worse
+     * @param decay The value of decay. The default is 0.01
+     * @param input_size The image size that fit your DNN structure. The default setting is 227 * 227 which fits AlexNet
+    */
+    void training( std::vector<Mat>& images, std::vector<Mat>& fixMaps, int iteration = 1, unsigned batch_size = 100, double momentum = 0.9, double alpha = 0.01, double decay = 0.01, Size input_size = Size(227, 227) );
+    /** @brief This is the method you can use to calculate the AUC.
+     * @param _saliencyMap The saliency map to be tested
+     * @param _fixtionMap The ground truth map
+    */
+    double computeAUC( InputArray _saliencyMap, InputArray _fixtionMap );
+    /** @brief This is the method you can use to visualize saliency map.
+     * @param _saliencyMap The saliency map to be visualized
+    */
+    void saliencyMapVisualize( InputArray _saliencyMap );
+protected:
+    bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
+    /** @brief This is the method to retrieve layers from the DNN net which are normalized to have unit standard deviation on each elements across all layers.
+     * @param img The img to be processed by DNN
+     * @param input_size The rescaled image size that fits DNN
+    */
+    std::vector<Mat> featureMapGenerator( Mat img, Size input_size );
+    /** @brief This is the method to do linear combination of selected normalized layers and Gaussian blur it.
+     * @param featureMaps The selected normalized layers generated by method "featureMapGenerator"
+     * @param wei The weights of selected normalized layers
+    */
+    static Mat comb( std::vector<Mat>& featureMaps, std::vector<double> wei );
+    /** @brief This is the method to do softmax
+     * @param res The result of method "comb"
+    */
+    static Mat softmax( Mat res );
+    /** @brief This is the method to calculate grandients of loss function
+     * @param featureMaps The selected normalized layers generated by method "featureMapGenerator"
+     * @param randIndex The index of dimensions that you want to used to accumulate the loss
+     * @param wei The weights of selected normalized layers to be updated
+     * @param input_size The input image size which needs to fit the DNN you choose
+    */
+    static std::vector<double> evalGrad( std::vector<Mat>& featureMaps, std::vector<unsigned>& randIndex, std::vector<double> wei, Size input_size );
+    /** @brief This is the method to randomly draw index of images in training dataset
+     * @param total The size of the training dataset
+     * @param batchSize The size of the batch you want to draw
+    */
+    std::vector<unsigned> batchIndex( unsigned total, unsigned batchSize );
+    /** @brief This is the method to calculate the loss in order to update weights
+     * @param saliency_sample The value of sampled elements on saliency map which are used to accumulate the loss
+     * @param wei The weights of selected normalized layers in current iteration
+    */
+    static double loss( std::vector<double> saliency_sample, std::vector<double> wei );
+    /** @brief This is the method to sample the elements on saliency map in current iteration
+     * @param saliency Saliency map to be sampled
+     * @param randIndex The index of elements to be sampled
+    */
+    static std::vector<double> mapSampler( Mat saliency, std::vector<unsigned> randIndex );
+    /** @brief This is the method to determine which element on the fixation map in the training datasets belongs to saliency objects and generate the sampled elements index.
+     * @param img The fixation map in the training datasets
+     * @param input_size The input image size that fits DNN you choose
+    */
+    std::vector<unsigned> fixationLoc( Mat img, Size input_size );
+};
+
+/** @brief the Background Contrast Saliency approach from @cite zhu2014saliency
+
+This method uses seed superpixel algorithm to partition the image and calculate the probability of belonging to background with CIE-Lab color contrast.
+This method also provides an optimization framework may help foreground based saliency method perform better.
+*/
+class CV_EXPORTS_W BackgroundContrast : public StaticSaliency
+{
+private:
+    /** @brief
+     * limitOfSp is the maximum number of superpixel
+     * nOfLevel, usePrior, histBin is same as the seed superpixel method
+     * bgWei determine the weight of background when optimized with foreground method
+    */
+    int limitOfSP;
+    int nOfLevel;
+    int usePrior;
+    int histBin;
+    double bgWei;
+public:
+    /** @brief This is the default constructor.
+     * It will initialize with bgWei: 5, limitOfSp: 600, nOfLevel: 4, usePrior: 2, histBin: 5
+    */
+    BackgroundContrast();
+    /** @brief This is the constructor user can custumized those parameters
+    */
+    BackgroundContrast(  double, int, int, int, int );
+    virtual ~BackgroundContrast();
+    CV_WRAP static Ptr<BackgroundContrast> create()
+    {
+        return makePtr<BackgroundContrast>();
+    }
+    CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap )
+    {
+        if( image.empty() )
+            return false;
+        return computeSaliencyImpl( image, saliencyMap );
+    }
+    /** @brief This is the method you can use to generate saliency map with or without outside saliency map
+     * @param img The image to be processed
+     * @param fgImg The outside saliency map to be optimized with aggregated optimization framework
+     * @param option The flag parameter for user to use outside saliency map or not. The default is 0 which represents do not use outside saliency map. 1 represents outside saliency map will be optimized
+    */
+    Mat saliencyMapGenerator( const Mat img, const Mat fgImg = Mat(), int option = 0 );
+    /** @brief This is the method you can use to visualize saliency map
+     * This method offers 3 different threshold options to retrieve saliency object from saliency map.
+     * @param _saliencyMap The saliency map to be visualized
+     * @param option 0(default): no threshold, 1: threshold with Otsu's method and binary threshold, 2: threshold with Otsu's method and tozero threshold
+    */
+    Mat saliencyMapVisualize( InputArray _saliencyMap, int option = 0 );
+protected:
+    /** @brief This is the method to use background probability to optimize saliency map
+     * This method essentially use least-square to solve an optimization problem.
+     * @param adjcMatrix superpixel adjacency matrix calculated by method superpixelSplit
+     * @param colDistM superpixel CIE-Lab color distance matrix calcualted by method getColorPosDis
+     * @param bgWeight The value of background probability
+     * @param fgWeight The value of foreground probability(saliency)
+     * @param saliencyOptimized The output optimized saliency map
+     * @param bgLambda The weight of background probability compared with foreground probability, default 5
+     * @param neiSigma The variance that used to transform smoothness weight into [0, 1] range, default 14
+    */
+    void saliencyOptimize( const Mat adjcMatrix, const Mat colDistM, const Mat bgWeight, const Mat fgWeight, Mat& saliencyOptimized, double bgLambda = 5, double neiSigma = 14 );
+    bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
+    /** @brief This is the method to use opencv seed superpixel method to split the image and return label of each pixel and adjacency matrix
+     * @param img The image to be processed
+     * @param idxImg The output label map of each pixel
+     * @param adjcMatrix The output adjacency matrix
+    */
+    void superpixelSplit( const Mat img, Mat& idxImg, Mat& adjcMatrix );
+    /** @brief This is the method to find background superpixel
+     * @param idxImg The label of each pixel in the original image
+     * @param thickness The width of background boundary, default is 8
+    */
+    std::vector<unsigned> getBndPatchIds( const Mat idxImg, int thickness = 8);
+    /** @brief this is the method to calculate superpixel CIE-Lab color distance matrix and geographic distance matrix
+     * @param img The image to be processed
+     * @param idxImg The label of each pixel
+     * @param colDistM The output superpixel color distance matrix
+     * @param posDistM The output superpixel geographic distance matrix
+     * @param nOfSP The number of superpixels that the image is splited
+    */
+    void getColorPosDis( const Mat img, const Mat idxImg, Mat& colDistM, Mat& posDistM, int nOfSP);
+    /** @brief This is the method to calculate the background probability of each superpixel
+     * This method use floyd algorithm to find all shorted path between superpixels
+     * @param adjcMatrix The adjacency matrix of superpixels
+     * @param colDistM The superpixel color distance matrix
+     * @param bdProb The output superpixel background probability
+     * @param bdIds The index of background superpixels
+     * @param clipVal The bias of distance between adjacent superpixels, default 3
+     * @param geoSigma The variance that used to transform geographic distance into [0, 1] range, default 7
+    */
+    void boundaryConnectivity( const Mat adjcMatrix, const Mat colDistM, Mat& bdProb, std::vector<unsigned> bdIds, double clipVal = 3.0, double geoSigma = 7.0 );
+    /** @brief This is the method to calcualte weighted background contrast
+     * @param colDistM The superpixel color distance matrix
+     * @param posDistM The superpixel geographic distance matrix
+     * @param bgProb The background probability of superpixels
+     * @param wCtr The background weighted contrast which can be treated as the saliency map generated by the background probability
+    */
+    void getWeightedContrast( const Mat colDistM, const Mat posDistM, const Mat bgProb, Mat& wCtr );
+    /** @brief This is the method to transform the input value into [0,1] range with variance
+    */
+    void dist2WeightMatrix( Mat&, Mat&, double );
+    /** @brief This is the method to transform OpenCV BGR color into CIE-Lab color space
+    */
+    void rgb2lab( Mat&, Mat& );
+};
+
 
 
 
@@ -277,6 +521,84 @@ private:
   float deltaINC, deltaDEC;// Increment-decrement value for epslon adaptation
   int epslonMIN, epslonMAX;// Range values for epslon threshold
 
+};
+
+/** @brief the Discriminant Saliency approach from @cite mahadevan2010spatiotemporal
+
+This method uses dynamic texture model to capture the essence of dynamic background and seperate it from non background object.
+*/
+class CV_EXPORTS_W DiscriminantSaliency : public MotionSaliency
+{
+private:
+    Size imgProcessingSize;
+    unsigned hiddenSpaceDimension;
+    unsigned centerSize;
+    unsigned windowSize;
+    unsigned patchSize;
+    unsigned temporalSize;
+    unsigned stride;
+public:
+    /** @brief The structure to store dynamic texture model parameters
+    */
+    struct DT
+    {
+        Mat A;
+        Mat C;
+        Mat Q;
+        Mat R;
+        Mat S;
+        Mat MU;
+        double VAR;
+    };
+//    DiscriminantSaliency();
+    /** @brief Constructor
+     * @param _stride The parameter to adjust saliency map resolution level. The higher the parameter is, the lower the resolution is, the faster the processing is, default 1
+     * @param _imgProcessingSize The image size to be processed. You can rescale the image with this parameter. The larger the image is, the slower the processing is, default 127 * 127
+     * @param _hidden The hidden space dimension. The default is 10.
+     * @param _center The center window size. The default is 8 * 8
+     * @param _window The sliding window size. The default is 96 * 96
+     * @param _patch This parameter determines how many pixels are drawed when estimate dynamic texture parameters, default is 400
+     * @param _temporal This parameter determines how many frames are considered when estimate dynamic texture parameters, default is 11
+    */
+    DiscriminantSaliency(unsigned _stride = 1, Size _imgProcessingSize = Size(127, 127), unsigned _hidden = 10, unsigned _center = 8, unsigned _window = 96, unsigned _patch = 400, unsigned _temporal = 11);
+    virtual ~DiscriminantSaliency();
+    CV_WRAP static Ptr<DiscriminantSaliency> create()
+    {
+        return makePtr<DiscriminantSaliency>();
+    }
+    CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap )
+    {
+        if( image.empty() )
+            return false;
+        return computeSaliencyImpl( image, saliencyMap );
+    }
+    /** @brief This is the method to estimate dynamic texture parameters
+     * @param img_sq The sequence of pixels of randomly sampled patches in each temporal patch. The 2d images are transformed into 1d vertical vectors
+     * @param para The output dynamic texture parameters
+    */
+    void dynamicTextureEstimator( const Mat img_sq , DT& para );
+    /** @brief This method is used to randomly sample patches from each sliding window and center area
+     * @param img_sq frames sequence
+     * @param index the start index of the currently processed frames
+     * @param r the currently processed pixel vertical index
+     * @param c the currently processed pixel horizontal index
+     * @param center the center window
+     * @param surround the sliding window pixels surround center window
+     * @param all sliding window
+    */
+    void patchGenerator( const std::vector<Mat>& img_sq, unsigned index, unsigned r, unsigned c, Mat& center, Mat& surround, Mat& all );
+    std::vector<Mat> saliencyMapGenerator( std::vector<Mat>, std::vector<Mat>& );
+    /** @brief This is the method you can use to visualize saliency map.
+     * @param _saliencyMap The saliency map to be visualized
+    */
+    void saliencyMapVisualize( InputArray _saliencyMap );
+protected:
+    bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
+    /** @brief This is the core function to calculate the KL divergence between center window and sliding window with dynamic texture parameters
+     * @param para_c The center window dynamic texture parameters
+     * @param para_w The sliding window dynamic texture parameters
+    */
+    double KLdivDT( const DT& para_c, const DT& para_w );
 };
 
 /************************************ Specific Objectness Specialized Classes ************************************/
