@@ -1,5 +1,5 @@
 import numpy as np
-from slam.core.multi_view_utils import multi_view_triangulation
+from slam.core.triangulation_utils import multi_view_triangulation
 
 def build_camera(pose_w_c, K):
     """Return 3×4 projection matrix from camera→world pose."""

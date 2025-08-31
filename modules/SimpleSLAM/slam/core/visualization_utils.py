@@ -175,6 +175,24 @@ class Visualizer3D:
         else:
             col = col.astype(np.float32)
 
+        # pts = slam_map.get_point_array()
+        # col = slam_map.get_color_array() if hasattr(slam_map, "get_color_array") else None
+
+        # use_fallback = (
+        #     col is None
+        #     or len(col) == 0
+        #     or (isinstance(col, np.ndarray) and col.ndim == 2 and col.shape[1] == 3
+        #         and np.allclose(col.std(axis=0), 0, atol=1e-6))  # colours are (nearly) uniform
+        # )
+
+        # if use_fallback:
+        #     # vertical gradient (axis set by color_axis, you pass "y" at construction)
+        #     scal = self._compute_scalar(pts)
+        #     col  = self._colormap(self._normalise(scal)).astype(np.float32)
+        # else:
+        #     col = col.astype(np.float32)
+
+
         # keep arrays in sync (pad / trim)
         if len(col) < len(pts):
             diff = len(pts) - len(col)
@@ -271,54 +289,209 @@ def draw_tracks(
 # --------------------------------------------------------------------------- #
 #  Lightweight 2-D trajectory plotter (Matplotlib)
 # --------------------------------------------------------------------------- #
-import matplotlib.pyplot as plt
 
-class TrajectoryPlotter:
-    """Interactive Matplotlib window showing estimate (blue) and GT (red)."""
+# ---- Trajectory 2D (x–z) + simple pause UI ----
+class Trajectory2D:
+    def __init__(self, gt_T_list=None, win="Trajectory 2D (x–z)"):
+        self.win = win
+        self.gt_T = gt_T_list  # list of 4x4 Twc (or None)
+        self.est_xyz = []      # estimated camera centers (world)
+        self.gt_xyz  = []      # paired GT centers
+        self.align_ok = False
+        self.s = 1.0
+        self.R = np.eye(3)
+        self.t = np.zeros(3)
 
-    def __init__(self, figsize: Tuple[int, int] = (5, 5)) -> None:
-        plt.ion()
-        self.fig, self.ax = plt.subplots(figsize=figsize)
-        self.ax.set_aspect("equal", adjustable="datalim")
-        self.ax.grid(True, ls="--", lw=0.5)
-        self.line_est, = self.ax.plot([], [], "b-", lw=1.5, label="estimate")
-        self.line_gt,  = self.ax.plot([], [], "r-", lw=1.0, label="ground-truth")
-        self.ax.legend(loc="upper right")
-        self._est_xy: list[tuple[float, float]] = []
-        self._gt_xy:  list[tuple[float, float]] = []
+        # ensure a real window exists (Qt backend is happier with this)
+        cv2.namedWindow(self.win, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(self.win, 500, 500)
 
-    # ------------------------------------------------------------------ #
-    def append(self,
-               est_pos: np.ndarray,
-               gt_pos:  Optional[np.ndarray] = None,
-               *,
-               swap_axes: bool = False,
-               mirror_x: bool = False) -> None:
-        """
-        Add one position pair and refresh the plot.
+    @staticmethod
+    def _cam_center_from_Tcw(Tcw: np.ndarray) -> np.ndarray:
+        R, t = Tcw[:3, :3], Tcw[:3, 3]
+        return (-R.T @ t).astype(np.float64)
 
-        Parameters
-        ----------
-        est_pos : (3,)  SLAM position in world coords.
-        gt_pos  : (3,) or None  aligned ground-truth, same frame.
-        swap_axes : plot x<->z if your dataset convention differs.
-        """
-        x, z = (est_pos[2], est_pos[0]) if swap_axes else (est_pos[0], est_pos[2])
-        if mirror_x:
-                z = -z
-        self._est_xy.append((x, z))
-        ex, ez = zip(*self._est_xy)
-        self.line_est.set_data(ex, ez)
+    def _maybe_update_alignment(self, Kpairs=60):
+        if len(self.est_xyz) < 6 or len(self.gt_xyz) < 6:
+            return
+        X = np.asarray(self.gt_xyz[-Kpairs:], np.float64)   # GT
+        Y = np.asarray(self.est_xyz[-Kpairs:], np.float64)  # EST
+        muX, muY = X.mean(0), Y.mean(0)
+        X0, Y0 = X - muX, Y - muY
+        cov = (Y0.T @ X0) / X.shape[0]
+        U, S, Vt = np.linalg.svd(cov)
+        D = np.diag([1, 1, np.sign(np.linalg.det(U @ Vt))])
+        R = U @ D @ Vt
+        varY = (Y0**2).sum() / X.shape[0]
+        s = (S * np.diag(D)).sum() / (varY + 1e-12)
+        t = muX - s * (R @ muY)
+        self.s, self.R, self.t = float(s), R, t
+        self.align_ok = True
 
-        if gt_pos is not None:
-            gx, gz = (gt_pos[2], gt_pos[0]) if swap_axes else (gt_pos[0], gt_pos[2])
-            # if mirror_x:
-            #     gx = -gx
-            self._gt_xy.append((gx, gz))
-            gx_s, gz_s = zip(*self._gt_xy)
-            self.line_gt.set_data(gx_s, gz_s)
+    def push(self, frame_idx: int, Tcw: np.ndarray):
+        self.est_xyz.append(self._cam_center_from_Tcw(Tcw))
+        if self.gt_T is not None and 0 <= frame_idx < len(self.gt_T):
+            self.gt_xyz.append(self.gt_T[frame_idx][:3, 3].astype(np.float64))
+        self._maybe_update_alignment(Kpairs=min(100, len(self.est_xyz)))
 
-        self.ax.relim()
-        self.ax.autoscale_view()
-        self.fig.canvas.draw_idle()
-        self.fig.canvas.flush_events()
+    def draw(self, paused=False, size=(720, 720), margin=60):
+        W, H = size
+        canvas = np.full((H, W, 3), 255, np.uint8)
+
+        # nothing to draw yet
+        if not self.est_xyz:
+            cv2.imshow(self.win, canvas)
+            return
+
+        E = np.asarray(self.est_xyz, np.float64)
+        if self.align_ok:
+            E = (self.s * (self.R @ E.T)).T + self.t
+
+        curves = [("estimate", E, (255, 0, 0))]  # BGR: blue
+        have_gt = len(self.gt_xyz) > 0
+        if have_gt:
+            G = np.asarray(self.gt_xyz, np.float64)
+            curves.append(("ground-truth", G, (0, 0, 255)))    # red
+            allpts = np.vstack([E[:, [0, 2]], G[:, [0, 2]]])
+        else:
+            allpts = E[:, [0, 2]]
+
+        # ----- nice bounds with padding -----
+        minx, minz = allpts.min(axis=0); maxx, maxz = allpts.max(axis=0)
+        pad_x = 0.05 * max(1e-6, maxx - minx)
+        pad_z = 0.05 * max(1e-6, maxz - minz)
+        minx -= pad_x; maxx += pad_x
+        minz -= pad_z; maxz += pad_z
+
+        spanx = max(maxx - minx, 1e-6)
+        spanz = max(maxz - minz, 1e-6)
+        sx = (W - 2 * margin) / spanx
+        sz = (H - 2 * margin) / spanz
+        s = min(sx, sz)
+
+        def to_px(x, z):
+            u = int((x - minx) * s + margin)
+            v = int((maxz - z) * s + margin)  # flip z for image y
+            return u, v
+
+        # ----- grid + ticks (matplotlib-ish) -----
+        def linspace_ticks(a, b, m=6):
+            # simple ticks; good enough for live viz
+            return np.linspace(a, b, m)
+
+        ticks_x = linspace_ticks(minx, maxx, 6)
+        ticks_z = linspace_ticks(minz, maxz, 6)
+
+        # draw background grid
+        for x in ticks_x:
+            u0, v0 = to_px(x, minz)
+            u1, v1 = to_px(x, maxz)
+            cv2.line(canvas, (u0, v0), (u1, v1), (235, 235, 235), 1, cv2.LINE_AA)
+        for z in ticks_z:
+            u0, v0 = to_px(minx, z)
+            u1, v1 = to_px(maxx, z)
+            cv2.line(canvas, (u0, v0), (u1, v1), (235, 235, 235), 1, cv2.LINE_AA)
+
+        # axis box
+        cv2.rectangle(canvas, (margin-1, margin-1), (W-margin, H-margin), (200, 200, 200), 1)
+
+        # tick labels
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        for x in ticks_x:
+            u, v = to_px(x, minz)
+            cv2.putText(canvas, f"{x:.1f}", (u-14, H - margin + 20), font, 0.4, (0,0,0), 1, cv2.LINE_AA)
+        for z in ticks_z:
+            u, v = to_px(minx, z)
+            cv2.putText(canvas, f"{z:.1f}", (margin - 50, v+4), font, 0.4, (0,0,0), 1, cv2.LINE_AA)
+
+        # axis labels
+        cv2.putText(canvas, "x", (W//2, H - 10), font, 0.6, (0,0,0), 1, cv2.LINE_AA)
+        cv2.putText(canvas, "z", (10, H//2), font, 0.6, (0,0,0), 1, cv2.LINE_AA)
+
+        # ----- draw curves -----
+        for name, C, color in curves:
+            if C.shape[0] < 2:
+                # single point
+                u, v = to_px(C[-1, 0], C[-1, 2])
+                cv2.circle(canvas, (u, v), 3, color, -1, cv2.LINE_AA)
+            else:
+                pts = [to_px(x, z) for (x, _, z) in C]
+                for p, q in zip(pts[:-1], pts[1:]):
+                    cv2.line(canvas, p, q, color, 2, cv2.LINE_AA)
+                cv2.circle(canvas, pts[-1], 3, color, -1, cv2.LINE_AA)
+
+        # legend
+        legend_x, legend_y = margin + 10, margin + 20
+        for idx, (name, _, color) in enumerate(curves):
+            y = legend_y + idx * 20
+            cv2.line(canvas, (legend_x, y), (legend_x + 30, y), color, 3, cv2.LINE_AA)
+            cv2.putText(canvas, name, (legend_x + 40, y + 4), font, 0.5, (60,60,60), 1, cv2.LINE_AA)
+
+        # title and paused hint
+        cv2.putText(canvas, "Trajectory 2D (x–z)", (margin, 30), font, 0.7, (0,0,0), 2, cv2.LINE_AA)
+        if paused:
+            cv2.putText(canvas, "PAUSED  [p: resume | n: step | q/Esc: quit]",
+                        (margin, H - 15), font, 0.5, (20,20,20), 2, cv2.LINE_AA)
+
+        cv2.imshow(self.win, canvas)
+
+
+# --------------------------------------------------------------------------- #
+#  UI for Pausing and stepping through the pipeline
+# --------------------------------------------------------------------------- #
+class VizUI:
+    """Tiny UI state for pausing/stepping the pipeline."""
+    def __init__(self, pause_key='p', step_key='n', quit_keys=('q', 27)):
+        self.pause_key = self._to_code(pause_key)
+        self.step_key  = self._to_code(step_key)
+        self.quit_keys = {self._to_code(k) for k in (quit_keys if isinstance(quit_keys, (tuple, list, set)) else (quit_keys,))}
+        self.paused = False
+        self._request_quit = False
+        self._do_step = False
+
+    @staticmethod
+    def _to_code(k):
+        return k if isinstance(k, int) else ord(k)
+
+    def poll(self, delay_ms=1):
+        k = cv2.waitKey(delay_ms) & 0xFF
+        if k == 255:  # no key
+            return
+        if k in self.quit_keys:
+            self._request_quit = True
+            return
+        if k == self.pause_key:
+            self.paused = not self.paused
+            self._do_step = False
+            return
+        if k == self.step_key:
+            self._do_step = True
+            return
+
+    def should_quit(self):
+        return self._request_quit
+
+    def wait_if_paused(self):
+        """Block while paused, but allow 'n' to step one iteration."""
+        if not self.paused:
+            return False  # not blocking
+        while True:
+            k = cv2.waitKey(30) & 0xFF
+            if k == self.pause_key:  # resume
+                self.paused = False
+                return False
+            if k in self.quit_keys:
+                self._request_quit = True
+                return False
+            if k == self.step_key:
+                # allow one iteration to run, remain paused afterward
+                self._do_step = True
+                return True  # consume one step
+
+    def consume_step(self):
+        """Return True once if a single-step was requested."""
+        if self._do_step:
+            self._do_step = False
+            return True
+        return False
+

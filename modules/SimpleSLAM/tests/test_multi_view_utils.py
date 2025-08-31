@@ -172,7 +172,8 @@ def test_multiview_triangulator_pipeline(min_views: int):
             kps.append(_KeyPoint(u, v))
             track_map[pid] = pid  # 1‑to‑1 track id
         dummy_img = np.zeros((480, 640, 3), dtype=np.uint8)
-        tri.add_keyframe(frame_idx, pose_w_c, kps, track_map, dummy_img)
+        descs = [np.zeros(32, dtype=np.uint8) for _ in kps]
+        tri.add_keyframe(frame_idx, pose_w_c, kps, track_map, dummy_img, descs)
 
     new_ids = tri.triangulate_ready_tracks(world_map)
     assert len(new_ids) == len(pts_w), "Not all points were triangulated"

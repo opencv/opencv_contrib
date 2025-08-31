@@ -87,7 +87,9 @@ def feature_extractor(args, img: np.ndarray, detector):
         feats = rbd(feats)
         lg_kps = feats['keypoints']
         kp0 = _convert_lg_kps_to_opencv(lg_kps)
-        des0 = feats['descriptors']
+        des0_t = feats['descriptors']
+        des0 = des0_t.detach().to("cpu").float().numpy()
+        des0  /= (np.linalg.norm(des0, axis=1, keepdims=True) + 1e-8).astype(np.float32)    # L2 normalized
         return kp0, des0
     
     else:
@@ -96,35 +98,67 @@ def feature_extractor(args, img: np.ndarray, detector):
             return [], []
         return kp0, des0
 
-
 def feature_matcher(args, kp0, kp1, des0, des1, matcher):
-    """    Match features between two FrameFeatures and return OpenCV-compatible matches."""
-    # optionally filter matches from LightGlue by confidence
+    """
+    Match features between two frames and return OpenCV-compatible matches.
+    Works with LightGlue (torch) and OpenCV BF (ORB).
+    - kp0, kp1: List[cv2.KeyPoint]
+    - des0, des1:
+        * LightGlue path: NumPy float32 (from ALIKE) or torch float32
+        * BF path: uint8 (ORB)
+    """
     if args.use_lightglue:
-        # LightGlue matching
-        # kp0, kp1: List[cv2.KeyPoint]
-        # des0, des1: torch.Tensor [M×D], [N×D]
-        device = des0.device
-        lg_kp0 = _convert_opencv_to_lg_kps(kp0).to(device).unsqueeze(0)   # [1×M×2]
-        lg_kp1 = _convert_opencv_to_lg_kps(kp1).to(device).unsqueeze(0)   # [1×N×2]
-        lg_desc0 = des0.unsqueeze(0)                          # [1×M×D]
-        lg_desc1 = des1.unsqueeze(0)                          # [1×N×D]
+        import torch
 
-        raw = matcher({
-            'image0': {'keypoints': lg_kp0, 'descriptors': lg_desc0},
-            'image1': {'keypoints': lg_kp1, 'descriptors': lg_desc1}
-        })
+        # --- 1) Use the model's own device as source of truth ---
+        try:
+            dev = next(matcher.parameters()).device
+        except StopIteration:
+            dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        matcher = matcher.to(dev).eval()
+
+        # --- 2) Helpers to put inputs on the same device & dtype ---
+        def _to_torch_float32(x):
+            # accepts numpy or torch, returns torch.float32 on dev
+            if isinstance(x, np.ndarray):
+                x = torch.from_numpy(x)
+            return x.to(dev, dtype=torch.float32)
+
+        # keypoints: convert OpenCV -> (N,2) tensor, put on dev, add batch dim
+        k0 = _convert_opencv_to_lg_kps(kp0)
+        k1 = _convert_opencv_to_lg_kps(kp1)
+        if not isinstance(k0, torch.Tensor):
+            k0 = torch.as_tensor(k0, dtype=torch.float32)
+        if not isinstance(k1, torch.Tensor):
+            k1 = torch.as_tensor(k1, dtype=torch.float32)
+        lg_kp0 = k0.to(dev, dtype=torch.float32).unsqueeze(0)  # [1, M, 2]
+        lg_kp1 = k1.to(dev, dtype=torch.float32).unsqueeze(0)  # [1, N, 2]
+
+        # descriptors: accept numpy or torch, move to dev, add batch dim
+        if des0 is None or des1 is None:
+            return []  # nothing to match
+        lg_desc0 = _to_torch_float32(des0).unsqueeze(0)        # [1, M, D]
+        lg_desc1 = _to_torch_float32(des1).unsqueeze(0)        # [1, N, D]
+
+        # --- 3) Run LightGlue on a single device in inference mode ---
+        with torch.inference_mode():
+            raw = matcher({
+                'image0': {'keypoints': lg_kp0, 'descriptors': lg_desc0},
+                'image1': {'keypoints': lg_kp1, 'descriptors': lg_desc1},
+            })
         raw = rbd(raw)
+
         matches_raw = raw['matches']
-        # LightGlue may return confidence either as 'scores' or 'confidence'.
-        # Avoid `or` with tensors to prevent ambiguity errors.
-        conf = raw['scores'] if 'scores' in raw else raw.get('confidence')
+        # Confidence may be 'scores' or 'confidence'
+        conf = raw['scores'] if 'scores' in raw else raw.get('confidence', None)
         if conf is not None:
-            mask = conf > args.min_conf
-            matches_raw = matches_raw[mask]
-        # convert index pairs to cv2.DMatch list
-        cv_matches = _convert_lg_matches_to_opencv(matches_raw)
-        return cv_matches
+            thr = float(getattr(args, 'min_conf', 0.7))
+            matches_raw = matches_raw[conf > thr]
+
+        return _convert_lg_matches_to_opencv(matches_raw)
+
+    # -------- ORB / OpenCV BF path --------
+    # BFMatcher expects uint8 binary descriptors for Hamming.
     else:
         # OpenCV matching
         matches = matcher.match(des0, des1)

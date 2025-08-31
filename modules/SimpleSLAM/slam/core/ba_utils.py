@@ -3,6 +3,8 @@
 ba_utils.py
 ===========
 
+ALWAYS PASS POSE as T_wc (world→camera) (camera-from-world) pose convention to pyceres.
+
 Light-weight Bundle-Adjustment helpers built on **pyceres**.
 Implements
   • two_view_ba(...)
@@ -19,45 +21,30 @@ import numpy as np
 import pyceres
 from pycolmap import cost_functions, CameraModelId
 import math
+from scipy.spatial.transform import Rotation as R
 
-# TODO: uses camera-to-world pose convention T_wc (camera→world) should ideally be using world-to-camera T_cw (world→camera)
-# --------------------------------------------------------------------- #
-#  Small pose ⇄ parameter converters
-# --------------------------------------------------------------------- #
-def _pose_to_quat_trans(T_wc: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    # Convert T_wc (camera→world) ➜ (quat_cw , t_cw)  with X_c = R_cw·X_w + t_cw
-    R_wc, t_wc = T_wc[:3, :3], T_wc[:3, 3]
-    R_cw       = R_wc.T
-    t_cw       = -R_cw @ t_wc
-    aa, _      = cv2.Rodrigues(R_cw)                # axis-angle
-    theta      = np.linalg.norm(aa)
-    if theta < 1e-8:
-        quat = np.array([1.0, 0.0, 0.0, 0.0], np.float64)
-    else:
-        axis = aa.flatten() / theta                 # normalised axis
-        s    = math.sin(theta / 2.0)
-        quat = np.array([math.cos(theta / 2.0), axis[0]*s, axis[1]*s, axis[2]*s], np.float64)
-    return quat, t_cw.copy()
+# TODO: USES T_cw (camera-from-world) convention for storing poses in the map, because of PyCERES, REMEMBER TO CONVERT, use below functions
+from slam.core.pose_utils import _pose_inverse, _pose_to_quat_trans, _quat_trans_to_pose
+
+# TODO : UNCOMMENT below block IF YOU USE USES World-from-camera (camera-to-world) pose convention T_wc (camera→world) for storing poses in the map.
+# from slam.core.pose_utils import (
+#     _pose_inverse,           # T ↔ T⁻¹
+#     _pose_to_quat_trans as _cw_to_quat_trans,
+#     _quat_trans_to_pose as _quat_trans_to_cw,
+# )
+# def _pose_to_quat_trans(T_wc):
+#     """
+#     Convert **camera→world** pose T_wc to the (q_cw, t_cw) parameterisation
+#     expected by COLMAP/pyceres residuals.
+#     """
+#     return _cw_to_quat_trans(_pose_inverse(T_wc))
 
 
-def _quat_trans_to_pose(quat_cw: np.ndarray, t_cw: np.ndarray) -> np.ndarray:
-    # Inverse of the above: (quat_cw , t_cw) ➜ T_wc
-    qw, qx, qy, qz = quat_cw
-    R_cw = np.array([
-        [1-2*(qy*qy+qz*qz), 2*(qx*qy-qz*qw), 2*(qx*qz+qy*qw)],
-        [2*(qx*qy+qz*qw),   1-2*(qx*qx+qz*qz), 2*(qy*qz-qx*qw)],
-        [2*(qx*qz-qy*qw),   2*(qy*qz+qx*qw),   1-2*(qx*qx+qy*qy)]
-    ], dtype=np.float64)
-    R_wc = R_cw.T
-    t_wc = -R_wc @ t_cw
-    T    = np.eye(4, dtype=np.float64)
-    T[:3, :3], T[:3, 3] = R_wc, t_wc
-    # C = -R_cw.T @ t_cw         # camera-centre in world coords
-    # T[:3, :3] = R_cw.T
-    # T[:3, 3]  = C
-
-    return T
-
+# def _quat_trans_to_pose(q_cw, t_cw):
+#     """
+#     Convert optimised (q_cw, t_cw) back to a **camera→world** SE3 matrix.
+#     """
+#     return _pose_inverse(_quat_trans_to_cw(q_cw, t_cw))
 
 # --------------------------------------------------------------------- #
 #  Shared helper to add one reprojection residual
@@ -79,105 +66,98 @@ def _add_reproj_edge(problem, loss_fn,
 # --------------------------------------------------------------------- #
 #  1) Two-view BA  (bootstrap refinement)
 # --------------------------------------------------------------------- #
-def two_view_ba(world_map, K, keypoints, max_iters: int = 20):
+# --- ba_utils.py: entry points now use kfs instead of a separate keypoints list ---
+def two_view_ba(world_map, K, kfs, max_iters: int = 20):
     """
     Refine the two initial camera poses + all bootstrap landmarks.
-
-    Assumes `world_map` has exactly *two* poses (T_0w, T_1w) and that
-    each MapPoint already stores **two** observations (frame-0 and
-    frame-1).  Called once right after initialisation.
+    Expects KF indices 0 and 1 to exist.
     """
-    assert len(world_map.poses) == 2, "two_view_ba expects exactly 2 poses"
-
-    _core_ba(world_map, K, keypoints,
+    assert len(world_map.poses) >= 2, "two_view_ba expects at least 2 poses"
+    _core_ba(world_map, K, kfs,
              opt_kf_idx=[0, 1],
              fix_kf_idx=[],
              max_iters=max_iters,
              info_tag="[2-view BA]")
 
-
 # --------------------------------------------------------------------- #
 #  2) Pose-only BA   (current frame refinement)
 # --------------------------------------------------------------------- #
-def pose_only_ba(world_map, K, keypoints,
-                 frame_idx: int, max_iters: int = 8,
+def pose_only_ba(world_map, K, kfs,
+                 kf_idx: int, max_iters: int = 8,
                  huber_thr: float = 2.0):
     """
-    Optimise **only one pose** (SE3) while keeping all 3-D points fixed.
-    Mimics ORB-SLAM's `Optimizer::PoseOptimization`.
+    Optimise only one **keyframe** pose while keeping all 3-D points fixed.
     """
-    fx, fy, cx, cy = float(K[0, 0]), float(K[1, 1]), float(K[0, 2]), float(K[1, 2])
+    import pyceres
+    fx, fy, cx, cy = float(K[0,0]), float(K[1,1]), float(K[0,2]), float(K[1,2])
     intr = np.array([fx, fy, cx, cy], np.float64)
 
-    quat, trans = _pose_to_quat_trans(world_map.poses[frame_idx])
+    # read pose from keyframe (authoritative), fall back to map if needed
+    Tcw = kfs[kf_idx].pose
+    quat, trans = _pose_to_quat_trans(Tcw)
 
     problem = pyceres.Problem()
     problem.add_parameter_block(quat, 4)
-    problem.add_parameter_block(trans, 3)
     problem.set_manifold(quat, pyceres.EigenQuaternionManifold())
+    problem.add_parameter_block(trans, 3)
+
     problem.add_parameter_block(intr, 4)
     problem.set_parameter_block_constant(intr)
 
     loss_fn = pyceres.HuberLoss(huber_thr)
 
-    # for pid, mp in world_map.points.items():
-    #     for f_idx, kp_idx in mp.observations:
-    #         if f_idx != frame_idx:
-    #             continue
-    #         u, v = keypoints[f_idx][kp_idx].pt
-    #         _add_reproj_edge(problem, loss_fn,
-    #                          (u, v), quat, trans, mp.position, intr)
+    # add residuals for observations in this KF
+    added = 0
     for mp in world_map.points.values():
+        # point is constant in pose-only BA
         problem.add_parameter_block(mp.position, 3)
         problem.set_parameter_block_constant(mp.position)
-        for f_idx, kp_idx in mp.observations:
-            if f_idx != frame_idx:
+        for f_idx, kp_idx, _desc in mp.observations:
+            if f_idx != kf_idx: 
                 continue
-            u, v = keypoints[f_idx][kp_idx].pt
-            _add_reproj_edge(problem, loss_fn,
-                             (u, v), quat, trans, mp.position, intr)
+            u, v = kfs[f_idx].kps[kp_idx].pt
+            _add_reproj_edge(problem, loss_fn, (u, v), quat, trans, mp.position, intr)
+            added += 1
 
-
-    if problem.num_residual_blocks() < 10:
-        print(f"POSE-ONLY BA skipped – not enough residuals")
-        return  # too few observations
+    if added < 10:
+        print("POSE-ONLY BA skipped – not enough residuals")
+        return
 
     opts = pyceres.SolverOptions()
     opts.max_num_iterations = max_iters
     summary = pyceres.SolverSummary()
     pyceres.solve(opts, problem, summary)
 
-    world_map.poses[frame_idx][:] = _quat_trans_to_pose(quat, trans)
-    # print(f"[Pose-only BA] iters={summary.iterations_used}"
-    #       f"  inliers={problem.num_residual_blocks()}")
-    print(f"[Pose-only BA] iters={summary.num_successful_steps}"
-          f"  inliers={problem.num_residual_blocks()}")
-
+    # write back to both KF and Map (keep consistent)
+    new_Tcw = _quat_trans_to_pose(quat, trans)
+    kfs[kf_idx].pose = new_Tcw
+    if len(world_map.poses) > kf_idx:
+        world_map.poses[kf_idx][:] = new_Tcw
+    print(f"[Pose-only BA] iters={getattr(summary,'num_successful_steps',0)}  residuals={added}")
 
 # --------------------------------------------------------------------- #
 #  3) Local BA  (sliding window)
 # --------------------------------------------------------------------- #
-def local_bundle_adjustment(world_map, K, keypoints,
+def local_bundle_adjustment(world_map, K, kfs,
                             center_kf_idx: int,
-                            window_size: int = 8,
-                            max_points  : int = 3000,
+                            window_size: int = 6,
+                            max_points  : int = 10000,
                             max_iters   : int = 15):
     """
-    Optimise the *last* `window_size` key-frames around
-    `center_kf_idx` plus all landmarks they observe.
-    Older poses are kept fixed (gauge).
+    Optimise a sliding window of keyframes around center_kf_idx plus
+    all landmarks they observe. Older KFs are fixed (gauge).
     """
-    first_opt = max(0, center_kf_idx - window_size + 1)
+    first_opt = max(1, center_kf_idx - window_size + 1)
     opt_kf    = list(range(first_opt, center_kf_idx + 1))
     fix_kf    = list(range(0, first_opt))
+    print(f"opt_kf={opt_kf}, fix_kf={fix_kf}, center_kf_idx={center_kf_idx}")
 
-    _core_ba(world_map, K, keypoints,
-             opt_kf_idx=opt_kf,
-             fix_kf_idx=fix_kf,
-             max_points=max_points,
-             max_iters=max_iters,
-             info_tag=f"[Local BA (kf {center_kf_idx})]")
-
+    _core_ba(world_map, K, kfs,
+             opt_kf_idx = opt_kf,
+             fix_kf_idx = fix_kf,
+             max_points = max_points,
+             max_iters  = max_iters,
+             info_tag   = f"[Local BA @ KF {center_kf_idx}]")
 
 # --------------------------------------------------------------------- #
 #  4) Global BA  (blue-print only)
@@ -199,7 +179,7 @@ def global_bundle_adjustment_blueprint(world_map, K, keypoints):
 # --------------------------------------------------------------------- #
 #  Shared low-level BA engine
 # --------------------------------------------------------------------- #
-def _core_ba(world_map, K, keypoints,
+def _core_ba(world_map, K, kfs,
              *,
              opt_kf_idx: list[int],
              fix_kf_idx: list[int],
@@ -207,76 +187,80 @@ def _core_ba(world_map, K, keypoints,
              max_iters : int = 20,
              info_tag  : str = ""):
     """
-    Generic sparse BA over a **subset** of poses + points.
+    Sparse BA over a subset of poses (keyframes) + points.
+    Poses come from kfs[idx].pose; residual UVs from kfs[idx].kps[kp_idx].pt
     """
-    fx, fy, cx, cy = float(K[0, 0]), float(K[1, 1]), float(K[0, 2]), float(K[1, 2])
+    import pyceres
+    fx, fy, cx, cy = float(K[0,0]), float(K[1,1]), float(K[0,2]), float(K[1,2])
     intr = np.array([fx, fy, cx, cy], np.float64)
 
     problem = pyceres.Problem()
-    # TODO DONT add intrinsics if they are fixed
+    loss_fn = pyceres.HuberLoss(2.0)
+
     problem.add_parameter_block(intr, 4)
     problem.set_parameter_block_constant(intr)
 
-    # --- pose blocks ---------------------------------------------------
-    #TODO why for looop, optimize relative poses instead of absolute, 
+    # pose blocks (opt + fixed) from Keyframe poses
     quat_params, trans_params = {}, {}
     for k in opt_kf_idx:
-        quat, tr = _pose_to_quat_trans(world_map.poses[k])
-        quat_params[k] = quat
-        trans_params[k] = tr
+        quat, tr = _pose_to_quat_trans(kfs[k].pose)
+        quat_params[k] = quat; trans_params[k] = tr
         problem.add_parameter_block(quat, 4)
         problem.set_manifold(quat, pyceres.EigenQuaternionManifold())
         problem.add_parameter_block(tr, 3)
 
     for k in fix_kf_idx:
-        quat, tr = _pose_to_quat_trans(world_map.poses[k])
-        quat_params[k] = quat
-        trans_params[k] = tr
+        quat, tr = _pose_to_quat_trans(kfs[k].pose)
+        quat_params[k] = quat; trans_params[k] = tr
         problem.add_parameter_block(quat, 4)
         problem.set_manifold(quat, pyceres.EigenQuaternionManifold())
         problem.add_parameter_block(tr, 3)
         problem.set_parameter_block_constant(quat)
         problem.set_parameter_block_constant(tr)
 
-    # --- point blocks --------------------------------------------------
-    loss_fn = pyceres.HuberLoss(2.0)
+    # point blocks + residuals
     added_pts = 0
+    added_res = 0
     for mp in world_map.points.values():
         # keep only points seen by at least one optimisable KF
-        if not any(f in opt_kf_idx for f, _ in mp.observations):
+        if not any(f in opt_kf_idx for f, _, _ in mp.observations):
             continue
         if max_points and added_pts >= max_points:
             continue
+
         problem.add_parameter_block(mp.position, 3)
         added_pts += 1
 
-        for f_idx, kp_idx in mp.observations:
-            if f_idx not in opt_kf_idx and f_idx not in fix_kf_idx:
+        for f_idx, kp_idx, _desc in mp.observations:
+            if (f_idx not in opt_kf_idx) and (f_idx not in fix_kf_idx):
                 continue
-            u, v = keypoints[f_idx][kp_idx].pt
+            u, v = kfs[f_idx].kps[kp_idx].pt
             _add_reproj_edge(problem, loss_fn,
                              (u, v),
                              quat_params[f_idx],
                              trans_params[f_idx],
                              mp.position,
                              intr)
-    print(problem.num_residual_blocks(), "residuals added")
-    if problem.num_residual_blocks() < 10:
+            added_res += 1
+
+    if added_res < 10:
         print(f"{info_tag} skipped – not enough residuals")
         return
 
-    # --- solve ---------------------------------------------------------
     opts = pyceres.SolverOptions()
     opts.max_num_iterations = max_iters
+    opts.minimizer_progress_to_stdout = True
     summary = pyceres.SolverSummary()
     pyceres.solve(opts, problem, summary)
 
-    # --- write poses back ---------------------------------------------
+    # write poses back → Keyframes + Map
     for k in opt_kf_idx:
-        world_map.poses[k][:] = _quat_trans_to_pose(
-            quat_params[k], trans_params[k])
+        new_Tcw = _quat_trans_to_pose(quat_params[k], trans_params[k])
+        kfs[k].pose = new_Tcw
+        if len(world_map.poses) > k:
+            world_map.poses[k][:] = new_Tcw
 
-    iters = (getattr(summary, "iterations_used", getattr(summary, "num_successful_steps", getattr(summary, "num_iterations", None))))
-    print(f"{info_tag}  iters={iters}  "
-          f"χ²={summary.final_cost:.2f}  "
-          f"res={problem.num_residual_blocks()}")
+    iters = getattr(summary, "iterations_used",
+             getattr(summary, "num_successful_steps",
+             getattr(summary, "num_iterations", None)))
+    print(f"{info_tag} iters={iters}  χ²={summary.final_cost:.2f}  residuals={added_res}")
