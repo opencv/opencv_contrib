@@ -48,36 +48,36 @@ class cudacodec_test(NewOpenCVTests):
             ret, raw_mode = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_RAW_MODE)
             self.assertTrue(ret and raw_mode)
 
-            # Retrieve image histogram. Not all GPUs support histogram. Just check the method is called correctly
-            ret, gpu_mat, hist = reader.nextFrameWithHist()
-            self.assertTrue(ret and not gpu_mat.empty())
-            ret, gpu_mat_, hist_ = reader.nextFrameWithHist(gpu_mat, hist)
-            self.assertTrue(ret and not gpu_mat.empty())
-            self.assertTrue(gpu_mat_.cudaPtr() == gpu_mat.cudaPtr())
-
-            # Check post processing applied
-            self.assertTrue(gpu_mat.size() == post_processed_sz)
-
-            # Change color format
-            ret, colour_code = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_COLOR_FORMAT)
-            self.assertTrue(ret and colour_code == cv.cudacodec.ColorFormat_BGRA)
-            colour_code_gs = cv.cudacodec.ColorFormat_GRAY
-            reader.set(colour_code_gs)
-            ret, colour_code = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_COLOR_FORMAT)
-            self.assertTrue(ret and colour_code == colour_code_gs)
-
             # Read raw encoded bitstream
             ret, i_base = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_RAW_PACKAGES_BASE_INDEX)
             self.assertTrue(ret and i_base == 2.0)
-            self.assertTrue(reader.grab())
-            ret, gpu_mat3 = reader.retrieve()
-            self.assertTrue(ret and isinstance(gpu_mat3,cv.cuda.GpuMat) and not gpu_mat3.empty())
-            ret = reader.retrieve(gpu_mat3)
-            self.assertTrue(ret and isinstance(gpu_mat3,cv.cuda.GpuMat) and not gpu_mat3.empty())
+            ret, gpu_mat_2 = reader.nextFrame()
+            self.assertTrue(ret and isinstance(gpu_mat_2,cv.cuda.GpuMat) and not gpu_mat_2.empty())
+            ret = reader.retrieve(gpu_mat_2)
+            self.assertTrue(ret and isinstance(gpu_mat_2,cv.cuda.GpuMat) and not gpu_mat_2.empty())
             ret, n_raw_packages_since_last_grab = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB)
             self.assertTrue(ret and n_raw_packages_since_last_grab > 0)
+            self.assertTrue(reader.rawPackageHasKeyFrame(int(i_base)))
             ret, raw_data = reader.retrieve(int(i_base))
             self.assertTrue(ret and isinstance(raw_data,np.ndarray) and np.any(raw_data))
+
+            # Check post processing applied
+            self.assertTrue(gpu_mat_2.size() == post_processed_sz)
+
+            # Retrieve image histogram. Not all GPUs support histogram. Just check the method is called correctly
+            ret, gpu_mat_3, hist = reader.nextFrameWithHist()
+            self.assertTrue(ret and not gpu_mat_3.empty())
+            ret, gpu_mat_3_, hist_ = reader.nextFrameWithHist(gpu_mat_3, hist)
+            self.assertTrue(ret and not gpu_mat_3.empty())
+            self.assertTrue(gpu_mat_3_.cudaPtr() == gpu_mat_3.cudaPtr())
+
+            # Change color format
+            ret, colour_code = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_COLOR_FORMAT)
+            self.assertTrue(ret and colour_code == cv.cudacodec.BGRA)
+            colour_code_gs = cv.cudacodec.GRAY
+            reader.set(colour_code_gs)
+            ret, colour_code = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_COLOR_FORMAT)
+            self.assertTrue(ret and colour_code == colour_code_gs)
 
         except cv.error as e:
             notSupported = (e.code == cv.Error.StsNotImplemented or e.code == cv.Error.StsUnsupportedFormat or e.code == cv.Error.GPU_API_CALL_ERROR)
@@ -107,7 +107,7 @@ class cudacodec_test(NewOpenCVTests):
             encoder_params_in.gopLength = 10
             stream = cv.cuda.Stream()
             sz = (1920,1080)
-            writer = cv.cudacodec.createVideoWriter(fname, sz, cv.cudacodec.H264, 30, cv.cudacodec.ColorFormat_BGR,
+            writer = cv.cudacodec.createVideoWriter(fname, sz, cv.cudacodec.H264, 30, cv.cudacodec.BGR,
                                                     encoder_params_in, stream=stream)
             blankFrameIn = cv.cuda.GpuMat(sz,cv.CV_8UC3)
             writer.write(blankFrameIn)

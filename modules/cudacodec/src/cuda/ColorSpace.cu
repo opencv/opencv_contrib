@@ -8,6 +8,11 @@
 
 namespace cv { namespace cuda { namespace device {
 
+void SetMatYuv2Rgb(int iMatrix, bool fullRange = false);
+void Y8ToGray8(uint8_t* dpY8, int nY8Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
+void Y8ToGray16(uint8_t* dpY8, int nY8Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
+void Y16ToGray8(uint8_t* dpY16, int nY16Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
+void Y16ToGray16(uint8_t* dpY16, int nY16Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
 __constant__ float matYuv2Color[3][3];
 
 void inline GetConstants(int iMatrix, float& wr, float& wb, int& black, int& white, int& uvWhite, int& max, bool fullRange = false) {
@@ -49,7 +54,7 @@ void inline GetConstants(int iMatrix, float& wr, float& wb, int& black, int& whi
     }
 }
 
-void SetMatYuv2Rgb(int iMatrix, bool fullRange = false) {
+void SetMatYuv2Rgb(int iMatrix, bool fullRange) {
     float wr, wb;
     int black, white, max, uvWhite;
     GetConstants(iMatrix, wr, wb, black, white, uvWhite, max, fullRange);
@@ -160,15 +165,15 @@ __global__ static void YuvToColorKernel(uint8_t* pYuv, int nYuvPitch, uint8_t* p
 
     union ColorOutx2 {
         Colorx2 d;
-        Color Color[2];
+        Color color[2];
     };
     ColorOutx2 l1Out;
-    l1Out.Color[0] = YuvToColorForPixel<Color>(l0.x, ch.x, ch.y, videoFullRangeFlag);
-    l1Out.Color[1] = YuvToColorForPixel<Color>(l0.y, ch.x, ch.y, videoFullRangeFlag);
+    l1Out.color[0] = YuvToColorForPixel<Color>(l0.x, ch.x, ch.y, videoFullRangeFlag);
+    l1Out.color[1] = YuvToColorForPixel<Color>(l0.y, ch.x, ch.y, videoFullRangeFlag);
     *(Colorx2*)pDst = l1Out.d;
     ColorOutx2 l2Out;
-    l2Out.Color[0] = YuvToColorForPixel<Color>(l1.x, ch.x, ch.y, videoFullRangeFlag);
-    l2Out.Color[1] = YuvToColorForPixel<Color>(l1.y, ch.x, ch.y, videoFullRangeFlag);
+    l2Out.color[0] = YuvToColorForPixel<Color>(l1.x, ch.x, ch.y, videoFullRangeFlag);
+    l2Out.color[1] = YuvToColorForPixel<Color>(l1.y, ch.x, ch.y, videoFullRangeFlag);
     *(Colorx2*)(pDst + nColorPitch) = l2Out.d;
 }
 
@@ -214,11 +219,11 @@ __global__ static void Yuv444ToColorKernel(uint8_t* pYuv, int nYuvPitch, uint8_t
 
     union ColorOutx2 {
         Colorx2 d;
-        Color Color[2];
+        Color color[2];
     };
     ColorOutx2 out;
-    out.Color[0] = YuvToColorForPixel<Color>(l0.x, ch1.x, ch2.x, videoFullRangeFlag);
-    out.Color[1] = YuvToColorForPixel<Color>(l0.y, ch1.y, ch2.y, videoFullRangeFlag);
+    out.color[0] = YuvToColorForPixel<Color>(l0.x, ch1.x, ch2.x, videoFullRangeFlag);
+    out.color[1] = YuvToColorForPixel<Color>(l0.y, ch1.y, ch2.y, videoFullRangeFlag);
     *(Colorx2*)pDst = out.d;
 }
 
