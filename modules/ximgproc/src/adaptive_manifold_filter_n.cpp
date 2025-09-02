@@ -521,7 +521,7 @@ void AdaptiveManifoldFilterN::h_filter(const Mat1f& src, Mat& dst, float sigma)
 
         dst_row[0] = src_row[0];
         int x = 1;
-    #if defined(_M_ARM64)
+    #if CV_ENABLE_UNROLLED && defined(_M_ARM64)
         for ( ; x + 1 < src.cols; x += 2 )
         {
             dst_row[x] = src_row[x] + a * (dst_row[x - 1] - src_row[x]);
@@ -535,7 +535,7 @@ void AdaptiveManifoldFilterN::h_filter(const Mat1f& src, Mat& dst, float sigma)
 
         x = src.cols - 2;
 
-    #if defined(_M_ARM64)
+    #if CV_ENABLE_UNROLLED && defined(_M_ARM64)
         for ( ; x - 1 >= 0; x -= 2 )
         {
             dst_row[x] = dst_row[x] + a * (dst_row[x + 1] - dst_row[x]);
