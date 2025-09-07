@@ -87,7 +87,7 @@ namespace{
 #if !defined(GAPI_STANDALONE)
 cv::GMatDesc cv::descr_of(const cv::Mat &mat)
 {
-    const auto mat_dims = mat.size.dims();
+    const auto mat_dims = mat.size.dims;
 
     if (mat_dims <= 2)
         return GMatDesc{mat.depth(), mat.channels(), {mat.cols, mat.rows}};
@@ -111,7 +111,7 @@ cv::GMatDesc cv::gapi::own::descr_of(const Mat &mat)
 #if !defined(GAPI_STANDALONE)
 cv::GMatDesc cv::descr_of(const cv::UMat &mat)
 {
-    GAPI_Assert(mat.size.dims() == 2);
+    GAPI_Assert(mat.size.dims == 2);
     return GMatDesc{ mat.depth(), mat.channels(),{ mat.cols, mat.rows } };
 }
 

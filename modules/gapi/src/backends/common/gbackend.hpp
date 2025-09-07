@@ -46,9 +46,13 @@ namespace gimpl {
 #if !defined(GAPI_STANDALONE)
         int m_dims = m.dims < 2 ? 2 : m.dims;
         RMat::View::stepsT steps(m_dims);
-        const size_t* m_step = m.dims <= 2 ? m.step.buf : m.step.p;
-        for (int i = 0; i < m_dims; i++) {
-            steps[i] = m_step[i];
+        if (m_dims >= 2) {
+            for (int i = 0; i < m_dims; i++) {
+                steps[i] = m.step.p[i];
+            }
+        } else {
+            steps[1] = m.step.p[0];
+            steps[0] = m.cols*steps[1];
         }
         return RMat::View(cv::descr_of(m), m.data, steps, std::move(cb));
 #else

@@ -236,7 +236,7 @@ cv::gapi::ie::TraitAs clarifyTrait(const cv::GMetaArg   &meta,
 
 inline IE::TensorDesc toIE(const cv::Mat &mat, cv::gapi::ie::TraitAs hint) {
     const auto &sz = mat.size;
-    if (sz.dims() == 2 && hint == cv::gapi::ie::TraitAs::IMAGE)
+    if (sz.dims == 2 && hint == cv::gapi::ie::TraitAs::IMAGE)
     {
         // NB: This logic is mainly taken from IE samples
         const size_t channels = mat.channels();
@@ -253,7 +253,7 @@ inline IE::TensorDesc toIE(const cv::Mat &mat, cv::gapi::ie::TraitAs hint) {
         return IE::TensorDesc(toIE(mat.depth()),
                               IE::SizeVector{1, channels, height, width}, bdesc);
     }
-    return IE::TensorDesc(toIE(mat.depth()), toIE(sz), toIELayout(sz.dims()));
+    return IE::TensorDesc(toIE(mat.depth()), toIE(sz), toIELayout(sz.dims));
 }
 
 // NB: Inference dimmensions always follow NCDHW order
@@ -296,7 +296,7 @@ inline IE::TensorDesc toIE(const cv::Mat               &mat,
                            const cv::gapi::ie::TraitAs hint,
                            const IE::Layout            layout) {
     const auto &sz = mat.size;
-    if (sz.dims() == 2 && hint == cv::gapi::ie::TraitAs::IMAGE)
+    if (sz.dims == 2 && hint == cv::gapi::ie::TraitAs::IMAGE)
     {
         // NB: This logic is mainly taken from IE samples
         const size_t channels = mat.channels();

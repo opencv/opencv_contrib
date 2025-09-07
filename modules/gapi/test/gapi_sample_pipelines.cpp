@@ -495,13 +495,13 @@ TEST(DISABLED_GAPI_Pipeline, GraphOutputIs1DMat)
 
     // NB: Computation is able to write 1D output cv::Mat to empty out_mat.
     ASSERT_NO_THROW(cc(cv::gin(in_mat), cv::gout(out_mat)));
-    ASSERT_EQ(1, out_mat.size.dims());
+    ASSERT_EQ(1, out_mat.size.dims);
     ASSERT_EQ(dim, out_mat.size[0]);
 
     // NB: Computation is able to write 1D output cv::Mat
     // to pre-allocated with the same meta out_mat.
     ASSERT_NO_THROW(cc(cv::gin(in_mat), cv::gout(out_mat)));
-    ASSERT_EQ(1, out_mat.size.dims());
+    ASSERT_EQ(1, out_mat.size.dims);
     ASSERT_EQ(dim, out_mat.size[0]);
 }
 

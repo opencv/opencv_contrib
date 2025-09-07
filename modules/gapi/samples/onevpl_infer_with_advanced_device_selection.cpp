@@ -225,7 +225,7 @@ GAPI_OCV_KERNEL(OCVParseSSD, ParseSSD) {
                     const cv::Size &in_parent_size,
                     std::vector<cv::Rect> &out_objects) {
         const auto &in_ssd_dims = in_ssd_result.size;
-        GAPI_Assert(in_ssd_dims.dims() == 4u);
+        GAPI_Assert(in_ssd_dims.dims == 4);
 
         const int MAX_PROPOSALS = in_ssd_dims[2];
         const int OBJECT_SIZE   = in_ssd_dims[3];
