@@ -288,7 +288,7 @@ GAPI_OCV_KERNEL(OCVPostProcess, PostProcess) {
     }
 
     static std::vector<std::size_t> dimsToShape(const cv::MatSize &sz) {
-        const int n_dims = sz.dims();
+        const int n_dims = sz.dims;
         std::vector<std::size_t> result;
         result.reserve(n_dims);
 
