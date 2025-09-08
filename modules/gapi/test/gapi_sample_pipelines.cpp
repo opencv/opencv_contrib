@@ -512,7 +512,7 @@ TEST(DISABLED_GAPI_Pipeline, 1DMatBetweenIslands)
     cv::Mat out_mat;
 
     cv::Mat ref_mat({dim}, CV_8U);
-    ref_mat.dims = 1;
+    ref_mat.size.dims = ref_mat.dims = 1;
     ref_mat.setTo(0);
 
     cv::GMat in;
@@ -534,7 +534,7 @@ TEST(DISABLED_GAPI_Pipeline, 1DMatWithinSingleIsland)
     cv::Mat out_mat;
 
     cv::Mat ref_mat({dim}, CV_8U);
-    ref_mat.dims = 1;
+    ref_mat.size.dims = ref_mat.dims = 1;
     ref_mat.setTo(0);
 
     cv::GMat in;
