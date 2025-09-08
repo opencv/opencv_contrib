@@ -76,7 +76,7 @@ TEST_P(RMatViewNDTest, DefaultStep) {
     std::tie(depth, ndims) = GetParam();
     std::vector<int> dims(ndims, 12);
     GMatDesc desc;
-    desc.size.dims = desc.dims = dims;
+    desc.dims = dims;
     desc.depth = depth;
     GAPI_Assert(desc.chan == -1);
     auto elemSize = CV_ELEM_SIZE(depth);
@@ -113,7 +113,7 @@ TEST_P(RMatViewNDTest, StepFromView) {
     std::vector<int> dims(ndims, 12);
     std::vector<int> aligned(ndims, 16);
     GMatDesc desc;
-    desc.size.dims = desc.dims = dims;
+    desc.dims = dims;
     desc.depth = depth;
     GAPI_Assert(desc.chan == -1);
     auto elemSize = CV_ELEM_SIZE(depth);
@@ -145,7 +145,7 @@ TEST_P(RMatViewNDTestNegative, DefaultStep) {
     std::tie(depth, chan, ndims) = GetParam();
     std::vector<int> dims(ndims, 12);
     GMatDesc desc;
-    desc.size.dims = desc.dims = dims;
+    desc.dims = dims;
     desc.depth = depth;
     desc.chan = chan;
     auto elemSize = CV_ELEM_SIZE(depth);
