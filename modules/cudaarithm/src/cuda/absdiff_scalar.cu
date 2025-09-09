@@ -49,6 +49,7 @@
 #else
 
 #include "opencv2/cudev.hpp"
+#include "opencv2/core/cuda/cuda_compat.hpp"
 
 using namespace cv::cudev;
 
@@ -56,6 +57,7 @@ void absDiffScalar(const GpuMat& src, cv::Scalar val, bool, GpuMat& dst, const G
 
 namespace
 {
+    using cv::cuda::device::compat::double4Compat;
     template <typename SrcType, typename ScalarType, typename DstType> struct AbsDiffScalarOp : unary_function<SrcType, DstType>
     {
         ScalarType val;
@@ -114,7 +116,7 @@ void absDiffScalar(const GpuMat& src, cv::Scalar val, bool, GpuMat& dst, const G
           absDiffScalarImpl<float, float>, absDiffScalarImpl<float2, float>, absDiffScalarImpl<float3, float>, absDiffScalarImpl<float4, float>
         },
         {
-          absDiffScalarImpl<double, double>, absDiffScalarImpl<double2, double>, absDiffScalarImpl<double3, double>, absDiffScalarImpl<double4, double>
+          absDiffScalarImpl<double, double>, absDiffScalarImpl<double2, double>, absDiffScalarImpl<double3, double>, absDiffScalarImpl<double4Compat, double>
         }
     };
 

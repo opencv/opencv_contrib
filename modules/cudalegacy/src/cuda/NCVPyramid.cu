@@ -129,10 +129,10 @@ static __host__ __device__ float4 _average4_CN(const float4 &p00, const float4 &
     return out;
 }};
 
-template<> struct __average4_CN<double4, 4> {
-static __host__ __device__ double4 _average4_CN(const double4 &p00, const double4 &p01, const double4 &p10, const double4 &p11)
+template<> struct __average4_CN<double4Compat, 4> {
+static __host__ __device__ double4Compat _average4_CN(const double4Compat&p00, const double4Compat&p01, const double4Compat&p10, const double4Compat&p11)
 {
-    double4 out;
+    double4Compat out;
     out.x = (p00.x + p01.x + p10.x + p11.x) / 4;
     out.y = (p00.y + p01.y + p10.y + p11.y) / 4;
     out.z = (p00.z + p01.z + p10.z + p11.z) / 4;

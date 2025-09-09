@@ -46,6 +46,9 @@
 #include <limits.h>
 #include <float.h>
 #include "opencv2/cudalegacy/NCV.hpp"
+#include "opencv2/core/cuda/cuda_compat.hpp"
+using cv::cuda::device::compat::double4Compat;
+using cv::cuda::device::compat::make_double4_compat;
 
 template<typename TBase> inline __host__ __device__ TBase _pixMaxVal();
 template<> inline __host__ __device__ Ncv8u  _pixMaxVal<Ncv8u>()  {return UCHAR_MAX;}
@@ -101,7 +104,7 @@ template<> struct TConvBase2Vec<Ncv32f, 3> {typedef float3 TVec;};
 template<> struct TConvBase2Vec<Ncv32f, 4> {typedef float4 TVec;};
 template<> struct TConvBase2Vec<Ncv64f, 1> {typedef double1 TVec;};
 template<> struct TConvBase2Vec<Ncv64f, 3> {typedef double3 TVec;};
-template<> struct TConvBase2Vec<Ncv64f, 4> {typedef double4 TVec;};
+template<> struct TConvBase2Vec<Ncv64f, 4> {typedef double4Compat TVec;};
 
 //TODO: consider using CUDA intrinsics to avoid branching
 template<typename Tin> inline __host__ __device__ void _TDemoteClampZ(Tin &a, Ncv8u &out) {out = (Ncv8u)CLAMP_0_255(a);}
@@ -130,7 +133,7 @@ template<> inline __host__ __device__ float3 _pixMakeZero<float3>() {return make
 template<> inline __host__ __device__ float4 _pixMakeZero<float4>() {return make_float4(0.f,0.f,0.f,0.f);}
 template<> inline __host__ __device__ double1 _pixMakeZero<double1>() {return make_double1(0.);}
 template<> inline __host__ __device__ double3 _pixMakeZero<double3>() {return make_double3(0.,0.,0.);}
-template<> inline __host__ __device__ double4 _pixMakeZero<double4>() {return make_double4(0.,0.,0.,0.);}
+template<> inline __host__ __device__ double4Compat _pixMakeZero<double4Compat>() {return make_double4_compat(0.,0.,0.,0.);}
 
 static inline __host__ __device__ uchar1 _pixMake(Ncv8u x) {return make_uchar1(x);}
 static inline __host__ __device__ uchar3 _pixMake(Ncv8u x, Ncv8u y, Ncv8u z) {return make_uchar3(x,y,z);}
@@ -146,7 +149,7 @@ static inline __host__ __device__ float3 _pixMake(Ncv32f x, Ncv32f y, Ncv32f z) 
 static inline __host__ __device__ float4 _pixMake(Ncv32f x, Ncv32f y, Ncv32f z, Ncv32f w) {return make_float4(x,y,z,w);}
 static inline __host__ __device__ double1 _pixMake(Ncv64f x) {return make_double1(x);}
 static inline __host__ __device__ double3 _pixMake(Ncv64f x, Ncv64f y, Ncv64f z) {return make_double3(x,y,z);}
-static inline __host__ __device__ double4 _pixMake(Ncv64f x, Ncv64f y, Ncv64f z, Ncv64f w) {return make_double4(x,y,z,w);}
+static inline __host__ __device__ double4Compat _pixMake(Ncv64f x, Ncv64f y, Ncv64f z, Ncv64f w) {return make_double4_compat(x,y,z,w);}
 
 
 template<typename Tin, typename Tout, Ncv32u CN> struct __pixDemoteClampZ_CN {static __host__ __device__ Tout _pixDemoteClampZ_CN(Tin &pix);};
@@ -329,13 +332,13 @@ template<typename Tin, typename Tout> static __host__ __device__ Tout _pixDist(T
 template <typename T> struct TAccPixWeighted;
 template<> struct TAccPixWeighted<uchar1> {typedef double1 type;};
 template<> struct TAccPixWeighted<uchar3> {typedef double3 type;};
-template<> struct TAccPixWeighted<uchar4> {typedef double4 type;};
+template<> struct TAccPixWeighted<uchar4> {typedef double4Compat type;};
 template<> struct TAccPixWeighted<ushort1> {typedef double1 type;};
 template<> struct TAccPixWeighted<ushort3> {typedef double3 type;};
-template<> struct TAccPixWeighted<ushort4> {typedef double4 type;};
+template<> struct TAccPixWeighted<ushort4> {typedef double4Compat type;};
 template<> struct TAccPixWeighted<float1> {typedef double1 type;};
 template<> struct TAccPixWeighted<float3> {typedef double3 type;};
-template<> struct TAccPixWeighted<float4> {typedef double4 type;};
+template<> struct TAccPixWeighted<float4> {typedef double4Compat type;};
 
 template<typename Tfrom> struct TAccPixDist {};
 template<> struct TAccPixDist<uchar1> {typedef Ncv32u type;};

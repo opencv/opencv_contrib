@@ -49,6 +49,7 @@
 #else
 
 #include "opencv2/cudev.hpp"
+#include "opencv2/core/cuda/cuda_compat.hpp"
 
 using namespace cv::cudev;
 
@@ -56,6 +57,7 @@ void addScalar(const GpuMat& src, cv::Scalar val, bool, GpuMat& dst, const GpuMa
 
 namespace
 {
+    using cv::cuda::device::compat::double4Compat;
     template <typename SrcType, typename ScalarType, typename DstType> struct AddScalarOp : unary_function<SrcType, DstType>
     {
         ScalarType val;
@@ -105,7 +107,7 @@ void addScalar(const GpuMat& src, cv::Scalar val, bool, GpuMat& dst, const GpuMa
             {addScalarImpl<uchar, float, short>, addScalarImpl<uchar2, float, short2>, addScalarImpl<uchar3, float, short3>, addScalarImpl<uchar4, float, short4>},
             {addScalarImpl<uchar, float, int>, addScalarImpl<uchar2, float, int2>, addScalarImpl<uchar3, float, int3>, addScalarImpl<uchar4, float, int4>},
             {addScalarImpl<uchar, float, float>, addScalarImpl<uchar2, float, float2>, addScalarImpl<uchar3, float, float3>, addScalarImpl<uchar4, float, float4>},
-            {addScalarImpl<uchar, double, double>, addScalarImpl<uchar2, double, double2>, addScalarImpl<uchar3, double, double3>, addScalarImpl<uchar4, double, double4>}
+            {addScalarImpl<uchar, double, double>, addScalarImpl<uchar2, double, double2>, addScalarImpl<uchar3, double, double3>, addScalarImpl<uchar4, double, double4Compat>}
         },
         {
             {addScalarImpl<schar, float, uchar>, addScalarImpl<char2, float, uchar2>, addScalarImpl<char3, float, uchar3>, addScalarImpl<char4, float, uchar4>},
@@ -114,7 +116,7 @@ void addScalar(const GpuMat& src, cv::Scalar val, bool, GpuMat& dst, const GpuMa
             {addScalarImpl<schar, float, short>, addScalarImpl<char2, float, short2>, addScalarImpl<char3, float, short3>, addScalarImpl<char4, float, short4>},
             {addScalarImpl<schar, float, int>, addScalarImpl<char2, float, int2>, addScalarImpl<char3, float, int3>, addScalarImpl<char4, float, int4>},
             {addScalarImpl<schar, float, float>, addScalarImpl<char2, float, float2>, addScalarImpl<char3, float, float3>, addScalarImpl<char4, float, float4>},
-            {addScalarImpl<schar, double, double>, addScalarImpl<char2, double, double2>, addScalarImpl<char3, double, double3>, addScalarImpl<char4, double, double4>}
+            {addScalarImpl<schar, double, double>, addScalarImpl<char2, double, double2>, addScalarImpl<char3, double, double3>, addScalarImpl<char4, double, double4Compat>}
         },
         {
             {0 /*addScalarImpl<ushort, float, uchar>*/, 0 /*addScalarImpl<ushort2, float, uchar2>*/, 0 /*addScalarImpl<ushort3, float, uchar3>*/, 0 /*addScalarImpl<ushort4, float, uchar4>*/},
@@ -123,7 +125,7 @@ void addScalar(const GpuMat& src, cv::Scalar val, bool, GpuMat& dst, const GpuMa
             {addScalarImpl<ushort, float, short>, addScalarImpl<ushort2, float, short2>, addScalarImpl<ushort3, float, short3>, addScalarImpl<ushort4, float, short4>},
             {addScalarImpl<ushort, float, int>, addScalarImpl<ushort2, float, int2>, addScalarImpl<ushort3, float, int3>, addScalarImpl<ushort4, float, int4>},
             {addScalarImpl<ushort, float, float>, addScalarImpl<ushort2, float, float2>, addScalarImpl<ushort3, float, float3>, addScalarImpl<ushort4, float, float4>},
-            {addScalarImpl<ushort, double, double>, addScalarImpl<ushort2, double, double2>, addScalarImpl<ushort3, double, double3>, addScalarImpl<ushort4, double, double4>}
+            {addScalarImpl<ushort, double, double>, addScalarImpl<ushort2, double, double2>, addScalarImpl<ushort3, double, double3>, addScalarImpl<ushort4, double, double4Compat>}
         },
         {
             {0 /*addScalarImpl<short, float, uchar>*/, 0 /*addScalarImpl<short2, float, uchar2>*/, 0 /*addScalarImpl<short3, float, uchar3>*/, 0 /*addScalarImpl<short4, float, uchar4>*/},
@@ -132,7 +134,7 @@ void addScalar(const GpuMat& src, cv::Scalar val, bool, GpuMat& dst, const GpuMa
             {addScalarImpl<short, float, short>, addScalarImpl<short2, float, short2>, addScalarImpl<short3, float, short3>, addScalarImpl<short4, float, short4>},
             {addScalarImpl<short, float, int>, addScalarImpl<short2, float, int2>, addScalarImpl<short3, float, int3>, addScalarImpl<short4, float, int4>},
             {addScalarImpl<short, float, float>, addScalarImpl<short2, float, float2>, addScalarImpl<short3, float, float3>, addScalarImpl<short4, float, float4>},
-            {addScalarImpl<short, double, double>, addScalarImpl<short2, double, double2>, addScalarImpl<short3, double, double3>, addScalarImpl<short4, double, double4>}
+            {addScalarImpl<short, double, double>, addScalarImpl<short2, double, double2>, addScalarImpl<short3, double, double3>, addScalarImpl<short4, double, double4Compat>}
         },
         {
             {0 /*addScalarImpl<int, float, uchar>*/, 0 /*addScalarImpl<int2, float, uchar2>*/, 0 /*addScalarImpl<int3, float, uchar3>*/, 0 /*addScalarImpl<int4, float, uchar4>*/},
@@ -141,7 +143,7 @@ void addScalar(const GpuMat& src, cv::Scalar val, bool, GpuMat& dst, const GpuMa
             {0 /*addScalarImpl<int, float, short>*/, 0 /*addScalarImpl<int2, float, short2>*/, 0 /*addScalarImpl<int3, float, short3>*/, 0 /*addScalarImpl<int4, float, short4>*/},
             {addScalarImpl<int, float, int>, addScalarImpl<int2, float, int2>, addScalarImpl<int3, float, int3>, addScalarImpl<int4, float, int4>},
             {addScalarImpl<int, float, float>, addScalarImpl<int2, float, float2>, addScalarImpl<int3, float, float3>, addScalarImpl<int4, float, float4>},
-            {addScalarImpl<int, double, double>, addScalarImpl<int2, double, double2>, addScalarImpl<int3, double, double3>, addScalarImpl<int4, double, double4>}
+            {addScalarImpl<int, double, double>, addScalarImpl<int2, double, double2>, addScalarImpl<int3, double, double3>, addScalarImpl<int4, double, double4Compat>}
         },
         {
             {0 /*addScalarImpl<float, float, uchar>*/, 0 /*addScalarImpl<float2, float, uchar2>*/, 0 /*addScalarImpl<float3, float, uchar3>*/, 0 /*addScalarImpl<float4, float, uchar4>*/},
@@ -150,7 +152,7 @@ void addScalar(const GpuMat& src, cv::Scalar val, bool, GpuMat& dst, const GpuMa
             {0 /*addScalarImpl<float, float, short>*/, 0 /*addScalarImpl<float2, float, short2>*/, 0 /*addScalarImpl<float3, float, short3>*/, 0 /*addScalarImpl<float4, float, short4>*/},
             {0 /*addScalarImpl<float, float, int>*/, 0 /*addScalarImpl<float2, float, int2>*/, 0 /*addScalarImpl<float3, float, int3>*/, 0 /*addScalarImpl<float4, float, int4>*/},
             {addScalarImpl<float, float, float>, addScalarImpl<float2, float, float2>, addScalarImpl<float3, float, float3>, addScalarImpl<float4, float, float4>},
-            {addScalarImpl<float, double, double>, addScalarImpl<float2, double, double2>, addScalarImpl<float3, double, double3>, addScalarImpl<float4, double, double4>}
+            {addScalarImpl<float, double, double>, addScalarImpl<float2, double, double2>, addScalarImpl<float3, double, double3>, addScalarImpl<float4, double, double4Compat>}
         },
         {
             {0 /*addScalarImpl<double, double, uchar>*/, 0 /*addScalarImpl<double2, double, uchar2>*/, 0 /*addScalarImpl<double3, double, uchar3>*/, 0 /*addScalarImpl<double4, double, uchar4>*/},
@@ -159,7 +161,7 @@ void addScalar(const GpuMat& src, cv::Scalar val, bool, GpuMat& dst, const GpuMa
             {0 /*addScalarImpl<double, double, short>*/, 0 /*addScalarImpl<double2, double, short2>*/, 0 /*addScalarImpl<double3, double, short3>*/, 0 /*addScalarImpl<double4, double, short4>*/},
             {0 /*addScalarImpl<double, double, int>*/, 0 /*addScalarImpl<double2, double, int2>*/, 0 /*addScalarImpl<double3, double, int3>*/, 0 /*addScalarImpl<double4, double, int4>*/},
             {0 /*addScalarImpl<double, double, float>*/, 0 /*addScalarImpl<double2, double, float2>*/, 0 /*addScalarImpl<double3, double, float3>*/, 0 /*addScalarImpl<double4, double, float4>*/},
-            {addScalarImpl<double, double, double>, addScalarImpl<double2, double, double2>, addScalarImpl<double3, double, double3>, addScalarImpl<double4, double, double4>}
+            {addScalarImpl<double, double, double>, addScalarImpl<double2, double, double2>, addScalarImpl<double3, double, double3>, addScalarImpl<double4Compat, double, double4Compat>}
         }
     };
 

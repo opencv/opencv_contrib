@@ -47,11 +47,14 @@
 #define OPENCV_CUDEV_UTIL_TYPE_TRAITS_DETAIL_HPP
 
 #include "../../common.hpp"
+#include "opencv2/core/cuda/cuda_compat.hpp"
 
 namespace cv { namespace cudev {
 
 namespace type_traits_detail
 {
+    using cv::cuda::device::compat::double4;
+
     template <typename T> struct IsSignedIntergral { enum {value = 0}; };
     template <> struct IsSignedIntergral<schar> { enum {value = 1}; };
     template <> struct IsSignedIntergral<short> { enum {value = 1}; };
