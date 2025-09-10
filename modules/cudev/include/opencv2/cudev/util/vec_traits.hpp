@@ -47,8 +47,14 @@
 #define OPENCV_CUDEV_UTIL_VEC_TRAITS_HPP
 
 #include "../common.hpp"
+#include "opencv2/core/cuda/cuda_compat.hpp"
 
-namespace cv { namespace cudev {
+namespace cv {
+    
+    using cv::cuda::device::compat::double4;
+    using cv::cuda::device::compat::make_double4;
+
+    namespace cudev {
 
 //! @addtogroup cudev
 //! @{
