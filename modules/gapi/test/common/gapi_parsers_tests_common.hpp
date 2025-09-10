@@ -48,7 +48,7 @@ public:
     {
         out_boxes.clear();
         const auto &in_ssd_dims = in_ssd_result.size;
-        CV_Assert(in_ssd_dims.dims() == 4u);
+        CV_Assert(in_ssd_dims.dims == 4);
 
         const int MAX_PROPOSALS = in_ssd_dims[2];
         const int OBJECT_SIZE   = in_ssd_dims[3];
@@ -99,7 +99,7 @@ public:
         out_boxes.clear();
         out_labels.clear();
         const auto &in_ssd_dims = in_ssd_result.size;
-        CV_Assert(in_ssd_dims.dims() == 4u);
+        CV_Assert(in_ssd_dims.dims == 4);
 
         const int MAX_PROPOSALS = in_ssd_dims[2];
         const int OBJECT_SIZE   = in_ssd_dims[3];

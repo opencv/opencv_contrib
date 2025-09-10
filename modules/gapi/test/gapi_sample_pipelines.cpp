@@ -495,13 +495,13 @@ TEST(DISABLED_GAPI_Pipeline, GraphOutputIs1DMat)
 
     // NB: Computation is able to write 1D output cv::Mat to empty out_mat.
     ASSERT_NO_THROW(cc(cv::gin(in_mat), cv::gout(out_mat)));
-    ASSERT_EQ(1, out_mat.size.dims());
+    ASSERT_EQ(1, out_mat.size.dims);
     ASSERT_EQ(dim, out_mat.size[0]);
 
     // NB: Computation is able to write 1D output cv::Mat
     // to pre-allocated with the same meta out_mat.
     ASSERT_NO_THROW(cc(cv::gin(in_mat), cv::gout(out_mat)));
-    ASSERT_EQ(1, out_mat.size.dims());
+    ASSERT_EQ(1, out_mat.size.dims);
     ASSERT_EQ(dim, out_mat.size[0]);
 }
 
@@ -512,7 +512,7 @@ TEST(DISABLED_GAPI_Pipeline, 1DMatBetweenIslands)
     cv::Mat out_mat;
 
     cv::Mat ref_mat({dim}, CV_8U);
-    ref_mat.dims = 1;
+    ref_mat.size.dims = ref_mat.dims = 1;
     ref_mat.setTo(0);
 
     cv::GMat in;
@@ -534,7 +534,7 @@ TEST(DISABLED_GAPI_Pipeline, 1DMatWithinSingleIsland)
     cv::Mat out_mat;
 
     cv::Mat ref_mat({dim}, CV_8U);
-    ref_mat.dims = 1;
+    ref_mat.size.dims = ref_mat.dims = 1;
     ref_mat.setTo(0);
 
     cv::GMat in;

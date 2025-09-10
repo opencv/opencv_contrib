@@ -144,9 +144,9 @@ G_API_OP(PostProcessing, <cv::GMat(cv::GMat, cv::GMat)>, "sample.custom.post_pro
 GAPI_OCV_KERNEL(OCVPostProcessing, PostProcessing) {
     static void run(const cv::Mat &in, const cv::Mat &out_blob, cv::Mat &out) {
         int C = -1, H = -1, W = -1;
-        if (out_blob.size.dims() == 4u) {
+        if (out_blob.size.dims == 4) {
             C = 1; H = 2, W = 3;
-        } else if (out_blob.size.dims() == 3u) {
+        } else if (out_blob.size.dims == 3) {
             C = 0; H = 1, W = 2;
         } else {
             throw std::logic_error(

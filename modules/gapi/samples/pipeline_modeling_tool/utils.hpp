@@ -38,7 +38,7 @@ inline void generateRandom(cv::Mat& out) {
             break;
         case CV_16F: {
             std::vector<int> dims;
-            for (int i = 0; i < out.size.dims(); ++i) {
+            for (int i = 0; i < out.size.dims; ++i) {
                 dims.push_back(out.size[i]);
             }
             cv::Mat fp32_mat;

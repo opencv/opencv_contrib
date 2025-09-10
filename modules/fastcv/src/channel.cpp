@@ -26,7 +26,7 @@ void merge(InputArrayOfArrays _mv, OutputArray _dst)
         CV_Assert(mv[i].size == mv[0].size && mv[i].step[0] == mv[0].step[0] && mv[i].type() == CV_8UC1);
     }
 
-     _dst.create(mv[0].dims, mv[0].size, CV_MAKE_TYPE(CV_8U,count));
+    _dst.create(mv[0].size, CV_MAKE_TYPE(CV_8U,count));
     Mat dst = _dst.getMat();
 
     INITIALIZATION_CHECK;
@@ -89,7 +89,7 @@ void split(InputArray _src, OutputArrayOfArrays _mv)
     _mv.create(cn, 1, depth);
     for( int k = 0; k < cn; k++ )
     {
-        _mv.create(src.dims, src.size, depth, k);
+        _mv.create(src.size, depth, k);
     }
 
     std::vector<cv::Mat> mv(cn);
