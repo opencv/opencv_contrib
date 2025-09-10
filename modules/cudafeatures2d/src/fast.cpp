@@ -141,6 +141,7 @@ namespace
         if (count == 0)
         {
             _keypoints.release();
+            cudaSafeCall( cudaFree(d_counter) );
             return;
         }
 
