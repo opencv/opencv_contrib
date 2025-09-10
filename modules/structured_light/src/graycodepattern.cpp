@@ -87,11 +87,11 @@ class CV_EXPORTS_W GrayCodePattern_Impl CV_FINAL : public GrayCodePattern
   // The number of column images of the pattern
   size_t numOfColImgs;
 
-  // Number between 0-255 that represents the minimum brightness difference
+  // Number between 0-255 or 0-65535 that represents the minimum brightness difference
   // between the fully illuminated (white) and the non - illuminated images (black)
   size_t blackThreshold;
 
-  // Number between 0-255 that represents the minimum brightness difference
+  // Number between 0-255 or 0-65535 that represents the minimum brightness difference
   // between the gray-code pattern and its inverse images
   size_t whiteThreshold;
 
@@ -102,8 +102,8 @@ class CV_EXPORTS_W GrayCodePattern_Impl CV_FINAL : public GrayCodePattern
   void computeShadowMasks( InputArrayOfArrays blackImages, InputArrayOfArrays whiteImages,
                            OutputArrayOfArrays shadowMasks ) const;
 
-  // Converts a gray code sequence (~ binary number) to a decimal number
-  int grayToDec( const std::vector<uchar>& gray ) const;
+  bool getProjPixelFast(const std::vector<Mat>& fastColImages, const std::vector<Mat>& fastRowImages, int x, int y, Point& projPix) const;
+  void populateFastPatternImages(const std::vector<std::vector<Mat>>& acquiredPatterns, std::vector<std::vector<Mat>>& fastPatternColImages, std::vector<std::vector<Mat>>& fastPatternRowImages) const;
 };
 
 /*
@@ -125,184 +125,152 @@ GrayCodePattern_Impl::GrayCodePattern_Impl( const GrayCodePattern::Params &param
 
 bool GrayCodePattern_Impl::generate( OutputArrayOfArrays pattern )
 {
-  std::vector<Mat>& pattern_ = *( std::vector<Mat>* ) pattern.getObj();
-  pattern_.resize( numOfPatternImages );
-
-  for( size_t i = 0; i < numOfPatternImages; i++ )
-  {
-    pattern_[i] = Mat( params.height, params.width, CV_8U );
-  }
-
-  uchar flag = 0;
-
-  for( int j = 0; j < params.width; j++ )  // rows loop
-  {
-    int rem = 0, num = j, prevRem = j % 2;
-
-    for( size_t k = 0; k < numOfColImgs; k++ )  // images loop
+    std::vector<Mat>& pattern_ = *(std::vector<Mat>*)pattern.getObj();
+    pattern_.resize(numOfPatternImages);
+    for (size_t i = 0; i < numOfPatternImages; i++)
     {
-      num = num / 2;
-      rem = num % 2;
-
-      if( ( rem == 0 && prevRem == 1 ) || ( rem == 1 && prevRem == 0) )
-      {
-        flag = 1;
-      }
-      else
-      {
-        flag = 0;
-      }
-
-      for( int i = 0; i < params.height; i++ )  // rows loop
-      {
-
-        uchar pixel_color = ( uchar ) flag * 255;
-
-        pattern_[2 * numOfColImgs - 2 * k - 2].at<uchar>( i, j ) = pixel_color;
-        if( pixel_color > 0 )
-          pixel_color = ( uchar ) 0;
-        else
-         pixel_color = ( uchar ) 255;
-        pattern_[2 * numOfColImgs - 2 * k - 1].at<uchar>( i, j ) = pixel_color;  // inverse
-      }
-
-      prevRem = rem;
+        pattern_[i].create(params.height, params.width, CV_8U);
     }
-  }
-
-  for( int i = 0; i < params.height; i++ )  // rows loop
-  {
-    int rem = 0, num = i, prevRem = i % 2;
-
-    for( size_t k = 0; k < numOfRowImgs; k++ )
-    {
-      num = num / 2;
-      rem = num % 2;
-
-      if( (rem == 0 && prevRem == 1) || (rem == 1 && prevRem == 0) )
-      {
-        flag = 1;
-      }
-      else
-      {
-        flag = 0;
-      }
-
-      for( int j = 0; j < params.width; j++ )
-      {
-
-        uchar pixel_color = ( uchar ) flag * 255;
-        pattern_[2 * numOfRowImgs - 2 * k + 2 * numOfColImgs - 2].at<uchar>( i, j ) = pixel_color;
-
-        if( pixel_color > 0 )
-          pixel_color = ( uchar ) 0;
-        else
-          pixel_color = ( uchar ) 255;
-
-        pattern_[2 * numOfRowImgs - 2 * k + 2 * numOfColImgs - 1].at<uchar>( i, j ) = pixel_color;
-      }
-
-      prevRem = rem;
-    }
-  }
-
-  return true;
-}
-
-bool GrayCodePattern_Impl::decode( const std::vector< std::vector<Mat> >& patternImages, OutputArray disparityMap,
-                                   InputArrayOfArrays blackImages, InputArrayOfArrays whitheImages, int flags ) const
-{
-  const std::vector<std::vector<Mat> >& acquired_pattern = patternImages;
-
-  if( flags == DECODE_3D_UNDERWORLD )
-  {
-    // Computing shadows mask
-    std::vector<Mat> shadowMasks;
-    computeShadowMasks( blackImages, whitheImages, shadowMasks );
-
-    int cam_width = acquired_pattern[0][0].cols;
-    int cam_height = acquired_pattern[0][0].rows;
-
-    Point projPixel;
-
-    // Storage for the pixels of the two cams that correspond to the same pixel of the projector
-    std::vector<std::vector<std::vector<Point> > > camsPixels;
-    camsPixels.resize( acquired_pattern.size() );
-
-    // TODO: parallelize for (k and j)
-    for( size_t k = 0; k < acquired_pattern.size(); k++ )
-    {
-      camsPixels[k].resize( params.height * params.width );
-      for( int i = 0; i < cam_width; i++ )
-      {
-        for( int j = 0; j < cam_height; j++ )
+    parallel_for_(Range(0, params.width), [&](const Range& range) {
+        for (int j = range.start; j < range.end; ++j)
         {
-          //if the pixel is not shadowed, reconstruct
-          if( shadowMasks[k].at<uchar>( j, i ) )
-          {
-            //for a (x,y) pixel of the camera returns the corresponding projector pixel by calculating the decimal number
-            bool error = getProjPixel( acquired_pattern[k], i, j, projPixel );
-
-            if( error )
+            for (size_t k = 0; k < numOfColImgs; ++k)
             {
-              continue;
+                uchar flag = (((j >> k) & 1) ^ ((j >> (k + 1)) & 1));
+                uchar pixel_color = flag * 255;
+
+                size_t idx1 = 2 * numOfColImgs - 2 * k - 2;
+                size_t idx2 = 2 * numOfColImgs - 2 * k - 1;
+
+                if (idx1 < numOfPatternImages)
+                {
+                    pattern_[idx1].col(j).setTo(pixel_color);
+                }
+                if (idx2 < numOfPatternImages)
+                {
+                    pattern_[idx2].col(j).setTo(255 - pixel_color);
+                }
             }
-
-            camsPixels[k][projPixel.x * params.height + projPixel.y].push_back( Point( i, j ) );
-          }
         }
-      }
-    }
-
-    std::vector<Point> cam1Pixs, cam2Pixs;
-
-    Mat& disparityMap_ = *( Mat* ) disparityMap.getObj();
-    disparityMap_ = Mat( cam_height, cam_width, CV_64F, double( 0 ) );
-
-    for( int i = 0; i < params.width; i++ )
-    {
-      for( int j = 0; j < params.height; j++ )
-      {
-        cam1Pixs = camsPixels[0][i * params.height + j];
-        cam2Pixs = camsPixels[1][i * params.height + j];
-
-        if( cam1Pixs.size() == 0 || cam2Pixs.size() == 0 )
-          continue;
-
-        Point p1;
-        Point p2;
-
-        double sump1x = 0;
-        double sump2x = 0;
-
-        for( int c1 = 0; c1 < (int) cam1Pixs.size(); c1++ )
+    });
+    parallel_for_(Range(0, params.height), [&](const Range& range) {
+        for (int i = range.start; i < range.end; ++i)
         {
-          p1 = cam1Pixs[c1];
-          sump1x += p1.x;
-        }
-        for( int c2 = 0; c2 < (int) cam2Pixs.size(); c2++ )
-        {
-          p2 = cam2Pixs[c2];
-          sump2x += p2.x;
-        }
+            for (size_t k = 0; k < numOfRowImgs; ++k)
+            {
+                uchar flag = (((i >> k) & 1) ^ ((i >> (k + 1)) & 1));
+                uchar pixel_color = flag * 255;
 
-        sump2x /= cam2Pixs.size();
-        sump1x /= cam1Pixs.size();
-        for( int c1 = 0; c1 < (int) cam1Pixs.size(); c1++ )
-        {
-          p1 = cam1Pixs[c1];
-          disparityMap_.at<double>( p1.y, p1.x ) = ( double ) (sump2x - sump1x);
-        }
+                size_t base_idx = 2 * numOfColImgs;
+                size_t idx1 = base_idx + 2 * numOfRowImgs - 2 * k - 2;
+                size_t idx2 = base_idx + 2 * numOfRowImgs - 2 * k - 1;
 
-        sump2x = 0;
-        sump1x = 0;
-      }
-    }
+                if (idx1 < numOfPatternImages)
+                {
+                    pattern_[idx1].row(i).setTo(pixel_color);
+                }
+                if (idx2 < numOfPatternImages)
+                {
+                    pattern_[idx2].row(i).setTo(255 - pixel_color);
+                }
+            }
+        }
+        });
 
     return true;
-  }  // end if flags
+}
 
-  return false;
+
+bool GrayCodePattern_Impl::decode(const std::vector< std::vector<Mat> >& patternImages, OutputArray disparityMap, InputArrayOfArrays blackImages, InputArrayOfArrays whiteImages, int flags) const
+{
+    const std::vector<std::vector<Mat>>& acquired_pattern = patternImages;
+
+    if (flags == DECODE_3D_UNDERWORLD)
+    {
+        // Shadow mask computation remains the same
+        std::vector<Mat> shadowMasks;
+        computeShadowMasks(blackImages, whiteImages, shadowMasks);
+
+        int num_cameras = static_cast<int>(acquired_pattern.size());
+
+        int cam_width = acquired_pattern[0][0].cols;
+        int cam_height = acquired_pattern[0][0].rows;
+        int proj_width = params.width;
+        int proj_height = params.height;
+
+        std::vector<std::vector<Mat>> fastPatternColImages;
+        std::vector<std::vector<Mat>> fastPatternRowImages;
+        populateFastPatternImages(acquired_pattern, fastPatternColImages, fastPatternRowImages);
+
+        std::vector<Mat> projectorCoordinateMap(num_cameras);
+        parallel_for_(Range(0, num_cameras), [&](const Range& range) {
+            for (int k = range.start; k < range.end; k++) {
+                projectorCoordinateMap[k] = Mat(cam_height, cam_width, CV_32SC2, Vec2i(-1, -1));
+                Point projPixel;
+                const auto& fastCol = fastPatternColImages[k];
+                const auto& fastRow = fastPatternRowImages[k];
+                for (int j = 0; j < cam_height; j++) {
+                    for (int i = 0; i < cam_width; i++) {
+                        if (shadowMasks[k].at<uchar>(j, i)) {
+                            if (!getProjPixelFast(fastCol, fastRow, i, j, projPixel)) {
+                                projectorCoordinateMap[k].at<Vec2i>(j, i) = Vec2i(projPixel.x, projPixel.y);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        std::vector<Mat> sumX(num_cameras);
+        std::vector<Mat> counts(num_cameras);
+        for (int k = 0; k < num_cameras; ++k) {
+            sumX[k] = Mat::zeros(proj_height, proj_width, CV_64F);
+            counts[k] = Mat::zeros(proj_height, proj_width, CV_32S);
+        }
+
+        parallel_for_(Range(0, num_cameras), [&](const Range& range) {
+            for (int k = range.start; k < range.end; ++k) {
+                for (int j = 0; j < cam_height; ++j) {
+                    for (int i = 0; i < cam_width; ++i) {
+                        const Vec2i& projPt = projectorCoordinateMap[k].at<Vec2i>(j, i);
+                        if (projPt[0] != -1) {
+                            sumX[k].at<double>(projPt[1], projPt[0]) += i;
+                            counts[k].at<int>(projPt[1], projPt[0]) += 1;
+                        }
+                    }
+                }
+            }
+        });
+
+        Mat counts_64F[2], avgX[2];
+        counts[0].convertTo(counts_64F[0], CV_64F);
+        counts[1].convertTo(counts_64F[1], CV_64F);
+        cv::divide(sumX[0], counts_64F[0], avgX[0]);
+        cv::divide(sumX[1], counts_64F[1], avgX[1]);
+
+        // Handle invalid pixels (e.g. not seen by one of the cameras) by setting them to zero.
+        cv::Mat invalidPixels = (counts[0] == 0) | (counts[1] == 0);
+
+        Mat projectorDisparity = avgX[1] - avgX[0];
+
+        Mat& disparityMap_ = *(Mat*)disparityMap.getObj();
+        Mat map_x(cam_height, cam_width, CV_32F);
+        Mat map_y(cam_height, cam_width, CV_32F);
+
+        std::vector<Mat> projMapChannels;
+        cv::split(projectorCoordinateMap[0], projMapChannels);
+        projMapChannels[0].convertTo(map_x, CV_32F); // Projector x-coordinates
+        projMapChannels[1].convertTo(map_y, CV_32F); // Projector y-coordinates
+
+        projectorDisparity.setTo(Scalar(0.0), invalidPixels);
+
+        cv::remap(projectorDisparity, disparityMap_, map_x, map_y,
+            INTER_NEAREST, BORDER_CONSTANT, Scalar(0));
+
+        return true;
+    }
+
+    return false;
 }
 
 // Computes the required number of pattern images
@@ -319,9 +287,9 @@ size_t GrayCodePattern_Impl::getNumberOfPatternImages() const
   return numOfPatternImages;
 }
 
-// Computes the shadows occlusion where we cannot reconstruct the model
+  // Computes the shadows occlusion where we cannot reconstruct the model
 void GrayCodePattern_Impl::computeShadowMasks( InputArrayOfArrays blackImages, InputArrayOfArrays whiteImages,
-                                               OutputArrayOfArrays shadowMasks ) const
+                                                    OutputArrayOfArrays shadowMasks ) const
 {
   std::vector<Mat>& whiteImages_ = *( std::vector<Mat>* ) whiteImages.getObj();
   std::vector<Mat>& blackImages_ = *( std::vector<Mat>* ) blackImages.getObj();
@@ -329,31 +297,16 @@ void GrayCodePattern_Impl::computeShadowMasks( InputArrayOfArrays blackImages, I
 
   shadowMasks_.resize( whiteImages_.size() );
 
-  int cam_width = whiteImages_[0].cols;
-  int cam_height = whiteImages_[0].rows;
-
-  // TODO: parallelize for
-  for( int k = 0; k < (int) shadowMasks_.size(); k++ )
+  parallel_for_(Range(0, (int) whiteImages_.size()), [&](const Range& range)
   {
-    shadowMasks_[k] = Mat( cam_height, cam_width, CV_8U );
-    for( int i = 0; i < cam_width; i++ )
+    for( int k = range.start; k < range.end; k++ )
     {
-      for( int j = 0; j < cam_height; j++ )
-      {
-        double white = whiteImages_[k].at<uchar>( Point( i, j ) );
-        double black = blackImages_[k].at<uchar>( Point( i, j ) );
-
-        if( abs(white - black) > blackThreshold )
-        {
-          shadowMasks_[k].at<uchar>( Point( i, j ) ) = ( uchar ) 1;
-        }
-        else
-        {
-          shadowMasks_[k].at<uchar>( Point( i, j ) ) = ( uchar ) 0;
-        }
-      }
+        cv::Mat diffImage;
+        cv::absdiff(whiteImages_[k], blackImages_[k], diffImage);
+        cv::compare(diffImage, static_cast<double>(blackThreshold), shadowMasks_[k], cv::CMP_GT);
+        shadowMasks_[k] /= 255;
     }
-  }
+  });
 }
 
 // Generates the images needed for shadowMasks computation
@@ -366,86 +319,169 @@ void GrayCodePattern_Impl::getImagesForShadowMasks( InputOutputArray blackImage,
   whiteImage_ = Mat( params.height, params.width, CV_8U, Scalar( 255 ) );
 }
 
-// For a (x,y) pixel of the camera returns the corresponding projector's pixel
-bool GrayCodePattern_Impl::getProjPixel( InputArrayOfArrays patternImages, int x, int y, Point &projPix ) const
-{
-  std::vector<Mat>& _patternImages = *( std::vector<Mat>* ) patternImages.getObj();
-  std::vector<uchar> grayCol;
-  std::vector<uchar> grayRow;
+void GrayCodePattern_Impl::populateFastPatternImages(const std::vector<std::vector<Mat>>& acquiredPatterns, std::vector<std::vector<Mat>>& fastPatternColImages, std::vector<std::vector<Mat>>& fastPatternRowImages) const {
+    fastPatternColImages.resize(acquiredPatterns.size());
+    fastPatternRowImages.resize(acquiredPatterns.size());
 
-  bool error = false;
-  int xDec, yDec;
+    for (size_t i = 0; i < acquiredPatterns.size(); i++) {
+        const auto& _patternImages = acquiredPatterns[i];
+        auto& fastColImagesN = fastPatternColImages[i];
+        auto& fastRowImagesN = fastPatternRowImages[i];
+        fastColImagesN.resize(numOfColImgs);
+        fastRowImagesN.resize(numOfRowImgs);
+        parallel_for_(Range(0, (int)numOfColImgs), [&](const Range& range) {
+            for (int count = range.start; count < range.end; count++) {
+                cv::Mat diffImage;
+                cv::subtract(_patternImages[count * 2], _patternImages[count * 2 + 1], diffImage, cv::noArray(), CV_32S);
+                cv::Mat invalidMask = abs(diffImage) < static_cast<double>(whiteThreshold);
+                cv::compare(diffImage, cv::Scalar(0), diffImage, cv::CMP_GT);
+                diffImage.setTo(1, invalidMask);
+                fastColImagesN[count] = std::move(diffImage);
+            }
+        });
+
+        parallel_for_(Range(0, (int)numOfRowImgs), [&](const Range& range) {
+            for (int count = range.start; count < range.end; count++) {
+                cv::Mat diffImage;
+                cv::subtract(_patternImages[count * 2 + numOfColImgs * 2], _patternImages[count * 2 + numOfColImgs * 2 + 1], diffImage, cv::noArray(), CV_32S);
+                cv::Mat invalidMask = abs(diffImage) < static_cast<double>(whiteThreshold);
+                cv::compare(diffImage, cv::Scalar(0), diffImage, cv::CMP_GT);
+                diffImage.setTo(1, invalidMask);
+                fastRowImagesN[count] = std::move(diffImage);
+            }
+        });
+    }
+}
+
+static int grayToDec(const std::vector<uchar>& gray)
+{
+    if (gray.empty())
+    {
+        return 0;
+    }
+
+    int dec = 0;
+    uchar prev_binary_bit = 0;
+    for (size_t i = 0; i < gray.size(); ++i)
+    {
+        uchar current_binary_bit = prev_binary_bit ^ gray[i];
+        dec = (dec << 1) | current_binary_bit;
+        prev_binary_bit = current_binary_bit;
+    }
+    return dec;
+}
+
+template <typename T>
+static bool decodePixel(int x, int y, size_t numOfColImgs, size_t numOfRowImgs, std::vector<Mat>& patternImagesVec, size_t whiteThreshold, std::vector<uchar>& grayRow, std::vector<uchar>& grayCol) {
+    bool error = false;
+
+    for (size_t k = 0; k < numOfColImgs; ++k)
+    {
+        T val1 = patternImagesVec[k * 2].at<T>(y, x);
+        T val2 = patternImagesVec[k * 2 + 1].at<T>(y, x);
+
+        if (std::abs(static_cast<double>(val1) - static_cast<double>(val2)) < whiteThreshold)
+        {
+            error = true;
+        }
+        grayCol[k] = (val1 > val2);
+    }
+
+    size_t base_idx = 2 * numOfColImgs;
+    for (size_t k = 0; k < numOfRowImgs; ++k)
+    {
+        T val1 = patternImagesVec[base_idx + k * 2].at<T>(y, x);
+        T val2 = patternImagesVec[base_idx + k * 2 + 1].at<T>(y, x);
+
+        if (std::abs(static_cast<double>(val1) - static_cast<double>(val2)) < whiteThreshold)
+        {
+            error = true;
+        }
+        grayRow[k] = (val1 > val2);
+    }
+    return error;
+}
+
+bool GrayCodePattern_Impl::getProjPixel(InputArrayOfArrays patternImages, int x, int y, Point& projPix) const
+{
+    std::vector<Mat>& patternImagesVec = *(std::vector<Mat>*)patternImages.getObj();
+
+    std::vector<uchar> grayCol(numOfColImgs);
+    std::vector<uchar> grayRow(numOfRowImgs);
+
+    bool error = false;
+    int depth = patternImagesVec[0].depth();
+
+    switch (depth)
+    {
+    case CV_8U:
+        error = decodePixel<uchar>(x, y, numOfColImgs, numOfRowImgs, patternImagesVec, whiteThreshold, grayRow, grayCol);
+        break;
+    case CV_16U:
+        error = decodePixel<ushort>(x, y, numOfColImgs, numOfRowImgs, patternImagesVec, whiteThreshold, grayRow, grayCol);
+        break;
+    default:
+        CV_Error(Error::StsUnsupportedFormat, "Image depth not supported, only CV_8U and CV_16U");
+    }
+
+    int xDec = grayToDec(grayCol);
+    int yDec = grayToDec(grayRow);
+
+    if (yDec >= params.height || xDec >= params.width)
+    {
+        error = true;
+    }
+
+    projPix.x = xDec;
+    projPix.y = yDec;
+
+    return error;
+}
+
+
+// For a (x,y) pixel of the camera returns the corresponding projector's pixel
+bool GrayCodePattern_Impl::getProjPixelFast( const std::vector<Mat>& fastColImages, const std::vector<Mat>& fastRowImages, int x, int y, Point &projPix) const
+{
+  int xDec = 0, yDec = 0;
+  ushort binBit = 0;
+  Point pattPoint = Point(x, y);
 
   // process column images
-  for( size_t count = 0; count < numOfColImgs; count++ )
+  for(const auto& fastColImage : fastColImages)
   {
-    // get pixel intensity for regular pattern projection and its inverse
-    double val1 = _patternImages[count * 2].at<uchar>( Point( x, y ) );
-    double val2 = _patternImages[count * 2 + 1].at<uchar>( Point( x, y ) );
 
+    uchar grayBit = fastColImage.at<uchar>(pattPoint);
     // check if the intensity difference between the values of the normal and its inverse projection image is in a valid range
-    if( abs(val1 - val2) < whiteThreshold )
-      error = true;
+    if( grayBit == 1) return true;
 
     // determine if projection pixel is on or off
-    if( val1 > val2 )
-      grayCol.push_back( 1 );
-    else
-      grayCol.push_back( 0 );
+    binBit = binBit ^ (grayBit == 255);
+    xDec = (xDec << 1) | binBit;
   }
 
-  xDec = grayToDec( grayCol );
+  binBit = 0; // reset binary bit for row images
 
   // process row images
-  for( size_t count = 0; count < numOfRowImgs; count++ )
+  for(const auto& fastRowImage : fastRowImages)
   {
-    // get pixel intensity for regular pattern projection and its inverse
-    double val1 = _patternImages[count * 2 + numOfColImgs * 2].at<uchar>( Point( x, y ) );
-    double val2 = _patternImages[count * 2 + numOfColImgs * 2 + 1].at<uchar>( Point( x, y ) );
-
+    uchar grayBit = fastRowImage.at<uchar>(pattPoint);
     // check if the intensity difference between the values of the normal and its inverse projection image is in a valid range
-    if( abs(val1 - val2) < whiteThreshold )
-      error = true;
+    if( grayBit == 1 ) return true;
 
     // determine if projection pixel is on or off
-    if( val1 > val2 )
-      grayRow.push_back( 1 );
-    else
-      grayRow.push_back( 0 );
+    binBit = binBit ^ (grayBit == 255);
+    yDec = (yDec << 1) | binBit;
   }
-
-  yDec = grayToDec( grayRow );
 
   if( (yDec >= params.height || xDec >= params.width) )
   {
-    error = true;
+    return true;
   }
 
   projPix.x = xDec;
   projPix.y = yDec;
 
-  return error;
-}
-
-// Converts a gray code sequence (~ binary number) to a decimal number
-int GrayCodePattern_Impl::grayToDec( const std::vector<uchar>& gray ) const
-{
-  int dec = 0;
-
-  uchar tmp = gray[0];
-
-  if( tmp )
-    dec += ( int ) pow( ( float ) 2, int( gray.size() - 1 ) );
-
-  for( int i = 1; i < (int) gray.size(); i++ )
-  {
-    // XOR operation
-    tmp = tmp ^ gray[i];
-    if( tmp )
-      dec += (int) pow( ( float ) 2, int( gray.size() - i - 1 ) );
-  }
-
-  return dec;
+  return false;
 }
 
 // Sets the value for black threshold
