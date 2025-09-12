@@ -66,6 +66,7 @@ namespace
     {
     public:
         FAST_Impl(int threshold, bool nonmaxSuppression, int max_npoints);
+        ~FAST_Impl();
 
         virtual void detect(InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask);
         virtual void detectAsync(InputArray _image, OutputArray _keypoints, InputArray _mask, Stream& stream);
@@ -95,6 +96,12 @@ namespace
     FAST_Impl::FAST_Impl(int threshold, bool nonmaxSuppression, int max_npoints) :
         threshold_(threshold), nonmaxSuppression_(nonmaxSuppression), max_npoints_(max_npoints)
     {
+        cudaSafeCall( cudaMalloc(&d_counter, sizeof(unsigned int)) );
+    }
+
+    FAST_Impl::~FAST_Impl()
+    {
+        cudaSafeCall( cudaFree(d_counter) );
     }
 
     void FAST_Impl::detect(InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask)
@@ -115,8 +122,6 @@ namespace
     void FAST_Impl::detectAsync(InputArray _image, OutputArray _keypoints, InputArray _mask, Stream& stream)
     {
         using namespace cv::cuda::device::fast;
-
-        cudaSafeCall( cudaMalloc(&d_counter, sizeof(unsigned int)) );
 
         const GpuMat img = _image.getGpuMat();
         const GpuMat mask = _mask.getGpuMat();
@@ -141,7 +146,6 @@ namespace
         if (count == 0)
         {
             _keypoints.release();
-            cudaSafeCall( cudaFree(d_counter) );
             return;
         }
 
@@ -166,8 +170,6 @@ namespace
             kpLoc.colRange(0, count).copyTo(locRow, stream);
             keypoints.row(1).setTo(Scalar::all(0), stream);
         }
-
-        cudaSafeCall( cudaFree(d_counter) );
     }
 
     void FAST_Impl::convert(InputArray _gpu_keypoints, std::vector<KeyPoint>& keypoints)
