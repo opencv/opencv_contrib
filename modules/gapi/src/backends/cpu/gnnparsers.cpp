@@ -102,7 +102,7 @@ public:
         : m_dims(in_ssd_dims), m_maxProp(in_ssd_dims[2]), m_objSize(in_ssd_dims[3]),
           m_data(data), m_surface(cv::Rect({0,0}, in_size)), m_size(in_size)
     {
-        GAPI_Assert(in_ssd_dims.dims() == 4u); // Fixed output layout
+        GAPI_Assert(in_ssd_dims.dims == 4); // Fixed output layout
         GAPI_Assert(m_objSize  == 7);          // Fixed SSD object size
     }
 
@@ -220,7 +220,7 @@ void ParseSSD(const cv::Mat&  in_ssd_result,
 }
 
 static void checkYoloDims(const MatSize& dims) {
-    const auto d = dims.dims();
+    const auto d = dims.dims;
     // Accept 1x13x13xN and 13x13xN
     GAPI_Assert(d >= 2);
     if (d >= 3) {
@@ -252,7 +252,7 @@ void parseYolo(const cv::Mat&  in_yolo_result,
     const auto& dims = in_yolo_result.size;
     checkYoloDims(dims);
     int acc = 1;
-    for (int i = 0; i < dims.dims(); i++) {
+    for (int i = 0; i < dims.dims; i++) {
         acc *= dims[i];
     }
     const auto num_classes = acc/(5*13*13)-5;

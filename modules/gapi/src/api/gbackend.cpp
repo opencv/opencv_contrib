@@ -411,7 +411,7 @@ void createMat(const cv::GMatDesc &desc, cv::Mat& mat)
 #if !defined(GAPI_STANDALONE)
         // NB: WA for 1D mats.
         if (desc.dims.size() == 1u) {
-            mat.dims = 1;
+            mat.size.dims = mat.dims = 1;
         }
 #endif
     }
