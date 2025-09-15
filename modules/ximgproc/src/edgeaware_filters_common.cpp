@@ -60,16 +60,6 @@ inline bool CPU_SUPPORT_SSE1()
 }  // end
 #endif
 
-#if CV_NEON
-namespace
-{
-
-inline bool CPU_SUPPORT_NEON()
-{
-    static const bool is_supported = cv::checkHardwareSupport(CV_CPU_NEON);
-    return is_supported;
-}
-
 }  // end
 #endif
 
@@ -302,7 +292,7 @@ void add_mul(float *dst, float *src1, float *src2, int w)
         }
     }
 #elif CV_NEON
-    if (CPU_SUPPORT_NEON())
+    if (CV_CPU_HAS_SUPPORT_NEON)
     {
         float32x4_t a, b, c;
         for (; j < w - 3; j += 4)
