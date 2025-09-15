@@ -60,9 +60,6 @@ inline bool CPU_SUPPORT_SSE1()
 }  // end
 #endif
 
-}  // end
-#endif
-
 namespace cv
 {
 namespace ximgproc
