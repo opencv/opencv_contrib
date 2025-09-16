@@ -50,7 +50,7 @@
 #include "opencv2/core/cuda/cuda_compat.hpp"
 
 namespace cv {
-    
+
     using cv::cuda::device::compat::double4;
     using cv::cuda::device::compat::make_double4;
 
@@ -76,6 +76,8 @@ CV_CUDEV_MAKE_VEC_INST(int)
 CV_CUDEV_MAKE_VEC_INST(uint)
 CV_CUDEV_MAKE_VEC_INST(float)
 CV_CUDEV_MAKE_VEC_INST(double)
+CV_CUDEV_MAKE_VEC_INST(long)
+CV_CUDEV_MAKE_VEC_INST(ulong)
 
 #undef CV_CUDEV_MAKE_VEC_INST
 
@@ -142,6 +144,8 @@ CV_CUDEV_VEC_TRAITS_INST(int)
 CV_CUDEV_VEC_TRAITS_INST(uint)
 CV_CUDEV_VEC_TRAITS_INST(float)
 CV_CUDEV_VEC_TRAITS_INST(double)
+CV_CUDEV_VEC_TRAITS_INST(long)
+CV_CUDEV_VEC_TRAITS_INST(ulong)
 
 #undef CV_CUDEV_VEC_TRAITS_INST
 
