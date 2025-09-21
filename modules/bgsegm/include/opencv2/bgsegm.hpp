@@ -62,6 +62,32 @@ The class implements the algorithm described in @cite KB2001 .
 class CV_EXPORTS_W BackgroundSubtractorMOG : public BackgroundSubtractor
 {
 public:
+    // BackgroundSubtractor interface
+    /** @brief Computes a foreground mask.
+
+    @param image Next video frame of type CV_8UC(n),CV_8SC(n),CV_16UC(n),CV_16SC(n),CV_32SC(n),CV_32FC(n),CV_64FC(n), where n is 1,2,3,4.
+    @param fgmask The output foreground mask as an 8-bit binary image.
+    @param learningRate The value between 0 and 1 that indicates how fast the background model is
+    learnt. Negative parameter value makes the algorithm to use some automatically chosen learning
+    rate. 0 means that the background model is not updated at all, 1 means that the background model
+    is completely reinitialized from the last frame.
+     */
+
+    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
+
+    /** @brief Computes a foreground mask and skips known foreground in evaluation.
+
+    @param image Next video frame of type CV_8UC(n),CV_8SC(n),CV_16UC(n),CV_16SC(n),CV_32SC(n),CV_32FC(n),CV_64FC(n), where n is 1,2,3,4.
+    @param fgmask The output foreground mask as an 8-bit binary image.
+    @param knownForegroundMask The mask for inputting already known foreground, allows model to ignore learning known pixels.
+    @param learningRate The value between 0 and 1 that indicates how fast the background model is
+    learnt. Negative parameter value makes the algorithm to use some automatically chosen learning
+    rate. 0 means that the background model is not updated at all, 1 means that the background model
+    is completely reinitialized from the last frame.
+     */
+
+    CV_WRAP virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
+
     CV_WRAP virtual int getHistory() const = 0;
     CV_WRAP virtual void setHistory(int nframes) = 0;
 
@@ -110,6 +136,22 @@ public:
     is completely reinitialized from the last frame.
      */
     CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
+
+    /** @brief Computes a foreground mask with known foreground mask input.
+
+    @param image Next video frame.
+    @param fgmask The output foreground mask as an 8-bit binary image.
+    @param knownForegroundMask The mask for inputting already known foreground.
+    @param learningRate The value between 0 and 1 that indicates how fast the background model is
+    learnt. Negative parameter value makes the algorithm to use some automatically chosen learning
+    rate. 0 means that the background model is not updated at all, 1 means that the background model
+    is completely reinitialized from the last frame.
+
+    @note This method has a default virtual implementation that throws a "not impemented" error.
+    Foreground masking may not be supported by all background subtractors.
+    */
+    CV_WRAP virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
+
     CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE = 0;
 
     /** @brief Returns total number of distinct colors to maintain in histogram.
@@ -210,6 +252,22 @@ class CV_EXPORTS_W BackgroundSubtractorCNT  : public BackgroundSubtractor
 public:
     // BackgroundSubtractor interface
     CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
+
+    /** @brief Computes a foreground mask with known foreground mask input.
+
+    @param image Next video frame.
+    @param knownForegroundMask The mask for inputting already known foreground.
+    @param fgmask The output foreground mask as an 8-bit binary image.
+    @param learningRate The value between 0 and 1 that indicates how fast the background model is
+    learnt. Negative parameter value makes the algorithm to use some automatically chosen learning
+    rate. 0 means that the background model is not updated at all, 1 means that the background model
+    is completely reinitialized from the last frame.
+
+    @note This method has a default virtual implementation that throws a "not impemented" error.
+    Foreground masking may not be supported by all background subtractors.
+    */
+    CV_WRAP virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
+
     CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE = 0;
 
     /** @brief Returns number of frames with same pixel color to consider stable.
@@ -269,6 +327,7 @@ class CV_EXPORTS_W BackgroundSubtractorGSOC : public BackgroundSubtractor
 public:
     // BackgroundSubtractor interface
     CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
+    CV_WRAP virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
 
     CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE = 0;
 };
@@ -280,6 +339,7 @@ class CV_EXPORTS_W BackgroundSubtractorLSBP : public BackgroundSubtractor
 public:
     // BackgroundSubtractor interface
     CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
+    CV_WRAP virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
 
     CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE = 0;
 };
