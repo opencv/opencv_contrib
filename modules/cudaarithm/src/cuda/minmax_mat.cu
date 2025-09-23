@@ -127,7 +127,7 @@ namespace
 void minMaxMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat&, double, Stream& stream, int op)
 {
     typedef void (*func_t)(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream);
-    static const func_t funcs_v1[2][7] =
+    static const func_t funcs_v1[2][CV_DEPTH_MAX] =
     {
         {
             minMaxMat_v1<minimum, uchar>,
@@ -161,8 +161,6 @@ void minMaxMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat
 
     const int depth = src1.depth();
 
-    CV_DbgAssert( depth <= CV_64F );
-
     GpuMat src1_ = src1.reshape(1);
     GpuMat src2_ = src2.reshape(1);
     GpuMat dst_ = dst.reshape(1);
@@ -191,6 +189,7 @@ void minMaxMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat
     }
 
     const func_t func = funcs_v1[op][depth];
+    CV_Assert(func);
 
     func(src1_, src2_, dst_, stream);
 }
@@ -209,8 +208,10 @@ namespace
 
 void minMaxScalar(const GpuMat& src, cv::Scalar value, bool, GpuMat& dst, const GpuMat&, double, Stream& stream, int op)
 {
+    CV_DbgAssert( src.channels() == 1 );
+
     typedef void (*func_t)(const GpuMat& src, double value, GpuMat& dst, Stream& stream);
-    static const func_t funcs[2][7] =
+    static const func_t funcs[2][CV_DEPTH_MAX] =
     {
         {
             minMaxScalar<minimum, uchar>,
@@ -232,12 +233,10 @@ void minMaxScalar(const GpuMat& src, cv::Scalar value, bool, GpuMat& dst, const 
         }
     };
 
-    const int depth = src.depth();
+    auto f = funcs[op][src.depth()];
+    CV_Assert(f);
 
-    CV_DbgAssert( depth <= CV_64F );
-    CV_DbgAssert( src.channels() == 1 );
-
-    funcs[op][depth](src, value[0], dst, stream);
+    f(src, value[0], dst, stream);
 }
 
 #endif
