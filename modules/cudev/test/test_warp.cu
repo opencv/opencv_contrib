@@ -237,6 +237,9 @@ TEST(WarpAffine, Rotation)
 
 TEST(WarpPerspective, Rotation)
 {
+    if (cvtest::skipUnstableTests)
+        throw SkipTestException("Skip unstable test: https://github.com/opencv/opencv/issues/27813");
+
     const Size size = randomSize(100, 400);
 
     Mat src = randomMat(size, CV_32FC1, 0, 1);
