@@ -87,7 +87,7 @@ namespace
 void cv::cuda::findMinMax(InputArray _src, OutputArray _dst, InputArray _mask, Stream& stream)
 {
     typedef void (*func_t)(const GpuMat& _src, const GpuMat& mask, GpuMat& _dst, Stream& stream);
-    static const func_t funcs[] =
+    static const func_t funcs[CV_DEPTH_MAX] =
     {
         minMaxImpl<uchar, int>,
         minMaxImpl<schar, int>,
@@ -110,6 +110,8 @@ void cv::cuda::findMinMax(InputArray _src, OutputArray _dst, InputArray _mask, S
     GpuMat dst = getOutputMat(_dst, 1, 2, dst_depth, stream);
 
     const func_t func = funcs[src.depth()];
+    CV_Assert(func);
+
     func(src, mask, dst, stream);
 
     syncOutput(dst, _dst, stream);
@@ -158,7 +160,7 @@ namespace
 void cv::cuda::device::findMaxAbs(InputArray _src, OutputArray _dst, InputArray _mask, Stream& stream)
 {
     typedef void (*func_t)(const GpuMat& _src, const GpuMat& mask, GpuMat& _dst, Stream& stream);
-    static const func_t funcs[] =
+    static const func_t funcs[CV_DEPTH_MAX] =
     {
         findMaxAbsImpl<uchar, int>,
         findMaxAbsImpl<schar, int>,
@@ -181,6 +183,8 @@ void cv::cuda::device::findMaxAbs(InputArray _src, OutputArray _dst, InputArray 
     GpuMat dst = getOutputMat(_dst, 1, 1, dst_depth, stream);
 
     const func_t func = funcs[src.depth()];
+    CV_Assert(func);
+
     func(src, mask, dst, stream);
 
     syncOutput(dst, _dst, stream);
