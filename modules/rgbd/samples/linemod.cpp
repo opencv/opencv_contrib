@@ -1,6 +1,5 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/utility.hpp>
-#include <opencv2/imgproc/imgproc_c.h> // cvFindContours
 #include <opencv2/imgproc.hpp>
 #include <opencv2/rgbd.hpp>
 #include <opencv2/videoio.hpp>
@@ -11,11 +10,11 @@
 #include <iostream>
 
 // Function prototypes
-void subtractPlane(const cv::Mat& depth, cv::Mat& mask, std::vector<CvPoint>& chain, double f);
+void subtractPlane(const cv::Mat1w& depth, cv::Mat1b& mask, std::vector<cv::Point>& chain, double f);
 
-std::vector<CvPoint> maskFromTemplate(const std::vector<cv::linemod::Template>& templates,
-                                      int num_modalities, cv::Point offset, cv::Size size,
-                                      cv::Mat& mask, cv::Mat& dst);
+std::vector<cv::Point> maskFromTemplate(const std::vector<cv::linemod::Template>& templates,
+                                        int num_modalities, cv::Point offset, cv::Size size,
+                                        cv::Mat1b& mask, cv::Mat& dst);
 
 void templateConvexHull(const std::vector<cv::linemod::Template>& templates,
                         int num_modalities, cv::Point offset, cv::Size size,
@@ -202,7 +201,8 @@ int main(int argc, char * argv[])
   //printf("Focal length = %f\n", focal_length);
 
   // Main loop
-  cv::Mat color, depth;
+  cv::Mat color;
+  cv::Mat1w depth;
   for(;;)
   {
     // Capture next color/depth pair
@@ -228,12 +228,12 @@ int main(int argc, char * argv[])
       if (event == cv::EVENT_RBUTTONDOWN)
       {
         // Compute object mask by subtracting the plane within the ROI
-        std::vector<CvPoint> chain(4);
-        chain[0] = cvPoint(pt1);
-        chain[1] = cvPoint(pt2.x, pt1.y);
-        chain[2] = cvPoint(pt2);
-        chain[3] = cvPoint(pt1.x, pt2.y);
-        cv::Mat mask;
+        std::vector<cv::Point> chain(4);
+        chain[0] = cv::Point(pt1);
+        chain[1] = cv::Point(pt2.x, pt1.y);
+        chain[2] = cv::Point(pt2);
+        chain[3] = cv::Point(pt1.x, pt2.y);
+        cv::Mat1b mask;
         subtractPlane(depth, mask, chain, focal_length);
 
         cv::imshow("mask", mask);
@@ -294,10 +294,10 @@ int main(int argc, char * argv[])
           /// which assumes an accurate object outline.
 
           // Compute masks based on convex hull of matched template
-          cv::Mat color_mask, depth_mask;
-          std::vector<CvPoint> chain = maskFromTemplate(templates, num_modalities,
-                                                        cv::Point(m.x, m.y), color.size(),
-                                                        color_mask, display);
+          cv::Mat1b color_mask, depth_mask;
+          std::vector<cv::Point> chain = maskFromTemplate(templates, num_modalities,
+                                                          cv::Point(m.x, m.y), color.size(),
+                                                          color_mask, display);
           subtractPlane(depth, depth_mask, chain, focal_length);
 
           cv::imshow("mask", depth_mask);
@@ -392,16 +392,15 @@ static void reprojectPoints(const std::vector<cv::Point3d>& proj, std::vector<cv
   }
 }
 
-static void filterPlane(IplImage * ap_depth, std::vector<IplImage *> & a_masks, std::vector<CvPoint> & a_chain, double f)
+static void filterPlane(const cv::Mat1w & ap_depth, std::vector<cv::Mat1b> & a_masks, const std::vector<cv::Point> & a_chain, double f)
 {
   const int l_num_cost_pts = 200;
 
   float l_thres = 4;
 
-  IplImage * lp_mask = cvCreateImage(cvGetSize(ap_depth), IPL_DEPTH_8U, 1);
-  cvSet(lp_mask, cvRealScalar(0));
+  cv::Mat1b lp_mask = cv::Mat1b::zeros(ap_depth.size());
 
-  std::vector<CvPoint> l_chain_vector;
+  std::vector<cv::Point> l_chain_vector;
 
   float l_chain_length = 0;
   float * lp_seg_length = new float[a_chain.size()];
@@ -424,7 +423,7 @@ static void filterPlane(IplImage * ap_depth, std::vector<IplImage *> & a_masks, 
       {
         float l_ratio = (l_cur_len * l_j / lp_seg_length[l_i]);
 
-        CvPoint l_pts;
+        cv::Point l_pts;
 
         l_pts.x = cvRound(l_ratio * (a_chain[(l_i + 1) % a_chain.size()].x - a_chain[l_i].x) + a_chain[l_i].x);
         l_pts.y = cvRound(l_ratio * (a_chain[(l_i + 1) % a_chain.size()].y - a_chain[l_i].y) + a_chain[l_i].y);
@@ -439,30 +438,30 @@ static void filterPlane(IplImage * ap_depth, std::vector<IplImage *> & a_masks, 
   {
     lp_src_3Dpts[l_i].x = l_chain_vector[l_i].x;
     lp_src_3Dpts[l_i].y = l_chain_vector[l_i].y;
-    lp_src_3Dpts[l_i].z = CV_IMAGE_ELEM(ap_depth, unsigned short, cvRound(lp_src_3Dpts[l_i].y), cvRound(lp_src_3Dpts[l_i].x));
-    //CV_IMAGE_ELEM(lp_mask,unsigned char,(int)lp_src_3Dpts[l_i].Y,(int)lp_src_3Dpts[l_i].X)=255;
+    lp_src_3Dpts[l_i].z = ap_depth(cvRound(lp_src_3Dpts[l_i].y), cvRound(lp_src_3Dpts[l_i].x));
+    //lp_mask((int)lp_src_3Dpts[l_i].Y,(int)lp_src_3Dpts[l_i].X)=255;
   }
   //cv_show_image(lp_mask,"hallo2");
 
   reprojectPoints(lp_src_3Dpts, lp_src_3Dpts, f);
 
-  CvMat * lp_pts = cvCreateMat((int)l_chain_vector.size(), 4, CV_32F);
-  CvMat * lp_v = cvCreateMat(4, 4, CV_32F);
-  CvMat * lp_w = cvCreateMat(4, 1, CV_32F);
+  cv::Mat1f lp_pts((int)l_chain_vector.size(), 4);
+  cv::Matx44f lp_v;
+  cv::Matx41f lp_w;
 
   for (int l_i = 0; l_i < (int)l_chain_vector.size(); ++l_i)
   {
-    CV_MAT_ELEM(*lp_pts, float, l_i, 0) = (float)lp_src_3Dpts[l_i].x;
-    CV_MAT_ELEM(*lp_pts, float, l_i, 1) = (float)lp_src_3Dpts[l_i].y;
-    CV_MAT_ELEM(*lp_pts, float, l_i, 2) = (float)lp_src_3Dpts[l_i].z;
-    CV_MAT_ELEM(*lp_pts, float, l_i, 3) = 1.0f;
+    lp_pts(l_i, 0) = (float)lp_src_3Dpts[l_i].x;
+    lp_pts(l_i, 1) = (float)lp_src_3Dpts[l_i].y;
+    lp_pts(l_i, 2) = (float)lp_src_3Dpts[l_i].z;
+    lp_pts(l_i, 3) = 1.0f;
   }
-  cvSVD(lp_pts, lp_w, 0, lp_v);
+  cv::SVDecomp(lp_pts, lp_w, cv::noArray(), lp_v);
 
-  float l_n[4] = {CV_MAT_ELEM(*lp_v, float, 0, 3),
-                  CV_MAT_ELEM(*lp_v, float, 1, 3),
-                  CV_MAT_ELEM(*lp_v, float, 2, 3),
-                  CV_MAT_ELEM(*lp_v, float, 3, 3)};
+  float l_n[4] = {lp_v(0, 3),
+                  lp_v(1, 3),
+                  lp_v(2, 3),
+                  lp_v(3, 3)};
 
   float l_norm = sqrt(l_n[0] * l_n[0] + l_n[1] * l_n[1] + l_n[2] * l_n[2]);
 
@@ -475,17 +474,17 @@ static void filterPlane(IplImage * ap_depth, std::vector<IplImage *> & a_masks, 
 
   for (int l_i = 0; l_i < (int)l_chain_vector.size(); ++l_i)
   {
-    float l_dist =  l_n[0] * CV_MAT_ELEM(*lp_pts, float, l_i, 0) +
-                    l_n[1] * CV_MAT_ELEM(*lp_pts, float, l_i, 1) +
-                    l_n[2] * CV_MAT_ELEM(*lp_pts, float, l_i, 2) +
-                    l_n[3] * CV_MAT_ELEM(*lp_pts, float, l_i, 3);
+    float l_dist =  l_n[0] * lp_pts(l_i, 0) +
+                    l_n[1] * lp_pts(l_i, 1) +
+                    l_n[2] * lp_pts(l_i, 2) +
+                    l_n[3] * lp_pts(l_i, 3);
 
     if (fabs(l_dist) > l_max_dist)
       l_max_dist = l_dist;
   }
   //std::cerr << "plane: " << l_n[0] << ";" << l_n[1] << ";" << l_n[2] << ";" << l_n[3] << " maxdist: " << l_max_dist << " end" << std::endl;
-  int l_minx = ap_depth->width;
-  int l_miny = ap_depth->height;
+  int l_minx = ap_depth.cols;
+  int l_miny = ap_depth.rows;
   int l_maxx = 0;
   int l_maxy = 0;
 
@@ -498,16 +497,8 @@ static void filterPlane(IplImage * ap_depth, std::vector<IplImage *> & a_masks, 
   }
   int l_w = l_maxx - l_minx + 1;
   int l_h = l_maxy - l_miny + 1;
-  int l_nn = (int)a_chain.size();
 
-  CvPoint * lp_chain = new CvPoint[l_nn];
-
-  for (int l_i = 0; l_i < l_nn; ++l_i)
-    lp_chain[l_i] = a_chain[l_i];
-
-  cvFillPoly(lp_mask, &lp_chain, &l_nn, 1, cvScalar(255, 255, 255));
-
-  delete[] lp_chain;
+  cv::fillPoly(lp_mask, a_chain, cv::Scalar(255, 255, 255));
 
   //cv_show_image(lp_mask,"hallo1");
 
@@ -521,7 +512,7 @@ static void filterPlane(IplImage * ap_depth, std::vector<IplImage *> & a_masks, 
     {
       lp_dst_3Dpts[l_ind].x = l_c + l_minx;
       lp_dst_3Dpts[l_ind].y = l_r + l_miny;
-      lp_dst_3Dpts[l_ind].z = CV_IMAGE_ELEM(ap_depth, unsigned short, l_r + l_miny, l_c + l_minx);
+      lp_dst_3Dpts[l_ind].z = ap_depth(l_r + l_miny, l_c + l_minx);
       ++l_ind;
     }
   }
@@ -537,7 +528,7 @@ static void filterPlane(IplImage * ap_depth, std::vector<IplImage *> & a_masks, 
 
       ++l_ind;
 
-      if (CV_IMAGE_ELEM(lp_mask, unsigned char, l_r + l_miny, l_c + l_minx) != 0)
+      if (lp_mask(l_r + l_miny, l_c + l_minx) != 0)
       {
         if (fabs(l_dist) < std::max(l_thres, (l_max_dist * 2.0f)))
         {
@@ -546,7 +537,7 @@ static void filterPlane(IplImage * ap_depth, std::vector<IplImage *> & a_masks, 
             int l_col = cvRound((l_c + l_minx) / (l_p + 1.0));
             int l_row = cvRound((l_r + l_miny) / (l_p + 1.0));
 
-            CV_IMAGE_ELEM(a_masks[l_p], unsigned char, l_row, l_col) = 0;
+            a_masks[l_p](l_row, l_col) = 0;
           }
         }
         else
@@ -556,71 +547,36 @@ static void filterPlane(IplImage * ap_depth, std::vector<IplImage *> & a_masks, 
             int l_col = cvRound((l_c + l_minx) / (l_p + 1.0));
             int l_row = cvRound((l_r + l_miny) / (l_p + 1.0));
 
-            CV_IMAGE_ELEM(a_masks[l_p], unsigned char, l_row, l_col) = 255;
+            a_masks[l_p](l_row, l_col) = 255;
           }
         }
       }
     }
   }
-  cvReleaseImage(&lp_mask);
-  cvReleaseMat(&lp_pts);
-  cvReleaseMat(&lp_w);
-  cvReleaseMat(&lp_v);
 }
 
-void subtractPlane(const cv::Mat& depth, cv::Mat& mask, std::vector<CvPoint>& chain, double f)
+void subtractPlane(const cv::Mat1w& depth, cv::Mat1b& mask, std::vector<cv::Point>& chain, double f)
 {
-  mask = cv::Mat::zeros(depth.size(), CV_8U);
-  std::vector<IplImage*> tmp;
-  IplImage mask_ipl = cvIplImage(mask);
-  tmp.push_back(&mask_ipl);
-  IplImage depth_ipl = cvIplImage(depth);
-  filterPlane(&depth_ipl, tmp, chain, f);
+  mask = cv::Mat1b::zeros(depth.size());
+  std::vector<cv::Mat1b> tmp;
+  tmp.push_back(mask);
+  filterPlane(depth, tmp, chain, f);
 }
 
-std::vector<CvPoint> maskFromTemplate(const std::vector<cv::linemod::Template>& templates,
-                                      int num_modalities, cv::Point offset, cv::Size size,
-                                      cv::Mat& mask, cv::Mat& dst)
+std::vector<cv::Point> maskFromTemplate(const std::vector<cv::linemod::Template>& templates,
+                                        int num_modalities, cv::Point offset, cv::Size size,
+                                        cv::Mat1b& mask, cv::Mat& dst)
 {
   templateConvexHull(templates, num_modalities, offset, size, mask);
 
   const int OFFSET = 30;
   cv::dilate(mask, mask, cv::Mat(), cv::Point(-1,-1), OFFSET);
 
-  CvMemStorage * lp_storage = cvCreateMemStorage(0);
-  CvTreeNodeIterator l_iterator;
-  CvSeqReader l_reader;
-  CvSeq * lp_contour = 0;
+  std::vector<std::vector<cv::Point>> contours;
+  cv::findContours(mask, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+  cv::drawContours(dst, contours, 0, CV_RGB(0, 255, 0), 2);
 
-  cv::Mat mask_copy = mask.clone();
-  IplImage mask_copy_ipl = cvIplImage(mask_copy);
-  cvFindContours(&mask_copy_ipl, lp_storage, &lp_contour, sizeof(CvContour),
-                 CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
-
-  std::vector<CvPoint> l_pts1; // to use as input to cv_primesensor::filter_plane
-
-  cvInitTreeNodeIterator(&l_iterator, lp_contour, 1);
-  while ((lp_contour = (CvSeq *)cvNextTreeNode(&l_iterator)) != 0)
-  {
-    CvPoint l_pt0;
-    cvStartReadSeq(lp_contour, &l_reader, 0);
-    CV_READ_SEQ_ELEM(l_pt0, l_reader);
-    l_pts1.push_back(l_pt0);
-
-    for (int i = 0; i < lp_contour->total; ++i)
-    {
-      CvPoint l_pt1;
-      CV_READ_SEQ_ELEM(l_pt1, l_reader);
-      /// @todo Really need dst at all? Can just as well do this outside
-      cv::line(dst, l_pt0, l_pt1, CV_RGB(0, 255, 0), 2);
-
-      l_pt0 = l_pt1;
-      l_pts1.push_back(l_pt0);
-    }
-  }
-  cvReleaseMemStorage(&lp_storage);
-
-  return l_pts1;
+  return contours[0];
 }
 
 // Adapted from cv_show_angles

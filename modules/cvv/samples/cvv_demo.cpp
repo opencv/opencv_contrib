@@ -4,9 +4,7 @@
 // library includes
 #include <opencv2/imgproc.hpp>
 #include <opencv2/features2d.hpp>
-#include <opencv2/imgproc/types_c.h>
 #include <opencv2/videoio.hpp>
-#include <opencv2/videoio/videoio_c.h>
 
 #define CVVISUAL_DEBUGMODE
 #include <opencv2/cvv/debug_mode.hpp>

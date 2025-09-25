@@ -45,7 +45,7 @@ cv::UMatData* QcAllocator::allocate(int dims, const int* sizes, int type,
     {
         if( step )
         {
-            if( data0 && step[i] != CV_AUTOSTEP )
+            if( data0 && step[i] != cv::Mat::AUTO_STEP )
             {
                 CV_Assert(total <= step[i]);
                 total = step[i];
