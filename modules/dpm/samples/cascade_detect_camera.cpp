@@ -45,7 +45,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/videoio.hpp>
-#include <opencv2/videoio/videoio_c.h>
 
 #include <stdio.h>
 #include <iostream>
@@ -88,8 +87,8 @@ int main( int argc, char** argv )
 
     // use web camera
     VideoCapture capture(0);
-    capture.set(CV_CAP_PROP_FRAME_WIDTH, 320);
-    capture.set(CV_CAP_PROP_FRAME_HEIGHT, 240);
+    capture.set(cv::CAP_PROP_FRAME_WIDTH, 320);
+    capture.set(cv::CAP_PROP_FRAME_HEIGHT, 240);
 
     if ( !capture.isOpened() )
     {

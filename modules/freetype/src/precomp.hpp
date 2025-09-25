@@ -50,7 +50,6 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/imgproc/imgproc_c.h> // for CV_AA
 #include <opencv2/freetype.hpp>
 #include "opencv2/opencv_modules.hpp"
 
