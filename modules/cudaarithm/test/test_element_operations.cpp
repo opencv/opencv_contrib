@@ -1570,13 +1570,16 @@ namespace
     {
         typedef void (*func_t)(const cv::Mat& src, cv::Mat& dst);
 
-        const func_t funcs[] =
+        const func_t funcs[CV_DEPTH_MAX] =
         {
             sqrtImpl<uchar>, sqrtImpl<schar>, sqrtImpl<ushort>, sqrtImpl<short>,
             sqrtImpl<int>, sqrtImpl<float>
         };
 
-        funcs[src.depth()](src, dst);
+        auto f = funcs[src.depth()];
+        CV_Assert(f);
+
+        f(src, dst);
     }
 }
 
@@ -1640,13 +1643,16 @@ namespace
     {
         typedef void (*func_t)(const cv::Mat& src, cv::Mat& dst);
 
-        const func_t funcs[] =
+        const func_t funcs[CV_DEPTH_MAX] =
         {
             logImpl<uchar>, logImpl<schar>, logImpl<ushort>, logImpl<short>,
             logImpl<int>, logImpl<float>
         };
 
-        funcs[src.depth()](src, dst);
+        auto f = funcs[src.depth()];
+        CV_Assert(f);
+
+        f(src, dst);
     }
 }
 
@@ -1720,13 +1726,16 @@ namespace
     {
         typedef void (*func_t)(const cv::Mat& src, cv::Mat& dst);
 
-        const func_t funcs[] =
+        const func_t funcs[CV_DEPTH_MAX] =
         {
             expImpl<uchar>, expImpl<schar>, expImpl<ushort>, expImpl<short>,
             expImpl<int>, expImpl_float
         };
 
-        funcs[src.depth()](src, dst);
+        auto f = funcs[src.depth()];
+        CV_Assert(f);
+
+        f(src, dst);
     }
 }
 
@@ -1921,8 +1930,10 @@ namespace
 
     void compareScalarGold(const cv::Mat& src, cv::Scalar sc, cv::Mat& dst, int cmpop)
     {
+        CV_Assert(cmpop < 6);
+
         typedef void (*func_t)(const cv::Mat& src, cv::Scalar sc, cv::Mat& dst);
-        static const func_t funcs[7][6] =
+        static const func_t funcs[CV_DEPTH_MAX][6] =
         {
             {compareScalarImpl<std::equal_to, unsigned char> , compareScalarImpl<std::greater, unsigned char> , compareScalarImpl<std::greater_equal, unsigned char> , compareScalarImpl<std::less, unsigned char> , compareScalarImpl<std::less_equal, unsigned char> , compareScalarImpl<std::not_equal_to, unsigned char> },
             {compareScalarImpl<std::equal_to, signed char>   , compareScalarImpl<std::greater, signed char>   , compareScalarImpl<std::greater_equal, signed char>   , compareScalarImpl<std::less, signed char>   , compareScalarImpl<std::less_equal, signed char>   , compareScalarImpl<std::not_equal_to, signed char>   },
@@ -1933,7 +1944,10 @@ namespace
             {compareScalarImpl<std::equal_to, double>        , compareScalarImpl<std::greater, double>        , compareScalarImpl<std::greater_equal, double>        , compareScalarImpl<std::less, double>        , compareScalarImpl<std::less_equal, double>        , compareScalarImpl<std::not_equal_to, double>        }
         };
 
-        funcs[src.depth()][cmpop](src, sc, dst);
+        auto f = funcs[src.depth()][cmpop];
+        CV_Assert(f);
+
+        f(src, sc, dst);
     }
 }
 
@@ -2164,12 +2178,14 @@ namespace
     {
         typedef void (*func_t)(const cv::Mat& src, cv::Scalar_<int> val, cv::Mat& dst);
 
-        const func_t funcs[] =
+        const func_t funcs[CV_DEPTH_MAX] =
         {
             rhiftImpl<uchar>, rhiftImpl<schar>, rhiftImpl<ushort>, rhiftImpl<short>, rhiftImpl<int>
         };
 
-        funcs[src.depth()](src, val, dst);
+        auto f = funcs[src.depth()];
+        CV_Assert(f);
+        f(src, val, dst);
     }
 }
 
@@ -2244,12 +2260,15 @@ namespace
     {
         typedef void (*func_t)(const cv::Mat& src, cv::Scalar_<int> val, cv::Mat& dst);
 
-        const func_t funcs[] =
+        const func_t funcs[CV_DEPTH_MAX] =
         {
             lhiftImpl<uchar>, lhiftImpl<schar>, lhiftImpl<ushort>, lhiftImpl<short>, lhiftImpl<int>
         };
 
-        funcs[src.depth()](src, val, dst);
+        auto f = funcs[src.depth()];
+        CV_Assert(f);
+
+        f(src, val, dst);
     }
 }
 
