@@ -26,14 +26,18 @@ void ByteMatrix::init(int _width, int _height) {
     }
 }
 
-ByteMatrix::ByteMatrix(int dimension) { init(dimension, dimension); }
+ByteMatrix::ByteMatrix(int dimension) : bytes(nullptr) { init(dimension, dimension); }
 
-ByteMatrix::ByteMatrix(int _width, int _height) { init(_width, _height); }
+ByteMatrix::ByteMatrix(int _width, int _height) : bytes(nullptr) { init(_width, _height); }
 
-ByteMatrix::ByteMatrix(int _width, int _height, ArrayRef<char> source) {
+ByteMatrix::ByteMatrix(int _width, int _height, ArrayRef<char> source) : bytes(nullptr) {
     init(_width, _height);
-    int size = _width * _height;
-    memcpy(&bytes[0], &source[0], size);
+
+    if( bytes != nullptr)
+    {
+        const size_t size = _width * _height;
+        memcpy(&bytes[0], &source[0], size);
+    }
 }
 
 ByteMatrix::~ByteMatrix() {

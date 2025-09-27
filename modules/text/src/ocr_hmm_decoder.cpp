@@ -208,7 +208,7 @@ public:
             vector<int> spaces_start;
             vector<int> spaces_end;
             int space_count=0;
-            int last_one_idx;
+            int last_one_idx=0;
 
             int s_init = 0, s_end=vector_w.cols;
             for (int s=0; s<vector_w.cols; s++)
@@ -456,7 +456,7 @@ public:
             vector<int> spaces_start;
             vector<int> spaces_end;
             int space_count=0;
-            int last_one_idx;
+            int last_one_idx=0;
 
             int s_init = 0, s_end=vector_w.cols;
             for (int s=0; s<vector_w.cols; s++)
