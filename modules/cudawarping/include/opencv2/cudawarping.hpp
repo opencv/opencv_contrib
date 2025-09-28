@@ -105,8 +105,8 @@ Either dsize or both fx and fy must be non-zero.
 \f[\texttt{(double)dsize.width/src.cols}\f]
 @param fy Scale factor along the vertical axis. If it is zero, it is computed as:
 \f[\texttt{(double)dsize.height/src.rows}\f]
-@param interpolation Interpolation method. INTER_NEAREST , INTER_LINEAR and INTER_CUBIC are
-supported for now.
+@param interpolation Interpolation method. INTER_NEAREST , INTER_LINEAR , INTER_CUBIC , and INTER_AREA are
+supported.
 @param stream Stream for the asynchronous version.
 
 @sa resize
