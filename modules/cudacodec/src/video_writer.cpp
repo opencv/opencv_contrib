@@ -318,7 +318,9 @@ GUID EncodingPresetGuid(const EncodePreset nvPreset) {
 std::string GetVideoCodecString(const GUID codec) {
     if (codec == NV_ENC_CODEC_H264_GUID) return "AVC/H.264";
     else if (codec == NV_ENC_CODEC_HEVC_GUID) return "H.265/HEVC";
+#if (NVENCAPI_MAJOR_VERSION >= 12)
     else if (codec == NV_ENC_CODEC_AV1_GUID) return "AV1";
+#endif
     else return "Unknown";
 }
 
