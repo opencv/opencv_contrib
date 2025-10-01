@@ -61,7 +61,7 @@ void kdtree_CM(Mat& img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& s
     for (std::unordered_set<int>::iterator it = unk.begin(); it != unk.end(); it++)
     {
         resultSet.init(&ret_indexes[0], &out_dists_sqr[0]);
-        mat_index.index->findNeighbors(resultSet, &samples[*it][0], nanoflann::SearchParams(10));
+        mat_index.index->findNeighbors(resultSet, &samples[*it][0], nanoflann::SearchParameters(10));
 
         indm[i].resize(num_results - 1);
         for (std::size_t j = 1; j < num_results; j++)
