@@ -1891,6 +1891,7 @@ public:
                      N(_Num),
                      members(_members),
                      postprocessfn(NULL),
+                     distfn(NULL),
                      V(NULL)
     {
         switch (method) {
