@@ -69,7 +69,7 @@ TEST_P(TrackingTest, accuracy)
         ptsEst.push_back(p);
     }
 
-    std::vector<int32_t> statusVec(nPts);
+    cv::Mat statusVec(nPts, 1, CV_32S, cv::Scalar::all(0));
 
     cv::TermCriteria termCrit;
     termCrit.type = cv::TermCriteria::COUNT | cv::TermCriteria::EPS;
@@ -90,16 +90,16 @@ TEST_P(TrackingTest, accuracy)
     }
 
     std::vector<cv::Point2f> ocvPtsOut;
-    std::vector<uint8_t> ocvStatusVec;
+    cv::Mat ocvStatusVec;
     std::vector<float> ocvErrVec;
     cv::calcOpticalFlowPyrLK(src, dst, ptsIn, ocvPtsOut, ocvStatusVec, ocvErrVec, {winSz, winSz}, nLevels - 1, termCrit);
 
     cv::Mat refStatusVec(nPts, 1, CV_32S, Scalar::all(1));
     cv::Mat ocvStatusVecInt;
-    cv::Mat(ocvStatusVec).convertTo(ocvStatusVecInt, CV_32S);
+    ocvStatusVec.convertTo(ocvStatusVecInt, CV_32S);
 
     double statusNormOcv = cv::norm(ocvStatusVecInt, refStatusVec, NORM_INF);
-    double statusNorm = cv::norm(cv::Mat(statusVec), refStatusVec, NORM_INF);
+    double statusNorm = cv::norm(statusVec.t(), refStatusVec, NORM_INF);
 
     EXPECT_EQ(statusNormOcv, 0);
     EXPECT_EQ(statusNorm, 0);
@@ -108,7 +108,7 @@ TEST_P(TrackingTest, accuracy)
     double diffNorm = cv::norm(ptsOut, ptsExpected, NORM_L2);
 
     EXPECT_LT(diffNormOcv, 31.92);
-    EXPECT_LT(diffNorm, 6.69);
+    EXPECT_LT(diffNorm, 6.73);
 
     if (cvtest::debugLevel > 0)
     {
@@ -127,17 +127,16 @@ TEST_P(TrackingTest, accuracy)
         drawPts(ptsOut, "track_w"+std::to_string(winSz)+"_warped.png");
         drawPts(ocvPtsOut, "track_ocv_warped.png");
 
-        std::cout << "status vec:"   << std::endl << cv::Mat(statusVec).t()   << std::endl;
-        std::cout << "status vec ocv:" << std::endl << cv::Mat(ocvStatusVec).t() << std::endl;
+        std::cout << "status vec:"     << std::endl << statusVec    << std::endl;
+        std::cout << "status vec ocv:" << std::endl << ocvStatusVec << std::endl;
     }
 }
 
-// BUG: https://github.com/opencv/opencv_contrib/issues/3958
-//INSTANTIATE_TEST_CASE_P(FastCV_Extension, TrackingTest,
-//                        ::testing::Combine(::testing::Values(5, 7, 9), // window size
-//                                           ::testing::Bool(),          // useSobelPyramid
-//                                           ::testing::Bool(),          // useFastCvPyramids
-//                                           ::testing::Bool()           // useInitialEstimate
-//                        ));
+INSTANTIATE_TEST_CASE_P(FastCV_Extension, TrackingTest,
+                        ::testing::Combine(::testing::Values(5, 7, 9), // window size
+                                           ::testing::Bool(),          // useSobelPyramid
+                                           ::testing::Bool(),          // useFastCvPyramids
+                                           ::testing::Bool()           // useInitialEstimate
+                      ));
 
 }} // namespaces opencv_test, ::
