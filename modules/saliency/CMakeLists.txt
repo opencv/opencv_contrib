@@ -4,6 +4,6 @@ endif()
 
 set(the_description "Saliency API")
 
-ocv_define_module(saliency opencv_imgproc opencv_features2d WRAP python)
+ocv_define_module(saliency opencv_imgproc opencv_features2d WRAP python java)
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Woverloaded-virtual)
