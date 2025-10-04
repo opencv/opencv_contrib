@@ -97,6 +97,7 @@ public:
      * @param fgmask Output mask image representing foreground and background pixels
      */
     virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1.0) CV_OVERRIDE;
+    virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate) CV_OVERRIDE;
 
     /**
      * Releases all inner buffers.
@@ -471,6 +472,15 @@ void BackgroundSubtractorGMGImpl::apply(InputArray _frame, OutputArray _fgmask, 
 
     // keep track of how many frames we have processed
     ++frameNum_;
+}
+
+void BackgroundSubtractorGMGImpl::apply(InputArray _image, InputArray _knownForegroundMask, OutputArray _fgmask, double newLearningRate){
+    Mat knownForegroundMask = _knownForegroundMask.getMat();
+    if(!_knownForegroundMask.empty())
+    {
+        CV_Error( Error::StsNotImplemented, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+    }
+    apply(_image, _fgmask, newLearningRate);
 }
 
 void BackgroundSubtractorGMGImpl::release()
