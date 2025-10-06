@@ -73,6 +73,10 @@ namespace
         void apply(InputArray image, OutputArray fgmask, double learningRate=-1);
         void apply(InputArray image, OutputArray fgmask, double learningRate, Stream& stream);
 
+        // Overloaded Background Subtractor Applys featuring  knownForegroundMask parameter
+        void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate=-1);
+        void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate, Stream& stream);
+
         void getBackgroundImage(OutputArray backgroundImage) const;
 
         int getMaxFeatures() const { return maxFeatures_; }
@@ -163,6 +167,24 @@ namespace
     void GMGImpl::apply(InputArray image, OutputArray fgmask, double learningRate)
     {
         apply(image, fgmask, learningRate, Stream::Null());
+    }
+
+    void GMGImpl::apply(InputArray _image, InputArray _knownForegroundMask, OutputArray _fgmask, double learningRate){
+        Mat knownForegroundMask = _knownForegroundMask.getMat();
+        if(!_knownForegroundMask.empty())
+        {
+            CV_Error( Error::StsNotImplemented, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+        }
+        apply(_image, _fgmask, Stream::Null());
+    }
+
+    void GMGImpl::apply(InputArray _image, InputArray _knownForegroundMask, OutputArray _fgmask, double learningRate, Stream& stream){
+        Mat knownForegroundMask = _knownForegroundMask.getMat();
+        if(!_knownForegroundMask.empty())
+        {
+            CV_Error( Error::StsNotImplemented, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+        }
+        apply(_image, _fgmask, learningRate, stream);
     }
 
     void GMGImpl::apply(InputArray _frame, OutputArray _fgmask, double newLearningRate, Stream& stream)

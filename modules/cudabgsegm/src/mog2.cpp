@@ -83,6 +83,9 @@ public:
     void apply(InputArray image, OutputArray fgmask, double learningRate = -1) CV_OVERRIDE;
     void apply(InputArray image, OutputArray fgmask, double learningRate, Stream &stream) CV_OVERRIDE;
 
+    void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate = -1) CV_OVERRIDE;
+    void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate, Stream& stream) CV_OVERRIDE;
+
     void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE;
     void getBackgroundImage(OutputArray backgroundImage, Stream &stream) const CV_OVERRIDE;
 
@@ -172,6 +175,22 @@ MOG2Impl::~MOG2Impl()
 void MOG2Impl::apply(InputArray image, OutputArray fgmask, double learningRate)
 {
     apply(image, fgmask, learningRate, Stream::Null());
+}
+
+void MOG2Impl::apply(InputArray _image, InputArray _knownForegroundMask, OutputArray _fgmask, double learningRate){
+    if(!_knownForegroundMask.empty())
+    {
+        CV_Error( Error::StsNotImplemented, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+    }
+    apply(_image, _fgmask, learningRate, Stream::Null());
+}
+
+void MOG2Impl::apply(InputArray _image, InputArray _knownForegroundMask, OutputArray _fgmask, double learningRate, Stream &stream){
+    if(!_knownForegroundMask.empty())
+    {
+        CV_Error( Error::StsNotImplemented, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+    }
+    apply(_image, _fgmask, learningRate, stream);
 }
 
 void MOG2Impl::apply(InputArray _frame, OutputArray _fgmask, double learningRate, Stream &stream)

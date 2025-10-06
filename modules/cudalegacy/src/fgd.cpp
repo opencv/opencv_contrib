@@ -546,6 +546,7 @@ namespace
         ~FGDImpl();
 
         void apply(InputArray image, OutputArray fgmask, double learningRate=-1);
+        void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate=-1);
 
         void getBackgroundImage(OutputArray backgroundImage) const;
 
@@ -627,6 +628,15 @@ namespace
         copyChannels(curFrame, prevFrame_, 4);
 
         foreground_.copyTo(fgmask);
+    }
+
+    void FGDImpl::apply(InputArray _image, InputArray _knownForegroundMask, OutputArray _fgmask, double learningRate){
+        Mat knownForegroundMask = _knownForegroundMask.getMat();
+        if(!_knownForegroundMask.empty())
+        {
+            CV_Error( Error::StsNotImplemented, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+        }
+        apply(_image, _fgmask, learningRate);
     }
 
     void FGDImpl::getBackgroundImage(OutputArray backgroundImage) const

@@ -92,6 +92,7 @@ class CV_EXPORTS BackgroundSubtractorGMG : public cv::BackgroundSubtractor
 public:
     using cv::BackgroundSubtractor::apply;
     virtual void apply(InputArray image, OutputArray fgmask, double learningRate, Stream& stream) = 0;
+    virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate, Stream& stream) = 0;
 
     virtual int getMaxFeatures() const = 0;
     virtual void setMaxFeatures(int maxFeatures) = 0;
