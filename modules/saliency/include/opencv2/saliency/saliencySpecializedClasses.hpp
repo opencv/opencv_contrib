@@ -87,7 +87,7 @@ public:
   }
 
   CV_WRAP void read( const FileNode& fn ) CV_OVERRIDE;
-  void write( FileStorage& fs ) const CV_OVERRIDE;
+  CV_WRAP void write( FileStorage& fs ) const CV_OVERRIDE;
 
   CV_WRAP int getImageWidth() const
   {
@@ -308,8 +308,8 @@ public:
     return computeSaliencyImpl( image, saliencyMap );
   }
 
-  CV_WRAP void read();
-  CV_WRAP void write() const;
+  CV_WRAP void readModel();
+  CV_WRAP void writeModel() const;
 
   /** @brief Return the list of the rectangles' objectness value,
 
