@@ -385,6 +385,8 @@ struct CV_EXPORTS_W_SIMPLE FormatInfo
  */
 class CV_EXPORTS_W NVSurfaceToColorConverter {
 public:
+    virtual ~NVSurfaceToColorConverter() = default;
+
     /** @brief Performs the conversion from the raw YUV Surface output from VideoReader to the requested color format. Use this function when you want to convert the raw YUV Surface output from VideoReader to more than one color format or you want both the raw Surface output in addition to a color frame.
      * @param yuv The raw YUV Surface output from VideoReader see @ref SurfaceFormat.
      * @param color The converted frame.
