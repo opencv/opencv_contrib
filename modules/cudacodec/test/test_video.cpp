@@ -1070,6 +1070,13 @@ CUDA_TEST_P(YUVFormats, Transcode)
     const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.h265";
     const cv::cudacodec::ColorFormat writerColorFormat = static_cast<cudacodec::ColorFormat>(static_cast<int>(GET_PARAM(1)));
     const bool fullRange = GET_PARAM(2);
+
+    if (cvtest::skipUnstableTests &&
+        (writerColorFormat == cudacodec::ColorFormat::NV_YUV444 || writerColorFormat == cudacodec::ColorFormat::NV_YUV444_10BIT))
+    {
+        throw SkipTestException("Not all GPUs support NV_YUV444 and NV_YUV444_10BIT color space");
+    }
+
     constexpr double fps = 25;
     const cudacodec::Codec codec = cudacodec::Codec::HEVC;
     const std::string ext = ".mp4";
