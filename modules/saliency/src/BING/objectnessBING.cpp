@@ -453,12 +453,12 @@ std::vector<float> ObjectnessBING::getobjectnessValues()
   return objectnessValues;
 }
 
-void ObjectnessBING::read()
+void ObjectnessBING::readModel()
 {
 
 }
 
-void ObjectnessBING::write() const
+void ObjectnessBING::writeModel() const
 {
 
 }
