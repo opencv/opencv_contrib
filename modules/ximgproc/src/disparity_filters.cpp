@@ -147,7 +147,6 @@ void DisparityWLSFilterImpl::init(double _lambda, double _sigma_color, bool _use
     min_disp = _min_disp;
     valid_disp_ROI = Rect();
     right_view_valid_disp_ROI = Rect();
-    min_disp=0;
     lambda = _lambda;
     sigma_color = _sigma_color;
     use_confidence = _use_confidence;
