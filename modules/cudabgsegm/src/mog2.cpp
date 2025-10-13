@@ -42,6 +42,7 @@
 
 #include "precomp.hpp"
 #include "cuda/mog2.hpp"
+#include "opencv2/core/utils/logger.hpp"
 
 using namespace cv;
 using namespace cv::cuda;

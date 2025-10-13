@@ -55,6 +55,7 @@ Ptr<cuda::BackgroundSubtractorFGD> cv::cuda::createBackgroundSubtractorFGD(const
 
 #include "cuda/fgd.hpp"
 #include "opencv2/imgproc.hpp"
+#include "opencv2/core/utils/logger.hpp"
 
 /////////////////////////////////////////////////////////////////////////
 // FGDParams
@@ -589,6 +590,14 @@ namespace
     {
     }
 
+    void FGDImpl::apply(InputArray _image, InputArray _knownForegroundMask, OutputArray _fgmask, double learningRate){
+        if(!_knownForegroundMask.empty())
+        {
+            CV_LOG_WARNING(NULL, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+        }
+        apply(_image, _fgmask, learningRate);
+    }
+
     void FGDImpl::apply(InputArray _frame, OutputArray fgmask, double)
     {
         GpuMat curFrame = _frame.getGpuMat();
@@ -628,15 +637,6 @@ namespace
         copyChannels(curFrame, prevFrame_, 4);
 
         foreground_.copyTo(fgmask);
-    }
-
-    void FGDImpl::apply(InputArray _image, InputArray _knownForegroundMask, OutputArray _fgmask, double learningRate){
-        Mat knownForegroundMask = _knownForegroundMask.getMat();
-        if(!_knownForegroundMask.empty())
-        {
-            CV_Error( Error::StsNotImplemented, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
-        }
-        apply(_image, _fgmask, learningRate);
     }
 
     void FGDImpl::getBackgroundImage(OutputArray backgroundImage) const

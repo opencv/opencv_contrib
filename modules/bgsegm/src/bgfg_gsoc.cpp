@@ -53,6 +53,7 @@
 #include <opencv2/calib3d.hpp>
 #include <iostream>
 #include "opencv2/core/cvdef.h"
+#include "opencv2/core/utils/logger.hpp"
 
 namespace cv
 {
@@ -799,7 +800,7 @@ void BackgroundSubtractorGSOCImpl::apply(InputArray _image, InputArray _knownFor
     Mat knownForegroundMask = _knownForegroundMask.getMat();
     if(!_knownForegroundMask.empty())
     {
-        CV_Error( Error::StsNotImplemented, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+        CV_LOG_WARNING(NULL, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
     }
     apply(_image, _fgmask, learningRate);
 }
@@ -943,7 +944,7 @@ void BackgroundSubtractorLSBPImpl::apply(InputArray _image, InputArray _knownFor
     Mat knownForegroundMask = _knownForegroundMask.getMat();
     if(!_knownForegroundMask.empty())
     {
-        CV_Error( Error::StsNotImplemented, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+        CV_LOG_WARNING(NULL, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
     }
     apply(_image, _fgmask, learningRate);
 }

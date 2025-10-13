@@ -42,6 +42,7 @@
 
 #include "precomp.hpp"
 #include <float.h>
+#include "opencv2/core/utils/logger.hpp"
 
 // to make sure we can use these short names
 #undef K
@@ -467,7 +468,7 @@ void BackgroundSubtractorMOGImpl::apply(InputArray _image, InputArray _knownFore
     Mat knownForegroundMask = _knownForegroundMask.getMat();
     if(!_knownForegroundMask.empty())
     {
-        CV_Error( Error::StsNotImplemented, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+        CV_LOG_WARNING(NULL, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
     }
     apply(_image, _fgmask, learningRate);
 }
