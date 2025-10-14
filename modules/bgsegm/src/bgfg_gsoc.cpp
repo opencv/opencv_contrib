@@ -53,6 +53,7 @@
 #include <opencv2/calib3d.hpp>
 #include <iostream>
 #include "opencv2/core/cvdef.h"
+#include "opencv2/core/utils/logger.hpp"
 
 namespace cv
 {
@@ -494,6 +495,7 @@ public:
                                  float noiseRemovalThresholdFacFG);
 
     CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate = -1) CV_OVERRIDE;
+    CV_WRAP virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate) CV_OVERRIDE;
 
     CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE;
 
@@ -542,6 +544,7 @@ public:
                                 );
 
     CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate = -1) CV_OVERRIDE;
+    CV_WRAP virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate) CV_OVERRIDE;
 
     CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE;
 
@@ -793,6 +796,15 @@ void BackgroundSubtractorGSOCImpl::apply(InputArray _image, OutputArray _fgmask,
     this->postprocessing(fgMask);
 }
 
+void BackgroundSubtractorGSOCImpl::apply(InputArray _image, InputArray _knownForegroundMask, OutputArray _fgmask, double learningRate){
+    Mat knownForegroundMask = _knownForegroundMask.getMat();
+    if(!_knownForegroundMask.empty())
+    {
+        CV_LOG_WARNING(NULL, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+    }
+    apply(_image, _fgmask, learningRate);
+}
+
 void BackgroundSubtractorGSOCImpl::getBackgroundImage(OutputArray _backgroundImage) const {
     CV_Assert(!backgroundModel.empty());
     const Size sz = backgroundModel->getSize();
@@ -926,6 +938,15 @@ void BackgroundSubtractorLSBPImpl::apply(InputArray _image, OutputArray _fgmask,
     parallel_for_(Range(0, sz.area()), ParallelLSBP(sz, this, frame, learningRate, LSBPDesc, fgMask));
 
     this->postprocessing(fgMask);
+}
+
+void BackgroundSubtractorLSBPImpl::apply(InputArray _image, InputArray _knownForegroundMask, OutputArray _fgmask, double learningRate){
+    Mat knownForegroundMask = _knownForegroundMask.getMat();
+    if(!_knownForegroundMask.empty())
+    {
+        CV_LOG_WARNING(NULL, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+    }
+    apply(_image, _fgmask, learningRate);
 }
 
 void BackgroundSubtractorLSBPImpl::getBackgroundImage(OutputArray _backgroundImage) const {

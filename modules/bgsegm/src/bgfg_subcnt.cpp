@@ -44,6 +44,7 @@
 
 #include "precomp.hpp"
 #include <functional>
+#include "opencv2/core/utils/logger.hpp"
 
 namespace cv
 {
@@ -61,6 +62,8 @@ public:
 
     // BackgroundSubtractor interface
     virtual void apply(InputArray image, OutputArray fgmask, double learningRate) CV_OVERRIDE;
+    virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate) CV_OVERRIDE;
+
     virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE;
 
     int getMinPixelStability() const CV_OVERRIDE;
@@ -409,6 +412,14 @@ void BackgroundSubtractorCNTImpl::apply(InputArray image, OutputArray _fgmask, d
     prevFrame = frame;
 }
 
+void BackgroundSubtractorCNTImpl::apply(InputArray _image, InputArray _knownForegroundMask, OutputArray _fgmask, double learningRate){
+    Mat knownForegroundMask = _knownForegroundMask.getMat();
+    if(!_knownForegroundMask.empty())
+    {
+        CV_LOG_WARNING(NULL, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+    }
+    apply(_image, _fgmask, learningRate);
+}
 
 Ptr<BackgroundSubtractorCNT> createBackgroundSubtractorCNT(int minPixelStability, bool useHistory, int maxStability, bool isParallel)
 {
