@@ -392,10 +392,9 @@ public:
      * @param outputFormat The requested output color format.
      * @param bitDepth The requested bit depth of the output frame.
      * @param planar Request seperate planes for each color plane.
-     * @param videoFullRangeFlag Indicates if the black level, luma and chroma of the source are represented using the full or limited range (AKA TV or "analogue" range) of values as defined in Annex E of the ITU-T Specification.
      * @param stream Stream for the asynchronous version.
      */
-    virtual bool convert(InputArray yuv, OutputArray color, const SurfaceFormat surfaceFormat, const ColorFormat outputFormat, const BitDepth bitDepth = BitDepth::UNCHANGED, const bool planar = false, const bool videoFullRangeFlag = false, cuda::Stream& stream = cuda::Stream::Null()) = 0;
+    CV_WRAP virtual bool convert(InputArray yuv, OutputArray color, const SurfaceFormat surfaceFormat, const ColorFormat outputFormat, const BitDepth bitDepth = BitDepth::UNCHANGED, const bool planar = false, cuda::Stream& stream = cuda::Stream::Null()) = 0;
 };
 
 /** @brief Creates a NVSurfaceToColorConverter.

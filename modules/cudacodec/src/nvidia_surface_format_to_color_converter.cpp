@@ -154,7 +154,9 @@ void SetMatYuv2Rgb(int iMatrix, ColorMatrix& matYuv2Color, bool fullRange = fals
 
 class NVSurfaceToColorConverterImpl : public NVSurfaceToColorConverter {
 public:
-    NVSurfaceToColorConverterImpl(ColorSpaceStandard colorSpace, bool fullColorRange = false) {
+    NVSurfaceToColorConverterImpl(ColorSpaceStandard colorSpace, bool fullColorRange = false) :
+        videoFullRangeFlag(fullColorRange)
+    {
         SetMatYuv2Rgb(static_cast<int>(colorSpace), matYuv2Color, fullColorRange);
     }
 
@@ -194,7 +196,7 @@ public:
         }
     }
 
-    bool convert(const InputArray yuv, const OutputArray out, const SurfaceFormat surfaceFormat, const ColorFormat outputFormat, const BitDepth bitDepth, const bool planar, const bool videoFullRangeFlag, cuda::Stream& stream) {
+    bool convert(const InputArray yuv, const OutputArray out, const SurfaceFormat surfaceFormat, const ColorFormat outputFormat, const BitDepth bitDepth, const bool planar, cuda::Stream& stream) {
         CV_Assert(outputFormat == ColorFormat::BGR || outputFormat == ColorFormat::BGRA || outputFormat == ColorFormat::RGB || outputFormat == ColorFormat::RGBA || outputFormat == ColorFormat::GRAY);
         CV_Assert(yuv.depth() == CV_8U || yuv.depth() == CV_16U);
         const bool yuv420 = surfaceFormat == SurfaceFormat::SF_NV12 || surfaceFormat == SurfaceFormat::SF_P016;
@@ -341,6 +343,7 @@ public:
 
 private:
     ColorMatrix matYuv2Color;
+    bool videoFullRangeFlag;
 };
 
 Ptr<NVSurfaceToColorConverter> cv::cudacodec::createNVSurfaceToColorConverter(const ColorSpaceStandard colorSpace, const bool videoFullRangeFlag) {
