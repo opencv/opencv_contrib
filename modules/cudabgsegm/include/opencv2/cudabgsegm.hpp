@@ -84,6 +84,8 @@ public:
     using cv::BackgroundSubtractor::apply;
     CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate, Stream& stream) = 0;
 
+    CV_WRAP virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate, Stream& stream) = 0;
+
     using cv::BackgroundSubtractor::getBackgroundImage;
     virtual void getBackgroundImage(OutputArray backgroundImage, Stream& stream) const = 0;
 
@@ -134,6 +136,8 @@ public:
     using cv::BackgroundSubtractorMOG2::getBackgroundImage;
 
     CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate, Stream& stream) = 0;
+
+    CV_WRAP virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate, Stream& stream) = 0;
 
     virtual void getBackgroundImage(OutputArray backgroundImage, Stream& stream) const = 0;
 

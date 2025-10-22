@@ -42,6 +42,7 @@
 
 #include "precomp.hpp"
 #include <float.h>
+#include "opencv2/core/utils/logger.hpp"
 
 // to make sure we can use these short names
 #undef K
@@ -103,6 +104,8 @@ public:
 
     //! the update operator
     virtual void apply(InputArray image, OutputArray fgmask, double learningRate=0) CV_OVERRIDE;
+
+    virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate) CV_OVERRIDE;
 
     //! re-initiaization method
     virtual void initialize(Size _frameSize, int _frameType)
@@ -459,6 +462,15 @@ void BackgroundSubtractorMOGImpl::apply(InputArray _image, OutputArray _fgmask, 
         process8uC3( image, fgmask, learningRate, bgmodel, nmixtures, backgroundRatio, varThreshold, noiseSigma );
     else
         CV_Error( Error::StsUnsupportedFormat, "Only 1- and 3-channel 8-bit images are supported in BackgroundSubtractorMOG" );
+}
+
+void BackgroundSubtractorMOGImpl::apply(InputArray _image, InputArray _knownForegroundMask, OutputArray _fgmask, double learningRate){
+    Mat knownForegroundMask = _knownForegroundMask.getMat();
+    if(!_knownForegroundMask.empty())
+    {
+        CV_LOG_WARNING(NULL, "Known Foreground Masking has not been implemented for this specific background subtractor, falling back to subtraction without known foreground");
+    }
+    apply(_image, _fgmask, learningRate);
 }
 
 Ptr<BackgroundSubtractorMOG> createBackgroundSubtractorMOG(int history, int nmixtures,
