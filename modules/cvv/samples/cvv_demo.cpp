@@ -56,8 +56,8 @@ main(int argc, char** argv)
 
   if (res_w>0 && res_h>0) {
     printf("Setting resolution to %dx%d\n", res_w, res_h);
-    capture.set(CV_CAP_PROP_FRAME_WIDTH, res_w);
-    capture.set(CV_CAP_PROP_FRAME_HEIGHT, res_h);
+    capture.set(cv::CAP_PROP_FRAME_WIDTH, res_w);
+    capture.set(cv::CAP_PROP_FRAME_HEIGHT, res_h);
   }
 
 
