@@ -7,6 +7,10 @@
 #include <cuda_runtime.h>
 
 namespace cv { namespace cuda { namespace device {
+struct ColorMatrix {
+    float m[3][3];
+};
+
 union BGR24 {
     uchar3 v;
     struct {
