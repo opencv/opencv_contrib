@@ -8,6 +8,10 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4127 /wd4324 /wd4512 -Wundef -Wmissing-d
 
 ocv_define_module(cudaoptflow opencv_video opencv_optflow opencv_cudaarithm opencv_cudawarping opencv_cudaimgproc OPTIONAL opencv_cudalegacy WRAP python)
 
+if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
+  ocv_target_link_libraries(${the_module} PRIVATE CUDA::cudart${CUDA_LIB_EXT})
+endif()
+
 if(NOT CUDA_VERSION VERSION_LESS "10.0")
   set(NVIDIA_OPTICAL_FLOW_2_0_HEADERS_COMMIT "edb50da3cf849840d680249aa6dbef248ebce2ca")
   set(NVIDIA_OPTICAL_FLOW_2_0_HEADERS_MD5 "a73cd48b18dcc0cc8933b30796074191")

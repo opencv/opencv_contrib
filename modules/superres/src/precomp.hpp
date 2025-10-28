@@ -54,9 +54,12 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/video/tracking.hpp"
 #include "opencv2/core/private.hpp"
-
-#include "opencv2/core/private.cuda.hpp"
 #include "opencv2/core/ocl.hpp"
+#if !defined(HAVE_CUDA) || !defined(HAVE_OPENCV_CUDAARITHM) || !defined(HAVE_OPENCV_CUDAWARPING) || !defined(HAVE_OPENCV_CUDAFILTERS)
+#include "opencv2/core/private/cuda_stubs.hpp"
+#else
+#include "opencv2/core/private.cuda.hpp"
+#endif
 
 #ifdef HAVE_OPENCV_CUDAARITHM
 #  include "opencv2/cudaarithm.hpp"

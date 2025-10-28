@@ -50,7 +50,11 @@
 
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
+#if !defined(HAVE_CUDA) || !defined(HAVE_OPENCV_CUDAARITHM)
+#include "opencv2/core/private/cuda_stubs.hpp"
+#else
 #include "opencv2/core/private.cuda.hpp"
+#endif
 #include "opencv2/core/ocl.hpp"
 
 #include "opencv2/opencv_modules.hpp"
