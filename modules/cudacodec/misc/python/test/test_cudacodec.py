@@ -60,8 +60,8 @@ class cudacodec_test(NewOpenCVTests):
 
             # Change color format
             ret, colour_code = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_COLOR_FORMAT)
-            self.assertTrue(ret and colour_code == cv.cudacodec.ColorFormat_BGRA)
-            colour_code_gs = cv.cudacodec.ColorFormat_GRAY
+            self.assertTrue(ret and colour_code == cv.cudacodec.BGRA)
+            colour_code_gs = cv.cudacodec.GRAY
             reader.set(colour_code_gs)
             ret, colour_code = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_COLOR_FORMAT)
             self.assertTrue(ret and colour_code == colour_code_gs)
@@ -91,6 +91,14 @@ class cudacodec_test(NewOpenCVTests):
             else:
                 self.skipTest(e.err)
 
+    def test_NVSurfaceToColorConverter(self):
+        converter = cv.cudacodec.createNVSurfaceToColorConverter(cv.cudacodec.ColorSpaceStandard_BT601,False)
+        bgr_sz = (1920,1080)
+        nv12_sz = (1920, int(1.5*1080))
+        blank_nv12_frame = cv.cuda.GpuMat(nv12_sz,cv.CV_8U)
+        ret, bgr = converter.convert(blank_nv12_frame, cv.cudacodec.SF_NV12, cv.cudacodec.BGR)
+        self.assertTrue(ret == True and bgr.size() == bgr_sz)
+
     def test_map_histogram(self):
         hist = cv.cuda_GpuMat((1,256), cv.CV_8UC1)
         hist.setTo(1)
@@ -107,7 +115,7 @@ class cudacodec_test(NewOpenCVTests):
             encoder_params_in.gopLength = 10
             stream = cv.cuda.Stream()
             sz = (1920,1080)
-            writer = cv.cudacodec.createVideoWriter(fname, sz, cv.cudacodec.H264, 30, cv.cudacodec.ColorFormat_BGR,
+            writer = cv.cudacodec.createVideoWriter(fname, sz, cv.cudacodec.H264, 30, cv.cudacodec.BGR,
                                                     encoder_params_in, stream=stream)
             blankFrameIn = cv.cuda.GpuMat(sz,cv.CV_8UC3)
             writer.write(blankFrameIn)

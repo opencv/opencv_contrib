@@ -92,7 +92,7 @@ namespace
         void releaseFrameInfo(const std::pair<CUVIDPARSERDISPINFO, CUVIDPROCPARAMS>& frameInfo);
         bool internalGrab(GpuMat & frame, GpuMat & histogram, Stream & stream);
         void waitForDecoderInit();
-        void cvtFromYuv(const GpuMat& decodedFrame, GpuMat& outFrame, const SurfaceFormat surfaceFormat, const bool videoFullRangeFlag, Stream& stream);
+        void cvtFromYuv(const GpuMat& decodedFrame, GpuMat& outFrame, const SurfaceFormat surfaceFormat, Stream& stream);
 
         Ptr<VideoSource> videoSource_;
 
@@ -260,7 +260,7 @@ namespace
                 cuSafeCall(cuMemcpyDtoDAsync((CUdeviceptr)(histogram.data), cuHistogramPtr, histogramSz, StreamAccessor::getStream(stream)));
             }
 
-            cvtFromYuv(decodedFrame, frame, videoDecoder_->format().surfaceFormat, videoDecoder_->format().videoFullRangeFlag, stream);
+            cvtFromYuv(decodedFrame, frame, videoDecoder_->format().surfaceFormat, stream);
             // unmap video frame
             // unmapFrame() synchronizes with the VideoDecode API (ensures the frame has finished decoding)
             videoDecoder_->unmapFrame(decodedFrame);
@@ -414,13 +414,13 @@ namespace
         return true;
     }
 
-    void VideoReaderImpl::cvtFromYuv(const GpuMat& decodedFrame, GpuMat& outFrame, const SurfaceFormat surfaceFormat, const bool videoFullRangeFlag, Stream& stream)
+    void VideoReaderImpl::cvtFromYuv(const GpuMat& decodedFrame, GpuMat& outFrame, const SurfaceFormat surfaceFormat, Stream& stream)
     {
         if (colorFormat == ColorFormat::NV_YUV_SURFACE_FORMAT) {
             decodedFrame.copyTo(outFrame, stream);
             return;
         }
-        yuvConverter->convert(decodedFrame, outFrame, surfaceFormat, colorFormat, bitDepth, planar, videoFullRangeFlag, stream);
+        yuvConverter->convert(decodedFrame, outFrame, surfaceFormat, colorFormat, bitDepth, planar, stream);
     }
 }
 

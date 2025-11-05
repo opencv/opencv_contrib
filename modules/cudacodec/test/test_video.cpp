@@ -998,7 +998,7 @@ CUDA_TEST_P(YuvConverter, Reader)
     Mat nv12Interleaved, bgrFromYuv;
     generateTestImages(bgr, nv12Interleaved, bgrFromYuv, surfaceFormat, outputFormat, bitDepth, planar, fullRange);
     GpuMat nv12Device(nv12Interleaved), bgrDevice(bgrFromYuv.size(), bgrFromYuv.type());
-    yuvConverter->convert(nv12Device, bgrDevice, surfaceFormat, outputFormat, bitDepth, planar, fullRange);
+    yuvConverter->convert(nv12Device, bgrDevice, surfaceFormat, outputFormat, bitDepth, planar);
     bgrDevice.download(bgrHost);
     EXPECT_MAT_NEAR(bgrFromYuv, bgrHost, bitDepth == cudacodec::BitDepth::EIGHT ? 2 :512);
 }
