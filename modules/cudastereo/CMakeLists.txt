@@ -5,7 +5,9 @@ endif()
 set(the_description "CUDA-accelerated Stereo Correspondence")
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4127 /wd4324 /wd4512 -Wundef -Wmissing-declarations -Wshadow)
-if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
-  ocv_module_include_directories(${CUDAToolkit_INCLUDE_DIRS})
-endif()
+
 ocv_define_module(cudastereo opencv_calib3d OPTIONAL opencv_cudev WRAP python)
+
+if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
+  ocv_target_link_libraries(${the_module} PRIVATE CUDA::cudart${CUDA_LIB_EXT})
+endif()

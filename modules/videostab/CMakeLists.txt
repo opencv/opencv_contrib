@@ -10,3 +10,7 @@ endif()
 
 ocv_define_module(videostab opencv_imgproc opencv_features2d opencv_video opencv_photo opencv_calib3d
 OPTIONAL opencv_cudawarping opencv_cudaoptflow opencv_videoio WRAP python)
+
+if(HAVE_CUDA AND ENABLE_CUDA_FIRST_CLASS_LANGUAGE AND ((HAVE_opencv_cudaimgproc AND HAVE_opencv_cudaoptflow) OR HAVE_opencv_cudawarping))
+  ocv_target_link_libraries(${the_module} PRIVATE CUDA::cudart${CUDA_LIB_EXT})
+endif()

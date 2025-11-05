@@ -44,10 +44,13 @@
 #include "opencv2/videostab/wobble_suppression.hpp"
 #include "opencv2/videostab/ring_buffer.hpp"
 
-#include "opencv2/core/private.cuda.hpp"
-
 #ifdef HAVE_OPENCV_CUDAWARPING
-#  include "opencv2/cudawarping.hpp"
+#include "opencv2/cudawarping.hpp"
+#if !defined HAVE_CUDA || defined(CUDA_DISABLER)
+#include "opencv2/core/private/cuda_stubs.hpp"
+#else
+#include "opencv2/core/private.cuda.hpp"
+#endif
 #endif
 
 #if defined(HAVE_OPENCV_CUDAWARPING)

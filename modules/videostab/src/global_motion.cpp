@@ -47,7 +47,13 @@
 #include "opencv2/opencv_modules.hpp"
 #include "clp.hpp"
 
+#if defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAOPTFLOW)
+#if !defined HAVE_CUDA || defined(CUDA_DISABLER)
+#include "opencv2/core/private/cuda_stubs.hpp"
+#else
 #include "opencv2/core/private.cuda.hpp"
+#endif
+#endif
 
 #if defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAOPTFLOW)
     #if !defined HAVE_CUDA || defined(CUDA_DISABLER)
