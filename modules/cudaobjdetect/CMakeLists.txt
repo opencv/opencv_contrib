@@ -7,3 +7,7 @@ set(the_description "CUDA-accelerated Object Detection")
 ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4127 /wd4324 /wd4512 -Wundef -Wmissing-declarations -Wshadow -Wstrict-aliasing)
 
 ocv_define_module(cudaobjdetect opencv_objdetect opencv_xobjdetect opencv_cudaarithm opencv_cudawarping OPTIONAL opencv_cudalegacy WRAP python)
+
+if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
+  ocv_target_link_libraries(${the_module} PRIVATE CUDA::cudart${CUDA_LIB_EXT})
+endif()

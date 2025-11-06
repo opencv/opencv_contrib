@@ -13,91 +13,151 @@ Ptr<NVSurfaceToColorConverter> cv::cudacodec::createNVSurfaceToColorConverter(co
 #else
 #include "cuda/ColorSpace.h"
 namespace cv { namespace cuda { namespace device {
-template<class BGR24> void Nv12ToColor24(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB24> void Nv12ToColor24(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA32> void Nv12ToColor32(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA32> void Nv12ToColor32(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGR48> void Nv12ToColor48(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB48> void Nv12ToColor48(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA64> void Nv12ToColor64(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA64> void Nv12ToColor64(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR24> void Nv12ToColor24(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB24> void Nv12ToColor24(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA32> void Nv12ToColor32(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA32> void Nv12ToColor32(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR48> void Nv12ToColor48(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB48> void Nv12ToColor48(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA64> void Nv12ToColor64(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA64> void Nv12ToColor64(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
 
-template<class BGR24> void Nv12ToColorPlanar24(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB24> void Nv12ToColorPlanar24(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA32> void Nv12ToColorPlanar32(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA32> void Nv12ToColorPlanar32(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGR48> void Nv12ToColorPlanar48(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB48> void Nv12ToColorPlanar48(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA64> void Nv12ToColorPlanar64(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA64> void Nv12ToColorPlanar64(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR24> void Nv12ToColorPlanar24(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB24> void Nv12ToColorPlanar24(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA32> void Nv12ToColorPlanar32(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA32> void Nv12ToColorPlanar32(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR48> void Nv12ToColorPlanar48(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB48> void Nv12ToColorPlanar48(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA64> void Nv12ToColorPlanar64(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA64> void Nv12ToColorPlanar64(uint8_t* dpNv12, int nNv12Pitch, uint8_t* dpBgrp, int nBgrpPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
 
-template<class BGR24> void P016ToColor24(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB24> void P016ToColor24(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA32> void P016ToColor32(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA32> void P016ToColor32(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGR48> void P016ToColor48(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB48> void P016ToColor48(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA64> void P016ToColor64(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA64> void P016ToColor64(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR24> void P016ToColor24(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB24> void P016ToColor24(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA32> void P016ToColor32(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA32> void P016ToColor32(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR48> void P016ToColor48(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB48> void P016ToColor48(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA64> void P016ToColor64(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA64> void P016ToColor64(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
 
-template<class BGR24> void P016ToColorPlanar24(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB24> void P016ToColorPlanar24(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA32> void P016ToColorPlanar32(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA32> void P016ToColorPlanar32(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag);
-template<class BGR48> void P016ToColorPlanar48(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB48> void P016ToColorPlanar48(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA64> void P016ToColorPlanar64(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA64> void P016ToColorPlanar64(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR24> void P016ToColorPlanar24(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB24> void P016ToColorPlanar24(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA32> void P016ToColorPlanar32(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA32> void P016ToColorPlanar32(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag);
+template<class BGR48> void P016ToColorPlanar48(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB48> void P016ToColorPlanar48(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA64> void P016ToColorPlanar64(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA64> void P016ToColorPlanar64(uint8_t* dpP016, int nP016Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
 
-template<class BGR24> void YUV444ToColor24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB24> void YUV444ToColor24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA32> void YUV444ToColor32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA32> void YUV444ToColor32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGR48> void YUV444ToColor48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB48> void YUV444ToColor48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA64> void YUV444ToColor64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA64> void YUV444ToColor64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR24> void YUV444ToColor24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB24> void YUV444ToColor24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA32> void YUV444ToColor32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA32> void YUV444ToColor32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR48> void YUV444ToColor48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB48> void YUV444ToColor48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA64> void YUV444ToColor64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA64> void YUV444ToColor64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
 
-template<class BGR24> void YUV444ToColorPlanar24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB24> void YUV444ToColorPlanar24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA32> void YUV444ToColorPlanar32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA32> void YUV444ToColorPlanar32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGR48> void YUV444ToColorPlanar48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB48> void YUV444ToColorPlanar48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA64> void YUV444ToColorPlanar64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA64> void YUV444ToColorPlanar64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR24> void YUV444ToColorPlanar24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB24> void YUV444ToColorPlanar24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA32> void YUV444ToColorPlanar32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA32> void YUV444ToColorPlanar32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR48> void YUV444ToColorPlanar48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB48> void YUV444ToColorPlanar48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA64> void YUV444ToColorPlanar64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA64> void YUV444ToColorPlanar64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
 
-template<class BGR24> void YUV444P16ToColor24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB24> void YUV444P16ToColor24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA32> void YUV444P16ToColor32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA32> void YUV444P16ToColor32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGR48> void YUV444P16ToColor48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB48> void YUV444P16ToColor48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA64> void YUV444P16ToColor64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA64> void YUV444P16ToColor64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR24> void YUV444P16ToColor24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB24> void YUV444P16ToColor24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA32> void YUV444P16ToColor32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA32> void YUV444P16ToColor32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR48> void YUV444P16ToColor48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB48> void YUV444P16ToColor48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA64> void YUV444P16ToColor64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA64> void YUV444P16ToColor64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
 
-template<class BGR24> void YUV444P16ToColorPlanar24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB24> void YUV444P16ToColorPlanar24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA32> void YUV444P16ToColorPlanar32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA32> void YUV444P16ToColorPlanar32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGR48> void YUV444P16ToColorPlanar48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGB48> void YUV444P16ToColorPlanar48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class BGRA64> void YUV444P16ToColorPlanar64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-template<class RGBA64> void YUV444P16ToColorPlanar64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR24> void YUV444P16ToColorPlanar24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB24> void YUV444P16ToColorPlanar24(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA32> void YUV444P16ToColorPlanar32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA32> void YUV444P16ToColorPlanar32(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGR48> void YUV444P16ToColorPlanar48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGB48> void YUV444P16ToColorPlanar48(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class BGRA64> void YUV444P16ToColorPlanar64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+template<class RGBA64> void YUV444P16ToColorPlanar64(uint8_t* dpYuv444, int nYuv444Pitch, uint8_t* dpColor, int nColorPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
 
-void Y8ToGray8(uint8_t* dpY8, int nY8Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-void Y8ToGray16(uint8_t* dpY8, int nY8Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-void Y16ToGray8(uint8_t* dpY16, int nY16Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-void Y16ToGray16(uint8_t* dpY16, int nY16Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, bool videoFullRangeFlag, const cudaStream_t stream);
-
-void SetMatYuv2Rgb(int iMatrix, bool);
+void Y8ToGray8(uint8_t* dpY8, int nY8Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+void Y8ToGray16(uint8_t* dpY8, int nY8Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+void Y16ToGray8(uint8_t* dpY16, int nY16Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+void Y16ToGray16(uint8_t* dpY16, int nY16Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
 }}}
 
 using namespace cuda::device;
+namespace {
+void GetConstants(int iMatrix, float& wr, float& wb, int& black, int& white, int& uvWhite, int& max, bool fullRange = false) {
+    if (fullRange) {
+        black = 0; white = 255; uvWhite = 255;
+    }
+    else {
+        black = 16; white = 235; uvWhite = 240;
+    }
+    max = 255;
+
+    switch (static_cast<cv::cudacodec::ColorSpaceStandard>(iMatrix))
+    {
+    case cv::cudacodec::ColorSpaceStandard::BT709:
+    default:
+        wr = 0.2126f; wb = 0.0722f;
+        break;
+
+    case cv::cudacodec::ColorSpaceStandard::FCC:
+        wr = 0.30f; wb = 0.11f;
+        break;
+
+    case cv::cudacodec::ColorSpaceStandard::BT470:
+    case cv::cudacodec::ColorSpaceStandard::BT601:
+        wr = 0.2990f; wb = 0.1140f;
+        break;
+
+    case cv::cudacodec::ColorSpaceStandard::SMPTE240M:
+        wr = 0.212f; wb = 0.087f;
+        break;
+
+    case cv::cudacodec::ColorSpaceStandard::BT2020:
+    case cv::cudacodec::ColorSpaceStandard::BT2020C:
+        wr = 0.2627f; wb = 0.0593f;
+        // 10-bit only
+        black = 64 << 6; white = 940 << 6;
+        max = (1 << 16) - 1;
+        break;
+    }
+}
+
+void SetMatYuv2Rgb(int iMatrix, ColorMatrix& matYuv2Color, bool fullRange = false) {
+    float wr, wb;
+    int black, white, max, uvWhite;
+    GetConstants(iMatrix, wr, wb, black, white, uvWhite, max, fullRange);
+    float mat[3][3] = {
+        1.0f, 0.0f, (1.0f - wr) / 0.5f,
+        1.0f, -wb * (1.0f - wb) / 0.5f / (1 - wb - wr), -wr * (1 - wr) / 0.5f / (1 - wb - wr),
+        1.0f, (1.0f - wb) / 0.5f, 0.0f,
+    };
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (j == 0)
+                matYuv2Color.m[i][j] = (float)(1.0 * max / (white - black) * mat[i][j]);
+            else
+                matYuv2Color.m[i][j] = (float)(1.0 * max / (uvWhite - black) * mat[i][j]);
+        }
+    }
+}
+}
+
 class NVSurfaceToColorConverterImpl : public NVSurfaceToColorConverter {
 public:
-    NVSurfaceToColorConverterImpl(ColorSpaceStandard colorSpace, bool fullColorRange = false) {
-        SetMatYuv2Rgb(static_cast<int>(colorSpace), fullColorRange);
+    NVSurfaceToColorConverterImpl(ColorSpaceStandard colorSpace, bool fullColorRange = false) :
+        videoFullRangeFlag(fullColorRange)
+    {
+        SetMatYuv2Rgb(static_cast<int>(colorSpace), matYuv2Color, fullColorRange);
     }
 
     int OutputColorFormatIdx(const cudacodec::ColorFormat format) {
@@ -136,13 +196,13 @@ public:
         }
     }
 
-    bool convert(const InputArray yuv, const OutputArray out, const SurfaceFormat surfaceFormat, const ColorFormat outputFormat, const BitDepth bitDepth, const bool planar, const bool videoFullRangeFlag, cuda::Stream& stream) {
+    bool convert(const InputArray yuv, const OutputArray out, const SurfaceFormat surfaceFormat, const ColorFormat outputFormat, const BitDepth bitDepth, const bool planar, cuda::Stream& stream) {
         CV_Assert(outputFormat == ColorFormat::BGR || outputFormat == ColorFormat::BGRA || outputFormat == ColorFormat::RGB || outputFormat == ColorFormat::RGBA || outputFormat == ColorFormat::GRAY);
         CV_Assert(yuv.depth() == CV_8U || yuv.depth() == CV_16U);
         const bool yuv420 = surfaceFormat == SurfaceFormat::SF_NV12 || surfaceFormat == SurfaceFormat::SF_P016;
         CV_Assert(yuv.cols() % 2 == 0);
 
-        using func_t = void (*)(uint8_t* yuv, int yuvPitch, uint8_t* color, int colorPitch, int width, int height, bool videoFullRangeFlag, cudaStream_t stream);
+        using func_t = void (*)(uint8_t* yuv, int yuvPitch, uint8_t* color, int colorPitch, int width, int height, ColorMatrix matYuv2Color, bool videoFullRangeFlag, cudaStream_t stream);
 
         static const func_t funcsNV12[5][2][2] =
         {
@@ -277,11 +337,13 @@ public:
             CV_Error(Error::StsUnsupportedFormat, "Unsupported combination of source and destination types");
 
         CV_Assert(out_.step <= static_cast<size_t>(std::numeric_limits<int>::max()));
-        func((uint8_t*)yuv_.ptr(0), static_cast<int>(yuv_.step), (uint8_t*)out_.ptr(0), static_cast<int>(out_.step), out_.cols, nRows, videoFullRangeFlag, StreamAccessor::getStream(stream));
+        func((uint8_t*)yuv_.ptr(0), static_cast<int>(yuv_.step), (uint8_t*)out_.ptr(0), static_cast<int>(out_.step), out_.cols, nRows, matYuv2Color, videoFullRangeFlag, StreamAccessor::getStream(stream));
         return true;
     }
 
-
+private:
+    ColorMatrix matYuv2Color;
+    bool videoFullRangeFlag;
 };
 
 Ptr<NVSurfaceToColorConverter> cv::cudacodec::createNVSurfaceToColorConverter(const ColorSpaceStandard colorSpace, const bool videoFullRangeFlag) {

@@ -32,7 +32,7 @@ endif()
 
 if(HAVE_NVCUVID OR HAVE_NVCUVENC)
   if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
-      list(APPEND extra_libs CUDA::cuda_driver)
+      list(APPEND extra_libs CUDA::cuda_driver CUDA::cudart${CUDA_LIB_EXT})
   else()
     list(APPEND extra_libs ${CUDA_CUDA_LIBRARY})
   endif()
