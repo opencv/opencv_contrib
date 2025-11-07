@@ -359,13 +359,18 @@ CV_EXPORTS_W Ptr<Filter> createColumnSumFilter(int srcType, int dstType, int ksi
 
 /** @brief Performs median filtering for each point of the source image.
 
-@param srcType type of of source image. Only CV_8UC1 images are supported for now.
+@param srcType type of of source image. Only CV_8UC1 if CUDA_VERSION < 11. CV_8UC1, CV_8UC3, CV_8UC4, CV_16UC1, CV_16UC3, CV_16UC4, CV_32FC1, CV_32FC3 or CV_32FC4 if CUDA_VERSION >= 11.
 @param windowSize Size of the kernerl used for the filtering. Uses a (windowSize x windowSize) filter.
-@param partition Specifies the parallel granularity of the workload. This parameter should be used GPU experts when optimizing performance.
+@param partition Specifies the parallel granularity of the workload. Only used if CUDA_VERSION < 11.
 
 Outputs an image that has been filtered using a median-filtering formulation.
 
-Details on this algorithm can be found in:
+If compiled with CUDA 11 or greater, a wavelet based algorithm is used as described at:
+https://cgenglab.github.io/en/publication/sigga22_wmatrix_median/
+Yuji Moroto, Nobuyuki Umetani, 2022, "Constant Time Median Filter Using 2D Wavelet Matrix",
+                                     ACM Transactions on Graphics, Volume 41, Issue 6.
+
+For earlier versions of CUDA, details on the algorithm used can be found in:
 Green, O., 2017. "Efficient scalable median filtering using histogram-based operations",
                   IEEE Transactions on Image Processing, 27(5), pp.2217-2228.
 
