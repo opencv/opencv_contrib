@@ -308,9 +308,6 @@ public:
     return computeSaliencyImpl( image, saliencyMap );
   }
 
-  CV_WRAP void readModel();
-  CV_WRAP void writeModel() const;
-
   /** @brief Return the list of the rectangles' objectness value,
 
     in the same order as the *vector\<Vec4i\> objectnessBoundingBox* returned by the algorithm (in

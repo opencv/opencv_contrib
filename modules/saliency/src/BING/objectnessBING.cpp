@@ -448,19 +448,10 @@ bool ObjectnessBING::matRead( const std::string& filename, Mat& _M )
   M.copyTo( _M );
   return true;
 }
+
 std::vector<float> ObjectnessBING::getobjectnessValues()
 {
   return objectnessValues;
-}
-
-void ObjectnessBING::readModel()
-{
-
-}
-
-void ObjectnessBING::writeModel() const
-{
-
 }
 
 bool ObjectnessBING::computeSaliencyImpl( InputArray image, OutputArray objectnessBoundingBox )
