@@ -49,6 +49,8 @@ using namespace cv::cuda;
 
 void cv::cuda::cvtColor(InputArray, OutputArray, int, int, Stream&) { throw_no_cuda(); }
 
+void cv::cuda::cvtColorTwoPlane(InputArray, InputArray, OutputArray, int, Stream&) { throw_no_cuda(); }
+
 void cv::cuda::demosaicing(InputArray, OutputArray, int, int, Stream&) { throw_no_cuda(); }
 
 void cv::cuda::swapChannels(InputOutputArray, const int[4], Stream&) { throw_no_cuda(); }
@@ -2111,6 +2113,87 @@ void cv::cuda::cvtColor(InputArray src, OutputArray dst, int code, int dcn, Stre
 
     func(src, dst, dcn, stream);
 }
+
+////////////////////////////////////////////////////////////////////////
+// cvtColorTwoPlane
+
+#if NPP_VER_MAJOR <= 12
+
+void cv::cuda::cvtColorTwoPlane(InputArray _src1, InputArray _src2, OutputArray _dst, int code, Stream& _stream)
+{
+    // See: https://forums.developer.nvidia.com/t/incorrect-offset-application-in-npp-colortwist-conversion/312180
+    CV_Error(Error::StsBadFlag, "cvtColorTwoPlane not supported with NPP <= 12 as nppiNV12ToRGB_8u_ColorTwist32f_P2C3R_Ctx is buggy");
+}
+
+#else
+
+void cv::cuda::cvtColorTwoPlane(InputArray _src1, InputArray _src2, OutputArray _dst, int code, Stream& _stream)
+{
+    // Coeffs from opencl/color_yuv.cl c_YUV2RGBCoeffs_420
+    static const Npp32f twistYUV2BGR[3][4] = {
+        {1.163999557f, 2.017999649f, 0.0f, -16.0f}, // B
+        {1.163999557f, -0.390999794f, -0.812999725f, -128.0f}, // G
+        {1.163999557f, 0.0f, 1.5959997177f, -128.0f} // R
+    };
+
+    static const Npp32f twistYUV2RGB[3][4] = {
+        {1.163999557f, 0.0f, 1.5959997177f, -16.0f}, // R
+        {1.163999557f, -0.390999794f, -0.812999725f, -128.0f}, // G
+        {1.163999557f, 2.017999649f, 0.0f, -128.0f}, // B
+    };
+
+    CV_Assert( !_src1.empty() );
+    CV_Assert( !_src2.empty() );
+
+    const Npp32f (*twist)[3][4];
+
+    switch (code)
+    {
+    case COLOR_YUV2BGR_NV12:
+        twist = &twistYUV2BGR;
+        break;
+    case COLOR_YUV2RGB_NV12:
+        twist = &twistYUV2RGB;
+        break;
+    default:
+        CV_Error( cv::Error::StsBadFlag, "Unknown/unsupported color conversion code" );
+        return;
+    }
+
+    GpuMat src1 = _src1.getGpuMat();
+    const int depth1 = _src1.depth();
+    GpuMat src2 = _src2.getGpuMat();
+    const int depth2 = _src2.depth();
+
+    CV_Assert( depth1 == CV_8U );
+    CV_Assert( src1.channels() == 1 );
+    CV_Assert( depth2 == CV_8U );
+    CV_Assert( src2.channels() == 2 );
+
+    _dst.create(_src1.size(), CV_MAKE_TYPE(depth1, 3));
+    GpuMat dst = _dst.getGpuMat();
+
+    cudaStream_t stream = StreamAccessor::getStream(_stream);
+    NppStreamHandler h(stream);
+
+    NppiSize sz;
+    sz.width  = src1.cols;
+    sz.height = src1.rows;
+
+    const Npp8u *const pSrc[2] = {src1.ptr<Npp8u>(), src2.ptr<Npp8u>()};
+    int aSrcStep[2] = {static_cast<int>(src1.step), static_cast<int>(src2.step)};
+
+#if USE_NPP_STREAM_CTX
+    nppSafeCall( nppiNV12ToRGB_8u_ColorTwist32f_P2C3R_Ctx(pSrc, aSrcStep, dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, *twist, h) );
+#else
+    nppSafeCall( nppiNV12ToRGB_8u_ColorTwist32f_P2C3R_Ctx(pSrc, aSrcStep, dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, *twist) );
+#endif
+
+    if (stream == 0)
+        cudaSafeCall( cudaDeviceSynchronize() );
+}
+
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // demosaicing
