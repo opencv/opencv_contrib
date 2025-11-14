@@ -173,14 +173,14 @@ namespace
                                                     GpuMat& table_color, GpuMat& table_space,
                                                     const GpuMat& disp, const GpuMat& img, OutputArray dst, Stream& stream);
         const bilateral_filter_operator_t operators[] =
-            {disp_bilateral_filter_operator<unsigned char>, 0, 0, disp_bilateral_filter_operator<short>, 0, 0, 0, 0};
+            {disp_bilateral_filter_operator<unsigned char>, 0, 0, disp_bilateral_filter_operator<short>, 0, disp_bilateral_filter_operator<float>, 0, 0};
 
         CV_Assert( 0 < ndisp_ && 0 < radius_ && 0 < iters_ );
 
         GpuMat disp = _disp.getGpuMat();
         GpuMat img = _image.getGpuMat();
 
-        CV_Assert( disp.type() == CV_8U || disp.type() == CV_16S );
+        CV_Assert( disp.type() == CV_8U || disp.type() == CV_16S || disp.type() == CV_32F );
         CV_Assert( img.type() == CV_8UC1 || img.type() == CV_8UC3 );
         CV_Assert( disp.size() == img.size() );
 
