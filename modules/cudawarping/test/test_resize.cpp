@@ -260,6 +260,127 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeTextures, testing::Combine(
     ALL_DEVICES,
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC))));
 
+PARAM_TEST_CASE(ResizeOnnx, cv::cuda::DeviceInfo, MatType, double, double, int, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    int depth, interpolation;
+    double fx, fy;
+    bool useRoi;
+
+    Rect src_loc, dst_loc;
+    Mat src, dst, src_roi, dst_roi;
+    GpuMat gsrc, gdst, gsrc_roi, gdst_roi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        depth = GET_PARAM(1);
+        fx = GET_PARAM(2);
+        fy = GET_PARAM(3);
+        interpolation = GET_PARAM(4);
+        useRoi = GET_PARAM(5);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+
+    void random_submat(int type,
+        Size& size, Rect& roi, Mat& mat, Mat& sub, GpuMat& gmat, GpuMat& gsub)
+    {
+        int border = useRoi ? 65 : 0;
+        roi.x = randomInt(0, border);
+        roi.y = randomInt(0, border);
+        roi.width = size.width;
+        roi.height = size.height;
+        size.width += roi.x + randomInt(0, border);
+        size.height += roi.y + randomInt(0, border);
+        mat = randomMat(size, type, -127, 127);
+        gmat.upload(mat);
+        sub = mat(roi);
+        gsub = gmat(roi);
+    }
+
+    void random_roi(int type)
+    {
+        Size srcSize, dstSize;
+        int minSize = min(fx, fy) < 1.0 ? 16 : 1;
+        while (dstSize.empty())
+        {
+            srcSize = randomSize(minSize, 129);
+            dstSize.width = cvRound(srcSize.width * fx);
+            dstSize.height = cvRound(srcSize.height * fy);
+        }
+
+        random_submat(type, srcSize, src_loc, src, src_roi, gsrc, gsrc_roi);
+        random_submat(type, dstSize, dst_loc, dst, dst_roi, gdst, gdst_roi);
+    }
+};
+
+CUDA_TEST_P(ResizeOnnx, Accuracy)
+{
+    Mat host, host_roi;
+    double eps = depth <= CV_32S ? 1 : 5e-2;
+
+    for (int cn = 1; cn <= 6; ++cn)
+    {
+        int type = CV_MAKETYPE(depth, cn);
+        float A = static_cast<float>(randomDouble(-1.0, -0.1));
+        random_roi(type);
+
+        cv::resizeOnnx(src_roi, dst_roi,
+            dst_roi.size(), Point2d(fx, fy), interpolation, A);
+        cv::cuda::resizeOnnx(gsrc_roi, gdst_roi,
+            dst_roi.size(), Point2d(fx, fy), interpolation, A);
+
+        gdst.download(host);
+        host_roi = host(dst_loc);
+        string info = cv::format(
+            "fail on type %sC%d src %dx%d dst %dx%d src_roi %dx%d dst_roi %dx%d",
+            depthToString(depth), cn, src.cols, src.rows, dst.cols, dst.rows,
+            src_roi.cols, src_roi.rows, dst_roi.cols, dst_roi.rows);
+        EXPECT_MAT_NEAR(dst_roi, host_roi, eps) << info;
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeOnnx, Combine(
+    ALL_DEVICES,
+    Values(CV_8U, CV_8S, CV_16U, CV_16S, CV_32S, CV_32F, CV_64F),
+    Values(0.4, 0.27, 1.6),
+    Values(0.5, 0.71, 2.7),
+    Values((int)(INTER_LINEAR), (int)(INTER_CUBIC)),
+    WHOLE_SUBMAT));
+
+INSTANTIATE_TEST_CASE_P(CUDA_Warping_Antialias, ResizeOnnx, Combine(
+    ALL_DEVICES,
+    Values(CV_8U, CV_8S, CV_16U, CV_16S, CV_32S, CV_32F, CV_64F),
+    Values(0.4, 0.27, 1.6),
+    Values(0.5, 0.71, 2.7),
+    Values(
+        (int)(INTER_ANTIALIAS | INTER_LINEAR),
+        (int)(INTER_ANTIALIAS | INTER_CUBIC)),
+    WHOLE_SUBMAT));
+
+INSTANTIATE_TEST_CASE_P(CUDA_Warping_Nearest, ResizeOnnx, Combine(
+    ALL_DEVICES,
+    Values(CV_8S, CV_16S, CV_32F, CV_64F),
+    Values(0.4, 0.27, 1.6),
+    Values(0.5, 0.71, 2.7),
+    Values(
+        (int)(INTER_NEAREST | INTER_NEAREST_PREFER_FLOOR),
+        (int)(INTER_NEAREST | INTER_NEAREST_PREFER_CEIL),
+        (int)(INTER_NEAREST | INTER_NEAREST_CEIL),
+        (int)(INTER_NEAREST | INTER_NEAREST_FLOOR)),
+    WHOLE_SUBMAT));
+
+INSTANTIATE_TEST_CASE_P(CUDA_Warping_ExcludeOutside, ResizeOnnx, Combine(
+    ALL_DEVICES,
+    Values(CV_8U, CV_8S, CV_16U, CV_16S, CV_32S, CV_32F, CV_64F),
+    Values(0.4, 0.27, 1.6),
+    Values(0.5, 0.71, 2.7),
+    Values(
+        (int)(                   INTER_CUBIC | INTER_EXCLUDE_OUTSIDE),
+        (int)(INTER_ANTIALIAS |  INTER_CUBIC | INTER_EXCLUDE_OUTSIDE),
+        (int)(INTER_ANTIALIAS | INTER_LINEAR | INTER_EXCLUDE_OUTSIDE)),
+    WHOLE_SUBMAT));
 
 }} // namespace
+
 #endif // HAVE_CUDA
