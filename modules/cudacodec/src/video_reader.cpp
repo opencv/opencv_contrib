@@ -54,8 +54,6 @@ void cv::cudacodec::MapHist(const GpuMat&, Mat&) { throw_no_cuda(); }
 
 #else // HAVE_NVCUVID
 
-void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const bool videoFullRangeFlag, cudaStream_t stream);
-
 using namespace cv::cudacodec::detail;
 
 namespace
@@ -81,10 +79,11 @@ namespace
 
         bool set(const ColorFormat colorFormat, const BitDepth bitDepth = BitDepth::UNCHANGED, const bool planar = false) CV_OVERRIDE;
 
-        bool get(const VideoReaderProps propertyId, double& propertyVal) const CV_OVERRIDE;
-        bool getVideoReaderProps(const VideoReaderProps propertyId, double& propertyValOut, double propertyValIn) const CV_OVERRIDE;
+        bool get(const VideoReaderProps propertyId, size_t& propertyVal) const CV_OVERRIDE;
 
         bool get(const int propertyId, double& propertyVal) const CV_OVERRIDE;
+
+        bool rawPackageHasKeyFrame(const size_t idx) const CV_OVERRIDE;
 
     private:
         bool skipFrame();
@@ -298,8 +297,9 @@ namespace
             if (idx >= rawPacketsBaseIdx && idx < rawPacketsBaseIdx + rawPackets.size()) {
                 if (!frame.isMat())
                     CV_Error(Error::StsUnsupportedFormat, "Raw data is stored on the host and must be retrieved using a cv::Mat");
-                const size_t i = idx - rawPacketsBaseIdx;
-                Mat tmp(1, rawPackets.at(i).Size(), CV_8UC1, const_cast<unsigned char*>(rawPackets.at(i).Data()), rawPackets.at(i).Size());
+                const size_t i = idx - static_cast<size_t>(rawPacketsBaseIdx);
+                CV_Assert(rawPackets.at(i).Size() <= std::numeric_limits<int>::max());
+                Mat tmp(1, static_cast<int>(rawPackets.at(i).Size()), CV_8UC1, const_cast<unsigned char*>(rawPackets.at(i).Data()), rawPackets.at(i).Size());
                 frame.getMatRef() = tmp;
             }
         }
@@ -311,6 +311,8 @@ namespace
         case VideoReaderProps::PROP_RAW_MODE :
             videoSource_->SetRawMode(static_cast<bool>(propertyVal));
             return true;
+        default:
+            break;
         }
         return false;
     }
@@ -334,7 +336,7 @@ namespace
         return true;
     }
 
-    bool VideoReaderImpl::get(const VideoReaderProps propertyId, double& propertyVal) const {
+    bool VideoReaderImpl::get(const VideoReaderProps propertyId, size_t& propertyVal) const {
         switch (propertyId)
         {
         case VideoReaderProps::PROP_DECODED_FRAME_IDX:
@@ -356,15 +358,6 @@ namespace
         case VideoReaderProps::PROP_RAW_MODE:
             propertyVal = videoSource_->RawModeEnabled();
             return true;
-        case VideoReaderProps::PROP_LRF_HAS_KEY_FRAME: {
-            const int iPacket = propertyVal - rawPacketsBaseIdx;
-            if (videoSource_->RawModeEnabled() && iPacket >= 0 && iPacket < rawPackets.size()) {
-                propertyVal = rawPackets.at(iPacket).ContainsKeyFrame();
-                return true;
-            }
-            else
-                break;
-        }
         case VideoReaderProps::PROP_ALLOW_FRAME_DROP:
             propertyVal = videoParser_->allowFrameDrops();
             return true;
@@ -372,13 +365,13 @@ namespace
             propertyVal = videoParser_->udpSource();
             return true;
         case VideoReaderProps::PROP_COLOR_FORMAT:
-            propertyVal = static_cast<double>(colorFormat);
+            propertyVal = static_cast<size_t>(colorFormat);
             return true;
         case VideoReaderProps::PROP_BIT_DEPTH:
-            propertyVal = static_cast<double>(bitDepth);
+            propertyVal = static_cast<size_t>(bitDepth);
             return true;
         case VideoReaderProps::PROP_PLANAR:
-            propertyVal = static_cast<double>(planar);
+            propertyVal = static_cast<size_t>(planar);
             return true;
         default:
             break;
@@ -386,11 +379,13 @@ namespace
         return false;
     }
 
-    bool VideoReaderImpl::getVideoReaderProps(const VideoReaderProps propertyId, double& propertyValOut, double propertyValIn) const {
-        double propertyValInOut = propertyValIn;
-        const bool ret = get(propertyId, propertyValInOut);
-        propertyValOut = propertyValInOut;
-        return ret;
+    bool VideoReaderImpl::rawPackageHasKeyFrame(const size_t idx) const {
+        if (idx < rawPacketsBaseIdx) return false;
+        const size_t iPacket = idx - rawPacketsBaseIdx;
+        if (videoSource_->RawModeEnabled() && iPacket < rawPackets.size())
+            return rawPackets.at(iPacket).ContainsKeyFrame();
+        else
+            return false;
     }
 
     bool VideoReaderImpl::get(const int propertyId, double& propertyVal) const {
