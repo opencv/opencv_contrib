@@ -217,7 +217,7 @@ void cmpScalar(const GpuMat& src, cv::Scalar val, bool inv, GpuMat& dst, const G
     const int depth = src.depth();
     const int cn = src.channels();
 
-    CV_DbgAssert( depth <= CV_64F && cn <= 4 );
+    CV_Assert( depth <= CV_64F && cn <= 4 );
 
     funcs[depth][cmpop][cn - 1](src, val, dst, stream);
 }
