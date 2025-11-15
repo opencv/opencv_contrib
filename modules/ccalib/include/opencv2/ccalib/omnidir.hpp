@@ -150,48 +150,98 @@ namespace omnidir
     @param xi The parameter xi for CMei's model.
     @param flags Flags indicates the rectification type,  RECTIFY_PERSPECTIVE, RECTIFY_CYLINDRICAL, RECTIFY_LONGLATI and RECTIFY_STEREOGRAPHIC
     @param Knew Camera matrix of the distorted image. If it is not assigned, it is just K.
-    @param new_size The new image size. By default, it is the size of distorted.
+    @param newSize The new image size. By default, it is the size of distorted.
     @param R Rotation matrix between the input and output images. By default, it is identity matrix.
     */
     CV_EXPORTS_W void undistortImage(InputArray distorted, OutputArray undistorted, InputArray K, InputArray D, InputArray xi, int flags,
-        InputArray Knew = cv::noArray(), const Size& new_size = Size(), InputArray R = Mat::eye(3, 3, CV_64F));
+        InputArray Knew = cv::noArray(), const Size& newSize = Size(), InputArray R = Mat::eye(3, 3, CV_64F));
+
+    /** @brief Estimates new camera intrinsic matrix for undistortion or rectification. Function is optimized for perspective (RECTIFY_PERSPECTIVE)
+       and spherical (RECTIFY_LONGLATI) projection. For all other projection types supported by the omnidirectional model the new camera matrix is
+       estimated as for the spherical projection.
+
+    @param K Camera matrix \f$K = \vecthreethree{f_x}{s}{c_x}{0}{f_y}{c_y}{0}{0}{_1}\f$.
+    @param D Input vector of distortion coefficients \f$(k_1, k_2, p_1, p_2)\f$.
+    @param xi The parameter xi for CMei's model.
+    @param imageSize Size of the image
+    @param R Rectification transformation in the object space: 3x3 1-channel, or vector: 3x1/1x3
+    1-channel or 1x1 3-channel
+    @param P New camera matrix (3x3)
+    @param rectificationType Flag indicates the rectification type for the output, possibilities:
+    RECTIFY_PERSPECTIVE, RECTIFY_CYLINDRICAL, RECTIFY_LONGLATI and RECTIFY_STEREOGRAPHIC. There are two different estimation modes: one for
+    RECTIFY_PERSPECTIVE and the other one for all other projection types.
+    @param scale0 If rectificationType is RECTIFY_PERSPECTIVE, this parameter sets the new focal length in the range between the min focal
+    length and the max focal length (needs to be in the range of [0, 1]). For other rectificationTypes, this parameter is used to scale the
+    horizontal field of view (fov) (> 1: increase fov, < 1: decrease fov, needs to be >0).
+    @param scale1 If rectificationType is RECTIFY_PERSPECTIVE, this parameter is used as divisor for the new focal length. For other
+    rectificationTypes, this parameter is used to scale the vertical field of view (fov) (> 1: increase fov, < 1: decrease fov, needs to be >0).
+    @param newSize the new size of the image after undistortion or rectification
+
+    Estimates new camera intrinsic matrix for undistortion or rectification depending on the rectification/projection type (rectificationType):
+
+    - RECTIFY_PERSPECTIVE:
+    Output matrix is calculated by estimating the focal length (\f$f_{new}\f$) and the camera center (\f$c_{new}\f$) of the undistorted image.
+    For that, points on the border of the distorted image plane are undistorted. From these the min and max focal distance as well as the center
+    point of the undistorted image can be calculated. Finally, \f$f_{new}\f$ is determined by scaling between the min and max focal length using
+    scale0, dividing by scale1 and by applying a scale depending on newSize. \f$c_{new}\f$ is obtained from the center point and the focal length.
+    The final output matrix looks as follows: \f[P = \vecthreethree{f_{new}(x)}{0}{c_{new}(x)}{0}{f_{new}(y)}{c_{new}(y)}{0}{0}{1}.\f]
+    This is the exact same procedure as done in the fisheye model function @ref cv::fisheye::estimateNewCameraMatrixForUndistortRectify.
+
+    - RECTIFY_LONGLATI:
+    Output matrix P contains scaling parameters to convert from pixels to angles (horizontal and vertical) and the offset of the
+    image center in pixels. For that, points on the border of the distorted image plane are undistorted. The minimum and maximum x and
+    y values of the undistorted points are used to define points on the unit sphere. From these the horizontal and vertical field of view (fov)
+    angles \f$\theta\f$ (longitude) and \f$\phi\f$ (latitude) are calculated. \f$\theta\f$ is then scaled by scale0 and \f$\phi\f$ by scale1.
+    Then, the horizontal and vertical pixels per radiant ratios (\f$r_x\f$, \f$r_y\f$) are calculated as follows, using the width and height
+    (\f$w_n\f$, \f$h_n\f$) of the output image (newSize):
+    \f[\begin{bmatrix}r_x \\ r_y\end{bmatrix} = \begin{bmatrix}\frac{w_n}{\theta} \\ \frac{h_n}{\phi}\end{bmatrix}.\f]
+    Further, the longitude and latitude angles (\f$\theta_c\f$, \f$\phi_c\f$) between the minimum points (for x and y) and the
+    center point (x=0, y=0) on the unit sphere are calculated to estimate the angle offsets of the principal point. For the LONGLATI projection,
+    the default fov is assumed to be \f$\pi\f$, with the center point at \f$\frac{\pi}{2}\f$. Therefore, the angle offset is calculated as
+    follows: \f[\begin{bmatrix}\alpha_x \\ \alpha_y\end{bmatrix} = \begin{bmatrix}\frac{\pi}{2} - \theta_c \\ \frac{\pi}{2} - \phi_c\end{bmatrix}.\f]
+    The pixel offsets of the principal point (\f$o_x\f$, \f$o_y\f$) are obtained as following:
+    \f[\begin{bmatrix}c_x \\ c_y\end{bmatrix} = \begin{bmatrix}\alpha_x \cdot r_x \\ \alpha_y \cdot r_y\end{bmatrix}.\f]
+    The final output matrix is then defined as follows: \f[P = \vecthreethree{r_x}{0}{-o_x}{0}{r_y}{-o_y}{0}{0}{1}.\f]
+    */
+    CV_EXPORTS_W void estimateNewCameraMatrixForUndistortRectify(InputArray K, InputArray D, InputArray xi, const Size &imageSize, InputArray R,
+        OutputArray P, int rectificationType, double scale0 = 0.0, double scale1 = 1.0, const Size& newSize = Size());
 
     /** @brief Perform omnidirectional camera calibration, the default depth of outputs is CV_64F.
 
-    @param objectPoints Vector of vector of Vec3f object points in world (pattern) coordinate.
+    @param objectPoints Vector of vectors of Vec3f holding object points in the object (pattern) coordinate system.
     It also can be vector of Mat with size 1xN/Nx1 and type CV_32FC3. Data with depth of 64_F is also acceptable.
-    @param imagePoints Vector of vector of Vec2f corresponding image points of objectPoints. It must be the same
-    size and the same type with objectPoints.
+    @param imagePoints Vector of vectors of Vec2f holding image points corresponding to the objectPoints.
+    Must be the same size and the same type as objectPoints.
     @param size Image size of calibration images.
     @param K Output calibrated camera matrix.
     @param xi Output parameter xi for CMei's model
     @param D Output distortion parameters \f$(k_1, k_2, p_1, p_2)\f$
-    @param rvecs Output rotations for each calibration images
-    @param tvecs Output translation for each calibration images
+    @param rvecs Output rotation for each calibration image
+    @param tvecs Output translation for each calibration image
     @param flags The flags that control calibrate
     @param criteria Termination criteria for optimization
-    @param idx Indices of images that pass initialization, which are really used in calibration. So the size of rvecs is the
-    same as idx.total().
+    @param idx Indices of images that pass initialization and which are really used for calibration. So the size of rvecs
+    and tvecs is the same as idx.total().
     */
     CV_EXPORTS_W double calibrate(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints, Size size,
         InputOutputArray K, InputOutputArray xi, InputOutputArray D, OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
         int flags, TermCriteria criteria, OutputArray idx=noArray());
 
     /** @brief Stereo calibration for omnidirectional camera model. It computes the intrinsic parameters for two
-    cameras and the extrinsic parameters between two cameras. The default depth of outputs is CV_64F.
+    cameras and the extrinsic parameters between the two cameras. The default depth of outputs is CV_64F.
 
-    @param objectPoints Object points in world (pattern) coordinate. Its type is vector<vector<Vec3f> >.
+    @param objectPoints Object points in the object (pattern) coordinate sytem. Its type is vector<vector<Vec3f> >.
     It also can be vector of Mat with size 1xN/Nx1 and type CV_32FC3. Data with depth of 64_F is also acceptable.
-    @param imagePoints1 The corresponding image points of the first camera, with type vector<vector<Vec2f> >.
+    @param imagePoints1 The image points of the first camera corresponding to objectPoints, with type vector<vector<Vec2f> >.
     It must be the same size and the same type as objectPoints.
-    @param imagePoints2 The corresponding image points of the second camera, with type vector<vector<Vec2f> >.
+    @param imagePoints2 The image points of the second camera corresponding to objectPoints, with type vector<vector<Vec2f> >.
     It must be the same size and the same type as objectPoints.
     @param imageSize1 Image size of calibration images of the first camera.
     @param imageSize2 Image size of calibration images of the second camera.
     @param K1 Output camera matrix for the first camera.
     @param xi1 Output parameter xi of Mei's model for the first camera
     @param D1 Output distortion parameters \f$(k_1, k_2, p_1, p_2)\f$ for the first camera
-    @param K2 Output camera matrix for the first camera.
+    @param K2 Output camera matrix for the second camera.
     @param xi2 Output parameter xi of CMei's model for the second camera
     @param D2 Output distortion parameters \f$(k_1, k_2, p_1, p_2)\f$ for the second camera
     @param rvec Output rotation between the first and second camera
@@ -200,8 +250,8 @@ namespace omnidir
     @param tvecsL Output translation for each image of the first camera
     @param flags The flags that control stereoCalibrate
     @param criteria Termination criteria for optimization
-    @param idx Indices of image pairs that pass initialization, which are really used in calibration. So the size of rvecs is the
-    same as idx.total().
+    @param idx Indices of image pairs that pass initialization and which are really used for calibration. So the size of rvecsL
+    and tvecsL is the same as idx.total().
     @
     */
     CV_EXPORTS_W double stereoCalibrate(InputOutputArrayOfArrays objectPoints, InputOutputArrayOfArrays imagePoints1, InputOutputArrayOfArrays imagePoints2,
@@ -210,8 +260,8 @@ namespace omnidir
 
     /** @brief Stereo rectification for omnidirectional camera model. It computes the rectification rotations for two cameras
 
-    @param R Rotation between the first and second camera
-    @param T Translation between the first and second camera
+    @param R Rotation between the first and second camera (rotation of second camera into first one)
+    @param T Translation between the first and second camera (translation of second camera into first one)
     @param R1 Output 3x3 rotation matrix for the first camera
     @param R2 Output 3x3 rotation matrix for the second camera
     */
