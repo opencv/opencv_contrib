@@ -161,8 +161,46 @@ namespace cv {
 
                 Mat img_converted;
 
-                // Switch to float
-                img.convertTo(img_converted, CV_32F);
+                // Switch to [0,255] float
+                double alpha = 1.0;
+
+                const int depth = CV_MAT_DEPTH( img.type() );
+                switch( depth )
+                {
+                    case CV_8U:  alpha = 1.;                  break;
+                    case CV_16U: alpha = 255. / 65535. ;      break;
+                    case CV_8S:  alpha = 255. / 127. ;        break;
+                    case CV_16S: alpha = 255. / 32767. ;      break;
+                    case CV_32F: alpha = 255. ;               break; // [0,1]->[0,255]
+                    case CV_64F: alpha = 255. ;               break; // [0,1]->[0,255]
+                    default: CV_Error(Error::StsBadArg,"Unsupported Mat type"); break;
+                }
+
+                // Check Negative Pixel Value.
+                if(
+                    ( depth != CV_8U ) && ( depth != CV_16U )
+                )
+                {
+                    double min;
+                    minMaxLoc( img, &min );
+                    if ( min < 0.0 )
+                    {
+                        CV_Error(Error::StsBadArg,"Negative Pixel Valuea are contained.");
+                    }
+                }
+
+#if 0
+                // In test code, CV_16S results were slightly different from others.
+                // Following code is workaround.
+                if ( depth == CV_16S )
+                {
+                    Mat tmp;
+                    img.convertTo(tmp, CV_8U, alpha );
+                    tmp.convertTo(img_converted, CV_32F );
+                }
+                else
+#endif
+                img.convertTo(img_converted, CV_32F, alpha );
 
                 // Apply gaussian filter
                 GaussianBlur(img_converted, img_filtered, Size(0, 0), sigma, sigma);
