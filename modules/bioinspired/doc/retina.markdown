@@ -142,7 +142,7 @@ code has been redrawn by the author :
 
 -   take a look at *imagelogpolprojection.hpp* to discover retina spatial log sampling which
     originates from Barthelemy Durette phd with Jeanny Herault. A Retina / V1 cortex projection is
-    also proposed and originates from Jeanny's discussions. More informations in the above cited
+    also proposed and originates from Jeanny's discussions. More information in the above cited
     Jeanny Heraults's book.
 
 -   Meylan&al work on HDR tone mapping that is implemented as a specific method within the model : @cite Meylan2007
@@ -349,7 +349,7 @@ thus enhancing event sensitivity.
 Here are some code snippets to shortly show how to use Retina with default parameters (with halo effects). Next section redirects to more complete demos provided with the main retina class.
 
 Here is presented how to process a webcam stream with the following steps : 
-- load a frist input image to get its size
+- load a first input image to get its size
 - allocate a retina instance with appropriate input size
 - loop over grabbed frames :
   - grab a new frame
@@ -500,6 +500,6 @@ Take a look at the provided C++ examples provided with OpenCV :
     @cite Benoit2010 . It includes spectral whitening that allows luminance energy to be reduced.
     When using the 'fast' option, a simpler method is used, it is an adaptation of the
     algorithm presented in @cite Meylan2007 . This method also gives  good results and it is faster to
-    process but it sometimes requires some more parameters adjustement.
+    process but it sometimes requires some more parameters adjustment.
 
 
