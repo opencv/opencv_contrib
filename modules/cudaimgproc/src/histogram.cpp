@@ -64,6 +64,8 @@ void cv::cuda::histRange(InputArray, GpuMat*, const GpuMat*, Stream&) { throw_no
 
 #else /* !defined (HAVE_CUDA) */
 
+#include <opencv2/core/utils/logger.hpp>
+
 ////////////////////////////////////////////////////////////////////////
 // calcHist
 
@@ -163,8 +165,15 @@ namespace
 
         void collectGarbage();
 
-        void setBitShift(int) override {};
-        int getBitShift() const override {return 0;}
+        void setBitShift(int) override
+        {
+            CV_LOG_WARNING(NULL, "CUDA implementation of CLAHE algorithm does not support bit shift option");
+        };
+        int getBitShift() const override
+        {
+            CV_LOG_WARNING(NULL, "CUDA implementation of CLAHE algorithm does not support bit shift option");
+            return 0;
+        }
 
     private:
         double clipLimit_;
