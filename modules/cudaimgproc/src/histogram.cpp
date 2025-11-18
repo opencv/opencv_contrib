@@ -163,6 +163,9 @@ namespace
 
         void collectGarbage();
 
+	void setBitShift(int) override {};
+	int getBitShift() const override {return 0;}
+
     private:
         double clipLimit_;
         int tilesX_;
