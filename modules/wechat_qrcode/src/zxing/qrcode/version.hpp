@@ -64,7 +64,7 @@ private:
 public:
     static unsigned int VERSION_DECODE_INFO[];
     static int N_VERSION_DECODE_INFOS;
-    static std::vector<Ref<Version> > VERSIONS;
+    static std::vector<Ref<Version> >& getVersions();
 
     ~Version();
     int getVersionNumber();
