@@ -105,8 +105,9 @@ Version *Version::getVersionForNumber(int versionNumber, ErrorHandler &err_handl
         err_handler = zxing::ReaderErrorHandler("versionNumber must be between 1 and 40");
         return NULL;
     }
-    return getVersions()[versionNumber - 1];
+    return getVersions()[versionNumber - 1].get();
 }
+
 
 Version::Version(int versionNumber, vector<int> *alignmentPatternCenters, ECBlocks *ecBlocks1,
                  ECBlocks *ecBlocks2, ECBlocks *ecBlocks3, ECBlocks *ecBlocks4)
