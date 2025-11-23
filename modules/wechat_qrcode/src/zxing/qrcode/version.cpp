@@ -56,6 +56,8 @@ std::vector<Ref<Version> >& Version::getVersions() {
     return *versions;
 }
 
+int Version::N_VERSIONS = 40;
+
 int Version::getVersionNumber() { return versionNumber_; }
 
 vector<int> &Version::getAlignmentPatternCenters() { return alignmentPatternCenters_; }
@@ -105,7 +107,7 @@ Version *Version::getVersionForNumber(int versionNumber, ErrorHandler &err_handl
         err_handler = zxing::ReaderErrorHandler("versionNumber must be between 1 and 40");
         return NULL;
     }
-    return getVersions()[versionNumber - 1].get();
+    return getVersions()[versionNumber - 1];
 }
 
 
