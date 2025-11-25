@@ -43,9 +43,9 @@
 
 namespace opencv_test { namespace {
 
-TEST( GrayCodePattern, plane_reconstruction )
+TEST( GrayCodePattern, plane_reconstruction_16bit )
 {
-  CV_PlaneTest<false> test;
+  CV_PlaneTest<true> test;
   test.safe_run();
 }
 
