@@ -132,46 +132,55 @@ bool GrayCodePattern_Impl::generate( OutputArrayOfArrays pattern )
         pattern_[i].create(params.height, params.width, CV_8U);
     }
     parallel_for_(Range(0, params.width), [&](const Range& range) {
-        for (int j = range.start; j < range.end; ++j)
+        for (int col = range.start; col < range.end; ++col)
         {
-            for (size_t k = 0; k < numOfColImgs; ++k)
+            for (size_t nBits = 0; nBits < numOfColImgs; ++nBits)
             {
-                uchar flag = (((j >> k) & 1) ^ ((j >> (k + 1)) & 1));
+                // Gray-code column bit-plane: XOR adjacent binary bits so just one stripe
+                // toggles between consecutive frames without rebuilding the Gray number.
+                // It is a more efficient alternative to the decodePixel + greyToDec approach.
+                // Here we get the column bit-plane for the n-th and (n+1)-th binary bits and XOR them
+                // following the Gray-code definition (x_n = b_n XOR b_(n+1))
+                uchar flag = (((col >> nBits) & 1) ^ ((col >> (nBits + 1)) & 1));
                 uchar pixel_color = flag * 255;
 
-                size_t idx1 = 2 * numOfColImgs - 2 * k - 2;
-                size_t idx2 = 2 * numOfColImgs - 2 * k - 1;
+                size_t idx1 = 2 * numOfColImgs - 2 * nBits - 2;
+                size_t idx2 = 2 * numOfColImgs - 2 * nBits - 1;
 
                 if (idx1 < numOfPatternImages)
                 {
-                    pattern_[idx1].col(j).setTo(pixel_color);
+                    pattern_[idx1].col(col).setTo(pixel_color);
                 }
                 if (idx2 < numOfPatternImages)
                 {
-                    pattern_[idx2].col(j).setTo(255 - pixel_color);
+                    pattern_[idx2].col(col).setTo(255 - pixel_color);
                 }
             }
         }
     });
     parallel_for_(Range(0, params.height), [&](const Range& range) {
-        for (int i = range.start; i < range.end; ++i)
+        for (int row = range.start; row < range.end; ++row)
         {
-            for (size_t k = 0; k < numOfRowImgs; ++k)
+            for (size_t nBits = 0; nBits < numOfRowImgs; ++nBits)
             {
-                uchar flag = (((i >> k) & 1) ^ ((i >> (k + 1)) & 1));
+                // Same Gray extraction for rows so vertical patterns flip a single stripe per exposure
+                // It is a more efficient alternative to the decodePixel + greyToDec approach.
+                // Here we get the row bit-plane for the n-th and (n+1)-th binary bits and XOR them
+                // following the Gray-code definition (x_n = b_n XOR b_(n+1))
+                uchar flag = (((row >> nBits) & 1) ^ ((row >> (nBits + 1)) & 1));
                 uchar pixel_color = flag * 255;
 
                 size_t base_idx = 2 * numOfColImgs;
-                size_t idx1 = base_idx + 2 * numOfRowImgs - 2 * k - 2;
-                size_t idx2 = base_idx + 2 * numOfRowImgs - 2 * k - 1;
+                size_t idx1 = base_idx + 2 * numOfRowImgs - 2 * nBits - 2;
+                size_t idx2 = base_idx + 2 * numOfRowImgs - 2 * nBits - 1;
 
                 if (idx1 < numOfPatternImages)
                 {
-                    pattern_[idx1].row(i).setTo(pixel_color);
+                    pattern_[idx1].row(row).setTo(pixel_color);
                 }
                 if (idx2 < numOfPatternImages)
                 {
-                    pattern_[idx2].row(i).setTo(255 - pixel_color);
+                    pattern_[idx2].row(row).setTo(255 - pixel_color);
                 }
             }
         }
@@ -353,6 +362,9 @@ void GrayCodePattern_Impl::populateFastPatternImages(const std::vector<std::vect
     }
 }
 
+// NOTE: these 2 functions (grayToDec and decodePixel) are kept to keep backward compatibility with the existing API
+//       since they are used in the getProjPixel function. However, the new faster method getProjPixelFast is preferred for performance
+//       when decoding full patterns instead of single pixels.
 static int grayToDec(const std::vector<uchar>& gray)
 {
     if (gray.empty())
