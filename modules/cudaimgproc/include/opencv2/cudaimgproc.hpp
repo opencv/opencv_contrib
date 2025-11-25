@@ -154,6 +154,19 @@ CV_EXPORTS void swapChannels(InputOutputArray image, const int dstOrder[4], Stre
 @param dst Destination image.
 @param forward true for forward gamma correction or false for inverse gamma correction.
 @param stream Stream for the asynchronous version.
+
+Gamma correction is conformant to BT.709 @cite BT.709 with &gamma;=0.45.
+
+For the forward transform, RGB values are normalised to fit in the range L=[0..1], then:
+- For L < 0.018
+  + V = 4.5*L
+- For L >= 0.018
+  + V = 1.099 * L^0.45 - 0.099
+
+With V then being scaled back to [0..255].
+
+![image](pics/gammacorrection.png)
+
  */
 CV_EXPORTS_W void gammaCorrection(InputArray src, OutputArray dst, bool forward = true, Stream& stream = Stream::Null());
 

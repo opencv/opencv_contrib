@@ -64,6 +64,7 @@ private:
 public:
     static unsigned int VERSION_DECODE_INFO[];
     static int N_VERSION_DECODE_INFOS;
+    static int N_VERSIONS;
     static std::vector<Ref<Version> >& getVersions();
 
     ~Version();
@@ -78,7 +79,7 @@ public:
     Ref<BitMatrix> buildFunctionPattern(ErrorHandler &err_handler);
     Ref<BitMatrix> buildFixedPatternValue(ErrorHandler &err_handler);
     Ref<BitMatrix> buildFixedPatternTemplate(ErrorHandler &err_handler);
-    static int buildVersions();
+    static std::vector<Ref<Version>> buildVersions();
 };
 }  // namespace qrcode
 }  // namespace zxing

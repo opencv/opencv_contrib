@@ -56,6 +56,8 @@ std::vector<Ref<Version>>& Version::getVersions() {
 
 int Version::N_VERSIONS = 40;
 
+int Version::getVersionNumber() { return versionNumber_; }
+
 vector<int> &Version::getAlignmentPatternCenters() { return alignmentPatternCenters_; }
 
 int Version::getTotalCodewords() { return totalCodewords_; }
@@ -105,6 +107,7 @@ Version *Version::getVersionForNumber(int versionNumber, ErrorHandler &err_handl
     }
     return getVersions()[versionNumber - 1];
 }
+
 
 Version::Version(int versionNumber, vector<int> *alignmentPatternCenters, ECBlocks *ecBlocks1,
                  ECBlocks *ecBlocks2, ECBlocks *ecBlocks3, ECBlocks *ecBlocks4)
@@ -297,6 +300,7 @@ Ref<BitMatrix> Version::buildFunctionPattern(ErrorHandler &err_handler) {
 }
 
 std::vector<Ref<Version>> Version::buildVersions() {
+    std::vector<Ref<Version>> versions;
     versions.push_back(Ref<Version>(new Version(
         1, intArray(0), new ECBlocks(7, new ECB(1, 19)), new ECBlocks(10, new ECB(1, 16)),
         new ECBlocks(13, new ECB(1, 13)), new ECBlocks(17, new ECB(1, 9)))));
