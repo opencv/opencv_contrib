@@ -56,7 +56,8 @@ enum class VolumeType
 {
     TSDF        = 0,
     HASHTSDF    = 1,
-    COLOREDTSDF = 2
+    COLOREDTSDF = 2,
+    COLOREDHASHTSDF = 3
 };
 
 struct CV_EXPORTS_W VolumeParams
