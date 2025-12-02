@@ -31,8 +31,6 @@ template<class T> std::string toString(const T& p_arg)
 int
 main(int argc, char** argv)
 {
-  cv::Size* resolution = nullptr;
-
   // parser keys
   const char *keys =
       "{ help h usage ?  |   | show this message }"
