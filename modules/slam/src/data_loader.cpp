@@ -11,7 +11,7 @@ namespace vo {
 DataLoader::DataLoader(const std::string &imageDir)
     : currentIndex(0), fx_(700.0), fy_(700.0), cx_(0.5), cy_(0.5)
 {
-    // 使用 std::filesystem 先检查目录是否存在
+    // Use std::filesystem to check whether the directory exists first
     try {
         std::filesystem::path p(imageDir);
         if(!std::filesystem::exists(p) || !std::filesystem::is_directory(p)){
@@ -23,7 +23,7 @@ DataLoader::DataLoader(const std::string &imageDir)
         // fallthrough to try glob
     }
 
-    // 使用 glob 列出文件，捕获可能的 OpenCV 异常
+    // Use glob to list files, catching any possible OpenCV exceptions
     try {
         glob(imageDir + "/*", imageFiles, false);
     } catch(const Exception &e){
@@ -37,7 +37,7 @@ DataLoader::DataLoader(const std::string &imageDir)
         return;
     }
 
-    // 尝试在 imageDir 或其上一级目录寻找 sensor.yaml
+    // Try to find sensor.yaml in imageDir or its parent directory
     std::filesystem::path p(imageDir);
     std::string yaml1 = (p / "sensor.yaml").string();
     std::string yaml2 = (p.parent_path() / "sensor.yaml").string();
