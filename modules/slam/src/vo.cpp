@@ -1,388 +1,509 @@
-#include "opencv2/slam/vo.hpp"
+#include "opencv2/slam/data_loader.hpp"
+#include "opencv2/slam/feature.hpp"
+#include "opencv2/slam/initializer.hpp"
+#include "opencv2/slam/keyframe.hpp"
+#include "opencv2/slam/localizer.hpp"
+#include "opencv2/slam/map.hpp"
+#include "opencv2/slam/matcher.hpp"
 #include "opencv2/slam/optimizer.hpp"
+#include "opencv2/slam/pose.hpp"
+#include "opencv2/slam/visualizer.hpp"
+#include "opencv2/slam/vo.hpp"
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
+#include <opencv2/calib3d.hpp>
+#include <iostream>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
-#include <numeric>
+#include <opencv2/video/tracking.hpp>
+#include <filesystem>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+#include <cmath>
+#include <fstream>
+#include <algorithm>
 
 namespace cv {
 namespace vo {
 
-static Mat makeSE3(const Mat& R, const Mat& t) {
-    Mat T = Mat::eye(4, 4, CV_64F);
-    R.copyTo(T(Rect(0,0,3,3)));
-    t.copyTo(T(Rect(3,0,1,3)));
-    return T;
+VisualOdometry::VisualOdometry(Ptr<Feature2D> feature, Ptr<DescriptorMatcher> matcher)
+    : feature_(std::move(feature)), matcher_(std::move(matcher)) {
 }
 
-VisualOdometry::VisualOdometry(const Ptr<Feature2D>& feature,
-                               const Ptr<DescriptorMatcher>& matcher,
-                               const CameraIntrinsics& intrinsics,
-                               const VOParams& params)
-    : feature_(feature), matcher_(matcher), K_(intrinsics), params_(params) {
-    currentPoseSE3_ = Mat::eye(4,4,CV_64F);
-}
-
-bool VisualOdometry::processFrame(const Mat& img, double /*timestamp*/) {
-    frameCount_++;
-    if (!initialized_) {
-        if (lastImg_.empty()) {
-            lastImg_ = img.clone();
-            return false;
-        }
-        initialized_ = initializeTwoView(lastImg_, img);
-        lastImg_ = img.clone();
-        if (initialized_) trajectory_.push_back(currentPoseSE3_.clone());
-        return initialized_;
+int VisualOdometry::run(const std::string &imageDir, double scale_m, const VisualOdometryOptions &options){
+    DataLoader loader(imageDir);
+    std::cout << "VisualOdometry: loaded " << loader.size() << " images from " << imageDir << std::endl;
+    if(loader.size() == 0){
+        std::cerr << "VisualOdometry: no images found in " << imageDir << std::endl;
+        return -1;
     }
 
-    bool ok = trackWithPnP(img);
-    lastImg_ = img.clone();
-    if (ok) {
-        trajectory_.push_back(currentPoseSE3_.clone());
-        if (shouldInsertKeyframe()) {
-            // promote current frame to new keyframe using current features and PnP inliers
-            kfPoseSE3_ = currentPoseSE3_.clone();
-            kf_keypoints_ = cur_keypoints_;
-            kf_descriptors_ = cur_descriptors_.clone();
-            kf_kp_to_map_.assign((int)kf_keypoints_.size(), -1);
-                keyframePoses_.push_back(kfPoseSE3_.clone());
-                keyframeKeypoints_.push_back(kf_keypoints_);
-                keyframeDescriptors_.push_back(kf_descriptors_.clone());
-            // seed mapping for tracked correspondences
-            for (auto &pr : curFeat_to_map_inliers_) {
-                int curIdx = pr.first; int mpIdx = pr.second;
-                if (curIdx >=0 && curIdx < (int)kf_kp_to_map_.size()) kf_kp_to_map_[curIdx] = mpIdx;
+    if(!feature_){
+        feature_ = ORB::create(2000);
+    }
+    if(!matcher_){
+        matcher_ = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
+    }
+    // Remove internal FeatureExtractor/Matcher in favor of injected OpenCV components
+    PoseEstimator poseEst;
+    Visualizer vis;
+    MapManager map;
+    // two-view initializer
+    Initializer initializer;
+    // configure Localizer with a slightly stricter Lowe ratio (0.7)
+    Localizer localizer(0.7f);
+
+    // prepare per-run CSV diagnostics
+    std::string runTimestamp;
+    {
+        auto now = std::chrono::system_clock::now();
+        std::time_t t = std::chrono::system_clock::to_time_t(now);
+        std::tm tm = *std::localtime(&t);
+        std::ostringstream ss; ss << std::put_time(&tm, "%Y%m%d_%H%M%S");
+        runTimestamp = ss.str();
+    }
+    std::filesystem::path resultDir("../../result");
+    if(!std::filesystem::exists(resultDir)) std::filesystem::create_directories(resultDir);
+    // create a per-run folder under result/ named by timestamp
+    std::filesystem::path runDir = resultDir / runTimestamp;
+    if(!std::filesystem::exists(runDir)) std::filesystem::create_directories(runDir);
+    std::filesystem::path csvPath = runDir / std::string("run.csv");
+    std::ofstream csv(csvPath);
+    if(csv){
+        csv << "frame_id,mean_diff,median_flow,pre_matches,post_matches,inliers,inlier_ratio,integrated\n";
+        csv.flush();
+        std::cout << "Writing diagnostics to " << csvPath.string() << std::endl;
+    } else {
+        std::cerr << "Failed to open diagnostics CSV " << csvPath.string() << std::endl;
+    }
+
+    Mat R_g = Mat::eye(3,3,CV_64F);
+    Mat t_g = Mat::zeros(3,1,CV_64F);
+
+    // simple map structures
+    std::vector<KeyFrame> keyframes;
+    std::vector<MapPoint> mappoints;
+    std::unordered_map<int,int> keyframeIdToIndex;
+
+    // Backend (BA) thread primitives
+    std::mutex mapMutex; // protects map and keyframe modifications and writeback
+    std::condition_variable backendCv;
+    std::atomic<bool> backendStop(false);
+    std::atomic<int> backendRequests(0);
+    const int LOCAL_BA_WINDOW = 5; // window size for local BA (adjustable)
+
+    // Start backend thread: waits for notifications and runs BA on a snapshot
+    std::thread backendThread([&]() {
+        while(!backendStop.load()){
+            std::unique_lock<std::mutex> lk(mapMutex);
+            backendCv.wait(lk, [&]{ return backendStop.load() || backendRequests.load() > 0; });
+            if(backendStop.load()) break;
+            // snapshot map and keyframes
+            auto kfs_snapshot = map.keyframes();
+            auto mps_snapshot = map.mappoints();
+            // reset requests
+            backendRequests.store(0);
+            lk.unlock();
+
+            // determine local window
+            int K = static_cast<int>(kfs_snapshot.size());
+            if(K <= 0) continue;
+            int start = std::max(0, K - LOCAL_BA_WINDOW);
+            std::vector<int> localKfIndices;
+            for(int ii = start; ii < K; ++ii) localKfIndices.push_back(ii);
+            std::vector<int> fixedKfIndices;
+            if(start > 0) fixedKfIndices.push_back(0);
+
+            // Run BA on snapshot (may take time) - uses Optimizer which will use g2o if enabled
+            Optimizer::localBundleAdjustmentSFM(kfs_snapshot, mps_snapshot, localKfIndices, fixedKfIndices,
+                                            loader.fx(), loader.fy(), loader.cx(), loader.cy(), 10);
+
+            // write back optimized poses/points into main map under lock using id-based lookup
+            std::lock_guard<std::mutex> lk2(mapMutex);
+            auto &kfs_ref = const_cast<std::vector<KeyFrame>&>(map.keyframes());
+            auto &mps_ref = const_cast<std::vector<MapPoint>&>(map.mappoints());
+            // copy back poses by id to ensure we update the authoritative containers
+            for(const auto &kf_opt : kfs_snapshot){
+                int idx = map.keyframeIndex(kf_opt.id);
+                if(idx >= 0 && idx < static_cast<int>(kfs_ref.size())){
+                    kfs_ref[idx].R_w = kf_opt.R_w.clone();
+                    kfs_ref[idx].t_w = kf_opt.t_w.clone();
+                }
             }
-                // push kp->map history for BA
-                keyframeKpToMap_.push_back(kf_kp_to_map_);
-            triangulateWithLastKeyframe();
-            runLocalBAIfEnabled();
-        }
-    }
-    return ok;
-}
-
-Mat VisualOdometry::getCurrentPose() const { return currentPoseSE3_.clone(); }
-std::vector<Mat> VisualOdometry::getTrajectory() const { return trajectory_; }
-
-void VisualOdometry::setEnableBackend(bool on) { backendEnabled_ = on; }
-void VisualOdometry::setWindowSize(int N) { params_.localWindowSize = N; }
-void VisualOdometry::setBAParams(double reprojThresh, int maxIters) {
-    params_.reprojErrThresh = reprojThresh;
-    params_.baMaxIters = std::max(1, maxIters);
-}
-void VisualOdometry::setBackendType(int type) { params_.backendType = type; }
-void VisualOdometry::setMode(Mode m) { mode_ = m; }
-bool VisualOdometry::saveMap(const std::string& /*path*/) const { return false; }
-bool VisualOdometry::loadMap(const std::string& /*path*/) { return false; }
-void VisualOdometry::enableLoopClosure(bool on) { loopClosureEnabled_ = on; }
-void VisualOdometry::setPlaceRecognizer(const Ptr<Feature2D>& /*vocabFeature*/) {}
-
-bool VisualOdometry::initializeTwoView(const Mat& img0, const Mat& img1) {
-    std::vector<KeyPoint> k0, k1; Mat d0, d1;
-    feature_->detectAndCompute(img0, noArray(), k0, d0);
-    feature_->detectAndCompute(img1, noArray(), k1, d1);
-    if (k0.size() < 50 || k1.size() < 50) return false;
-
-    std::vector<std::vector<DMatch>> knn01; matcher_->knnMatch(d0, d1, knn01, 2);
-    std::vector<DMatch> good;
-    for (auto& v : knn01) if (v.size()>=2 && v[0].distance < 0.75 * v[1].distance) good.push_back(v[0]);
-    if (good.size() < 80) return false;
-
-    std::vector<Point2f> p0, p1;
-    p0.reserve(good.size()); p1.reserve(good.size());
-    for (auto& m : good) { p0.push_back(k0[m.queryIdx].pt); p1.push_back(k1[m.trainIdx].pt); }
-
-    Mat mask;
-    Mat E = findEssentialMat(p0, p1, K_.K, RANSAC, params_.ransacProb, params_.ransacThresh, mask);
-    if (E.empty()) return false;
-
-    Mat R, t;
-    int inliers = recoverPose(E, p0, p1, K_.K, R, t, mask);
-    if (inliers < params_.minInitInliers) return false;
-
-    // Set first pose = Identity, second = (R,t)
-    currentPoseSE3_ = makeSE3(R, t);
-
-    // Minimal triangulation demo (no storage of per-point observations yet)
-    Mat P0 = K_.K * Mat::eye(3,4,CV_64F);
-    Mat P1(3,4,CV_64F); R.copyTo(P1(Rect(0,0,3,3))); t.copyTo(P1(Rect(3,0,1,3))); P1 = K_.K * P1;
-
-    std::vector<Point2f> tp0, tp1; tp0.reserve(inliers); tp1.reserve(inliers);
-    std::vector<int> inlier_trainIdx; inlier_trainIdx.reserve(inliers);
-    for (size_t i=0;i<good.size();++i) if (mask.at<uchar>(int(i))) {
-        tp0.push_back(p0[i]); tp1.push_back(p1[i]);
-        inlier_trainIdx.push_back(good[i].trainIdx);
-    }
-    if (tp0.size() >= 20) {
-        Mat X4;
-        triangulatePoints(P0, P1, tp0, tp1, X4);
-        // initialize KF as second frame
-        kf_keypoints_ = k1;
-        kf_descriptors_ = d1.clone();
-        kf_kp_to_map_.assign((int)kf_keypoints_.size(), -1);
-        kfPoseSE3_ = currentPoseSE3_.clone();
-        for (int i=0;i<X4.cols;i++) {
-            Vec4d h = X4.col(i);
-            if (std::abs(h[3]) < 1e-8) continue;
-            Point3d X(h[0]/h[3], h[1]/h[3], h[2]/h[3]);
-            if (X.z > 0) {
-                int mpIndex = (int)mapPoints_.size();
-                mapPoints_.push_back(X);
-                int trainIdx = inlier_trainIdx[i];
-                if (trainIdx >=0 && trainIdx < (int)kf_kp_to_map_.size())
-                    kf_kp_to_map_[trainIdx] = mpIndex;
-            }
-        }
-    }
-    return true;
-}
-
-bool VisualOdometry::trackWithPnP(const Mat& img) {
-    cur_keypoints_.clear();
-    feature_->detectAndCompute(img, noArray(), cur_keypoints_, cur_descriptors_);
-    if (kf_descriptors_.empty() || cur_descriptors_.empty()) return false;
-
-    // Match KF -> current
-    std::vector<std::vector<DMatch>> knn;
-    matcher_->knnMatch(kf_descriptors_, cur_descriptors_, knn, 2);
-    std::vector<DMatch> good;
-    good.reserve(knn.size());
-    for (auto &v : knn) if (v.size()>=2 && v[0].distance < 0.75*v[1].distance) good.push_back(v[0]);
-
-    std::vector<Point3f> objPts; objPts.reserve(good.size());
-    std::vector<Point2f> imgPts; imgPts.reserve(good.size());
-    std::vector<int> curIdxOfCorr; curIdxOfCorr.reserve(good.size());
-    std::vector<int> mapIdxOfCorr; mapIdxOfCorr.reserve(good.size());
-
-    int unmatchedCount = 0;
-    for (auto &m : good) {
-        int kf_idx = m.queryIdx;
-        int mp_idx = (kf_idx >=0 && kf_idx < (int)kf_kp_to_map_.size()) ? kf_kp_to_map_[kf_idx] : -1;
-        if (mp_idx >= 0 && mp_idx < (int)mapPoints_.size()) {
-            const Point3d &Xd = mapPoints_[mp_idx];
-            objPts.emplace_back((float)Xd.x,(float)Xd.y,(float)Xd.z);
-            imgPts.push_back(cur_keypoints_[m.trainIdx].pt);
-            curIdxOfCorr.push_back(m.trainIdx);
-            mapIdxOfCorr.push_back(mp_idx);
-        } else {
-            unmatchedCount++;
-        }
-    }
-    unmatchedRatio_ = good.empty() ? 0.0 : (double)unmatchedCount / (double)good.size();
-    if (objPts.size() < 4) return false;
-
-    Mat rvec, tvec, R;
-    std::vector<int> inliers;
-    bool ok = solvePnPRansac(objPts, imgPts, K_.K, K_.dist, rvec, tvec, false,
-                                 100, params_.pnpReprojErr, 0.99, inliers, SOLVEPNP_ITERATIVE);
-    if (!ok || (int)inliers.size() < std::max(4, params_.pnpMinInliers)) return false;
-
-    Rodrigues(rvec, R);
-    currentPoseSE3_ = makeSE3(R, tvec);
-    lastPnPInliers_ = (int)inliers.size();
-
-    // keep inlier correspondences for KF mapping when inserting a new KF
-    curFeat_to_map_inliers_.clear();
-    curFeat_to_map_inliers_.reserve(inliers.size());
-    for (int idx : inliers) {
-        int curIdx = curIdxOfCorr[idx];
-        int mpIdx = mapIdxOfCorr[idx];
-        curFeat_to_map_inliers_.emplace_back(curIdx, mpIdx);
-    }
-    return true;
-}
-
-bool VisualOdometry::shouldInsertKeyframe() const {
-    // simple: periodic or tracking weakening
-    bool periodic = (frameCount_ % params_.keyframeInterval) == 0;
-    bool weakTracking = (lastPnPInliers_ > 0 && lastPnPInliers_ < params_.pnpMinInliers + 10);
-
-    // baseline & rotation criteria
-    auto extractRt = [](const Mat& T, Mat& R, Mat& t){ R = T(Rect(0,0,3,3)).clone(); t = T(Rect(3,0,1,3)).clone(); };
-    Mat R_prev, t_prev, R_cur, t_cur; extractRt(kfPoseSE3_, R_prev, t_prev); extractRt(currentPoseSE3_, R_cur, t_cur);
-    double baseline = norm(t_cur - t_prev);
-    Mat R_delta = R_prev.t() * R_cur;
-    double traceVal = R_delta.at<double>(0,0) + R_delta.at<double>(1,1) + R_delta.at<double>(2,2);
-    double rotAngle = std::acos(std::min(1.0, std::max(-1.0, (traceVal - 1.0) / 2.0))) * 180.0 / CV_PI;
-    bool baselineEnough = baseline > params_.keyframeMinBaseline;
-    bool rotationEnough = rotAngle > params_.keyframeMinRotationDeg;
-
-    // mapping expansion need: many unmatched candidate features
-    bool needExpansion = unmatchedRatio_ > 0.5; // heuristic
-
-    return periodic || weakTracking || baselineEnough || rotationEnough || needExpansion;
-}
-
-void VisualOdometry::triangulateWithLastKeyframe() {
-    if (kf_descriptors_.empty() || cur_descriptors_.empty()) return;
-
-    // Match KF -> current again to find candidates without map points
-    std::vector<std::vector<DMatch>> knn;
-    matcher_->knnMatch(kf_descriptors_, cur_descriptors_, knn, 2);
-    std::vector<Point2f> kfPts, curPts;
-    std::vector<int> kfIdxs;
-    for (auto &v : knn) {
-        if (v.size()>=2 && v[0].distance < 0.75*v[1].distance) {
-            int qi = v[0].queryIdx; int ti = v[0].trainIdx;
-            if (qi >=0 && qi < (int)kf_kp_to_map_.size() && kf_kp_to_map_[qi] == -1) {
-                kfPts.push_back(kf_keypoints_[qi].pt);
-                curPts.push_back(cur_keypoints_[ti].pt);
-                kfIdxs.push_back(qi);
-            }
-        }
-    }
-    if (kfPts.size() < 15) return;
-
-    auto extractRt = [](const Mat& T, Mat& R, Mat& t){
-        R = T(Rect(0,0,3,3)).clone();
-        t = T(Rect(3,0,1,3)).clone();
-    };
-    Mat R1,t1,R2,t2; extractRt(kfPoseSE3_, R1,t1); extractRt(currentPoseSE3_, R2,t2);
-
-    Mat P1(3,4,CV_64F), P2(3,4,CV_64F);
-    R1.copyTo(P1(Rect(0,0,3,3))); t1.copyTo(P1(Rect(3,0,1,3)));
-    R2.copyTo(P2(Rect(0,0,3,3))); t2.copyTo(P2(Rect(3,0,1,3)));
-    P1 = K_.K * P1; P2 = K_.K * P2;
-
-    Mat X4; triangulatePoints(P1, P2, kfPts, curPts, X4);
-
-    auto reprojErr = [&](const Point3d& X, const Mat& R, const Mat& t, const Point2f& uv){
-        Mat Xv = (Mat_<double>(3,1) << X.x,X.y,X.z);
-        Mat x = K_.K * (R*Xv + t);
-        double u = x.at<double>(0)/x.at<double>(2);
-        double v = x.at<double>(1)/x.at<double>(2);
-        double du = u - uv.x; double dv = v - uv.y; return std::sqrt(du*du+dv*dv);
-    };
-
-    for (int i=0;i<X4.cols;i++) {
-        double hx = X4.at<double>(0,i);
-        double hy = X4.at<double>(1,i);
-        double hz = X4.at<double>(2,i);
-        double hw = X4.at<double>(3,i);
-        if (std::abs(hw) < 1e-8) continue;
-        Point3d X(hx/hw, hy/hw, hz/hw);
-        // positive depth check (in both views)
-        Mat R1_,t1_,R2_,t2_;
-        R1_ = R1; t1_ = t1; R2_ = R2; t2_ = t2;
-        Mat Xv = (Mat_<double>(3,1) << X.x,X.y,X.z);
-        Mat Y1 = R1_*Xv + t1_;
-        Mat Y2 = R2_*Xv + t2_;
-        double z1 = Y1.ptr<double>(2)[0];
-        double z2 = Y2.ptr<double>(2)[0];
-        if (z1 <= 0 || z2 <= 0) continue;
-        double e1 = reprojErr(X, R1, t1, kfPts[i]);
-        double e2 = reprojErr(X, R2, t2, curPts[i]);
-        if (e1 > params_.reprojErrThresh || e2 > params_.reprojErrThresh) continue;
-        int mpIndex = (int)mapPoints_.size();
-        mapPoints_.push_back(X);
-        int kf_kp = kfIdxs[i];
-        if (kf_kp >=0 && kf_kp < (int)kf_kp_to_map_.size()) kf_kp_to_map_[kf_kp] = mpIndex;
-    }
-}
-
-void VisualOdometry::runLocalBAIfEnabled() {
-    if (!backendEnabled_) return;
-    // Collect recent keyframes and build observations for map points
-    int N = std::max(2, params_.localWindowSize);
-    int totalKFs = (int)keyframePoses_.size();
-    if (totalKFs < 2) return;
-    int startIdx = std::max(0, totalKFs - N);
-
-    // Build KeyFrame vector for optimizer
-    std::vector<KeyFrame> kfs;
-    kfs.reserve(totalKFs - startIdx);
-    for (int i = startIdx; i < totalKFs; ++i) {
-        KeyFrame kf;
-        kf.id = i; // use history index as id
-        kf.kps = keyframeKeypoints_[i];
-        kf.desc = keyframeDescriptors_[i];
-        // extract R,t from SE3 4x4
-        const Mat &T = keyframePoses_[i];
-        Mat R = T(Rect(0,0,3,3)).clone();
-        Mat t = T(Rect(3,0,1,3)).clone();
-        kf.R_w = R; kf.t_w = t;
-        kfs.push_back(kf);
-    }
-
-    // Build MapPoint vector with observations from selected window
-    std::vector<MapPoint> mps;
-    mps.reserve(mapPoints_.size());
-    // Track which points are observed within the window
-    std::vector<char> pointObserved(mapPoints_.size(), 0);
-    for (int i = startIdx; i < totalKFs; ++i) {
-        const auto &kp2mp = keyframeKpToMap_[i];
-        for (int kpIdx = 0; kpIdx < (int)kp2mp.size(); ++kpIdx) {
-            int mpIdx = kp2mp[kpIdx];
-            if (mpIdx >= 0 && mpIdx < (int)mapPoints_.size()) {
-                pointObserved[mpIdx] = 1;
-            }
-        }
-    }
-    // Create mps with observations
-    for (size_t mpIdx = 0; mpIdx < mapPoints_.size(); ++mpIdx) {
-        if (!pointObserved[mpIdx]) continue; // only optimize observed points
-        MapPoint mp;
-        mp.id = (int)mpIdx;
-        mp.p = mapPoints_[mpIdx];
-        for (int i = startIdx; i < totalKFs; ++i) {
-            const auto &kp2mp = keyframeKpToMap_[i];
-            if ((int)kp2mp.size() == 0) continue;
-            for (int kpIdx = 0; kpIdx < (int)kp2mp.size(); ++kpIdx) {
-                if (kp2mp[kpIdx] == (int)mpIdx) {
-                    mp.observations.emplace_back(i, kpIdx);
+            // copy back mappoint positions by id
+            for(const auto &mp_opt : mps_snapshot){
+                if(mp_opt.id <= 0) continue;
+                int idx = map.mapPointIndex(mp_opt.id);
+                if(idx >= 0 && idx < static_cast<int>(mps_ref.size())){
+                    mps_ref[idx].p = mp_opt.p;
                 }
             }
         }
-        if (!mp.observations.empty()) mps.push_back(mp);
-    }
+    });
 
-    if (kfs.size() < 2 || mps.empty()) return;
+    Mat frame;
+    std::string imgPath;
+    int frame_id = 0;
 
-    // Local/fixed KF indices relative to full history ids
-    std::vector<int> localKfIndices;
-    localKfIndices.reserve(kfs.size());
-    for (const auto &kf : kfs) localKfIndices.push_back(kf.id);
-    // Fix the oldest KF in the window to anchor optimization
-    std::vector<int> fixedKfIndices = { startIdx };
+    // persistent previous-frame storage (declare outside loop so detectAndCompute can use them)
+    static std::vector<KeyPoint> prevKp;
+    static Mat prevGray, prevDesc;
+    while(loader.getNextImage(frame, imgPath)){
+        Mat gray = frame;
+        if(gray.channels() > 1) cvtColor(gray, gray, COLOR_BGR2GRAY);
 
-    // Select backend
+        std::vector<KeyPoint> kps;
+        Mat desc;
+        // Detect and compute descriptors using injected feature_ (e.g., ORB)
+        feature_->detect(gray, kps);
+        feature_->compute(gray, kps, desc);
 
-    if (params_.backendType == 0) {
-    #ifndef USE_G2O
-        CV_Error(Error::StsBadArg, "G2O backend is not available (not built with SLAM module)");
-    #else
-        Optimizer::localBundleAdjustment(
-            kfs, mps, localKfIndices, fixedKfIndices,
-            K_.K.at<double>(0,0), K_.K.at<double>(1,1), K_.K.at<double>(0,2), K_.K.at<double>(1,2),
-            params_.baMaxIters);
-    #endif
-    } else
-    {
-        Optimizer::localBundleAdjustmentSFM(
-            kfs, mps, localKfIndices, fixedKfIndices,
-            K_.K.at<double>(0,0), K_.K.at<double>(1,1), K_.K.at<double>(0,2), K_.K.at<double>(1,2),
-            params_.baMaxIters);
-    }
+    // (previous-frame storage declared outside loop)
 
-    // Write back optimized poses and points
-    for (const auto &kf : kfs) {
-        int i = kf.id;
-        Mat T = Mat::eye(4,4,CV_64F);
-        kf.R_w.copyTo(T(Rect(0,0,3,3)));
-        kf.t_w.copyTo(T(Rect(3,0,1,3)));
-        if (i >= 0 && i < totalKFs) keyframePoses_[i] = T.clone();
-        if (i == totalKFs - 1) { // also update current KF pose cache
-            kfPoseSE3_ = T.clone();
-            currentPoseSE3_ = T.clone();
+        if(!prevGray.empty() && !prevDesc.empty() && !desc.empty()){
+            // KNN match with ratio test and mutual cross-check
+            std::vector<std::vector<DMatch>> knn12, knn21;
+            matcher_->knnMatch(prevDesc, desc, knn12, 2);
+            matcher_->knnMatch(desc, prevDesc, knn21, 2);
+            auto ratioKeep = [&](const std::vector<std::vector<DMatch>>& knn, bool forward) {
+                std::vector<DMatch> filtered;
+                for(size_t qi=0; qi<knn.size(); ++qi){
+                    if(knn[qi].empty()) continue;
+                    DMatch best = knn[qi][0];
+                    float ratio = 0.75f;
+                    if(knn[qi].size() >= 2){
+                        if(knn[qi][1].distance > 0) {
+                            if(best.distance / knn[qi][1].distance > ratio) continue;
+                        }
+                    }
+                    // mutual check
+                    int q = forward ? (int)qi : best.trainIdx;
+                    int t = forward ? best.trainIdx : (int)qi;
+                    // find reverse match for t
+                    const auto &rev = forward ? knn21 : knn12;
+                    if(t < 0 || t >= (int)rev.size() || rev[t].empty()) continue;
+                    DMatch rbest = rev[t][0];
+                    if((forward && rbest.trainIdx == (int)qi) || (!forward && rbest.trainIdx == best.queryIdx)){
+                        filtered.push_back(best);
+                    }
+                }
+                return filtered;
+            };
+            std::vector<DMatch> goodMatches = ratioKeep(knn12, true);
+
+            Mat imgMatches;
+            drawMatches(prevGray, prevKp, gray, kps, goodMatches, imgMatches,
+                            Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+
+            std::vector<Point2f> pts1, pts2;
+            pts1.reserve(goodMatches.size()); pts2.reserve(goodMatches.size());
+            for(const auto &m: goodMatches){
+                pts1.push_back(prevKp[m.queryIdx].pt);
+                pts2.push_back(kps[m.trainIdx].pt);
+            }
+
+            // quick frame-diff to detect near-static frames
+            double meanDiff = 0.0;
+            if(!prevGray.empty()){
+                Mat diff; absdiff(gray, prevGray, diff);
+                meanDiff = mean(diff)[0];
+            }
+
+            // compute per-match flow magnitudes and median flow
+            std::vector<double> flows; flows.reserve(pts1.size());
+            double median_flow = 0.0;
+            for(size_t i=0;i<pts1.size();++i){
+                double dx = pts2[i].x - pts1[i].x;
+                double dy = pts2[i].y - pts1[i].y;
+                flows.push_back(std::sqrt(dx*dx + dy*dy));
+            }
+            if(!flows.empty()){
+                std::vector<double> tmp = flows;
+                size_t mid = tmp.size()/2;
+                std::nth_element(tmp.begin(), tmp.begin()+mid, tmp.end());
+                median_flow = tmp[mid];
+            }
+
+            int pre_matches = static_cast<int>(goodMatches.size());
+            int post_matches = pre_matches;
+
+            // Two-view initialization: if map is empty and this is the second frame, try to bootstrap
+            if(map.keyframes().empty() && frame_id == 1){
+                std::cout << "Attempting two-view initialization (frame 0 + 1), matches=" << goodMatches.size() << std::endl;
+                Mat R_init, t_init;
+                std::vector<Point3d> pts3D;
+                std::vector<bool> isTri;
+                // call initializer using the matched keypoints between prev and current
+                if(initializer.initialize(prevKp, kps, goodMatches, loader.fx(), loader.fy(), loader.cx(), loader.cy(), R_init, t_init, pts3D, isTri)){
+                    std::cout << "Initializer: success, creating initial keyframes and mappoints (" << pts3D.size() << ")" << std::endl;
+                    // build two keyframes: previous (id = frame_id-1) and current (id = frame_id)
+                    KeyFrame kf0, kf1;
+                    kf0.id = frame_id - 1;
+                    // prevGray/prevKp/prevDesc refer to previous frame
+                    if(!prevGray.empty()){
+                        if(prevGray.channels() == 1){ cvtColor(prevGray, kf0.image, COLOR_GRAY2BGR); }
+                        else kf0.image = prevGray.clone();
+                    }
+                    kf0.kps = prevKp;
+                    kf0.desc = prevDesc.clone();
+                    kf0.R_w = Mat::eye(3,3,CV_64F);
+                    kf0.t_w = Mat::zeros(3,1,CV_64F);
+
+                    kf1.id = frame_id;
+                    kf1.image = frame.clone();
+                    kf1.kps = kps;
+                    kf1.desc = desc.clone();
+                    // initializer returns pose of second camera relative to first (world = first)
+                    kf1.R_w = R_init.clone();
+                    kf1.t_w = t_init.clone();
+
+                    // convert initializer 3D points (in first camera frame) to MapPoints in world coords (world==first)
+                    std::vector<MapPoint> newMps;
+                    newMps.reserve(pts3D.size());
+                    for(size_t i=0;i<pts3D.size();++i){
+                        if(!isTri[i]) continue;
+                        MapPoint mp;
+                        mp.p = pts3D[i];
+                        // observation indices come from goodMatches order
+                        if(i < goodMatches.size()){
+                            const DMatch &m = goodMatches[i];
+                            mp.observations.emplace_back(kf0.id, m.queryIdx);
+                            mp.observations.emplace_back(kf1.id, m.trainIdx);
+                        }
+                        newMps.push_back(mp);
+                    }
+
+                    {
+                        std::lock_guard<std::mutex> lk(mapMutex);
+                        keyframes.push_back(std::move(kf0));
+                        map.addKeyFrame(keyframes.back());
+                        keyframes.push_back(std::move(kf1));
+                        map.addKeyFrame(keyframes.back());
+                        if(!newMps.empty()) map.addMapPoints(newMps);
+                    }
+
+                    // set global pose to second keyframe (apply scale)
+                    Mat t_d; kf1.t_w.convertTo(t_d, CV_64F);
+                    t_g = t_d * scale_m;
+                    R_g = kf1.R_w.clone();
+                    double x = t_g.at<double>(0);
+                    double z = t_g.at<double>(2);
+                    vis.addPose(x,-z);
+
+                    // write CSV entry for initialization frame
+                    if(csv){
+                        csv << frame_id << ",init,0,0,0,0,0,1\n";
+                        csv.flush();
+                    }
+
+                    // notify backend to run BA on initial map
+                    backendRequests.fetch_add(1);
+                    backendCv.notify_one();
+                    // skip the usual PnP / poseEst path for this frame since we've initialized
+                    prevGray = gray.clone(); prevKp = kps; prevDesc = desc.clone();
+                    frame_id++;
+                    continue;
+                } else {
+                    std::cout << "Initializer: failed to initialize from first two frames" << std::endl;
+                }
+            }
+
+            // Try PnP against map points first (via Localizer)
+            bool solvedByPnP = false;
+            Mat R_pnp, t_pnp; int inliers_pnp = 0;
+            int preMatches_pnp = 0, postMatches_pnp = 0; double meanReproj_pnp = 0.0;
+            if(localizer.tryPnP(map, desc, kps, loader.fx(), loader.fy(), loader.cx(), loader.cy(), gray.cols, gray.rows,
+                                options.min_inliers, R_pnp, t_pnp, inliers_pnp, frame_id, &frame, runDir.string(),
+                                &preMatches_pnp, &postMatches_pnp, &meanReproj_pnp)){
+                solvedByPnP = true;
+                std::cout << "PnP solved: preMatches="<<preMatches_pnp<<" post="<<postMatches_pnp<<" inliers="<<inliers_pnp<<" meanReproj="<<meanReproj_pnp<<std::endl;
+            }
+
+            if(pts1.size() >= 8 && !solvedByPnP){
+                Mat R, t, mask; int inliers = 0;
+                bool ok = poseEst.estimate(pts1, pts2, loader.fx(), loader.fy(), loader.cx(), loader.cy(), R, t, mask, inliers);
+
+                int matchCount = post_matches;
+                double inlierRatio = matchCount > 0 ? double(inliers) / double(matchCount) : 0.0;
+
+                // thresholds (tunable) -- relaxed and add absolute inlier guard
+                const int MIN_MATCHES = 15;           // require at least this many matches (relative)
+                const int MIN_INLIERS = 4;             // OR accept if at least this many absolute inliers
+                double t_norm = 0.0, rot_angle = 0.0;
+                if(ok){
+                    Mat t_d; t.convertTo(t_d, CV_64F);
+                    t_norm = norm(t_d);
+                    Mat R_d; R.convertTo(R_d, CV_64F);
+                    double trace = R_d.at<double>(0,0) + R_d.at<double>(1,1) + R_d.at<double>(2,2);
+                    double cos_angle = std::min(1.0, std::max(-1.0, (trace - 1.0) * 0.5));
+                    rot_angle = std::acos(cos_angle);
+                }
+
+                // Print per-frame diagnostics
+                // std::cout << "F" << frame_id << " diff=" << meanDiff << " median_flow=" << median_flow
+                //           << " pre_matches=" << pre_matches << " post_matches=" << matchCount << " inliers=" << inliers << " inlierRatio=" << inlierRatio
+                //           << " t_norm=" << t_norm << " rot_rad=" << rot_angle << std::endl;
+
+                // decide whether to integrate
+                // Prefer geometry-based decision (absolute inliers OR matchCount + ratio). Use image-diff/flow
+                // only to skip when geometry is weak or motion truly negligible.
+                bool integrate = true;
+                if(!ok){
+                    integrate = false;
+                    // std::cout << "  -> pose estimation failed, skipping integration." << std::endl;
+                } else if(inliers < MIN_INLIERS || matchCount < MIN_MATCHES){
+                    // Not enough geometric support -> skip (unless absolute inliers pass)
+                    integrate = false;
+                    // std::cout << "  -> insufficient matches/inliers (by both absolute and relative metrics), skipping integration." << std::endl;
+                } else {
+                    // We have sufficient geometric support. Only skip if motion is truly negligible
+                    // (both translation and rotation tiny) AND the image/flow indicate near-identical frames.
+                    const double MIN_TRANSLATION_NORM = 1e-4;
+                    const double MIN_ROTATION_RAD = (0.5 * CV_PI / 180.0); // 0.5 degree
+                    const double DIFF_ZERO_THRESH = 2.0;   // nearly identical image
+                    const double FLOW_ZERO_THRESH = 0.3;   // nearly zero flow in pixels
+
+                    if(t_norm < MIN_TRANSLATION_NORM && std::abs(rot_angle) < MIN_ROTATION_RAD
+                       && meanDiff < DIFF_ZERO_THRESH && median_flow < FLOW_ZERO_THRESH){
+                        integrate = false; // truly static
+                        // std::cout << "  -> negligible motion and near-identical frames, skipping integration." << std::endl;
+                    }
+                }
+                if (inliers >= options.min_inliers || (inliers >= 2 && matchCount > 50 && median_flow > 2.0)) {
+                    integrate = true;
+                }
+
+                // integrate transform if allowed
+                if(integrate){
+                    Mat t_d; t.convertTo(t_d, CV_64F);
+                    Mat t_scaled = t_d * scale_m;
+                    Mat R_d; R.convertTo(R_d, CV_64F);
+                    t_g = t_g + R_g * t_scaled;
+                    R_g = R_g * R_d;
+                    double x = t_g.at<double>(0);
+                    double z = t_g.at<double>(2);
+                    vis.addPose(x,-z);
+                }
+
+                    // if we integrated, create a keyframe and optionally triangulate new map points
+                if(integrate){
+                    KeyFrame kf;
+                    kf.id = frame_id;
+                    kf.image = frame.clone();
+                    kf.kps = kps;
+                    kf.desc = desc.clone();
+                    kf.R_w = R_g.clone(); kf.t_w = t_g.clone();
+
+                    bool didTriangulate = false;
+                    if(!map.keyframes().empty() && map.keyframes().back().id == frame_id - 1){
+                        // triangulate between last keyframe and this frame using normalized coordinates
+                        const KeyFrame &last = map.keyframes().back();
+                        std::vector<Point2f> pts1n, pts2n; pts1n.reserve(pts1.size()); pts2n.reserve(pts2.size());
+                        double fx = loader.fx(), fy = loader.fy(), cx = loader.cx(), cy = loader.cy();
+                        for(size_t i=0;i<pts1.size();++i){
+                            pts1n.emplace_back(float((pts1[i].x - cx)/fx), float((pts1[i].y - cy)/fy));
+                            pts2n.emplace_back(float((pts2[i].x - cx)/fx), float((pts2[i].y - cy)/fy));
+                        }
+                        // build kp index lists (matching goodMatches order)
+                        std::vector<int> pts1_kp_idx; pts1_kp_idx.reserve(goodMatches.size());
+                        std::vector<int> pts2_kp_idx; pts2_kp_idx.reserve(goodMatches.size());
+                        for(const auto &m: goodMatches){ pts1_kp_idx.push_back(m.queryIdx); pts2_kp_idx.push_back(m.trainIdx); }
+                        auto newPts = map.triangulateBetweenLastTwo(pts1n, pts2n, pts1_kp_idx, pts2_kp_idx, last, keyframes.empty() ? kf : keyframes.back(), fx, fy, cx, cy);
+                        if(!newPts.empty()){
+                            didTriangulate = true;
+                            // already appended inside MapManager
+                        }
+                    }
+
+                    {
+                        // insert keyframe and map points under lock to keep consistent state
+                        std::lock_guard<std::mutex> lk(mapMutex);
+                        keyframes.push_back(std::move(kf));
+                        map.addKeyFrame(keyframes.back());
+                    }
+                    if(didTriangulate){
+                        std::cout << "Created keyframe " << frame_id << " and triangulated new map points (total=" << map.mappoints().size() << ")" << std::endl;
+                    } else {
+                        std::cout << "Created keyframe " << frame_id << " (no triangulation)" << std::endl;
+                    }
+                    // Notify backend thread to run local BA asynchronously
+                    backendRequests.fetch_add(1);
+                    backendCv.notify_one();
+                }
+
+                // write CSV line
+                if(csv){
+                    csv << frame_id << "," << meanDiff << "," << median_flow << "," << pre_matches << "," << post_matches << "," << inliers << "," << inlierRatio << "," << (integrate?1:0) << "\n";
+                    csv.flush();
+                }
+
+                // Always show a single image; if we have matches, draw small boxes around matched keypoints
+                Mat visImg;
+                if(frame.channels() > 1) visImg = frame.clone();
+                else cvtColor(gray, visImg, COLOR_GRAY2BGR);
+                std::string info = std::string("Frame ") + std::to_string(frame_id) + " matches=" + std::to_string(matchCount) + " inliers=" + std::to_string(inliers);
+                if(!goodMatches.empty()){
+                    for(size_t mi=0; mi<goodMatches.size(); ++mi){
+                        Point2f p2 = (mi < pts2.size()) ? pts2[mi] : kps[goodMatches[mi].trainIdx].pt;
+
+                        // determine inlier status from mask (robust to mask shape)
+                        bool isInlier = false;
+                        if(!mask.empty()){
+                            if(mask.rows == static_cast<int>(goodMatches.size())){
+                                isInlier = mask.at<uchar>(static_cast<int>(mi), 0) != 0;
+                            } else if(mask.cols == static_cast<int>(goodMatches.size())){
+                                isInlier = mask.at<uchar>(0, static_cast<int>(mi)) != 0;
+                            }
+                        }
+                        Scalar col = isInlier ? Scalar(0,255,0) : Scalar(0,0,255);
+                        Point ip(cvRound(p2.x), cvRound(p2.y));
+                        Rect r(ip - Point(4,4), Size(8,8));
+                        rectangle(visImg, r, col, 2, LINE_AA);
+                    }
+                }
+                putText(visImg, info, Point(10,20), FONT_HERSHEY_SIMPLEX, 0.6, Scalar(0,255,0), 2);
+                vis.showFrame(visImg);
+
+            } else {
+                vis.showFrame(gray);
+            }
+        } else {
+            Mat visFrame; drawKeypoints(gray, kps, visFrame, Scalar::all(-1), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+            vis.showFrame(visFrame);
         }
+
+        vis.showTopdown();
+        // update prev
+        prevGray = gray.clone(); prevKp = kps; prevDesc = desc.clone();
+        frame_id++;
+        char key = (char)waitKey(1);
+        if(key == 27) break;
     }
-    for (const auto &mp : mps) {
-        if (mp.id >= 0 && mp.id < (int)mapPoints_.size()) {
-            mapPoints_[mp.id] = mp.p;
+
+    // save trajectory with timestamp into result/ folder
+    try{
+        // save trajectory into the per-run folder using a simple filename (no timestamp)
+        std::filesystem::path outDir = resultDir / runTimestamp;
+        if(!std::filesystem::exists(outDir)) std::filesystem::create_directories(outDir);
+        std::filesystem::path outPath = outDir / std::string("trajectory.png");
+        if(vis.saveTrajectory(outPath.string())){
+            std::cout << "Saved trajectory to " << outPath.string() << std::endl;
+        } else {
+            std::cerr << "Failed to save trajectory to " << outPath.string() << std::endl;
         }
+    } catch(const std::exception &e){
+        std::cerr << "Error saving trajectory: " << e.what() << std::endl;
     }
+
+    // Shutdown backend thread gracefully
+    backendStop.store(true);
+    backendCv.notify_one();
+    if(backendThread.joinable()) backendThread.join();
+
+    return 0;
 }
 
 } // namespace vo

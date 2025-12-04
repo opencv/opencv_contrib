@@ -1,6 +1,8 @@
 #include "opencv2/slam/optimizer.hpp"
 #include <iostream>
 #include <set>
+#include <unordered_set>
+#include <algorithm>
 #include <opencv2/calib3d.hpp>
 
 // If g2o is enabled (CMake defines USE_G2O), compile and use the g2o-based
@@ -151,7 +153,117 @@ void Optimizer::localBundleAdjustmentSFM(
     const std::vector<int> &fixedKfIndices,
     double fx, double fy, double cx, double cy,
     int iterations) {
-    //TODO: Implement SFM-based local BA
+    // Simple SFM-based local bundle adjustment using OpenCV routines.
+    // This implementation alternates:
+    //  - point-only Gauss-Newton updates (poses kept fixed)
+    //  - pose-only optimization using PnP (points kept fixed)
+    // It uses available jacobians w.r.t. point coordinates from
+    // computeReprojectionError and the existing optimizePose() helper
+    // to avoid depending on g2o / ceres. This provides an effective
+    // local refinement for SLAM windows when full BA backends are
+    // not available.
+
+    if (localKfIndices.empty() || mappoints.empty()) return;
+
+    // Fast lookup for whether a keyframe id is in the local window
+    std::unordered_set<int> localSet(localKfIndices.begin(), localKfIndices.end());
+    std::unordered_set<int> fixedSet(fixedKfIndices.begin(), fixedKfIndices.end());
+
+    const double HUBER_DELTA = 3.0; // pixels
+    const double MAX_POINT_STEP = 1.0; // meters (safeguard per-iter)
+
+    // Outer iterations: alternate point updates and pose updates
+    for (int iter = 0; iter < iterations; ++iter) {
+        // --- Point-only Gauss-Newton update (poses fixed) ---
+        for (size_t pid = 0; pid < mappoints.size(); ++pid) {
+            MapPoint &mp = mappoints[pid];
+            if (mp.isBad) continue;
+
+            Mat JtJ = Mat::zeros(3, 3, CV_64F);
+            Mat Jtr = Mat::zeros(3, 1, CV_64F);
+            int obsCount = 0;
+
+            for (const auto &obs : mp.observations) {
+                int kfIdx = obs.first;
+                int kpIdx = obs.second;
+                if (localSet.find(kfIdx) == localSet.end()) continue;
+                if (kfIdx < 0 || kfIdx >= static_cast<int>(keyframes.size())) continue;
+                KeyFrame &kf = keyframes[kfIdx];
+                if (kpIdx < 0 || kpIdx >= static_cast<int>(kf.kps.size())) continue;
+
+                Point2f observed = kf.kps[kpIdx].pt;
+                // Project current point into this keyframe
+                Point2f proj = project(mp.p, kf.R_w, kf.t_w, fx, fy, cx, cy);
+                if (proj.x < 0 || proj.y < 0) continue;
+                // Compute jacobians (fills jacobianPoint)
+                Mat jacPose, jacPoint;
+                computeReprojectionError(mp.p, kf.R_w, kf.t_w, observed, fx, fy, cx, cy, jacPose, jacPoint);
+                // jacPoint is 2x3, residual r = [u - u_obs; v - v_obs]
+                Mat r = (Mat_<double>(2,1) << proj.x - observed.x, proj.y - observed.y);
+
+                // robust weight (Huber)
+                double err = std::sqrt(r.at<double>(0,0)*r.at<double>(0,0) + r.at<double>(1,0)*r.at<double>(1,0));
+                double w = 1.0;
+                if (err > HUBER_DELTA) w = HUBER_DELTA / err;
+
+                // accumulate JtJ and Jtr
+                Mat Jt = jacPoint.t(); // 3x2
+                Mat W = Mat::eye(2,2,CV_64F) * w;
+                Mat JtW = Jt * W; // 3x2
+                JtJ += JtW * jacPoint; // 3x3
+                Jtr += JtW * r; // 3x1
+                obsCount++;
+            }
+
+            if (obsCount < 2) continue; // not enough constraints
+
+            // Solve for delta using SVD for stability
+            Mat delta; // 3x1
+            bool solved = false;
+            if (cv::determinant(JtJ) != 0) {
+                solved = cv::solve(JtJ, -Jtr, delta, cv::DECOMP_SVD);
+            } else {
+                solved = cv::solve(JtJ, -Jtr, delta, cv::DECOMP_SVD);
+            }
+            if (!solved) continue;
+
+            double step = std::sqrt(delta.at<double>(0,0)*delta.at<double>(0,0) +
+                                    delta.at<double>(1,0)*delta.at<double>(1,0) +
+                                    delta.at<double>(2,0)*delta.at<double>(2,0));
+            if (step > MAX_POINT_STEP) {
+                double scale = MAX_POINT_STEP / step;
+                delta *= scale;
+            }
+
+            mp.p.x += delta.at<double>(0,0);
+            mp.p.y += delta.at<double>(1,0);
+            mp.p.z += delta.at<double>(2,0);
+        }
+
+        // --- Pose-only optimization (points fixed) ---
+        // For each local keyframe that is not fixed, call optimizePose
+        for (int kfId : localKfIndices) {
+            if (fixedSet.find(kfId) != fixedSet.end()) continue;
+            if (kfId < 0 || kfId >= static_cast<int>(keyframes.size())) continue;
+            KeyFrame &kf = keyframes[kfId];
+            // Build matchedMpIndices: for each keypoint in this KF, which mappoint index it corresponds to
+            std::vector<int> matchedMpIndices(kf.kps.size(), -1);
+            for (size_t mpIdx = 0; mpIdx < mappoints.size(); ++mpIdx) {
+                const MapPoint &mp = mappoints[mpIdx];
+                if (mp.isBad) continue;
+                for (const auto &obs : mp.observations) {
+                    if (obs.first == kfId) {
+                        int kpIdx = obs.second;
+                        if (kpIdx >= 0 && kpIdx < static_cast<int>(matchedMpIndices.size()))
+                            matchedMpIndices[kpIdx] = static_cast<int>(mpIdx);
+                    }
+                }
+            }
+            std::vector<bool> inliers;
+            // Use the same number of iterations as outer loop for RANSAC attempts
+            optimizePose(kf, mappoints, matchedMpIndices, fx, fy, cx, cy, inliers, std::max(20, iterations));
+        }
+    }
 }
 
 
