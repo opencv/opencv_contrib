@@ -65,7 +65,8 @@ int VisualOdometry::run(const std::string &imageDir, double scale_m, const Visua
         std::ostringstream ss; ss << std::put_time(&tm, "%Y%m%d_%H%M%S");
         runTimestamp = ss.str();
     }
-    std::filesystem::path resultDir("../../result");
+    // create a 'result' folder inside the provided imageDir (use filesystem join to be robust)
+    std::filesystem::path resultDir = std::filesystem::path(imageDir) / "result";
     if(!std::filesystem::exists(resultDir)) std::filesystem::create_directories(resultDir);
     // create a per-run folder under result/ named by timestamp
     std::filesystem::path runDir = resultDir / runTimestamp;
