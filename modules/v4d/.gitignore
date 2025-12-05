@@ -1,0 +1,13 @@
+.project
+build/
+samples/*/*.dep
+samples/*/*.o
+samples/beauty/beauty-demo
+samples/font/font-demo
+samples/nanovg/nanovg-demo
+samples/optflow/optflow-demo
+samples/pedestrian/pedestrian-demo
+samples/shader/shader-demo
+samples/tetra/tetra-demo
+samples/video/video-demo
+
