@@ -1,6 +1,21 @@
 #include "opencv2/slam/data_loader.hpp"
 #include <opencv2/imgcodecs.hpp>
-#include <filesystem>
+#if defined(__has_include)
+#  if __has_include(<filesystem>)
+#    include <filesystem>
+#    define HAVE_STD_FILESYSTEM 1
+#    namespace fs = std::filesystem;
+#  elif __has_include(<experimental/filesystem>)
+#    include <experimental/filesystem>
+#    define HAVE_STD_FILESYSTEM 1
+#    namespace fs = std::experimental::filesystem;
+#  else
+#    define HAVE_STD_FILESYSTEM 0
+#  endif
+#else
+#  define HAVE_STD_FILESYSTEM 0
+#endif
+#include <sys/stat.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -11,10 +26,12 @@ namespace vo {
 DataLoader::DataLoader(const std::string &imageDir)
     : currentIndex(0), fx_(700.0), fy_(700.0), cx_(0.5), cy_(0.5)
 {
-    // Use std::filesystem to check whether the directory exists first
+    // Check whether the directory exists. Prefer std::filesystem when available,
+    // otherwise fall back to POSIX stat.
+#if HAVE_STD_FILESYSTEM
     try {
-        std::filesystem::path p(imageDir);
-        if(!std::filesystem::exists(p) || !std::filesystem::is_directory(p)){
+        fs::path p(imageDir);
+        if(!fs::exists(p) || !fs::is_directory(p)){
             std::cerr << "DataLoader: imageDir does not exist or is not a directory: " << imageDir << std::endl;
             return;
         }
@@ -22,6 +39,13 @@ DataLoader::DataLoader(const std::string &imageDir)
         std::cerr << "DataLoader: filesystem error checking imageDir: " << e.what() << std::endl;
         // fallthrough to try glob
     }
+#else
+    struct stat sb;
+    if(stat(imageDir.c_str(), &sb) != 0 || !S_ISDIR(sb.st_mode)){
+        std::cerr << "DataLoader: imageDir does not exist or is not a directory: " << imageDir << std::endl;
+        return;
+    }
+#endif
 
     // Use glob to list files, catching any possible OpenCV exceptions
     try {
@@ -37,13 +61,29 @@ DataLoader::DataLoader(const std::string &imageDir)
         return;
     }
 
-    // Try to find sensor.yaml in imageDir or its parent directory
-    std::filesystem::path p(imageDir);
+    // Try to find sensor.yaml in imageDir or its parent directory.
+    // Use filesystem paths when available; otherwise build paths with simple string ops.
+#if HAVE_STD_FILESYSTEM
+    fs::path p(imageDir);
     std::string yaml1 = (p / "sensor.yaml").string();
     std::string yaml2 = (p.parent_path() / "sensor.yaml").string();
     if(!loadIntrinsics(yaml1)){
         loadIntrinsics(yaml2); // best-effort
     }
+#else
+    auto make_parent_yaml = [](const std::string &dir)->std::string{
+        std::string tmp = dir;
+        if(!tmp.empty() && tmp.back() == '/') tmp.pop_back();
+        auto pos = tmp.find_last_of('/');
+        if(pos == std::string::npos) return std::string("sensor.yaml");
+        return tmp.substr(0, pos) + "/sensor.yaml";
+    };
+    std::string yaml1 = imageDir + "/sensor.yaml";
+    std::string yaml2 = make_parent_yaml(imageDir);
+    if(!loadIntrinsics(yaml1)){
+        loadIntrinsics(yaml2); // best-effort
+    }
+#endif
 }
 
 bool DataLoader::loadIntrinsics(const std::string &yamlPath){
