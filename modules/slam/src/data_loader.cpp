@@ -4,11 +4,11 @@
 #  if __has_include(<filesystem>)
 #    include <filesystem>
 #    define HAVE_STD_FILESYSTEM 1
-#    namespace fs = std::filesystem;
+    namespace fs = std::filesystem;
 #  elif __has_include(<experimental/filesystem>)
 #    include <experimental/filesystem>
 #    define HAVE_STD_FILESYSTEM 1
-#    namespace fs = std::experimental::filesystem;
+    namespace fs = std::experimental::filesystem;
 #  else
 #    define HAVE_STD_FILESYSTEM 0
 #  endif
