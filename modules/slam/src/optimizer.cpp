@@ -5,10 +5,10 @@
 #include <algorithm>
 #include <opencv2/calib3d.hpp>
 
-// If g2o is enabled (CMake defines USE_G2O), compile and use the g2o-based
+// If g2o is enabled (CMake defines HAVE_G2O), compile and use the g2o-based
 // implementation. Otherwise fall back to a simplified OpenCV-based implementation.
 
-#ifdef USE_G2O
+#if defined(HAVE_G2O)
 #include <g2o/core/sparse_optimizer.h>
 #include <g2o/core/block_solver.h>
 #include <g2o/core/optimization_algorithm_levenberg.h>
@@ -19,7 +19,7 @@
 #include <Eigen/Core>
 #include <map>
 #include <memory>
-#else
+#elif defined(HAVE_SFM)
 #include "opencv2/sfm.hpp"
 #endif
 
@@ -30,8 +30,8 @@ namespace vo {
 
 Optimizer::Optimizer() {}
 
-#ifdef USE_G2O
-void Optimizer::localBundleAdjustment(
+#if defined(HAVE_G2O)
+void Optimizer::localBundleAdjustmentG2O(
     std::vector<KeyFrame> &keyframes,
     std::vector<MapPoint> &mappoints,
     const std::vector<int> &localKfIndices,
@@ -146,6 +146,7 @@ void Optimizer::localBundleAdjustment(
     }
 }
 #endif
+#if defined(HAVE_SFM)
 void Optimizer::localBundleAdjustmentSFM(
     std::vector<KeyFrame> &keyframes,
     std::vector<MapPoint> &mappoints,
@@ -265,7 +266,7 @@ void Optimizer::localBundleAdjustmentSFM(
         }
     }
 }
-
+#endif
 
 bool Optimizer::optimizePose(
     KeyFrame &kf,
@@ -307,6 +308,7 @@ bool Optimizer::optimizePose(
     return true;
 }
 
+#if defined(HAVE_SFM)
 void Optimizer::globalBundleAdjustmentSFM(
     std::vector<KeyFrame> &keyframes,
     std::vector<MapPoint> &mappoints,
@@ -321,6 +323,7 @@ void Optimizer::globalBundleAdjustmentSFM(
     localBundleAdjustmentSFM(keyframes, mappoints, localKfIndices, fixedKfIndices, fx, fy, cx, cy, iterations);
     std::cout << "Optimizer: Global BA completed" << std::endl;
 }
+#endif
 
 double Optimizer::computeReprojectionError(
     const Point3d &point3D,

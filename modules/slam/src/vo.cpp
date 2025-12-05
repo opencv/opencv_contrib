@@ -119,11 +119,11 @@ int VisualOdometry::run(const std::string &imageDir, double scale_m, const Visua
             for(int ii = start; ii < K; ++ii) localKfIndices.push_back(ii);
             std::vector<int> fixedKfIndices;
             if(start > 0) fixedKfIndices.push_back(0);
-
+        #if defined(HAVE_SFM)
             // Run BA on snapshot (may take time) - uses Optimizer which will use g2o if enabled
             Optimizer::localBundleAdjustmentSFM(kfs_snapshot, mps_snapshot, localKfIndices, fixedKfIndices,
                                             loader.fx(), loader.fy(), loader.cx(), loader.cy(), 10);
-
+        #endif
             // write back optimized poses/points into main map under lock using id-based lookup
             std::lock_guard<std::mutex> lk2(mapMutex);
             auto &kfs_ref = const_cast<std::vector<KeyFrame>&>(map.keyframes());
