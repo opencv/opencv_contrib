@@ -19,6 +19,15 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#  include <direct.h>
+#  ifndef S_ISDIR
+#    define S_ISDIR(mode) (((mode) & S_IFDIR) != 0)
+#  endif
+#  ifndef mkdir
+#    define mkdir(path, mode) _mkdir(path)
+#  endif
+#endif
 #include <iostream>
 #include <fstream>
 #include <sstream>
