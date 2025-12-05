@@ -6,6 +6,8 @@
 namespace cv{
 namespace vo{
 
+bool ensureDirectoryExists(const std::string &dir);
+
 class DataLoader {
 public:
     // 构造：传入图像目录（可以是相对或绝对路径）

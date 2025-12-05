@@ -18,7 +18,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/video/tracking.hpp>
-#include <filesystem>
 #include <chrono>
 #include <iomanip>
 #include <sstream>
@@ -65,20 +64,23 @@ int VisualOdometry::run(const std::string &imageDir, double scale_m, const Visua
         std::ostringstream ss; ss << std::put_time(&tm, "%Y%m%d_%H%M%S");
         runTimestamp = ss.str();
     }
-    // create a 'result' folder inside the provided imageDir (use filesystem join to be robust)
-    std::filesystem::path resultDir = std::filesystem::path(imageDir) / "result";
-    if(!std::filesystem::exists(resultDir)) std::filesystem::create_directories(resultDir);
+    // create a 'result' folder inside the provided imageDir (portable, avoids requiring <filesystem>)
+    std::string resultDirStr = imageDir;
+    if(resultDirStr.empty()) resultDirStr = std::string(".");
+    if(resultDirStr.back() == '/') resultDirStr.pop_back();
+    resultDirStr += "/result";
+    ensureDirectoryExists(resultDirStr);
     // create a per-run folder under result/ named by timestamp
-    std::filesystem::path runDir = resultDir / runTimestamp;
-    if(!std::filesystem::exists(runDir)) std::filesystem::create_directories(runDir);
-    std::filesystem::path csvPath = runDir / std::string("run.csv");
+    std::string runDirStr = resultDirStr + "/" + runTimestamp;
+    ensureDirectoryExists(runDirStr);
+    std::string csvPath = runDirStr + "/run.csv";
     std::ofstream csv(csvPath);
     if(csv){
         csv << "frame_id,mean_diff,median_flow,pre_matches,post_matches,inliers,inlier_ratio,integrated\n";
         csv.flush();
-        std::cout << "Writing diagnostics to " << csvPath.string() << std::endl;
+        std::cout << "Writing diagnostics to " << csvPath << std::endl;
     } else {
-        std::cerr << "Failed to open diagnostics CSV " << csvPath.string() << std::endl;
+        std::cerr << "Failed to open diagnostics CSV " << csvPath << std::endl;
     }
 
     Mat R_g = Mat::eye(3,3,CV_64F);
@@ -317,7 +319,7 @@ int VisualOdometry::run(const std::string &imageDir, double scale_m, const Visua
             Mat R_pnp, t_pnp; int inliers_pnp = 0;
             int preMatches_pnp = 0, postMatches_pnp = 0; double meanReproj_pnp = 0.0;
             if(localizer.tryPnP(map, desc, kps, loader.fx(), loader.fy(), loader.cx(), loader.cy(), gray.cols, gray.rows,
-                                options.min_inliers, R_pnp, t_pnp, inliers_pnp, frame_id, &frame, runDir.string(),
+                                options.min_inliers, R_pnp, t_pnp, inliers_pnp, frame_id, &frame, runDirStr,
                                 &preMatches_pnp, &postMatches_pnp, &meanReproj_pnp)){
                 solvedByPnP = true;
                 std::cout << "PnP solved: preMatches="<<preMatches_pnp<<" post="<<postMatches_pnp<<" inliers="<<inliers_pnp<<" meanReproj="<<meanReproj_pnp<<std::endl;
@@ -487,13 +489,13 @@ int VisualOdometry::run(const std::string &imageDir, double scale_m, const Visua
     // save trajectory with timestamp into result/ folder
     try{
         // save trajectory into the per-run folder using a simple filename (no timestamp)
-        std::filesystem::path outDir = resultDir / runTimestamp;
-        if(!std::filesystem::exists(outDir)) std::filesystem::create_directories(outDir);
-        std::filesystem::path outPath = outDir / std::string("trajectory.png");
-        if(vis.saveTrajectory(outPath.string())){
-            std::cout << "Saved trajectory to " << outPath.string() << std::endl;
+        std::string outDir = resultDirStr + "/" + runTimestamp;
+        ensureDirectoryExists(outDir);
+        std::string outPath = outDir + "/trajectory.png";
+        if(vis.saveTrajectory(outPath)){
+            std::cout << "Saved trajectory to " << outPath << std::endl;
         } else {
-            std::cerr << "Failed to save trajectory to " << outPath.string() << std::endl;
+            std::cerr << "Failed to save trajectory to " << outPath << std::endl;
         }
     } catch(const std::exception &e){
         std::cerr << "Error saving trajectory: " << e.what() << std::endl;

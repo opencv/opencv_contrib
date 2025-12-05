@@ -16,12 +16,53 @@
 #  define HAVE_STD_FILESYSTEM 0
 #endif
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <sys/stat.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 
+
 namespace cv {
 namespace vo {
+
+bool ensureDirectoryExists(const std::string &dir){
+    if(dir.empty()) return false;
+#if HAVE_STD_FILESYSTEM
+    try{
+        fs::path p(dir);
+        return fs::create_directories(p) || fs::exists(p);
+    }catch(...){ return false; }
+#else
+    std::string tmp = dir;
+    if(tmp.empty()) return false;
+    while(tmp.size() > 1 && tmp.back() == '/') tmp.pop_back();
+    std::string cur;
+    if(!tmp.empty() && tmp[0] == '/') cur = "/";
+    size_t pos = 0;
+    while(pos < tmp.size()){
+        size_t next = tmp.find('/', pos);
+        std::string part = (next == std::string::npos) ? tmp.substr(pos) : tmp.substr(pos, next-pos);
+        if(!part.empty()){
+            if(cur.size() > 1 && cur.back() != '/') cur += '/';
+            cur += part;
+            if(mkdir(cur.c_str(), 0755) != 0){
+                if(errno == EEXIST){ /* ok */ }
+                else {
+                    struct stat st;
+                    if(stat(cur.c_str(), &st) == 0 && S_ISDIR(st.st_mode)){
+                        // ok
+                    } else return false;
+                }
+            }
+        }
+        if(next == std::string::npos) break;
+        pos = next + 1;
+    }
+    return true;
+#endif
+}
 
 DataLoader::DataLoader(const std::string &imageDir)
     : currentIndex(0), fx_(700.0), fy_(700.0), cx_(0.5), cy_(0.5)

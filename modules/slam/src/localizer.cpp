@@ -1,7 +1,7 @@
 #include "opencv2/slam/localizer.hpp"
 #include "opencv2/slam/matcher.hpp"
+#include "opencv2/slam/data_loader.hpp"
 #include <opencv2/calib3d.hpp>
-#include <filesystem>
 #include <fstream>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -126,7 +126,7 @@ bool Localizer::tryPnP(const MapManager &map, const Mat &desc, const std::vector
     // Diagnostics: draw matches and inliers if requested
     if(!outDir.empty() && image){
         try{
-            std::filesystem::create_directories(outDir);
+            ensureDirectoryExists(outDir);
             Mat vis;
             if(image->channels() == 1) cvtColor(*image, vis, COLOR_GRAY2BGR);
             else vis = image->clone();
