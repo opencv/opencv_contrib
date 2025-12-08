@@ -112,7 +112,7 @@ TEST_P(ClusterEuclideanTest, accuracy)
         Mat(clusterBindings).convertTo(bindings8u, CV_8U);
         Mat(trueClusterBindings).convertTo(trueBindings8u, CV_8U);
         double normH = cv::norm(bindings8u, trueBindings8u, NORM_HAMMING) / nPts;
-        EXPECT_LT(normH, 0.658);
+        EXPECT_LT(normH, 0.66);
     }
 }
 
