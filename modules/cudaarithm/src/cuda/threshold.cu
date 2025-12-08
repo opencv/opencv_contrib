@@ -374,7 +374,7 @@ double cv::cuda::threshold(InputArray _src, OutputArray _dst, double thresh, dou
     else
     {
         typedef void (*func_t)(const GpuMat& src, GpuMat& dst, double thresh, double maxVal, int type, Stream& stream);
-        static const func_t funcs[] =
+        static const func_t funcs[CV_DEPTH_MAX] =
         {
             thresholdImpl<uchar>,
             thresholdImpl<schar>,
@@ -391,7 +391,10 @@ double cv::cuda::threshold(InputArray _src, OutputArray _dst, double thresh, dou
             maxVal = cvRound(maxVal);
         }
 
-        funcs[depth](src, dst, thresh, maxVal, type, stream);
+        auto f = funcs[depth];
+        CV_Assert(f);
+
+        f(src, dst, thresh, maxVal, type, stream);
     }
 
     syncOutput(dst, _dst, stream);

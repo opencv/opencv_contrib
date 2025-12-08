@@ -142,7 +142,7 @@ void cv::cuda::reduce(InputArray _src, OutputArray _dst, int dim, int reduceOp, 
     if (dim == 0)
     {
         typedef void (*func_t)(const GpuMat& _src, GpuMat& _dst, int reduceOp, Stream& stream);
-        static const func_t funcs[7][7] =
+        static const func_t funcs[CV_DEPTH_MAX][CV_DEPTH_MAX] =
         {
             {
                 reduceToRowImpl<uchar, int, uchar>,
@@ -220,7 +220,7 @@ void cv::cuda::reduce(InputArray _src, OutputArray _dst, int dim, int reduceOp, 
     else
     {
         typedef void (*func_t)(const GpuMat& _src, GpuMat& _dst, int reduceOp, Stream& stream);
-        static const func_t funcs[7][7] =
+        static const func_t funcs[CV_DEPTH_MAX][CV_DEPTH_MAX] =
         {
             {
                 reduceToColumnImpl<uchar, int, uchar>,
