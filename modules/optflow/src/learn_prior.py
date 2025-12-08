@@ -110,7 +110,7 @@ if len(w1) > 1:
         try:
             L1 = np.linalg.cholesky(Q1)
             break
-        except np.linalg.linalg.LinAlgError:
+        except np.linalg.LinAlgError:
             mev = min(np.linalg.eig(Q1)[0]).real
             assert (mev < 0)
             print('Q1', mev)
@@ -122,7 +122,7 @@ if len(w1) > 1:
         try:
             L2 = np.linalg.cholesky(Q2)
             break
-        except np.linalg.linalg.LinAlgError:
+        except np.linalg.LinAlgError:
             mev = min(np.linalg.eig(Q2)[0]).real
             assert (mev < 0)
             print('Q2', mev)
