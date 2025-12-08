@@ -45,6 +45,7 @@ namespace ximgproc {
 
 using std::vector;
 #define EPS 1e-43f
+#define DISP_SCALE 16
 
 class DisparityWLSFilterImpl : public DisparityWLSFilter
 {
@@ -289,7 +290,7 @@ void DisparityWLSFilterImpl::filter_(InputArray disparity_map_left, InputArray l
         src  = Mat(src_full_size ,ROI);
         filtered_disparity_map.create(disp_full_size.size(), disp_full_size.type());
         Mat& dst_full_size = filtered_disparity_map.getMatRef();
-        dst_full_size = Scalar(16*(min_disp-1));
+        dst_full_size = Scalar(DISP_SCALE*(min_disp-1));
         dst = Mat(dst_full_size,ROI);
         Mat filtered_disp;
         fastGlobalSmootherFilter(src,disp,filtered_disp,lambda,sigma_color);
@@ -320,7 +321,7 @@ void DisparityWLSFilterImpl::filter_(InputArray disparity_map_left, InputArray l
         src  = Mat(src_full_size ,ROI);
         filtered_disparity_map.create(disp_full_size.size(), disp_full_size.type());
         Mat& dst_full_size = filtered_disparity_map.getMatRef();
-        dst_full_size = Scalar(16*(min_disp-1));
+        dst_full_size = Scalar(DISP_SCALE*(min_disp-1));
         dst = Mat(dst_full_size,ROI);
         Mat conf(confidence_map,ROI);
 
@@ -501,11 +502,13 @@ int readGT(String src_path,OutputArray dst)
     if(!src.empty() && src.channels()==3 && src.depth()==CV_8U)
     {
         //MPI-Sintel format:
+        const int sintelScale = 64;  // Sintel GT é 1/64
+        const float scaleFactor = (float)DISP_SCALE / sintelScale;
         for(int i=0;i<src.rows;i++)
             for(int j=0;j<src.cols;j++)
             {
                 Vec3b bgrPixel = src.at<Vec3b>(i, j);
-                dstMat.at<short>(i,j) = 64*bgrPixel.val[2]+bgrPixel.val[1]/4; //16-multiplied disparity
+                dstMat.at<short>(i,j) = (short)(scaleFactor * (256 * bgrPixel.val[2] + bgrPixel.val[1]));
             }
         return 0;
     }
@@ -519,7 +522,7 @@ int readGT(String src_path,OutputArray dst)
                 if(src_val==0)
                     dstMat.at<short>(i,j) = UNKNOWN_DISPARITY;
                 else
-                    dstMat.at<short>(i,j) = 16*src_val; //16-multiplied disparity
+                    dstMat.at<short>(i,j) = DISP_SCALE*src_val; //16-multiplied disparity
             }
          return 0;
     }
@@ -562,7 +565,7 @@ void getDisparityVis(InputArray src,OutputArray dst,double scale)
     dst.create(srcMat.rows,srcMat.cols,CV_8UC1);
     Mat& dstMat = dst.getMatRef();
 
-    srcMat.convertTo(dstMat, CV_8UC1, scale / 16.0);
+    srcMat.convertTo(dstMat, CV_8UC1, scale / DISP_SCALE);
     dstMat &= (srcMat != UNKNOWN_DISPARITY);
 }
 
