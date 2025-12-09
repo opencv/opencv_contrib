@@ -43,6 +43,7 @@
 #if !defined CUDA_DISABLER
 
 #include <cfloat>
+#include <cmath>
 #include "opencv2/core/cuda/common.hpp"
 #include "opencv2/core/cuda/border_interpolate.hpp"
 #include "opencv2/core/cuda/vec_traits.hpp"
@@ -53,7 +54,89 @@
 
 namespace cv { namespace cuda { namespace device
 {
+    __device__ float lanczos_weight(float x_)
+    {
+        float x = fabsf(x_);
+        if (x == 0.0f)
+            return 1.0f;
+        if (x >= 4.0f)
+            return 0.0f;
+        float pi_x = M_PI * x;
+        return sinf(pi_x) * sinf(pi_x / 4.0f) / (pi_x * pi_x / 4.0f);
+    }
+
     // kernels
+    template <typename T>
+    __global__ void resize_lanczos4(const PtrStepSz<T> src, PtrStepSz<T> dst, const float fy, const float fx)
+    {
+        const int x = blockIdx.x * blockDim.x + threadIdx.x;
+        const int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= dst.cols || y >= dst.rows)
+            return;
+
+        const float src_x = static_cast<float>(x) * fx;
+        const float src_y = static_cast<float>(y) * fy;
+
+        const int in_height = src.rows;
+        const int in_width = src.cols;
+
+        typedef typename VecTraits<T>::elem_type elem_type;
+        constexpr int cn = VecTraits<T>::cn;
+        float results[cn] = {0.0f};
+
+        for (int c = 0; c < cn; ++c)
+        {
+            float acc_val = 0.0f;
+            float acc_weight = 0.0f;
+
+
+            const int xmin = int(floorf(src_x)) - 3;
+            const int xmax = int(floorf(src_x)) + 4;
+            const int ymin = int(floorf(src_y)) - 3;
+            const int ymax = int(floorf(src_y)) + 4;
+
+            for (int cy = ymin; cy <= ymax; ++cy)
+            {
+                float wy = lanczos_weight(src_y - static_cast<float>(cy));
+                if (wy == 0.0f)
+                    continue;
+
+                for (int cx = xmin; cx <= xmax; ++cx)
+                {
+                    float wx = lanczos_weight(src_x - static_cast<float>(cx));
+                    if (wx == 0.0f)
+                        continue;
+
+                    float w = wy * wx;
+
+                    int iy = ::max(0, ::min(cy, in_height - 1));
+                    int ix = ::max(0, ::min(cx, in_width - 1));
+
+                    T val = src(iy, ix);
+                    
+                    const elem_type* val_ptr = reinterpret_cast<const elem_type*>(&val);
+                    elem_type elem_val = val_ptr[c];
+                    float channel_val = static_cast<float>(elem_val);
+
+                    acc_val += channel_val * w;
+                    acc_weight += w;
+                }
+            }
+
+            float result = acc_weight > 0.0f ? (acc_val / acc_weight) : 0.0f;
+            results[c] = result;
+        }
+
+        T result_vec;
+        elem_type* result_ptr = reinterpret_cast<elem_type*>(&result_vec);
+        for (int c = 0; c < cn; ++c)
+        {
+            result_ptr[c] = saturate_cast<elem_type>(results[c]);
+        }
+        dst(y, x) = result_vec;
+    }
+
 
     template <typename T> __global__ void resize_nearest(const PtrStep<T> src, PtrStepSz<T> dst, const float fy, const float fx)
     {
@@ -243,6 +326,21 @@ namespace cv { namespace cuda { namespace device
         cudaSafeCall( cudaDeviceSynchronize() );
     }
 
+    // callers for lanczos interpolation
+
+    template <typename T>
+    void call_resize_lanczos4_glob(const PtrStepSz<T>& src, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
+    {
+        const dim3 block(32, 8);
+        const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
+
+        resize_lanczos4<<<grid, block, 0, stream>>>(src, dst, fy, fx);
+        cudaSafeCall( cudaGetLastError() );
+
+        if (stream == 0)
+            cudaSafeCall( cudaDeviceSynchronize() );
+    }
+
     // ResizeNearestDispatcher
 
     template <typename T> struct ResizeNearestDispatcher
@@ -352,6 +450,16 @@ namespace cv { namespace cuda { namespace device
     template <> struct ResizeCubicDispatcher<float> : SelectImplForCubic<float> {};
     template <> struct ResizeCubicDispatcher<float4> : SelectImplForCubic<float4> {};
 
+    // ResizeLanczosDispatcher
+
+    template <typename T> struct ResizeLanczosDispatcher
+    {
+        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& /*srcWhole*/, int /*yoff*/, int /*xoff*/, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
+        {
+            call_resize_lanczos4_glob(src, dst, fy, fx, stream);
+        }
+    };
+
     // ResizeAreaDispatcher
 
     template <typename T> struct ResizeAreaDispatcher
@@ -393,17 +501,22 @@ namespace cv { namespace cuda { namespace device
     template <typename T> void resize(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream)
     {
         typedef void (*func_t)(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream);
-        static const func_t funcs[4] =
+        static const func_t funcs[5] =
         {
             ResizeNearestDispatcher<T>::call,
             ResizeLinearDispatcher<T>::call,
             ResizeCubicDispatcher<T>::call,
-            ResizeAreaDispatcher<T>::call
+            ResizeAreaDispatcher<T>::call,
+            ResizeLanczosDispatcher<T>::call
         };
 
         // change to linear if area interpolation upscaling
         if (interpolation == 3 && (fx <= 1.f || fy <= 1.f))
             interpolation = 1;
+
+        // Bounds check for interpolation mode
+        if (interpolation < 0 || interpolation >= 5)
+            interpolation = 1; // Default to linear
 
         funcs[interpolation](static_cast< PtrStepSz<T> >(src), static_cast< PtrStepSz<T> >(srcWhole), yoff, xoff, static_cast< PtrStepSz<T> >(dst), fy, fx, stream);
     }
