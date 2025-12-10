@@ -218,8 +218,8 @@ CUDA_TEST_P(ResizeLanczosPerformance, Performance)
     double cpu_time = tm_cpu.getTimeMilli() / iterations;
     double speedup = cpu_time / gpu_time;
 
-    std::cout << "Size: " << size << " -> " << dsize 
-              << ", Type: " << type 
+    std::cout << "Size: " << size << " -> " << dsize
+              << ", Type: " << type
               << ", Coeff: " << coeff << std::endl;
     std::cout << "  CPU: " << cpu_time << " ms" << std::endl;
     std::cout << "  GPU: " << gpu_time << " ms" << std::endl;
@@ -234,4 +234,3 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeLanczosPerformance, testing::Combine
 
 }} // namespace
 #endif // HAVE_CUDA
-
