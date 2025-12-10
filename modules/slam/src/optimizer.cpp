@@ -279,7 +279,7 @@ bool Optimizer::optimizePose(
     if(matchedMpIndices.empty()) return false;
     inliers.assign(matchedMpIndices.size(), false);
 
-    std::vector<Point3f> objectPoints;
+    std::vector<Point3d> objectPoints;
     std::vector<Point2f> imagePoints;
     for(size_t i = 0; i < matchedMpIndices.size(); ++i) {
         int mpIdx = matchedMpIndices[i];

@@ -291,7 +291,7 @@ void MapManager::updateMapPointDescriptor(MapPoint &mp) {
             }
 
             uchar medianByte = 0;
-            int threshold = descriptors.size() / 2;
+            int threshold = static_cast<int>(descriptors.size()) / 2;
             for(int bit = 0; bit < 8; ++bit) {
                 if(bitCount[bit] > threshold) {
                     medianByte |= (1 << bit);

@@ -208,7 +208,7 @@ bool Initializer::reconstructH(const std::vector<Point2f> &pts1,
 
         if(nGood > bestGood) {
             bestGood = nGood;
-            bestIdx = i;
+            bestIdx = static_cast<int>(i);
         }
     }
 
@@ -239,7 +239,7 @@ int Initializer::checkRT(const Mat &R, const Mat &t,
     Mat t2 = t;
 
     int nGood = 0;
-    std::vector<float> cosParallaxes;
+    std::vector<double> cosParallaxes;
     cosParallaxes.reserve(points3D.size());
 
     for(size_t i = 0; i < points3D.size(); ++i) {
@@ -285,8 +285,8 @@ int Initializer::checkRT(const Mat &R, const Mat &t,
 
     if(!cosParallaxes.empty()) {
         std::sort(cosParallaxes.begin(), cosParallaxes.end());
-        float medianCos = cosParallaxes[cosParallaxes.size()/2];
-        parallax = std::acos(medianCos) * 180.0 / CV_PI;
+        double medianCos = cosParallaxes[cosParallaxes.size()/2];
+        parallax = static_cast<float>(std::acos(medianCos) * 180.0 / CV_PI);
     }
 
     return nGood;
@@ -329,11 +329,11 @@ float Initializer::computeScore(const Mat &H21, const Mat &H12,
                                std::vector<bool> &inliersH,
                                float sigma) {
 
-    const float th = 5.991 * sigma;
+    const double th = 5.991 * static_cast<double>(sigma);
     inliersH.resize(pts1.size(), false);
 
-    float score = 0.0f;
-    const float thSq = th * th;
+    double score = 0.0;
+    const double thSq = th * th;
 
     for(size_t i = 0; i < pts1.size(); ++i) {
         // Forward error
@@ -341,9 +341,9 @@ float Initializer::computeScore(const Mat &H21, const Mat &H12,
         Mat p2pred = H21 * p1;
         p2pred /= p2pred.at<double>(2,0);
 
-        float dx = pts2[i].x - p2pred.at<double>(0,0);
-        float dy = pts2[i].y - p2pred.at<double>(1,0);
-        float errSq = dx*dx + dy*dy;
+        double dx = static_cast<double>(pts2[i].x) - p2pred.at<double>(0,0);
+        double dy = static_cast<double>(pts2[i].y) - p2pred.at<double>(1,0);
+        double errSq = dx*dx + dy*dy;
 
         if(errSq < thSq) {
             score += thSq - errSq;
@@ -354,8 +354,8 @@ float Initializer::computeScore(const Mat &H21, const Mat &H12,
         Mat p1pred = H12 * p2;
         p1pred /= p1pred.at<double>(2,0);
 
-        dx = pts1[i].x - p1pred.at<double>(0,0);
-        dy = pts1[i].y - p1pred.at<double>(1,0);
+        dx = static_cast<double>(pts1[i].x) - p1pred.at<double>(0,0);
+        dy = static_cast<double>(pts1[i].y) - p1pred.at<double>(1,0);
         errSq = dx*dx + dy*dy;
 
         if(errSq < thSq) {
@@ -364,7 +364,7 @@ float Initializer::computeScore(const Mat &H21, const Mat &H12,
         }
     }
 
-    return score;
+    return static_cast<float>(score);
 }
 
 float Initializer::computeScoreF(const Mat &F21,
@@ -373,11 +373,11 @@ float Initializer::computeScoreF(const Mat &F21,
                                  std::vector<bool> &inliersF,
                                  float sigma) {
 
-    const float th = 3.841 * sigma;
-    const float thSq = th * th;
+    const double th = 3.841 * static_cast<double>(sigma);
+    const double thSq = th * th;
 
     inliersF.resize(pts1.size(), false);
-    float score = 0.0f;
+    double score = 0.0;
 
     for(size_t i = 0; i < pts1.size(); ++i) {
         Mat p1 = (Mat_<double>(3,1) << pts1[i].x, pts1[i].y, 1.0);
@@ -385,13 +385,13 @@ float Initializer::computeScoreF(const Mat &F21,
 
         // Epipolar line in second image
         Mat l2 = F21 * p1;
-        float a2 = l2.at<double>(0,0);
-        float b2 = l2.at<double>(1,0);
-        float c2 = l2.at<double>(2,0);
+        double a2 = l2.at<double>(0,0);
+        double b2 = l2.at<double>(1,0);
+        double c2 = l2.at<double>(2,0);
 
-        float num2 = a2*pts2[i].x + b2*pts2[i].y + c2;
-        float den2 = a2*a2 + b2*b2;
-        float distSq2 = (num2*num2) / den2;
+        double num2 = a2*pts2[i].x + b2*pts2[i].y + c2;
+        double den2 = a2*a2 + b2*b2;
+        double distSq2 = (num2*num2) / den2;
 
         if(distSq2 < thSq) {
             score += thSq - distSq2;
@@ -399,7 +399,7 @@ float Initializer::computeScoreF(const Mat &F21,
         }
     }
 
-    return score;
+    return static_cast<float>(score);
 }
 
 } // namespace vo

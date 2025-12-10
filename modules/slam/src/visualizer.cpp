@@ -96,9 +96,9 @@ void Visualizer::showTopdown(){
         Point p = worldToPixel(traj_.back());
         // draw heading arrow on topdown map based on recent trajectory
         if(traj_.size() >= 2){
-            int K = std::min<size_t>(5, traj_.size()-1);
+            size_t K = std::min<size_t>(5, traj_.size()-1);
             double dx = 0.0, dz = 0.0;
-            for(int i=0;i<K;i++){
+            for(size_t i=0;i<K;i++){
                 auto a = traj_[traj_.size()-1 - i];
                 auto b = traj_[traj_.size()-2 - i];
                 dx += (a.x - b.x);
