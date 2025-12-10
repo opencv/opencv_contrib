@@ -163,23 +163,23 @@ void MapManager::cullBadMapPoints() {
     const double MAX_REPROJ_ERROR = 3.0;  // pixels
     const int MIN_OBSERVATIONS = 2;
     const float MIN_FOUND_RATIO = 0.25f;
-    
+
     for(auto &mp : mappoints_) {
         if(mp.isBad) continue;
-        
+
         // 1. Check observation count
         mp.nObs = static_cast<int>(mp.observations.size());
         if(mp.nObs < MIN_OBSERVATIONS) {
             mp.isBad = true;
             continue;
         }
-        
+
         // 2. Check found ratio (avoid points rarely tracked)
         if(mp.nVisible > 10 && mp.getFoundRatio() < MIN_FOUND_RATIO) {
             mp.isBad = true;
             continue;
         }
-        
+
         // 3. Check reprojection error across observations
         // Sample a few keyframes to check reprojection
         int errorCount = 0;
@@ -188,27 +188,27 @@ void MapManager::cullBadMapPoints() {
             int kfId = obs.first;
             int kfIdx = keyframeIndex(kfId);
             if(kfIdx < 0 || kfIdx >= static_cast<int>(keyframes_.size())) continue;
-            
+
             const KeyFrame &kf = keyframes_[kfIdx];
             // Use default camera params (should be passed in production code)
             double fx = 500.0, fy = 500.0, cx = 320.0, cy = 240.0;
             double error = computeReprojError(mp, kf, fx, fy, cx, cy);
-            
+
             checkCount++;
             if(error > MAX_REPROJ_ERROR) {
                 errorCount++;
             }
-            
+
             // Sample up to 3 observations for efficiency
             if(checkCount >= 3) break;
         }
-        
+
         // If majority of samples have high error, mark as bad
         if(checkCount > 0 && errorCount > checkCount / 2) {
             mp.isBad = true;
         }
     }
-    
+
     // Remove bad points
     size_t before = mappoints_.size();
     mappoints_.erase(
@@ -217,7 +217,7 @@ void MapManager::cullBadMapPoints() {
         mappoints_.end()
     );
     size_t after = mappoints_.size();
-    
+
     if(before - after > 0) {
         std::cout << "MapManager: culled " << (before - after) << " bad map points ("
                   << after << " remain)" << std::endl;
@@ -229,14 +229,14 @@ double MapManager::computeReprojError(const MapPoint &mp, const KeyFrame &kf,
     // Transform world point to camera frame
     Mat Xw = (Mat_<double>(3,1) << mp.p.x, mp.p.y, mp.p.z);
     Mat Xc = kf.R_w.t() * (Xw - kf.t_w);
-    
+
     double z = Xc.at<double>(2, 0);
     if(z <= 0) return std::numeric_limits<double>::max();
-    
+
     // Project to image
     double u = fx * (Xc.at<double>(0, 0) / z) + cx;
     double v = fy * (Xc.at<double>(1, 0) / z) + cy;
-    
+
     // Find corresponding observation in this keyframe
     Point2f observed(-1, -1);
     for(const auto &obs : mp.observations) {
@@ -248,9 +248,9 @@ double MapManager::computeReprojError(const MapPoint &mp, const KeyFrame &kf,
             }
         }
     }
-    
+
     if(observed.x < 0) return std::numeric_limits<double>::max();
-    
+
     // Compute reprojection error
     double dx = u - observed.x;
     double dy = v - observed.y;
@@ -259,28 +259,28 @@ double MapManager::computeReprojError(const MapPoint &mp, const KeyFrame &kf,
 
 void MapManager::updateMapPointDescriptor(MapPoint &mp) {
     if(mp.observations.empty()) return;
-    
+
     // Collect all descriptors from observations
     std::vector<Mat> descriptors;
     for(const auto &obs : mp.observations) {
         int kfIdx = keyframeIndex(obs.first);
         if(kfIdx < 0) continue;
-        
+
         const KeyFrame &kf = keyframes_[kfIdx];
         int kpIdx = obs.second;
         if(kpIdx >= 0 && kpIdx < kf.desc.rows) {
             descriptors.push_back(kf.desc.row(kpIdx));
         }
     }
-    
+
     if(descriptors.empty()) return;
-    
+
     // Compute median descriptor (for binary descriptors, use majority voting per bit)
     if(descriptors[0].type() == CV_8U) {
         // Binary descriptor (ORB)
         int bytes = descriptors[0].cols;
         Mat median = Mat::zeros(1, bytes, CV_8U);
-        
+
         for(int b = 0; b < bytes; ++b) {
             int bitCount[8] = {0};
             for(const auto &desc : descriptors) {
@@ -289,7 +289,7 @@ void MapManager::updateMapPointDescriptor(MapPoint &mp) {
                     if(byte & (1 << bit)) bitCount[bit]++;
                 }
             }
-            
+
             uchar medianByte = 0;
             int threshold = descriptors.size() / 2;
             for(int bit = 0; bit < 8; ++bit) {
@@ -299,7 +299,7 @@ void MapManager::updateMapPointDescriptor(MapPoint &mp) {
             }
             median.at<uchar>(0, b) = medianByte;
         }
-        
+
         mp.descriptor = median;
     } else {
         // Fallback: use first descriptor

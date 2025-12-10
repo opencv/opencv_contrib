@@ -41,6 +41,6 @@ private:
     // 相机内参（若未加载则为回退值）
     double fx_, fy_, cx_, cy_;
 };
-    
+
 } // namespace vo
 } // namespace cv

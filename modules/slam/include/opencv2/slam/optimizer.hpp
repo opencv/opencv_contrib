@@ -12,7 +12,7 @@ namespace vo {
 class Optimizer {
 public:
     Optimizer();
-    
+
     // Local Bundle Adjustment
     // Optimizes a window of recent keyframes and all observed map points
     // fixedKFs: indices of keyframes to keep fixed during optimization
@@ -51,7 +51,7 @@ public:
         std::vector<MapPoint> &mappoints,
         double fx, double fy, double cx, double cy,
         int iterations = 20);
-#endif    
+#endif
 
 private:
     // Compute reprojection error and Jacobian
@@ -62,7 +62,7 @@ private:
         double fx, double fy, double cx, double cy,
         Mat &jacobianPose,
         Mat &jacobianPoint);
-    
+
     // Project 3D point to image
     static Point2f project(
         const Point3d &point3D,
