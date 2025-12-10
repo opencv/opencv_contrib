@@ -21,12 +21,19 @@ namespace
         float ifx = static_cast<float>(1.0 / fx);
         float ify = static_cast<float>(1.0 / fy);
 
+        // OpenCV CPU resize uses center-aligned coordinate mapping: (x + 0.5) * fx - 0.5
+        // Since fx and fy here are scale factors, and ifx = 1.0 / fx, ify = 1.0 / fy,
+        // the center-aligned mapping becomes: (x + 0.5) / fx - 0.5 = (x + 0.5) * ifx - 0.5
         for (int y = 0; y < dsize.height; ++y)
         {
             for (int x = 0; x < dsize.width; ++x)
             {
                 for (int c = 0; c < cn; ++c)
-                    dst.at<T>(y, x * cn + c) = LanczosInterpolator<T>::getValue(src, y * ify, x * ifx, c, cv::BORDER_REPLICATE);
+                {
+                    float src_x = (static_cast<float>(x) + 0.5f) * ifx - 0.5f;
+                    float src_y = (static_cast<float>(y) + 0.5f) * ify - 0.5f;
+                    dst.at<T>(y, x * cn + c) = LanczosInterpolator<T>::getValue(src, src_y, src_x, c, cv::BORDER_REPLICATE);
+                }
             }
         }
     }

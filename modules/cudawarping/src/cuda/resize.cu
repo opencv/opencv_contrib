@@ -54,7 +54,7 @@
 
 namespace cv { namespace cuda { namespace device
 {
-    __device__ float lanczos_weight(float x_)
+    __device__ __forceinline__ float lanczos_weight(float x_)
     {
         float x = fabsf(x_);
         if (x == 0.0f)
@@ -69,73 +69,152 @@ namespace cv { namespace cuda { namespace device
     template <typename T>
     __global__ void resize_lanczos4(const PtrStepSz<T> src, PtrStepSz<T> dst, const float fy, const float fx)
     {
-        const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
+        const int tx = threadIdx.x;
+        const int ty = threadIdx.y;
+        const int bx = blockIdx.x;
+        const int by = blockIdx.y;
 
-        if (x >= dst.cols || y >= dst.rows)
-            return;
-
-        const float src_x = static_cast<float>(x) * fx;
-        const float src_y = static_cast<float>(y) * fy;
+        const int x = bx * blockDim.x + tx;
+        const int y = by * blockDim.y + ty;
 
         const int in_height = src.rows;
         const int in_width = src.cols;
 
+        constexpr int R = 4;
+        constexpr int BASE_W = 32;
+        constexpr int BASE_H = 8;
+        constexpr int SHARED_WIDTH_MAX = BASE_W + R + R;
+        constexpr int SHARED_HEIGHT_MAX = BASE_H + R + R;
+
+        __shared__ T shared_src[SHARED_HEIGHT_MAX][SHARED_WIDTH_MAX];
+
         typedef typename VecTraits<T>::elem_type elem_type;
         constexpr int cn = VecTraits<T>::cn;
-        float results[cn] = {0.0f};
 
-        for (int c = 0; c < cn; ++c)
+        const int out_x0 = bx * blockDim.x;
+        const int out_x1 = ::min(out_x0 + blockDim.x - 1, dst.cols - 1);
+        const int out_y0 = by * blockDim.y;
+        const int out_y1 = ::min(out_y0 + blockDim.y - 1, dst.rows - 1);
+
+        const float src_x0_f = (static_cast<float>(out_x0) + 0.5f) * fx - 0.5f;
+        const float src_x1_f = (static_cast<float>(out_x1) + 0.5f) * fx - 0.5f;
+        const float src_y0_f = (static_cast<float>(out_y0) + 0.5f) * fy - 0.5f;
+        const float src_y1_f = (static_cast<float>(out_y1) + 0.5f) * fy - 0.5f;
+
+        int in_x_min = int(floorf(src_x0_f)) - R;
+        int in_x_max = int(floorf(src_x1_f)) + R;
+        int in_y_min = int(floorf(src_y0_f)) - R;
+        int in_y_max = int(floorf(src_y1_f)) + R;
+
+        if (in_x_min < 0) in_x_min = 0;
+        if (in_y_min < 0) in_y_min = 0;
+        if (in_x_max >= in_width) in_x_max = in_width - 1;
+        if (in_y_max >= in_height) in_y_max = in_height - 1;
+
+        const int W_needed = in_x_max - in_x_min + 1;
+        const int H_needed = in_y_max - in_y_min + 1;
+
+        // for fx <= 1 and fy <= 1
+        const bool use_shared = (W_needed <= SHARED_WIDTH_MAX) && (H_needed <= SHARED_HEIGHT_MAX);
+
+        if (use_shared)
         {
-            float acc_val = 0.0f;
-            float acc_weight = 0.0f;
-
-
-            const int xmin = int(floorf(src_x)) - 3;
-            const int xmax = int(floorf(src_x)) + 4;
-            const int ymin = int(floorf(src_y)) - 3;
-            const int ymax = int(floorf(src_y)) + 4;
-
-            for (int cy = ymin; cy <= ymax; ++cy)
+            for (int sy = ty; sy < H_needed; sy += blockDim.y)
             {
-                float wy = lanczos_weight(src_y - static_cast<float>(cy));
-                if (wy == 0.0f)
-                    continue;
-
-                for (int cx = xmin; cx <= xmax; ++cx)
+                int iy = in_y_min + sy;
+                for (int sx = tx; sx < W_needed; sx += blockDim.x)
                 {
-                    float wx = lanczos_weight(src_x - static_cast<float>(cx));
-                    if (wx == 0.0f)
-                        continue;
-
-                    float w = wy * wx;
-
-                    int iy = ::max(0, ::min(cy, in_height - 1));
-                    int ix = ::max(0, ::min(cx, in_width - 1));
-
-                    T val = src(iy, ix);
-                    
-                    const elem_type* val_ptr = reinterpret_cast<const elem_type*>(&val);
-                    elem_type elem_val = val_ptr[c];
-                    float channel_val = static_cast<float>(elem_val);
-
-                    acc_val += channel_val * w;
-                    acc_weight += w;
+                    int ix = in_x_min + sx;
+                    shared_src[sy][sx] = src(iy, ix);
                 }
             }
-
-            float result = acc_weight > 0.0f ? (acc_val / acc_weight) : 0.0f;
-            results[c] = result;
+            __syncthreads();
         }
+
+        if (x >= dst.cols || y >= dst.rows)
+        {
+            if (use_shared) { __syncthreads(); }
+            return;
+        }
+
+        const float src_x = (static_cast<float>(x) + 0.5f) * fx - 0.5f;
+        const float src_y = (static_cast<float>(y) + 0.5f) * fy - 0.5f;
+
+        const int xmin = int(floorf(src_x)) - 3;
+        const int xmax = int(floorf(src_x)) + 4;
+        const int ymin = int(floorf(src_y)) - 3;
+        const int ymax = int(floorf(src_y)) + 4;
+
+        float results[cn];
+        float acc_weights[cn];
+        #pragma unroll
+        for (int c = 0; c < cn; ++c) { results[c] = 0.0f; acc_weights[c] = 0.0f; }
+
+        for (int cy = ymin; cy <= ymax; ++cy)
+        {
+            float wy = lanczos_weight(src_y - static_cast<float>(cy));
+            if (wy == 0.0f) continue;
+
+            for (int cx = xmin; cx <= xmax; ++cx)
+            {
+                float wx = lanczos_weight(src_x - static_cast<float>(cx));
+                if (wx == 0.0f) continue;
+
+                float w = wy * wx;
+
+                if (use_shared)
+                {
+                    int sx = cx - in_x_min;
+                    int sy = cy - in_y_min;
+                    if (sx < 0) sx = 0;
+                    else if (sx >= W_needed) sx = W_needed - 1;
+                    if (sy < 0) sy = 0;
+                    else if (sy >= H_needed) sy = H_needed - 1;
+
+                    T val = shared_src[sy][sx];
+                    const elem_type* val_ptr = reinterpret_cast<const elem_type*>(&val);
+                    #pragma unroll
+                    for (int c = 0; c < cn; ++c)
+                    {
+                        elem_type elem_val = val_ptr[c];
+                        float channel_val = static_cast<float>(elem_val);
+                        results[c] += channel_val * w;
+                        acc_weights[c] += w;
+                    }
+                }
+                else
+                {
+                    // fallback
+                    int iy_r = cy < 0 ? 0 : (cy >= in_height ? (in_height - 1) : cy);
+                    int ix_r = cx < 0 ? 0 : (cx >= in_width ? (in_width - 1) : cx);
+                    T val = src(iy_r, ix_r);
+                    const elem_type* val_ptr = reinterpret_cast<const elem_type*>(&val);
+                    #pragma unroll
+                    for (int c = 0; c < cn; ++c)
+                    {
+                        elem_type elem_val = val_ptr[c];
+                        float channel_val = static_cast<float>(elem_val);
+                        results[c] += channel_val * w;
+                        acc_weights[c] += w;
+                    }
+                }
+            }
+        }
+
+        #pragma unroll
+        for (int c = 0; c < cn; ++c)
+            results[c] = acc_weights[c] > 0.0f ? (results[c] / acc_weights[c]) : 0.0f;
 
         T result_vec;
         elem_type* result_ptr = reinterpret_cast<elem_type*>(&result_vec);
+
+        #pragma unroll
         for (int c = 0; c < cn; ++c)
-        {
             result_ptr[c] = saturate_cast<elem_type>(results[c]);
-        }
+
         dst(y, x) = result_vec;
     }
+
 
 
     template <typename T> __global__ void resize_nearest(const PtrStep<T> src, PtrStepSz<T> dst, const float fy, const float fx)
@@ -341,6 +420,92 @@ namespace cv { namespace cuda { namespace device
             cudaSafeCall( cudaDeviceSynchronize() );
     }
 
+    template <typename Ptr2D, typename T>
+    __global__ void resize_lanczos4_tex(Ptr2D src, PtrStepSz<T> dst, const float fy, const float fx)
+    {
+        const int x = blockDim.x * blockIdx.x + threadIdx.x;
+        const int y = blockDim.y * blockIdx.y + threadIdx.y;
+
+        if (x >= dst.cols || y >= dst.rows)
+            return;
+
+        const float src_x = (static_cast<float>(x) + 0.5f) * fx - 0.5f;
+        const float src_y = (static_cast<float>(y) + 0.5f) * fy - 0.5f;
+
+        typedef typename VecTraits<T>::elem_type elem_type;
+        constexpr int cn = VecTraits<T>::cn;
+        float results[cn] = {0.0f};
+
+        for (int c = 0; c < cn; ++c)
+        {
+            float acc_val = 0.0f;
+            float acc_weight = 0.0f;
+
+            const int xmin = int(floorf(src_x)) - 3;
+            const int xmax = int(floorf(src_x)) + 4;
+            const int ymin = int(floorf(src_y)) - 3;
+            const int ymax = int(floorf(src_y)) + 4;
+
+            for (int cy = ymin; cy <= ymax; ++cy)
+            {
+                float wy = lanczos_weight(src_y - static_cast<float>(cy));
+                if (wy == 0.0f)
+                    continue;
+
+                for (int cx = xmin; cx <= xmax; ++cx)
+                {
+                    float wx = lanczos_weight(src_x - static_cast<float>(cx));
+                    if (wx == 0.0f)
+                        continue;
+
+                    float w = wy * wx;
+
+                    // Use texture memory for sampling (handles boundary automatically)
+                    T val = src(static_cast<float>(cy), static_cast<float>(cx));
+
+                    const elem_type* val_ptr = reinterpret_cast<const elem_type*>(&val);
+                    elem_type elem_val = val_ptr[c];
+                    float channel_val = static_cast<float>(elem_val);
+
+                    acc_val += channel_val * w;
+                    acc_weight += w;
+                }
+            }
+
+            float result = acc_weight > 0.0f ? (acc_val / acc_weight) : 0.0f;
+            results[c] = result;
+        }
+
+        T result_vec;
+        elem_type* result_ptr = reinterpret_cast<elem_type*>(&result_vec);
+        for (int c = 0; c < cn; ++c)
+        {
+            result_ptr[c] = saturate_cast<elem_type>(results[c]);
+        }
+        dst(y, x) = result_vec;
+    }
+
+    template <typename T>
+    void call_resize_lanczos4_tex(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float fy, float fx)
+    {
+        const dim3 block(32, 8);
+        const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
+        if (srcWhole.data == src.data)
+        {
+            cudev::Texture<T> texSrc(src);
+            resize_lanczos4_tex<cudev::TexturePtr<T>><<<grid, block>>>(texSrc, dst, fy, fx);
+        }
+        else
+        {
+            cudev::TextureOff<T> texSrcWhole(srcWhole, yoff, xoff);
+            BrdReplicate<T> brd(src.rows, src.cols);
+            BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>> brdSrc(texSrcWhole, brd);
+            resize_lanczos4_tex<BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>>><<<grid, block>>>(brdSrc, dst, fy, fx);
+        }
+        cudaSafeCall( cudaGetLastError() );
+        cudaSafeCall( cudaDeviceSynchronize() );
+    }
+
     // ResizeNearestDispatcher
 
     template <typename T> struct ResizeNearestDispatcher
@@ -459,6 +624,63 @@ namespace cv { namespace cuda { namespace device
             call_resize_lanczos4_glob(src, dst, fy, fx, stream);
         }
     };
+
+    template <typename T> struct SelectImplForLanczos
+    {
+        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
+        {
+            if (stream)
+                call_resize_lanczos4_glob(src, dst, fy, fx, stream);
+            else
+            {
+                if (fx > 1 || fy > 1)
+                    call_resize_lanczos4_glob(src, dst, fy, fx, 0);
+                else
+                    call_resize_lanczos4_tex(src, srcWhole, yoff, xoff, dst, fy, fx);
+            }
+        }
+    };
+
+    // Texture memory doesn't support 3-channel types, so use glob for those
+    template <> struct ResizeLanczosDispatcher<uchar> : SelectImplForLanczos<uchar> {};
+    template <> struct ResizeLanczosDispatcher<uchar3>
+    {
+        static void call(const PtrStepSz<uchar3>& src, const PtrStepSz<uchar3>& /*srcWhole*/, int /*yoff*/, int /*xoff*/, const PtrStepSz<uchar3>& dst, float fy, float fx, cudaStream_t stream)
+        {
+            call_resize_lanczos4_glob(src, dst, fy, fx, stream);
+        }
+    };
+    template <> struct ResizeLanczosDispatcher<uchar4> : SelectImplForLanczos<uchar4> {};
+
+    template <> struct ResizeLanczosDispatcher<ushort> : SelectImplForLanczos<ushort> {};
+    template <> struct ResizeLanczosDispatcher<ushort3>
+    {
+        static void call(const PtrStepSz<ushort3>& src, const PtrStepSz<ushort3>& /*srcWhole*/, int /*yoff*/, int /*xoff*/, const PtrStepSz<ushort3>& dst, float fy, float fx, cudaStream_t stream)
+        {
+            call_resize_lanczos4_glob(src, dst, fy, fx, stream);
+        }
+    };
+    template <> struct ResizeLanczosDispatcher<ushort4> : SelectImplForLanczos<ushort4> {};
+
+    template <> struct ResizeLanczosDispatcher<short> : SelectImplForLanczos<short> {};
+    template <> struct ResizeLanczosDispatcher<short3>
+    {
+        static void call(const PtrStepSz<short3>& src, const PtrStepSz<short3>& /*srcWhole*/, int /*yoff*/, int /*xoff*/, const PtrStepSz<short3>& dst, float fy, float fx, cudaStream_t stream)
+        {
+            call_resize_lanczos4_glob(src, dst, fy, fx, stream);
+        }
+    };
+    template <> struct ResizeLanczosDispatcher<short4> : SelectImplForLanczos<short4> {};
+
+    template <> struct ResizeLanczosDispatcher<float> : SelectImplForLanczos<float> {};
+    template <> struct ResizeLanczosDispatcher<float3>
+    {
+        static void call(const PtrStepSz<float3>& src, const PtrStepSz<float3>& /*srcWhole*/, int /*yoff*/, int /*xoff*/, const PtrStepSz<float3>& dst, float fy, float fx, cudaStream_t stream)
+        {
+            call_resize_lanczos4_glob(src, dst, fy, fx, stream);
+        }
+    };
+    template <> struct ResizeLanczosDispatcher<float4> : SelectImplForLanczos<float4> {};
 
     // ResizeAreaDispatcher
 
