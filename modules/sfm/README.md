@@ -11,10 +11,18 @@ Before compiling, take a look at the following details in order to give a proper
 
 In addition, it depends on some open source libraries:
 
-- [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) 3.2.2 or later. **Required**
-- [Google Log](http://code.google.com/p/google-glog) 0.3.1 or later. **Required**
-- [Google Flags](http://code.google.com/p/gflags). **Required**
+- [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page) 3.2.2 or later. **Required**
+- [ng-log](https://github.com/ng-log/ng-log) 0.9.0 or later. **Required, use instead of Google glog**
+- [Google Logging Library(glog)](https://github.com/google/glog) 0.3.1 or later. **Not recommended**
+- [Google Flags](https://github.com/gflags/gflags). **Required**
 - [Ceres Solver](http://ceres-solver.org). Needed by the reconstruction API in order to solve part of the Bundle Adjustment plus the points Intersect. If Ceres Solver is not installed on your system, the reconstruction funcionality will be disabled. **Recommended**
+
+Notice
+
+- Google glog is deprecated. Use ng-log 0.9.0 or later.
+- If ng-log 0.8.x or earlier is used, many configuration and build warnings will be shown. Update ng-log 0.9.0 or later.
+- If both ng-log and Google glog are installed, sfm uses Google glog. If you require ng-log, uninstall Google glog.
+
 
 Installation
 ------------
@@ -22,7 +30,27 @@ Installation
 
 In case you are on [Ubuntu](http://www.ubuntu.com/) you can simply install the required dependencies by typing the following command.
 
-    sudo apt-get install libeigen3-dev libgflags-dev libgoogle-glog-dev
+    sudo apt-get install libeigen3-dev libgflags-dev
+
+**ng-log**
+
+See https://ng-log.github.io/ng-log/stable/build/#cmake
+
+Start by installing all the dependencies.
+
+    # CMake
+    sudo apt-get install cmake
+    # gflags
+    sudo apt-get install libgflags-dev
+
+We are now ready to build, test, and install ng-log.
+    git clone https://github.com/ng-log/ng-log.git
+    cd ng-log
+    mkdir build && cd build
+    cmake ..
+    make -j4
+    make test
+    sudo make install
 
 **Ceres Solver**
 
@@ -116,3 +144,4 @@ Future Work
 * Decide which functions are kept since most of them are the same in calib3d.
 * Finish to implement computeOrientation().
 * Find a good features matchig algorithm for reconstruction() in case we provide pure images for autocalibration (look into OpenMVG).
+* After Ceres supports ng-log, drop to support Google glog.
