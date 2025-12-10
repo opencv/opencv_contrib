@@ -207,14 +207,23 @@ PERF_TEST_P(Sz_Depth_Cn_Inter_Scale, ResizeLanczos,
     {
         const cv::cuda::GpuMat d_src(src);
         cv::cuda::GpuMat dst;
+        cv::Size dsize(cv::saturate_cast<int>(src.cols * f), cv::saturate_cast<int>(src.rows * f));
+        cv::Mat host_dst(dsize, type);
+
+        declare.out(host_dst);
 
         TEST_CYCLE() cv::cuda::resize(d_src, dst, cv::Size(), f, f, interpolation);
+
+        dst.download(host_dst);
 
         CUDA_SANITY_CHECK(dst, 1e-3, ERROR_RELATIVE);
     }
     else
     {
-        cv::Mat dst;
+        cv::Size dsize(cv::saturate_cast<int>(src.cols * f), cv::saturate_cast<int>(src.rows * f));
+        cv::Mat dst(dsize, type);
+
+        declare.out(dst);
 
         TEST_CYCLE() cv::resize(src, dst, cv::Size(), f, f, interpolation);
 
