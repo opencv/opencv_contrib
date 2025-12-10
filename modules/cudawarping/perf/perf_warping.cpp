@@ -181,6 +181,48 @@ PERF_TEST_P(Sz_Depth_Cn_Inter_Scale, Resize,
 }
 
 //////////////////////////////////////////////////////////////////////
+// ResizeLanczos
+
+PERF_TEST_P(Sz_Depth_Cn_Inter_Scale, ResizeLanczos,
+            Combine(CUDA_TYPICAL_MAT_SIZES,
+                    Values(CV_8U, CV_32F),
+                    CUDA_CHANNELS_1_3_4,
+                    Values(Interpolation(cv::INTER_LANCZOS4)),
+                    Values(0.5, 1.5, 2.0)))
+{
+    declare.time(20.0);
+
+    const cv::Size size = GET_PARAM(0);
+    const int depth = GET_PARAM(1);
+    const int channels = GET_PARAM(2);
+    const int interpolation = GET_PARAM(3);
+    const double f = GET_PARAM(4);
+
+    const int type = CV_MAKE_TYPE(depth, channels);
+
+    cv::Mat src(size, type);
+    declare.in(src, WARMUP_RNG);
+
+    if (PERF_RUN_CUDA())
+    {
+        const cv::cuda::GpuMat d_src(src);
+        cv::cuda::GpuMat dst;
+
+        TEST_CYCLE() cv::cuda::resize(d_src, dst, cv::Size(), f, f, interpolation);
+
+        CUDA_SANITY_CHECK(dst, 1e-3, ERROR_RELATIVE);
+    }
+    else
+    {
+        cv::Mat dst;
+
+        TEST_CYCLE() cv::resize(src, dst, cv::Size(), f, f, interpolation);
+
+        CPU_SANITY_CHECK(dst);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
 // ResizeArea
 
 DEF_PARAM_TEST(Sz_Depth_Cn_Scale, cv::Size, MatDepth, MatCn, double);
