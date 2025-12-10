@@ -11,7 +11,7 @@ Tracker::Tracker()
 {
 }
 
-bool Tracker::processFrame(const Mat &gray, const std::string &imagePath, Mat &imgOut, Mat &R_out, Mat &t_out, std::string &info)
+bool Tracker::processFrame(const Mat &gray, const std::string & /*imagePath*/, Mat &imgOut, Mat & /*R_out*/, Mat & /*t_out*/, std::string &info)
 {
     if(gray.empty()) return false;
     // detect

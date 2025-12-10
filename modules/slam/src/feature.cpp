@@ -137,12 +137,12 @@ void FeatureExtractor::detectAndCompute(const Mat &image, std::vector<KeyPoint> 
     }
 
     std::vector<KeyPoint> selected; selected.reserve(nfeatures_);
-    for(auto &b: buckets){
-        if(b.empty()) continue;
-        std::sort(b.begin(), b.end(), [](const CandScore &a, const CandScore &b){ return a.score > b.score; });
-        int take = std::min((int)b.size(), cellCap);
+    for(auto &bucket: buckets){
+        if(bucket.empty()) continue;
+        std::sort(bucket.begin(), bucket.end(), [](const CandScore &a, const CandScore &b){ return a.score > b.score; });
+        int take = std::min((int)bucket.size(), cellCap);
         for(int i=0;i<take && (int)selected.size() < nfeatures_; ++i){
-            selected.push_back(candidates[b[i].idx]);
+            selected.push_back(candidates[bucket[i].idx]);
         }
     }
 

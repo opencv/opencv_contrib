@@ -183,7 +183,6 @@ int VisualOdometry::run(const std::string &imageDir, double scale_m, const Visua
                         }
                     }
                     // mutual check
-                    int q = forward ? (int)qi : best.trainIdx;
                     int t = forward ? best.trainIdx : (int)qi;
                     // find reverse match for t
                     const auto &rev = forward ? knn21 : knn12;

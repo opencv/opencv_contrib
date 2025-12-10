@@ -315,8 +315,8 @@ void Initializer::decomposeH(const Mat &H, std::vector<Mat> &Rs,
     Mat H_normalized = H / H.at<double>(2,2);
 
     std::vector<Mat> rotations, translations, normalsOut;
-    int solutions = decomposeHomographyMat(H_normalized, Mat::eye(3,3,CV_64F),
-                                               rotations, translations, normalsOut);
+    decomposeHomographyMat(H_normalized, Mat::eye(3,3,CV_64F),
+                           rotations, translations, normalsOut);
 
     Rs = rotations;
     ts = translations;

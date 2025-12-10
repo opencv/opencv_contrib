@@ -23,7 +23,7 @@ void Matcher::knnMatch(const Mat &desc1, const Mat &desc2, std::vector<DMatch> &
 }
 
 void Matcher::match(const Mat &desc1, const Mat &desc2,
-                    const std::vector<KeyPoint> &kps1, const std::vector<KeyPoint> &kps2,
+                    const std::vector<KeyPoint> & /*kps1*/, const std::vector<KeyPoint> &kps2,
                     std::vector<DMatch> &goodMatches,
                     int imgCols, int imgRows,
                     int bucketRows, int bucketCols, int topKPerBucket,
