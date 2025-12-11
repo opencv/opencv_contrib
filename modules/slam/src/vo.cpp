@@ -413,7 +413,12 @@ int VisualOdometry::run(const std::string &imageDir, double scale_m, const Visua
                         std::vector<int> pts1_kp_idx; pts1_kp_idx.reserve(goodMatches.size());
                         std::vector<int> pts2_kp_idx; pts2_kp_idx.reserve(goodMatches.size());
                         for(const auto &m: goodMatches){ pts1_kp_idx.push_back(m.queryIdx); pts2_kp_idx.push_back(m.trainIdx); }
-                        auto newPts = map.triangulateBetweenLastTwo(pts1n, pts2n, pts1_kp_idx, pts2_kp_idx, last, keyframes.empty() ? kf : keyframes.back(), fx, fy, cx, cy);
+                        // triangulate between the last keyframe in the map and the CURRENT keyframe `kf`.
+                        // previously the code passed `keyframes.back()` which refers to the previous local
+                        // keyframe (or the same as `last`), resulting in triangulation between the same
+                        // frame and thus no new points. Pass `kf` to triangulate between `last` and
+                        // the current frame.
+                        auto newPts = map.triangulateBetweenLastTwo(pts1n, pts2n, pts1_kp_idx, pts2_kp_idx, last, kf, fx, fy, cx, cy);
                         if(!newPts.empty()){
                             didTriangulate = true;
                             // already appended inside MapManager
