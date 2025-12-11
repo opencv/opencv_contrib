@@ -154,7 +154,9 @@ namespace cv { namespace cuda { namespace device
             cudaSafeCall( cudaGetLastError() );
 
             if (stream == 0)
-                cudaSafeCall( cudaDeviceSynchronize() );
+                cudaSafeCall(cudaDeviceSynchronize());
+            else
+                cudaSafeCall(cudaStreamSynchronize(stream));
         }
 
         /////////////////////////////////////////// Corner Min Eigen Val /////////////////////////////////////////////////
@@ -262,6 +264,8 @@ namespace cv { namespace cuda { namespace device
 
             if (stream == 0)
                 cudaSafeCall(cudaDeviceSynchronize());
+            else
+                cudaSafeCall(cudaStreamSynchronize(stream));
         }
     }
 }}}
