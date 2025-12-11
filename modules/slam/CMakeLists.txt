@@ -54,9 +54,6 @@ if(TARGET ${the_module})
 	endif()
 endif()
 
-# Raise Doxygen graph node limit to avoid include-graph generation failures
-set(DOXYGEN_DOT_GRAPH_MAX_NODES 512 CACHE STRING "Max nodes for Doxygen dot graphs" FORCE)
-
 # If you need to add special include directories, libraries or compile flags,
 # add them below using the OpenCV contrib module helper macros, for example:
 #
