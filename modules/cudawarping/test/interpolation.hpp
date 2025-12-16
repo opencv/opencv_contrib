@@ -128,4 +128,55 @@ template <typename T> struct CubicInterpolator
     }
 };
 
+template <typename T> struct LanczosInterpolator
+{
+    static constexpr int A = 4;
+
+    static float lanczosCoeff(float x_)
+    {
+        float x = fabsf(x_);
+        if (x == 0.0f)
+            return 1.0f;
+        if (x >= A)
+            return 0.0f;
+
+        float pi_x = CV_PI * x;
+        return sinf(pi_x) * sinf(pi_x / A) / (pi_x * pi_x / A);
+    }
+
+    static T getValue(const cv::Mat& src, float y, float x, int c, int border_type, cv::Scalar borderVal = cv::Scalar())
+    {
+        const int xmin = (int) floorf(x) - A + 1;
+        const int xmax = (int) floorf(x) + A;
+
+        const int ymin = (int) floorf(y) - A + 1;
+        const int ymax = (int) floorf(y) + A;
+
+        float sum  = 0.0f;
+        float wsum = 0.0f;
+
+        for (int cy = ymin; cy <= ymax; ++cy)
+        {
+            float wy = lanczosCoeff(y - cy);
+            if (wy == 0.0f)
+                continue;
+
+            for (int cx = xmin; cx <= xmax; ++cx)
+            {
+                float wx = lanczosCoeff(x - cx);
+                if (wx == 0.0f)
+                    continue;
+
+                const float w = wy * wx;
+                sum += w * readVal<T>(src, cy, cx, c, border_type, borderVal);
+                wsum += w;
+            }
+        }
+
+        float res = (!wsum)? 0 : sum / wsum;
+
+        return cv::saturate_cast<T>(res);
+    }
+};
+
 #endif // __OPENCV_TEST_INTERPOLATION_HPP__

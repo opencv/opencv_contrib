@@ -70,7 +70,7 @@ void cv::cuda::resize(InputArray _src, OutputArray _dst, Size dsize, double fx, 
     };
 
     CV_Assert( src.depth() <= CV_32F && src.channels() <= 4 );
-    CV_Assert( interpolation == INTER_NEAREST || interpolation == INTER_LINEAR || interpolation == INTER_CUBIC || interpolation == INTER_AREA );
+    CV_Assert( interpolation == INTER_NEAREST || interpolation == INTER_LINEAR || interpolation == INTER_CUBIC || interpolation == INTER_AREA || interpolation == INTER_LANCZOS4 );
     CV_Assert( !(dsize == Size()) || (fx > 0 && fy > 0) );
 
     if (dsize == Size())
