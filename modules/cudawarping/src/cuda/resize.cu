@@ -737,8 +737,7 @@ namespace cv { namespace cuda { namespace device
             interpolation = 1;
 
         // Bounds check for interpolation mode
-        if (interpolation < 0 || interpolation >= 5)
-            interpolation = 1; // Default to linear
+        CV_Assert(interpolation >= 0 && interpolation < 5);
 
         funcs[interpolation](static_cast< PtrStepSz<T> >(src), static_cast< PtrStepSz<T> >(srcWhole), yoff, xoff, static_cast< PtrStepSz<T> >(dst), fy, fx, stream);
     }
