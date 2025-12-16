@@ -140,8 +140,7 @@ template <typename T> struct LanczosInterpolator
         if (x >= A)
             return 0.0f;
 
-        const float pi = 3.14159265358979323846f;
-        float pi_x = pi * x;
+        float pi_x = CV_PI * x;
         return sinf(pi_x) * sinf(pi_x / A) / (pi_x * pi_x / A);
     }
 
