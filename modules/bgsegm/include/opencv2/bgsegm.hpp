@@ -147,7 +147,7 @@ public:
     rate. 0 means that the background model is not updated at all, 1 means that the background model
     is completely reinitialized from the last frame.
 
-    @note This method has a default virtual implementation that throws a "not impemented" error.
+    @note This method has a default virtual implementation that throws a "not implemented" error.
     Foreground masking may not be supported by all background subtractors.
     */
     CV_WRAP virtual void apply(InputArray image, InputArray knownForegroundMask, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
