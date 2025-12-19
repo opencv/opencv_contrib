@@ -14,7 +14,7 @@ FeatureExtractor::FeatureExtractor(int nfeatures)
 }
 
 // Adaptive Non-Maximal Suppression (ANMS)
-static void anms(const std::vector<KeyPoint> &in, std::vector<KeyPoint> &out, int maxFeatures)
+static void adaptiveNonMaximalSuppression(const std::vector<KeyPoint> &in, std::vector<KeyPoint> &out, int maxFeatures)
 {
     out.clear();
     if(in.empty()) return;
@@ -23,17 +23,19 @@ static void anms(const std::vector<KeyPoint> &in, std::vector<KeyPoint> &out, in
 
     // For each keypoint, find distance to the nearest keypoint with strictly higher response
     std::vector<float> radius(N, std::numeric_limits<float>::infinity());
-    for(int i=0;i<N;++i){
-        for(int j=0;j<N;++j){
-            if(in[j].response > in[i].response){
-                float dx = in[i].pt.x - in[j].pt.x;
-                float dy = in[i].pt.y - in[j].pt.y;
-                float d2 = dx*dx + dy*dy;
-                if(d2 < radius[i]) radius[i] = d2;
+    cv::parallel_for_(Range(0, N), [&](const Range &r){
+        for(int i=r.start;i<r.end;++i){
+            for(int j=0;j<N;++j){
+                if(in[j].response > in[i].response){
+                    float dx = in[i].pt.x - in[j].pt.x;
+                    float dy = in[i].pt.y - in[j].pt.y;
+                    float d2 = dx*dx + dy*dy;
+                    if(d2 < radius[i]) radius[i] = d2;
+                }
             }
+            // if no stronger keypoint exists, radius[i] stays INF
         }
-        // if no stronger keypoint exists, radius[i] stays INF
-    }
+    });
 
     // Now pick top maxFeatures by radius (larger radius preferred). If radius==INF, treat as large.
     std::vector<int> idx(N);
@@ -69,7 +71,7 @@ void FeatureExtractor::detectAndCompute(const Mat &image, std::vector<KeyPoint> 
     // If no previous-frame info is provided, use simple ANMS + descriptor computation
     if(prevGray.empty() || prevKp.empty()){
         std::vector<KeyPoint> selected;
-        anms(candidates, selected, nfeatures_);
+        adaptiveNonMaximalSuppression(candidates, selected, nfeatures_);
         if(selected.empty()) return;
         orb_->compute(image, selected, desc);
         kps = std::move(selected);

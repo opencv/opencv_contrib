@@ -75,7 +75,8 @@ std::vector<MapPoint> MapManager::triangulateBetweenLastTwo(const std::vector<Po
         if(Xz <= 0) continue;
         Mat Xc = (Mat_<double>(3,1) << Xx, Xy, Xz);
         Mat Xw = lastKf.R_w * Xc + lastKf.t_w;
-        MapPoint mp; mp.p = Point3d(Xw.at<double>(0,0), Xw.at<double>(1,0), Xw.at<double>(2,0));
+        MapPoint mp; 
+        mp.p = Point3d(Xw.at<double>(0,0), Xw.at<double>(1,0), Xw.at<double>(2,0));
         // compute reprojection error in both views (pixel coords)
         // project into last
         Mat Xc_last = Xc;
@@ -280,25 +281,26 @@ void MapManager::updateMapPointDescriptor(MapPoint &mp) {
         // Binary descriptor (ORB)
         int bytes = descriptors[0].cols;
         Mat median = Mat::zeros(1, bytes, CV_8U);
+        int numDesc = static_cast<int>(descriptors.size());
+        int threshold = numDesc / 2;
 
-        for(int b = 0; b < bytes; ++b) {
-            int bitCount[8] = {0};
-            for(const auto &desc : descriptors) {
-                uchar byte = desc.at<uchar>(0, b);
-                for(int bit = 0; bit < 8; ++bit) {
-                    if(byte & (1 << bit)) bitCount[bit]++;
+        cv::parallel_for_(cv::Range(0, bytes), [&](const cv::Range &r){
+            for(int b = r.start; b < r.end; ++b){
+                int bitCount[8] = {0};
+                for(int i = 0; i < numDesc; ++i){
+                    const uchar *data = descriptors[i].ptr<uchar>(0);
+                    uchar byte = data[b];
+                    for(int bit = 0; bit < 8; ++bit){
+                        if(byte & (1 << bit)) bitCount[bit]++;
+                    }
                 }
-            }
-
-            uchar medianByte = 0;
-            int threshold = static_cast<int>(descriptors.size()) / 2;
-            for(int bit = 0; bit < 8; ++bit) {
-                if(bitCount[bit] > threshold) {
-                    medianByte |= (1 << bit);
+                uchar medianByte = 0;
+                for(int bit = 0; bit < 8; ++bit){
+                    if(bitCount[bit] > threshold) medianByte |= (1 << bit);
                 }
+                median.at<uchar>(0, b) = medianByte;
             }
-            median.at<uchar>(0, b) = medianByte;
-        }
+        });
 
         mp.descriptor = median;
     } else {
