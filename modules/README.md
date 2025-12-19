@@ -32,6 +32,8 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **dpm**: Deformable Part Model -- Felzenszwalb's Cascade with deformable parts object recognition code.
 
+- **dynamicfusion** 3D reconstruction with dynamic scenes -- RGB-D SLAM system that can reconstruct 3D models of scenes with non-rigit deformations.
+
 - **face**: Face Recognition -- Face recognition techniques: Eigen, Fisher and Local Binary Pattern Histograms LBPH methods.
 
 - **freetype**: Drawing text using freetype and harfbuzz.
