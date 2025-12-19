@@ -32,7 +32,7 @@ VisualOdometry::VisualOdometry(Ptr<Feature2D> feature, Ptr<DescriptorMatcher> ma
     : feature_(std::move(feature)), matcher_(std::move(matcher)) {
 }
 
-int VisualOdometry::run(const std::string &imageDir, double scale_m, const VisualOdometryOptions &options){
+int VisualOdometry::run(const std::string &imageDir, double scaleM, const VisualOdometryOptions &options){
     DataLoader loader(imageDir);
     std::cout << "VisualOdometry: loaded " << loader.size() << " images from " << imageDir << std::endl;
     if(loader.size() == 0){
@@ -289,7 +289,7 @@ int VisualOdometry::run(const std::string &imageDir, double scale_m, const Visua
 
                     // set global pose to second keyframe (apply scale)
                     Mat t_d; kf1.t_w.convertTo(t_d, CV_64F);
-                    t_g = t_d * scale_m;
+                    t_g = t_d * scaleM;
                     R_g = kf1.R_w.clone();
                     double x = t_g.at<double>(0);
                     double z = t_g.at<double>(2);
@@ -318,7 +318,7 @@ int VisualOdometry::run(const std::string &imageDir, double scale_m, const Visua
             Mat R_pnp, t_pnp; int inliers_pnp = 0;
             int preMatches_pnp = 0, postMatches_pnp = 0; double meanReproj_pnp = 0.0;
             if(localizer.tryPnP(map, desc, kps, loader.fx(), loader.fy(), loader.cx(), loader.cy(), gray.cols, gray.rows,
-                                options.min_inliers, R_pnp, t_pnp, inliers_pnp, frame_id, &frame, runDirStr,
+                                options.minInliers, R_pnp, t_pnp, inliers_pnp, frame_id, &frame, runDirStr,
                                 &preMatches_pnp, &postMatches_pnp, &meanReproj_pnp)){
                 solvedByPnP = true;
                 std::cout << "PnP solved: preMatches="<<preMatches_pnp<<" post="<<postMatches_pnp<<" inliers="<<inliers_pnp<<" meanReproj="<<meanReproj_pnp<<std::endl;
@@ -374,14 +374,14 @@ int VisualOdometry::run(const std::string &imageDir, double scale_m, const Visua
                         // std::cout << "  -> negligible motion and near-identical frames, skipping integration." << std::endl;
                     }
                 }
-                if (inliers >= options.min_inliers || (inliers >= 2 && matchCount > 50 && median_flow > 2.0)) {
+                if (inliers >= options.minInliers || (inliers >= 2 && matchCount > 50 && median_flow > 2.0)) {
                     integrate = true;
                 }
 
                 // integrate transform if allowed
                 if(integrate){
                     Mat t_d; t.convertTo(t_d, CV_64F);
-                    Mat t_scaled = t_d * scale_m;
+                    Mat t_scaled = t_d * scaleM;
                     Mat R_d; R.convertTo(R_d, CV_64F);
                     t_g = t_g + R_g * t_scaled;
                     R_g = R_g * R_d;

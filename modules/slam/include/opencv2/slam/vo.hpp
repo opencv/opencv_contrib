@@ -8,15 +8,15 @@ namespace cv {
 namespace vo {
 
 struct CV_EXPORTS_W_SIMPLE VisualOdometryOptions {
-    CV_PROP_RW int min_matches = 15;
-    CV_PROP_RW int min_inliers = 4;
-    CV_PROP_RW double min_inlier_ratio = 0.1;
-    CV_PROP_RW double diff_zero_thresh = 2.0;
-    CV_PROP_RW double flow_zero_thresh = 0.3;
-    CV_PROP_RW double min_translation_norm = 1e-4;
-    CV_PROP_RW double min_rotation_rad = 0.5 * CV_PI / 180.0;
-    CV_PROP_RW int max_matches_keep = 500;
-    CV_PROP_RW double flow_weight_lambda = 5.0;
+    CV_PROP_RW int minMatches = 15;
+    CV_PROP_RW int minInliers = 4;
+    CV_PROP_RW double minInlierRatio = 0.1;
+    CV_PROP_RW double diffZeroThresh = 2.0;
+    CV_PROP_RW double flowZeroThresh = 0.3;
+    CV_PROP_RW double minTranslationNorm = 1e-4;
+    CV_PROP_RW double minRotationRad = 0.5 * CV_PI / 180.0;
+    CV_PROP_RW int maxMatchesKeep = 500;
+    CV_PROP_RW double flowWeightLambda = 5.0;
 };
 
 class CV_EXPORTS_W VisualOdometry {
