@@ -147,6 +147,10 @@ namespace cv
             volatile bool useSIMD = checkHardwareSupport(CV_CPU_SSE2);
 #endif
 
+#if CV_NEON
+            volatile bool useSIMD = checkHardwareSupport(CV_CPU_NEON);
+#endif
+
             const int ALIGN = 16;
             const int DISP_SHIFT = StereoMatcher::DISP_SHIFT;
             const int DISP_SCALE = (1 << DISP_SHIFT);
@@ -418,6 +422,69 @@ namespace cv
                             }
                             _minL0 = _mm_min_epi16(_minL0, _mm_srli_si128(_minL0, 8));
                             _mm_storel_epi64((__m128i*)&minLr[0][xm], _minL0);
+                        }
+                        else
+#elif CV_NEON
+                        if ( useSIMD )
+                        {
+                            int16x8_t vP1 = vdupq_n_s16((short)P1);
+                            int16x8_t vDelta0 = vdupq_n_s16((short)delta0);
+                            int16x8_t vDelta1 = vdupq_n_s16((short)delta1);
+                            int16x8_t vDelta2 = vdupq_n_s16((short)delta2);
+                            int16x8_t vDelta3 = vdupq_n_s16((short)delta3);
+                            int16x8_t vMinL0 = vdupq_n_s16((short)MAX_COST);
+                            int16x8_t vCpd, vL0, vL1, vL2, vL3, vL0m1, vL0p1;
+                            int16x8_t vL1m1, vL1p1, vL2m1, vL2p1, vL3m1, vL3p1;
+                            for ( d = 0; d < D; d += 8 )
+                            {
+                                vCpd = vld1q_s16(Cp + d);
+                                vL0 = vld1q_s16(Lr_p0 + d);
+                                vL1 = vld1q_s16(Lr_p1 + d);
+                                vL2 = vld1q_s16(Lr_p2 + d);
+                                vL3 = vld1q_s16(Lr_p3 + d);
+                                vL0m1 = vld1q_s16(Lr_p0 + d - 1);
+                                vL0p1 = vld1q_s16(Lr_p0 + d + 1);
+                                vL0 = vminq_s16(vL0, vqaddq_s16(vL0m1, vP1));
+                                vL0 = vminq_s16(vL0, vqaddq_s16(vL0p1, vP1));
+                                vL1m1 = vld1q_s16(Lr_p1 + d - 1);
+                                vL1p1 = vld1q_s16(Lr_p1 + d + 1);
+                                vL1 = vminq_s16(vL1, vqaddq_s16(vL1m1, vP1));
+                                vL1 = vminq_s16(vL1, vqaddq_s16(vL1p1, vP1));
+                                vL2m1 = vld1q_s16(Lr_p2 + d - 1);
+                                vL2p1 = vld1q_s16(Lr_p2 + d + 1);
+                                vL2 = vminq_s16(vL2, vqaddq_s16(vL2m1, vP1));
+                                vL2 = vminq_s16(vL2, vqaddq_s16(vL2p1, vP1));
+                                vL3m1 = vld1q_s16(Lr_p3 + d - 1);
+                                vL3p1 = vld1q_s16(Lr_p3 + d + 1);
+                                vL3 = vminq_s16(vL3, vqaddq_s16(vL3m1, vP1));
+                                vL3 = vminq_s16(vL3, vqaddq_s16(vL3p1, vP1));
+                                vL0 = vminq_s16(vL0, vDelta0);
+                                vL0 = vqaddq_s16(vCpd, vqsubq_s16(vL0, vDelta0));
+                                vL1 = vminq_s16(vL1, vDelta1);
+                                vL1 = vqaddq_s16(vCpd, vqsubq_s16(vL1, vDelta1));
+                                vL2 = vminq_s16(vL2, vDelta2);
+                                vL2 = vqaddq_s16(vCpd, vqsubq_s16(vL2, vDelta2));
+                                vL3 = vminq_s16(vL3, vDelta3);
+                                vL3 = vqaddq_s16(vCpd, vqsubq_s16(vL3, vDelta3));
+                                vst1q_s16(Lr_p + d, vL0);
+                                vst1q_s16(Lr_p + d + D2, vL1);
+                                vst1q_s16(Lr_p + d + D2 * 2, vL2);
+                                vst1q_s16(Lr_p + d + D2 * 3, vL3);
+                                int16x8_t t0 = vminq_s16(vcombine_s16(vget_low_s16(vL0), vget_low_s16(vL2)),
+                                                        vcombine_s16(vget_high_s16(vL0), vget_high_s16(vL2)));
+                                int16x8_t t1 = vminq_s16(vcombine_s16(vget_low_s16(vL1), vget_low_s16(vL3)),
+                                                        vcombine_s16(vget_high_s16(vL1), vget_high_s16(vL3)));
+                                int16x8_t t2 = vminq_s16(t0, t1);
+                                vMinL0 = vminq_s16(vMinL0, t2);
+                                int16x8_t Sval = vld1q_s16(Sp + d);
+                                int16x8_t L01 = vqaddq_s16(vL0, vL1);
+                                int16x8_t L23 = vqaddq_s16(vL2, vL3);
+                                Sval = vqaddq_s16(Sval, L01);
+                                Sval = vqaddq_s16(Sval, L23);
+                                vst1q_s16(Sp + d, Sval);
+                            }
+                            int16x4_t minL = vpmin_s16(vget_low_s16(vMinL0), vget_high_s16(vMinL0));
+                            minLr[0][xm] = vget_lane_s16(minL, 0);
                         }
                         else
 #endif
