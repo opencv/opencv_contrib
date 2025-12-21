@@ -90,7 +90,13 @@ void FeatureExtractor::detectAndCompute(const Mat &image, std::vector<KeyPoint> 
     try{
         calcOpticalFlowPyrLK(prevGray, image, prevPts, trackedPts, status, err, Size(21,21), 3,
                                  TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 30, 0.01), 0, 1e-4);
-    } catch(...) { status.clear(); }
+    } catch(const cv::Exception &e) {
+        CV_Error(cv::Error::StsError, std::string("calcOpticalFlowPyrLK failed: ") + e.what());
+    } catch(const std::exception &e) {
+        CV_Error(cv::Error::StsError, std::string("calcOpticalFlowPyrLK failed: ") + e.what());
+    } catch(...) {
+        CV_Error(cv::Error::StsError, "calcOpticalFlowPyrLK failed with unknown error");
+    }
     trackedFlows.resize(prevPts.size());
     for(size_t i=0;i<prevPts.size();++i){
         if(status.size() == prevPts.size() && status[i]){

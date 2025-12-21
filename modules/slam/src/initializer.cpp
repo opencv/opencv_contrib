@@ -151,11 +151,8 @@ bool Initializer::reconstructF(const std::vector<Point2f> &pts1,
     isTriangulated.resize(pts1.size(), false);
 
     Mat P1 = Mat::eye(3, 4, CV_64F);
-    Mat P2(3, 4, CV_64F);
-    for(int i = 0; i < 3; ++i) {
-        for(int j = 0; j < 3; ++j) P2.at<double>(i,j) = R.at<double>(i,j);
-        P2.at<double>(i, 3) = t.at<double>(i, 0);
-    }
+    Mat P2;
+    hconcat(R, t, P2);
 
     triangulate(P1, P2, pts1, pts2, points3D);
 
