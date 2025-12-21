@@ -8,6 +8,7 @@
 #include "fast_icp.hpp"
 #include "tsdf.hpp"
 #include "hash_tsdf.hpp"
+#include "colored_hash_tsdf.hpp"
 #include "kinfu_frame.hpp"
 
 namespace cv {
@@ -116,6 +117,18 @@ Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
         p = defaultParams();
     p->volumeType = VolumeType::COLOREDTSDF;
 
+    return p;
+}
+
+Ptr<Params> Params::coloredHashTSDFParams(bool isCoarse)
+{
+    Ptr<Params> p;
+    if (isCoarse)
+        p = coarseParams();
+    else
+        p = defaultParams();
+    p->volumeType = VolumeType::COLOREDHASHTSDF;
+    p->truncateThreshold = rgbd::Odometry::DEFAULT_MAX_DEPTH();
     return p;
 }
 
