@@ -17,6 +17,10 @@ struct CV_EXPORTS_W_SIMPLE VisualOdometryOptions {
     CV_PROP_RW double minRotationRad = 0.5 * CV_PI / 180.0;
     CV_PROP_RW int maxMatchesKeep = 500;
     CV_PROP_RW double flowWeightLambda = 5.0;
+    // Backend/BA controls
+    CV_PROP_RW bool enableBackend = true;
+    CV_PROP_RW int backendWindow = 5;       // number of latest keyframes for local BA
+    CV_PROP_RW int backendIterations = 10;  // BA iterations (if backend enabled)
 };
 
 class CV_EXPORTS_W VisualOdometry {

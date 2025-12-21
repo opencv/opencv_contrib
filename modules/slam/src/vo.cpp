@@ -96,56 +96,59 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
     std::condition_variable backendCv;
     std::atomic<bool> backendStop(false);
     std::atomic<int> backendRequests(0);
-    const int LOCAL_BA_WINDOW = 5; // window size for local BA (adjustable)
+    const int LOCAL_BA_WINDOW = std::max(1, options.backendWindow);
 
-    // Start backend thread: waits for notifications and runs BA on a snapshot
-    std::thread backendThread([&]() {
-        while(!backendStop.load()){
-            std::unique_lock<std::mutex> lk(mapMutex);
-            backendCv.wait(lk, [&]{ return backendStop.load() || backendRequests.load() > 0; });
-            if(backendStop.load()) break;
-            // snapshot map and keyframes
-            auto kfs_snapshot = map.keyframes();
-            auto mps_snapshot = map.mappoints();
-            // reset requests
-            backendRequests.store(0);
-            lk.unlock();
+    // Start backend thread only if enabled
+    std::thread backendThread;
+    if(options.enableBackend){
+        backendThread = std::thread([&]() {
+            while(!backendStop.load()){
+                std::unique_lock<std::mutex> lk(mapMutex);
+                backendCv.wait(lk, [&]{ return backendStop.load() || backendRequests.load() > 0; });
+                if(backendStop.load()) break;
+                // snapshot map and keyframes
+                auto kfs_snapshot = map.keyframes();
+                auto mps_snapshot = map.mappoints();
+                // reset requests
+                backendRequests.store(0);
+                lk.unlock();
 
-            // determine local window
-            int K = static_cast<int>(kfs_snapshot.size());
-            if(K <= 0) continue;
-            int start = std::max(0, K - LOCAL_BA_WINDOW);
-            std::vector<int> localKfIndices;
-            for(int ii = start; ii < K; ++ii) localKfIndices.push_back(ii);
-            std::vector<int> fixedKfIndices;
-            if(start > 0) fixedKfIndices.push_back(0);
-        #if defined(HAVE_SFM)
-            // Run BA on snapshot (may take time) - uses Optimizer which will use g2o if enabled
-            Optimizer::localBundleAdjustmentSFM(kfs_snapshot, mps_snapshot, localKfIndices, fixedKfIndices,
-                                            loader.fx(), loader.fy(), loader.cx(), loader.cy(), 10);
-        #endif
-            // write back optimized poses/points into main map under lock using id-based lookup
-            std::lock_guard<std::mutex> lk2(mapMutex);
-            auto &kfs_ref = const_cast<std::vector<KeyFrame>&>(map.keyframes());
-            auto &mps_ref = const_cast<std::vector<MapPoint>&>(map.mappoints());
-            // copy back poses by id to ensure we update the authoritative containers
-            for(const auto &kf_opt : kfs_snapshot){
-                int idx = map.keyframeIndex(kf_opt.id);
-                if(idx >= 0 && idx < static_cast<int>(kfs_ref.size())){
-                    kfs_ref[idx].R_w = kf_opt.R_w.clone();
-                    kfs_ref[idx].t_w = kf_opt.t_w.clone();
+                // determine local window
+                int K = static_cast<int>(kfs_snapshot.size());
+                if(K <= 0) continue;
+                int start = std::max(0, K - LOCAL_BA_WINDOW);
+                std::vector<int> localKfIndices;
+                for(int ii = start; ii < K; ++ii) localKfIndices.push_back(ii);
+                std::vector<int> fixedKfIndices;
+                if(start > 0) fixedKfIndices.push_back(0);
+            #if defined(HAVE_SFM)
+                // Run BA on snapshot (may take time) - uses Optimizer which will use g2o if enabled
+                Optimizer::localBundleAdjustmentSFM(kfs_snapshot, mps_snapshot, localKfIndices, fixedKfIndices,
+                                                loader.fx(), loader.fy(), loader.cx(), loader.cy(), options.backendIterations);
+            #endif
+                // write back optimized poses/points into main map under lock using id-based lookup
+                std::lock_guard<std::mutex> lk2(mapMutex);
+                auto &kfs_ref = const_cast<std::vector<KeyFrame>&>(map.keyframes());
+                auto &mps_ref = const_cast<std::vector<MapPoint>&>(map.mappoints());
+                // copy back poses by id to ensure we update the authoritative containers
+                for(const auto &kf_opt : kfs_snapshot){
+                    int idx = map.keyframeIndex(kf_opt.id);
+                    if(idx >= 0 && idx < static_cast<int>(kfs_ref.size())){
+                        kfs_ref[idx].R_w = kf_opt.R_w.clone();
+                        kfs_ref[idx].t_w = kf_opt.t_w.clone();
+                    }
+                }
+                // copy back mappoint positions by id
+                for(const auto &mp_opt : mps_snapshot){
+                    if(mp_opt.id <= 0) continue;
+                    int idx = map.mapPointIndex(mp_opt.id);
+                    if(idx >= 0 && idx < static_cast<int>(mps_ref.size())){
+                        mps_ref[idx].p = mp_opt.p;
+                    }
                 }
             }
-            // copy back mappoint positions by id
-            for(const auto &mp_opt : mps_snapshot){
-                if(mp_opt.id <= 0) continue;
-                int idx = map.mapPointIndex(mp_opt.id);
-                if(idx >= 0 && idx < static_cast<int>(mps_ref.size())){
-                    mps_ref[idx].p = mp_opt.p;
-                }
-            }
-        }
-    });
+        });
+    }
 
     Mat frame;
     std::string imgPath;
@@ -324,8 +327,8 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                 double inlierRatio = matchCount > 0 ? double(inliers) / double(matchCount) : 0.0;
 
                 // thresholds (tunable) -- relaxed and add absolute inlier guard
-                const int MIN_MATCHES = 15;           // require at least this many matches (relative)
-                const int MIN_INLIERS = 4;             // OR accept if at least this many absolute inliers
+                const int MIN_MATCHES = options.minMatches;           // require at least this many matches (relative)
+                const int MIN_INLIERS = options.minInliers;           // OR accept if at least this many absolute inliers
                 double t_norm = 0.0, rot_angle = 0.0;
                 if(ok){
                     Mat t_d; t.convertTo(t_d, CV_64F);
@@ -355,10 +358,10 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                 } else {
                     // We have sufficient geometric support. Only skip if motion is truly negligible
                     // (both translation and rotation tiny) AND the image/flow indicate near-identical frames.
-                    const double MIN_TRANSLATION_NORM = 1e-4;
-                    const double MIN_ROTATION_RAD = (0.5 * CV_PI / 180.0); // 0.5 degree
-                    const double DIFF_ZERO_THRESH = 2.0;   // nearly identical image
-                    const double FLOW_ZERO_THRESH = 0.3;   // nearly zero flow in pixels
+                    const double MIN_TRANSLATION_NORM = options.minTranslationNorm;
+                    const double MIN_ROTATION_RAD = options.minRotationRad; // 0.5 degree by default
+                    const double DIFF_ZERO_THRESH = options.diffZeroThresh;   // nearly identical image
+                    const double FLOW_ZERO_THRESH = options.flowZeroThresh;   // nearly zero flow in pixels
 
                     if(t_norm < MIN_TRANSLATION_NORM && std::abs(rot_angle) < MIN_ROTATION_RAD
                        && meanDiff < DIFF_ZERO_THRESH && median_flow < FLOW_ZERO_THRESH){
@@ -429,8 +432,10 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                         std::cout << "Created keyframe " << frame_id << " (no triangulation)" << std::endl;
                     }
                     // Notify backend thread to run local BA asynchronously
-                    backendRequests.fetch_add(1);
-                    backendCv.notify_one();
+                    if(options.enableBackend){
+                        backendRequests.fetch_add(1);
+                        backendCv.notify_one();
+                    }
                 }
 
                 // write CSV line
@@ -498,9 +503,11 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
     }
 
     // Shutdown backend thread gracefully
-    backendStop.store(true);
-    backendCv.notify_one();
-    if(backendThread.joinable()) backendThread.join();
+    if(options.enableBackend){
+        backendStop.store(true);
+        backendCv.notify_one();
+        if(backendThread.joinable()) backendThread.join();
+    }
 
     return 0;
 }
