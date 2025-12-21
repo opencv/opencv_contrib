@@ -242,26 +242,35 @@ void Optimizer::localBundleAdjustmentSFM(
         }
 
         // --- Pose-only optimization (points fixed) ---
-        // For each local keyframe that is not fixed, call optimizePose
+        // Precompute keyframe->mappoint matches once to avoid nested loops per keyframe
+        std::vector<std::vector<int>> matchedPerKf(keyframes.size());
+        std::vector<char> kfNeeded(keyframes.size(), 0);
+        for (int kfId : localKfIndices) {
+            if (kfId < 0 || kfId >= static_cast<int>(keyframes.size())) continue;
+            kfNeeded[kfId] = 1;
+            matchedPerKf[kfId].assign(keyframes[kfId].kps.size(), -1);
+        }
+        for (size_t mpIdx = 0; mpIdx < mappoints.size(); ++mpIdx) {
+            const MapPoint &mp = mappoints[mpIdx];
+            if (mp.isBad) continue;
+            for (const auto &obs : mp.observations) {
+                int kfId = obs.first;
+                int kpIdx = obs.second;
+                if (kfId < 0 || kfId >= static_cast<int>(keyframes.size())) continue;
+                if (!kfNeeded[kfId]) continue;
+                auto &matched = matchedPerKf[kfId];
+                if (kpIdx >= 0 && kpIdx < static_cast<int>(matched.size()))
+                    matched[kpIdx] = static_cast<int>(mpIdx);
+            }
+        }
+
+        // For each local keyframe that is not fixed, call optimizePose using precomputed matches
         for (int kfId : localKfIndices) {
             if (fixedSet.find(kfId) != fixedSet.end()) continue;
             if (kfId < 0 || kfId >= static_cast<int>(keyframes.size())) continue;
             KeyFrame &kf = keyframes[kfId];
-            // Build matchedMpIndices: for each keypoint in this KF, which mappoint index it corresponds to
-            std::vector<int> matchedMpIndices(kf.kps.size(), -1);
-            for (size_t mpIdx = 0; mpIdx < mappoints.size(); ++mpIdx) {
-                const MapPoint &mp = mappoints[mpIdx];
-                if (mp.isBad) continue;
-                for (const auto &obs : mp.observations) {
-                    if (obs.first == kfId) {
-                        int kpIdx = obs.second;
-                        if (kpIdx >= 0 && kpIdx < static_cast<int>(matchedMpIndices.size()))
-                            matchedMpIndices[kpIdx] = static_cast<int>(mpIdx);
-                    }
-                }
-            }
+            std::vector<int> &matchedMpIndices = matchedPerKf[kfId];
             std::vector<bool> inliers;
-            // Use the same number of iterations as outer loop for RANSAC attempts
             optimizePose(kf, mappoints, matchedMpIndices, fx, fy, cx, cy, inliers, std::max(20, iterations));
         }
     }

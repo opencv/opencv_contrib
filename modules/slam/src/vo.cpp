@@ -171,30 +171,22 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
             std::vector<std::vector<DMatch>> knn12, knn21;
             matcher_->knnMatch(prevDesc, desc, knn12, 2);
             matcher_->knnMatch(desc, prevDesc, knn21, 2);
-            auto ratioKeep = [&](const std::vector<std::vector<DMatch>>& knn, bool forward) {
-                std::vector<DMatch> filtered;
-                for(size_t qi=0; qi<knn.size(); ++qi){
-                    if(knn[qi].empty()) continue;
-                    DMatch best = knn[qi][0];
-                    float ratio = 0.75f;
-                    if(knn[qi].size() >= 2){
-                        if(knn[qi][1].distance > 0) {
-                            if(best.distance / knn[qi][1].distance > ratio) continue;
-                        }
-                    }
-                    // mutual check
-                    int t = forward ? best.trainIdx : (int)qi;
-                    // find reverse match for t
-                    const auto &rev = forward ? knn21 : knn12;
-                    if(t < 0 || t >= (int)rev.size() || rev[t].empty()) continue;
-                    DMatch rbest = rev[t][0];
-                    if((forward && rbest.trainIdx == (int)qi) || (!forward && rbest.trainIdx == best.queryIdx)){
-                        filtered.push_back(best);
-                    }
+            // ratio test + mutual check (prev->curr)
+            std::vector<DMatch> goodMatches;
+            goodMatches.reserve(knn12.size());
+            const float ratio = 0.75f;
+            for(size_t qi = 0; qi < knn12.size(); ++qi){
+                if(knn12[qi].empty()) continue;
+                const DMatch &best = knn12[qi][0];
+                if(knn12[qi].size() >= 2){
+                    const DMatch &second = knn12[qi][1];
+                    if(second.distance > 0.0f && best.distance / second.distance > ratio) continue;
                 }
-                return filtered;
-            };
-            std::vector<DMatch> goodMatches = ratioKeep(knn12, true);
+                int t = best.trainIdx;
+                if(t < 0 || t >= (int)knn21.size() || knn21[t].empty()) continue;
+                const DMatch &rbest = knn21[t][0];
+                if(rbest.trainIdx == (int)qi) goodMatches.push_back(best);
+            }
 
             Mat imgMatches;
             drawMatches(prevGray, prevKp, gray, kps, goodMatches, imgMatches,

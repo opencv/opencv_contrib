@@ -61,8 +61,18 @@ std::vector<MapPoint> MapManager::triangulateBetweenLastTwo(const std::vector<Po
         P2.at<double>(r,3) = t_rel.at<double>(r,0);
     }
     Mat points4D;
-    try{ triangulatePoints(P1, P2, pts1n, pts2n, points4D); }
-    catch(...) { points4D.release(); }
+    try {
+        triangulatePoints(P1, P2, pts1n, pts2n, points4D);
+    } catch(const cv::Exception &e) {
+        std::cerr << "triangulatePoints failed: " << e.what() << std::endl;
+        points4D.release();
+    } catch(const std::exception &e) {
+        std::cerr << "triangulatePoints failed: " << e.what() << std::endl;
+        points4D.release();
+    } catch(...) {
+        std::cerr << "triangulatePoints failed: unknown error" << std::endl;
+        points4D.release();
+    }
     if(points4D.empty()) return newPoints;
     Mat p4d64;
     if(points4D.type() != CV_64F) points4D.convertTo(p4d64, CV_64F); else p4d64 = points4D;
