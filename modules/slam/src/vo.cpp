@@ -32,6 +32,22 @@ VisualOdometry::VisualOdometry(Ptr<Feature2D> feature, Ptr<DescriptorMatcher> ma
     : feature_(std::move(feature)), matcher_(std::move(matcher)) {
 }
 
+int VisualOdometry::run(const std::string &imageDir, double scaleM){
+    return run(imageDir, scaleM, options_);
+}
+
+void VisualOdometry::setEnableBackend(bool enable){
+    options_.enableBackend = enable;
+}
+
+void VisualOdometry::setBackendWindow(int window){
+    options_.backendWindow = std::max(1, window);
+}
+
+void VisualOdometry::setBackendIterations(int iterations){
+    options_.backendIterations = std::max(1, iterations);
+}
+
 int VisualOdometry::run(const std::string &imageDir, double scaleM, const VisualOdometryOptions &options){
     DataLoader loader(imageDir);
     std::cout << "VisualOdometry: loaded " << loader.size() << " images from " << imageDir << std::endl;
@@ -425,6 +441,17 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                         std::lock_guard<std::mutex> lk(mapMutex);
                         keyframes.push_back(std::move(kf));
                         map.addKeyFrame(keyframes.back());
+                        if(options.enableMapMaintenance){
+                            const int interval = std::max(1, options.maintenanceInterval);
+                            if(static_cast<int>(map.keyframes().size()) % interval == 0){
+                                map.cullBadMapPoints();
+                                auto &mps = map.mappointsMutable();
+                                for(auto &mp : mps){
+                                    if(mp.isBad) continue;
+                                    map.updateMapPointDescriptor(mp);
+                                }
+                            }
+                        }
                     }
                     if(didTriangulate){
                         std::cout << "Created keyframe " << frame_id << " and triangulated new map points (total=" << map.mappoints().size() << ")" << std::endl;

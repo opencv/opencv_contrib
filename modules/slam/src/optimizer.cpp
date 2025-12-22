@@ -21,6 +21,7 @@
 #include <memory>
 #elif defined(HAVE_SFM)
 #include "opencv2/sfm.hpp"
+#include <limits>
 #endif
 
 #include <opencv2/core.hpp>
@@ -154,15 +155,121 @@ void Optimizer::localBundleAdjustmentSFM(
     const std::vector<int> &fixedKfIndices,
     double fx, double fy, double cx, double cy,
     int iterations) {
-    // Simple SFM-based local bundle adjustment using OpenCV routines.
-    // This implementation alternates:
-    //  - point-only Gauss-Newton updates (poses kept fixed)
-    //  - pose-only optimization using PnP (points kept fixed)
-    // It uses available jacobians w.r.t. point coordinates from
-    // computeReprojectionError and the existing optimizePose() helper
-    // to avoid depending on g2o / ceres. This provides an effective
-    // local refinement for SLAM windows when full BA backends are
-    // not available.
+    // First attempt a Ceres-based BA through cv::sfm::bundleAdjust (if available).
+    // If it throws or cannot form a valid problem, fall back to the local
+    // point/pose alternating optimizer below.
+
+#if defined(__has_include)
+#if __has_include(<opencv2/sfm/ba.hpp>)
+    if (localKfIndices.size() >= 2) {
+        try {
+            // Build mapping from keyframe id to vector index for obs lookup
+            std::unordered_map<int,int> id2idx;
+            for (size_t i = 0; i < keyframes.size(); ++i) {
+                id2idx[keyframes[i].id] = static_cast<int>(i);
+            }
+
+            // Collect valid local views (indices into keyframes vector)
+            std::vector<int> views;
+            views.reserve(localKfIndices.size());
+            for (int idx : localKfIndices) {
+                if (idx >= 0 && idx < static_cast<int>(keyframes.size())) views.push_back(idx);
+            }
+
+            const size_t V = views.size();
+            if (V >= 2) {
+                // Per-view columns storage (filled with NaN if missing)
+                std::vector<std::vector<Point2d>> cols(V);
+                std::vector<int> mpKeepIndices;
+                std::vector<Point3d> pts3d;
+
+                const double NaN = std::numeric_limits<double>::quiet_NaN();
+
+                for (size_t mpi = 0; mpi < mappoints.size(); ++mpi) {
+                    const MapPoint &mp = mappoints[mpi];
+                    if (mp.isBad) continue;
+
+                    // Collect obs in local views
+                    std::vector<Point2d> perView(V, Point2d(NaN, NaN));
+                    int obsInWindow = 0;
+                    for (const auto &obs : mp.observations) {
+                        auto it = id2idx.find(obs.first);
+                        if (it == id2idx.end()) continue;
+                        int kfVecIdx = it->second;
+                        // only consider if this keyframe is in our local view list
+                        for (size_t vi = 0; vi < V; ++vi) {
+                            if (views[vi] == kfVecIdx) {
+                                const KeyFrame &kf = keyframes[kfVecIdx];
+                                int kpIdx = obs.second;
+                                if (kpIdx >=0 && kpIdx < static_cast<int>(kf.kps.size())) {
+                                    perView[vi] = kf.kps[kpIdx].pt;
+                                    obsInWindow++;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    if (obsInWindow < 2) continue; // need at least two obs in window
+
+                    mpKeepIndices.push_back(static_cast<int>(mpi));
+                    pts3d.push_back(mp.p);
+                    for (size_t vi = 0; vi < V; ++vi) {
+                        cols[vi].push_back(perView[vi]);
+                    }
+                }
+
+                const int N = static_cast<int>(pts3d.size());
+                if (N > 0) {
+                    std::vector<Mat> points2dMats(V);
+                    for (size_t vi = 0; vi < V; ++vi) {
+                        points2dMats[vi] = Mat(2, N, CV_64F);
+                        for (int j = 0; j < N; ++j) {
+                            points2dMats[vi].at<double>(0, j) = cols[vi][j].x;
+                            points2dMats[vi].at<double>(1, j) = cols[vi][j].y;
+                        }
+                    }
+
+                    Mat points3dMat(3, N, CV_64F);
+                    for (int j = 0; j < N; ++j) {
+                        points3dMat.at<double>(0, j) = pts3d[j].x;
+                        points3dMat.at<double>(1, j) = pts3d[j].y;
+                        points3dMat.at<double>(2, j) = pts3d[j].z;
+                    }
+
+                    Mat K = (Mat_<double>(3,3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
+
+                    std::vector<Mat> Rs, Ts;
+                    Rs.reserve(V); Ts.reserve(V);
+                    for (size_t vi = 0; vi < V; ++vi) {
+                        Rs.push_back(keyframes[views[vi]].R_w.clone());
+                        Ts.push_back(keyframes[views[vi]].t_w.clone());
+                    }
+
+                    cv::sfm::bundleAdjust(points2dMats, K, Rs, Ts, points3dMat);
+
+                    // Write back optimized poses (only for the views we optimized)
+                    for (size_t vi = 0; vi < V; ++vi) {
+                        keyframes[views[vi]].R_w = Rs[vi].clone();
+                        keyframes[views[vi]].t_w = Ts[vi].clone();
+                    }
+                    // Write back optimized points
+                    for (int j = 0; j < N; ++j) {
+                        int idx = mpKeepIndices[j];
+                        mappoints[idx].p.x = points3dMat.at<double>(0, j);
+                        mappoints[idx].p.y = points3dMat.at<double>(1, j);
+                        mappoints[idx].p.z = points3dMat.at<double>(2, j);
+                    }
+                    return; // success, skip fallback optimizer
+                }
+            }
+        } catch (const std::exception &){
+            // fall through to fallback optimizer below
+        }
+    }
+#endif
+#endif
+
+    // Fallback: simple alternating point/pose optimizer (non-Ceres)
 
     if (localKfIndices.empty() || mappoints.empty()) return;
 
