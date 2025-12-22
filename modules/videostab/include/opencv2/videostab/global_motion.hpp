@@ -188,8 +188,13 @@ public:
 
     virtual Mat estimate(const Mat &frame0, const Mat &frame1, bool *ok = 0) = 0;
 
+    void setFeatureVisualizationCallback(std::function<void(Mat)> featureVisualizationCallback) {
+        featureVisualizationCallback_ = std::bind(featureVisualizationCallback, std::placeholders::_1);
+    };
+
 protected:
     ImageMotionEstimatorBase(MotionModel model) { setMotionModel(model); }
+    std::function<void(Mat)> featureVisualizationCallback_;
 
 private:
     MotionModel motionModel_;
