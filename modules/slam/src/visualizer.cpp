@@ -7,7 +7,7 @@ namespace cv {
 namespace vo {
 
 Tracker::Tracker()
-    : feat_(), matcher_(), poseEst_(), frame_id_(0)
+    : feat_(), matcher_(), frame_id_(0)
 {
 }
 
@@ -61,7 +61,7 @@ bool Tracker::processFrame(const Mat &gray, const std::string & /*imagePath*/, M
 }
 
 Visualizer::Visualizer(int W, int H, double meters_per_pixel)
-    : W_(W), H_(H), meters_per_pixel_(meters_per_pixel), mapSize_(W,H)
+    : meters_per_pixel_(meters_per_pixel), mapSize_(W,H)
 {
     map_ = Mat::zeros(mapSize_, CV_8UC3);
 }

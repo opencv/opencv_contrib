@@ -1,7 +1,6 @@
 #pragma once
 #include <opencv2/core.hpp>
 #include <string>
-#include "opencv2/slam/pose.hpp"
 #include "opencv2/slam/feature.hpp"
 #include "opencv2/slam/matcher.hpp"
 
@@ -16,7 +15,6 @@ public:
 private:
     FeatureExtractor feat_;
     Matcher matcher_;
-    PoseEstimator poseEst_;
 
     Mat prevGray_, prevDesc_;
     std::vector<KeyPoint> prevKp_;
@@ -35,7 +33,6 @@ public:
     // 保存最终轨迹图像到文件
     bool saveTrajectory(const std::string &path);
 private:
-    int W_, H_;
     double meters_per_pixel_;
     Size mapSize_;
     Mat map_;
