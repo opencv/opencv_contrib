@@ -170,6 +170,7 @@ bool FacemarkKazemiImpl::getPixelIntensities(Mat img,vector<Point2f> pixel_coord
 vector<regtree> FacemarkKazemiImpl::gradientBoosting(vector<training_sample>& samples,vector<Point2f> pixel_coordinates){
     vector<regtree> forest;
     vector<Point2f> meanresidual;
+    cout << samples[0].shapeResiduals.size() << endl;
     meanresidual.resize(samples[0].shapeResiduals.size());
     for(unsigned long i=0;i<samples.size();i++){
         for(unsigned long j=0;j<samples[i].shapeResiduals.size();j++){
@@ -302,30 +303,27 @@ bool FacemarkKazemiImpl :: saveModel(String filename){
     }
     return true;
 }
-void FacemarkKazemiImpl::training(String imageList, String groundTruth){
-    imageList.clear();
-    groundTruth.clear();
-    String error_message = "Less arguments than required";
-    CV_Error(Error::StsBadArg, error_message);
-}
-bool FacemarkKazemiImpl::training(vector<Mat>& images, vector< vector<Point2f> >& landmarks,string filename,Size scale,string modelFilename){
-    if(!setTrainingParameters(filename)){
+void FacemarkKazemiImpl::training(){
+    if(!setTrainingParameters(params.configfile)){
         String error_message = "Error while loading training parameters";
         CV_Error(Error::StsBadArg, error_message);
     }
+    if (training_images.size()<1) {
+        CV_Error(Error::StsBadArg, "Training data is not provided. Consider to add using addTrainingSample() function!");
+    }
     vector<Rect> rectangles;
-    scaleData(landmarks,images,scale);
-    calcMeanShape(landmarks,images,rectangles);
-    if(images.size()!=landmarks.size()){
+    scaleData(training_facePoints,training_images,params.scale);
+    calcMeanShape(training_facePoints,training_images,rectangles);
+    if(training_images.size()!=training_facePoints.size()){
         // throw error if no data (or simply return -1?)
         String error_message = "The data is not loaded properly. Aborting training function....";
         CV_Error(Error::StsBadArg, error_message);
     }
     vector<training_sample> samples;
     getTestCoordinates();
-    createTrainingSamples(samples,images,landmarks,rectangles);
-    images.clear();
-    landmarks.clear();
+    createTrainingSamples(samples,training_images,training_facePoints,rectangles);
+    training_images.clear();
+    training_facePoints.clear();
     rectangles.clear();
     for(unsigned long i=0;i< params.cascade_depth;i++){
         cout<<"Training regressor "<<i<<"..."<<endl;
@@ -338,8 +336,8 @@ bool FacemarkKazemiImpl::training(vector<Mat>& images, vector< vector<Point2f> >
         }
         loaded_forests.push_back(gradientBoosting(samples,loaded_pixel_coordinates[i]));
     }
-    saveModel(modelFilename);
-    return true;
+    saveModel(params.modelfile);
+    printf("Training is completed\n");
 }
 }//cv
 }//face
