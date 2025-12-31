@@ -7,6 +7,9 @@ namespace cv {
 namespace vo {
 
 struct KeyFrame {
+        // Custom constructor for convenient initialization
+        KeyFrame(int id_, const Mat& image_, const std::vector<KeyPoint>& kps_, const Mat& desc_, const Mat& R_w_, const Mat& t_w_)
+            : id(id_), image(image_.clone()), kps(kps_), desc(desc_.clone()), R_w(R_w_.clone()), t_w(t_w_.clone()) {}
     int id = -1;
     Mat image; // optional
     std::vector<KeyPoint> kps;

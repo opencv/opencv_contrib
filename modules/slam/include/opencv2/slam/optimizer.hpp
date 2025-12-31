@@ -22,7 +22,7 @@ public:
         std::vector<MapPoint> &mappoints,
         const std::vector<int> &localKfIndices,
         const std::vector<int> &fixedKfIndices,
-        double fx, double fy, double cx, double cy,
+        double fx, double cx, double cy,
         int iterations = 10);
 #endif
 

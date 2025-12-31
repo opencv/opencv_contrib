@@ -135,13 +135,14 @@ std::vector<MapPoint> MapManager::triangulateBetweenLastTwo(const std::vector<Po
         int kp2idx = (c < static_cast<int>(pts2_kp_idx.size())) ? pts2_kp_idx[c] : -1;
         if(kp1idx >= 0) mp.observations.emplace_back(lastKf.id, kp1idx);
         if(kp2idx >= 0) mp.observations.emplace_back(curKf.id, kp2idx);
-        // assign id
-        mp.id = next_mappoint_id_++;
-        mpid2idx_[mp.id] = static_cast<int>(mappoints_.size()) + static_cast<int>(newPoints.size());
+        // DO NOT assign global id or insert into internal containers here.
+        // Return newly triangulated points to caller and let the caller add them
+        // into the MapManager via `addMapPoints` so keyframes are present first.
         newPoints.push_back(mp);
     }
-    // append to internal map
-    for(const auto &p: newPoints) mappoints_.push_back(p);
+    // Note: do NOT append to internal map here. Caller should add returned points
+    // via MapManager::addMapPoints after ensuring the corresponding keyframe
+    // has been inserted into the map (avoids transient observations to missing KFs).
     return newPoints;
 }
 
