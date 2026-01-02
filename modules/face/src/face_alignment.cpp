@@ -27,6 +27,7 @@ bool FacemarkKazemiImpl::setFaceDetector(FN_FaceDetector f, void* userData){
 }
 bool FacemarkKazemiImpl::getFaces(InputArray image, OutputArray faces)
 {
+    CV_Assert(!image.empty());
     CV_Assert(faceDetector);
     return faceDetector(image, faces, faceDetectorData);
 }
@@ -190,5 +191,11 @@ Ptr<Facemark> createFacemarkKazemi() {
     FacemarkKazemi::Params parameters;
     return Ptr<FacemarkKazemiImpl>(new FacemarkKazemiImpl(parameters));
 }
+
+// ** New function to add a training sample **
+void FacemarkKazemiImpl::addTrainingSample(const training_sample& sample) {
+    training_samples.push_back(sample);
+}
+
 }//cv
 }//face

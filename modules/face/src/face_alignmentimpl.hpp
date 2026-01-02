@@ -76,6 +76,10 @@ public:
     bool fit(InputArray image, InputArray faces, OutputArrayOfArrays landmarks ) CV_OVERRIDE;
     void training(String imageList, String groundTruth);
     bool training(vector<Mat>& images, vector< vector<Point2f> >& landmarks,string filename,Size scale,string modelFilename) CV_OVERRIDE;
+
+    // **New function to add training sample manually**
+    void addTrainingSample(const training_sample& sample);
+
     // Destructor for the class.
     virtual ~FacemarkKazemiImpl() CV_OVERRIDE;
 
@@ -95,6 +99,10 @@ protected:
     std::vector< std::vector<Point2f> > loaded_pixel_coordinates;
     FN_FaceDetector faceDetector;
     void* faceDetectorData;
+
+    // **Vector to store training samples**
+    std::vector<training_sample> training_samples;
+
     bool findNearestLandmarks(std::vector< std::vector<int> >& nearest);
     /*Extract left node of the current node in the regression tree*/
     unsigned long left(unsigned long index);
