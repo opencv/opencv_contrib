@@ -94,6 +94,14 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
     std::vector<MapPoint> mappoints;
     std::unordered_map<int,int> keyframeIdToIndex;
 
+    // Trajectory recording: store timestamp + pose for each keyframe
+    struct TrajectoryEntry {
+        double timestamp;
+        Mat R_w;
+        Mat t_w;
+    };
+    std::vector<TrajectoryEntry> trajectory;
+
     // Backend (BA) thread primitives
     std::mutex mapMutex; // protects map and keyframe modifications and writeback
     std::condition_variable backendCv;
@@ -160,6 +168,25 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
     // persistent previous-frame storage (declare outside loop so detectAndCompute can use them)
     static std::vector<KeyPoint> prevKp;
     static Mat prevGray, prevDesc;
+
+    // Helper lambda to extract timestamp from EuRoC image filename (nanoseconds)
+    auto extractTimestamp = [](const std::string &path, int fallbackId) -> double {
+        try {
+            std::string fname = path;
+            auto slash = fname.find_last_of("/\\");
+            if(slash != std::string::npos) fname = fname.substr(slash + 1);
+            auto dot = fname.find_last_of('.');
+            if(dot != std::string::npos) fname = fname.substr(0, dot);
+            if(!fname.empty()){
+                double ts = std::stod(fname);
+                if(ts > 1e12) ts *= 1e-9; // likely nanoseconds -> seconds
+                else if(ts > 1e9) ts *= 1e-6; // likely microseconds -> seconds
+                return ts;
+            }
+        } catch(const std::exception &){}
+        return static_cast<double>(fallbackId);
+    };
+
     while(loader.getNextImage(frame, imgPath)){
         Mat gray = frame;
         if(gray.channels() > 1) cvtColor(gray, gray, COLOR_BGR2GRAY);
@@ -281,6 +308,12 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                     double z = t_g.at<double>(2);
                     vis.addPose(x,-z);
 
+                    // Record initial trajectory entries
+                    double ts0 = extractTimestamp(imgPath, frame_id - 1);
+                    double ts1 = extractTimestamp(imgPath, frame_id);
+                    trajectory.push_back({ts0, Mat::eye(3,3,CV_64F), Mat::zeros(3,1,CV_64F)});
+                    trajectory.push_back({ts1, R_g.clone(), t_g.clone()});
+
                     // notify backend to run BA on initial map
                     backendRequests.fetch_add(1);
                     backendCv.notify_one();
@@ -357,6 +390,10 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                     double x = t_g.at<double>(0);
                     double z = t_g.at<double>(2);
                     vis.addPose(x,-z);
+
+                    // Record trajectory entry for this keyframe
+                    double ts = extractTimestamp(imgPath, frame_id);
+                    trajectory.push_back({ts, R_g.clone(), t_g.clone()});
 
                     // create keyframe (use new constructor)
                     KeyFrame kf(frame_id, frame, kps, desc, R_g, t_g);
@@ -460,6 +497,62 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
         }
     } catch(const std::exception &e){
         std::cerr << "Error saving trajectory: " << e.what() << std::endl;
+    }
+
+    // Write trajectory to TUM-format CSV file
+    try{
+        std::string csvPath = resultDirStr + "/" + runTimestamp + "/trajectory_tum.csv";
+        std::ofstream ofs(csvPath);
+        if(!ofs.is_open()){
+            std::cerr << "Failed to open trajectory CSV: " << csvPath << std::endl;
+        } else {
+            ofs << "# timestamp,tx,ty,tz,qx,qy,qz,qw" << std::endl;
+            for(const auto &entry : trajectory){
+                if(entry.R_w.empty() || entry.t_w.empty()) continue;
+                Mat R, t;
+                entry.R_w.convertTo(R, CV_64F);
+                entry.t_w.convertTo(t, CV_64F);
+                // Convert rotation matrix to quaternion
+                cv::Matx33d Rm;
+                R.copyTo(Rm);
+                double tr = Rm(0,0) + Rm(1,1) + Rm(2,2);
+                double qw, qx, qy, qz;
+                if(tr > 0){
+                    double S = std::sqrt(tr + 1.0) * 2.0;
+                    qw = 0.25 * S;
+                    qx = (Rm(2,1) - Rm(1,2)) / S;
+                    qy = (Rm(0,2) - Rm(2,0)) / S;
+                    qz = (Rm(1,0) - Rm(0,1)) / S;
+                } else if((Rm(0,0) > Rm(1,1)) && (Rm(0,0) > Rm(2,2))){
+                    double S = std::sqrt(1.0 + Rm(0,0) - Rm(1,1) - Rm(2,2)) * 2.0;
+                    qw = (Rm(2,1) - Rm(1,2)) / S;
+                    qx = 0.25 * S;
+                    qy = (Rm(0,1) + Rm(1,0)) / S;
+                    qz = (Rm(0,2) + Rm(2,0)) / S;
+                } else if(Rm(1,1) > Rm(2,2)){
+                    double S = std::sqrt(1.0 + Rm(1,1) - Rm(0,0) - Rm(2,2)) * 2.0;
+                    qw = (Rm(0,2) - Rm(2,0)) / S;
+                    qx = (Rm(0,1) + Rm(1,0)) / S;
+                    qy = 0.25 * S;
+                    qz = (Rm(1,2) + Rm(2,1)) / S;
+                } else {
+                    double S = std::sqrt(1.0 + Rm(2,2) - Rm(0,0) - Rm(1,1)) * 2.0;
+                    qw = (Rm(1,0) - Rm(0,1)) / S;
+                    qx = (Rm(0,2) + Rm(2,0)) / S;
+                    qy = (Rm(1,2) + Rm(2,1)) / S;
+                    qz = 0.25 * S;
+                }
+                // Write in TUM format: timestamp,tx,ty,tz,qx,qy,qz,qw (integer nanoseconds)
+                long long ts_ns = static_cast<long long>(std::llround(entry.timestamp * 1e9));
+                ofs << ts_ns << ","
+                    << std::setprecision(9) << t.at<double>(0,0) << "," << t.at<double>(1,0) << "," << t.at<double>(2,0) << ","
+                    << qx << "," << qy << "," << qz << "," << qw << "\n";
+            }
+            ofs.close();
+            std::cout << "Saved trajectory CSV (" << trajectory.size() << " poses) to " << csvPath << std::endl;
+        }
+    } catch(const std::exception &e){
+        std::cerr << "Error writing trajectory CSV: " << e.what() << std::endl;
     }
 
     // Shutdown backend thread gracefully
