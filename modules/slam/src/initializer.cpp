@@ -1,6 +1,6 @@
 #include "opencv2/slam/initializer.hpp"
 #include <opencv2/calib3d.hpp>
-#include <iostream>
+#include <opencv2/core/utils/logger.hpp>
 #include <algorithm>
 
 namespace cv {
@@ -16,10 +16,7 @@ bool Initializer::initialize(const std::vector<KeyPoint> &kps1,
                              std::vector<Point3d> &points3D,
                              std::vector<bool> &isTriangulated) {
 
-    if(matches.size() < 50) {
-        std::cout << "Initializer: too few matches (" << matches.size() << ")" << std::endl;
-        return false;
-    }
+    if(matches.size() < 50) return false;
 
     // Extract matched points
     std::vector<Point2f> pts1, pts2;
@@ -36,10 +33,7 @@ bool Initializer::initialize(const std::vector<KeyPoint> &kps1,
     Mat H = findHomography(pts1, pts2, RANSAC, 3.0, inliersH, 2000, 0.999);
     Mat F = findFundamentalMat(pts1, pts2, FM_RANSAC, 3.0, 0.999, inliersF);
 
-    if(H.empty() || F.empty()) {
-        std::cout << "Initializer: failed to compute H or F" << std::endl;
-        return false;
-    }
+    if(H.empty() || F.empty()) return false;
 
     // Compute scores
     std::vector<bool> inlH, inlF;
@@ -48,8 +42,7 @@ bool Initializer::initialize(const std::vector<KeyPoint> &kps1,
 
     float ratio = scoreH / (scoreH + scoreF);
 
-    std::cout << "Initializer: H score=" << scoreH << " F score=" << scoreF
-              << " ratio=" << ratio << std::endl;
+    CV_LOG_DEBUG(NULL, "Initializer: computed model scores");
 
     // Decide between H and F
     // If ratio > 0.45, scene is likely planar, use H
@@ -63,36 +56,24 @@ bool Initializer::initialize(const std::vector<KeyPoint> &kps1,
 
     bool success = false;
     if(useH) {
-        std::cout << "Initializer: using Homography" << std::endl;
         success = reconstructH(pts1, pts2, H, fx, fy, cx, cy, R_out, t_out, pts3D, isTri, parallax);
     } else {
-        std::cout << "Initializer: using Fundamental" << std::endl;
         success = reconstructF(pts1, pts2, F, fx, fy, cx, cy, R_out, t_out, pts3D, isTri, parallax);
     }
 
-    if(!success) {
-        std::cout << "Initializer: reconstruction failed" << std::endl;
-        return false;
-    }
+    if(!success) return false;
 
     // Count good triangulated points
     int goodCount = 0;
     for(bool b : isTri) if(b) goodCount++;
 
-    std::cout << "Initializer: triangulated " << goodCount << "/" << pts3D.size()
-              << " points, parallax=" << parallax << std::endl;
+    (void)goodCount;
 
     // Check quality: need enough good points
-    if(goodCount < 50) {
-        std::cout << "Initializer: too few good points (" << goodCount << ")" << std::endl;
-        return false;
-    }
+    if(goodCount < 50) return false;
 
     // Check parallax
-    if(parallax < 1.0f) {
-        std::cout << "Initializer: insufficient parallax (" << parallax << ")" << std::endl;
-        return false;
-    }
+    if(parallax < 1.0f) return false;
 
     // Success
     R = R_out;
@@ -100,7 +81,6 @@ bool Initializer::initialize(const std::vector<KeyPoint> &kps1,
     points3D = pts3D;
     isTriangulated = isTri;
 
-    std::cout << "Initializer: SUCCESS!" << std::endl;
     return true;
 }
 

@@ -1,4 +1,5 @@
 #include "opencv2/slam/optimizer.hpp"
+#include <opencv2/core/utils/logger.hpp>
 #include <iostream>
 #include <set>
 #include <unordered_set>
@@ -431,13 +432,12 @@ void Optimizer::globalBundleAdjustmentSFM(
     double fx, double fy, double cx, double cy,
     int iterations) {
 
-    std::cout << "Optimizer: Global BA with " << keyframes.size()
-              << " KFs and " << mappoints.size() << " map points" << std::endl;
+    CV_LOG_INFO(NULL, "Optimizer: Global BA");
     std::vector<int> localKfIndices;
     for(size_t i = 1; i < keyframes.size(); ++i) localKfIndices.push_back(static_cast<int>(i));
     std::vector<int> fixedKfIndices = {0};
     localBundleAdjustmentSFM(keyframes, mappoints, localKfIndices, fixedKfIndices, fx, fy, cx, cy, iterations);
-    std::cout << "Optimizer: Global BA completed" << std::endl;
+    CV_LOG_INFO(NULL, "Optimizer: Global BA completed");
 }
 #endif
 

@@ -104,7 +104,8 @@ bool Localizer::tryPnP(const MapManager &map, const Mat &desc, const std::vector
     Mat camera = (Mat_<double>(3,3) << fx,0,cx, 0,fy,cy, 0,0,1);
     Mat dist = Mat::zeros(4,1,CV_64F);
     std::vector<int> inliersIdx;
-    bool ok = solvePnPRansac(obj, imgpts, camera, dist, R_out, t_out, false,
+    Mat rvec, tvec;
+    bool ok = solvePnPRansac(obj, imgpts, camera, dist, rvec, tvec, false,
                                  100, 8.0, 0.99, inliersIdx, SOLVEPNP_ITERATIVE);
     if(!ok) return false;
     inliers_out = static_cast<int>(inliersIdx.size());
@@ -113,7 +114,7 @@ bool Localizer::tryPnP(const MapManager &map, const Mat &desc, const std::vector
     double meanReproj = 0.0;
     if(!inliersIdx.empty()){
         std::vector<Point2f> proj;
-        projectPoints(obj, R_out, t_out, camera, dist, proj);
+        projectPoints(obj, rvec, tvec, camera, dist, proj);
         double sum = 0.0;
         for(int idx: inliersIdx){
             double e = std::hypot(proj[idx].x - imgpts[idx].x, proj[idx].y - imgpts[idx].y);
@@ -149,6 +150,15 @@ bool Localizer::tryPnP(const MapManager &map, const Mat &desc, const std::vector
             }
         } catch(...) { /* don't crash on diagnostics */ }
     }
+
+    // Convert OpenCV PnP result (world->camera: Xc = Rcw*Xw + tcw)
+    // into our pose convention: camera->world rotation (R_w) and camera center in world (C_w).
+    Mat Rcw;
+    Rodrigues(rvec, Rcw);
+    Mat Rwc = Rcw.t();
+    Mat Cw = -Rwc * tvec;
+    R_out = Rwc;
+    t_out = Cw;
 
     return inliers_out >= min_inliers;
 }

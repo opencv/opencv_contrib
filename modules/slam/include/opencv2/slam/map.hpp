@@ -37,6 +37,15 @@ class MapManager {
 public:
     MapManager();
 
+    // Camera intrinsics used for reprojection-based scoring/culling.
+    void setCameraIntrinsics(double fx, double fy, double cx, double cy);
+
+    // Culling / retention tuning (milestone 3)
+    void setMapPointCullingParams(int minObservations, double minFoundRatio, double maxReprojErrorPx, int maxPointsKeep);
+
+    // Redundant keyframe culling tuning (milestone 2)
+    void setRedundantKeyframeCullingParams(int minKeyframeObs, int minPointObs, double redundantRatio);
+
     void addKeyFrame(const KeyFrame &kf);
     void addMapPoints(const std::vector<MapPoint> &pts);
 
@@ -72,6 +81,7 @@ public:
 
     // Quality management
     void cullBadMapPoints();
+    void cullRedundantKeyFrames(int maxCullPerCall = 1);
     double computeReprojError(const MapPoint &mp, const KeyFrame &kf,
                              double fx, double fy, double cx, double cy) const;
     void updateMapPointDescriptor(MapPoint &mp);
@@ -80,11 +90,31 @@ public:
     int countGoodMapPoints() const;
 
 private:
+    void rebuildKeyframeIndex_();
+    void rebuildMapPointIndex_();
     std::vector<KeyFrame> keyframes_;
     std::vector<MapPoint> mappoints_;
     std::unordered_map<int,int> id2idx_;
     std::unordered_map<int,int> mpid2idx_;
     int next_mappoint_id_ = 1;
+
+    // Camera intrinsics (optional; when set, enables reprojection-based scoring)
+    bool hasIntrinsics_ = false;
+    double fx_ = 0.0;
+    double fy_ = 0.0;
+    double cx_ = 0.0;
+    double cy_ = 0.0;
+
+    // Map point culling params
+    int mpMinObservations_ = 2;
+    double mpMinFoundRatio_ = 0.10;
+    double mpMaxReprojErrorPx_ = 5.0;
+    int mpMaxPointsKeep_ = 8000;
+
+    // Redundant keyframe culling params
+    int kfRedundantMinObs_ = 80;
+    int kfRedundantMinPointObs_ = 3;
+    double kfRedundantRatio_ = 0.90;
 };
 
 } // namespace vo

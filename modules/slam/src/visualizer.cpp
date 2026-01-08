@@ -77,6 +77,14 @@ void Visualizer::addPose(double x, double z){
     traj_.emplace_back(x,z);
 }
 
+void Visualizer::clearTrajectory(){
+    traj_.clear();
+}
+
+void Visualizer::setTrajectoryXZ(const std::vector<cv::Point2d> &xz){
+    traj_ = xz;
+}
+
 void Visualizer::showFrame(const Mat &frame){
     if(frame.empty()) return;
     // Do not draw heading overlay on video frames; only show raw frame.

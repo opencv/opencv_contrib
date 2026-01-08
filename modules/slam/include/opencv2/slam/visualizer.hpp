@@ -1,5 +1,6 @@
 #pragma once
 #include <opencv2/core.hpp>
+#include <vector>
 #include <string>
 #include "opencv2/slam/feature.hpp"
 #include "opencv2/slam/matcher.hpp"
@@ -24,19 +25,21 @@ private:
 class Visualizer {
 public:
     Visualizer(int W=1000, int H=800, double meters_per_pixel=0.02);
-    // 更新轨迹（传入 x,z 坐标）
+    // Update trajectory (x,z coordinates)
     void addPose(double x, double z);
-    // 返回帧绘制（matches 或 keypoints）到窗口
+    void clearTrajectory();
+    void setTrajectoryXZ(const std::vector<cv::Point2d> &xz);
+    // Show frame window
     void showFrame(const Mat &frame);
-    // 返回并显示俯视图
+    // Show top-down trajectory
     void showTopdown();
-    // 保存最终轨迹图像到文件
+    // Save trajectory image to file
     bool saveTrajectory(const std::string &path);
 private:
     double meters_per_pixel_;
     Size mapSize_;
     Mat map_;
-    std::vector<Point2d> traj_; // 存储 (x,z)
+    std::vector<Point2d> traj_;
     Point worldToPixel(const Point2d &p) const;
 };
 

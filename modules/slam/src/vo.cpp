@@ -14,7 +14,7 @@
 #include <condition_variable>
 #include <atomic>
 #include <opencv2/calib3d.hpp>
-#include <iostream>
+#include <opencv2/core/utils/logger.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/video/tracking.hpp>
@@ -24,6 +24,8 @@
 #include <cmath>
 #include <fstream>
 #include <algorithm>
+#include <numeric>
+#include <unordered_map>
 
 namespace cv {
 namespace vo {
@@ -49,10 +51,15 @@ void VisualOdometry::setBackendIterations(int iterations){
 }
 
 int VisualOdometry::run(const std::string &imageDir, double scaleM, const VisualOdometryOptions &options){
+    const auto prevLogLevel = cv::utils::logging::getLogLevel();
+    // Keep global OpenCV logs at WARNING to avoid noisy INFO logs from OpenCL/UI.
+    // Module-specific verbosity is handled explicitly.
+    cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_WARNING);
+
     DataLoader loader(imageDir);
-    std::cout << "VisualOdometry: loaded " << loader.size() << " images from " << imageDir << std::endl;
     if(loader.size() == 0){
-        std::cerr << "VisualOdometry: no images found in " << imageDir << std::endl;
+        CV_LOG_WARNING(NULL, "VisualOdometry: no images found");
+        cv::utils::logging::setLogLevel(prevLogLevel);
         return -1;
     }
 
@@ -62,20 +69,30 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
     if(!matcher_){
         matcher_ = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
     }
-    // Remove internal FeatureExtractor/Matcher in favor of injected OpenCV components
     PoseEstimator poseEst;
-    Visualizer vis;
+    // Keep the topdown visualization scale consistent with the world scaling applied by scaleM.
+    // When scaleM is large (e.g. 1.0), a larger meters_per_pixel zooms out to keep the trajectory visible.
+    // When scaleM is small (e.g. 0.02), it zooms in accordingly.
+    Visualizer vis(1000, 800, std::max(1e-9, scaleM));
     MapManager map;
-    // two-view initializer
     Initializer initializer;
-    // configure Localizer with a slightly stricter Lowe ratio (0.7)
     Localizer localizer(0.7f);
+
+    // Configure map intrinsics and maintenance thresholds (milestone 2/3)
+    map.setCameraIntrinsics(loader.fx(), loader.fy(), loader.cx(), loader.cy());
+    map.setMapPointCullingParams(options.mapMinObservations,
+                                 options.mapMinFoundRatio,
+                                 options.mapMaxReprojErrorPx,
+                                 options.mapMaxPointsKeep);
+    map.setRedundantKeyframeCullingParams(options.redundantKeyframeMinObs,
+                                          options.redundantKeyframeMinPointObs,
+                                          options.redundantKeyframeRatio);
 
     // prepare per-run diagnostics folder
     std::string runTimestamp;
     auto now = std::chrono::system_clock::now();
-    std::time_t t = std::chrono::system_clock::to_time_t(now);
-    std::tm tm = *std::localtime(&t);
+    std::time_t now_time_t = std::chrono::system_clock::to_time_t(now);
+    std::tm tm = *std::localtime(&now_time_t);
     std::ostringstream ss; ss << std::put_time(&tm, "%Y%m%d_%H%M%S");
     runTimestamp = ss.str();
     std::string resultDirStr = imageDir;
@@ -96,6 +113,7 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
 
     // Trajectory recording: store timestamp + pose for each keyframe
     struct TrajectoryEntry {
+        int frame_id;
         double timestamp;
         Mat R_w;
         Mat t_w;
@@ -107,7 +125,9 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
     std::condition_variable backendCv;
     std::atomic<bool> backendStop(false);
     std::atomic<int> backendRequests(0);
-    const int LOCAL_BA_WINDOW = std::max(1, options.backendWindow);
+    bool backendBusy = false; // guarded by mapMutex
+    // Expand BA window to optimize meaningful local map (not just last 5 frames)
+    const int LOCAL_BA_WINDOW = std::max(60, options.backendWindow);
 
     // Start backend thread only if enabled
     std::thread backendThread;
@@ -120,22 +140,70 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                 // snapshot map and keyframes
                 auto kfs_snapshot = map.keyframes();
                 auto mps_snapshot = map.mappoints();
-                // reset requests
+                // reset requests and mark busy
                 backendRequests.store(0);
+                backendBusy = true;
                 lk.unlock();
 
-                // determine local window
+                // determine local window using covisibility with the latest keyframe
                 int K = static_cast<int>(kfs_snapshot.size());
                 if(K <= 0) continue;
-                int start = std::max(0, K - LOCAL_BA_WINDOW);
+                const int lastIdx = K - 1;
+                const int lastId = kfs_snapshot[lastIdx].id;
+
+                std::unordered_map<int,int> idToIdx;
+                idToIdx.reserve(static_cast<size_t>(K));
+                for(int i = 0; i < K; ++i) idToIdx[kfs_snapshot[i].id] = i;
+
+                std::unordered_map<int,int> sharedCount;
+                sharedCount.reserve(mps_snapshot.size());
+                for(const auto &mp : mps_snapshot){
+                    bool hasLast = false;
+                    for(const auto &obs : mp.observations){
+                        if(obs.first == lastId){ hasLast = true; break; }
+                    }
+                    if(!hasLast) continue;
+                    for(const auto &obs : mp.observations){
+                        if(obs.first == lastId) continue;
+                        auto it = idToIdx.find(obs.first);
+                        if(it == idToIdx.end()) continue;
+                        sharedCount[it->second] += 1;
+                    }
+                }
+
+                struct ScoredKf { int score; int idx; };
+                std::vector<ScoredKf> scored;
+                scored.reserve(sharedCount.size());
+                for(const auto &kv : sharedCount){
+                    scored.push_back({kv.second, kv.first});
+                }
+                std::sort(scored.begin(), scored.end(), [](const ScoredKf &a, const ScoredKf &b){ return a.score > b.score; });
+
                 std::vector<int> localKfIndices;
-                for(int ii = start; ii < K; ++ii) localKfIndices.push_back(ii);
+                localKfIndices.reserve(static_cast<size_t>(LOCAL_BA_WINDOW));
+                auto push_unique = [&](int idx){
+                    if(idx < 0 || idx >= K) return;
+                    if(idx == 0 || idx == 1) return;
+                    if(std::find(localKfIndices.begin(), localKfIndices.end(), idx) != localKfIndices.end()) return;
+                    localKfIndices.push_back(idx);
+                };
+                push_unique(lastIdx);
+                for(const auto &s : scored){
+                    if(static_cast<int>(localKfIndices.size()) >= LOCAL_BA_WINDOW) break;
+                    push_unique(s.idx);
+                }
+                if(localKfIndices.empty()) localKfIndices.push_back(lastIdx);
+
                 std::vector<int> fixedKfIndices;
-                if(start > 0) fixedKfIndices.push_back(0);
+                fixedKfIndices.push_back(0);
+                if(K > 1) fixedKfIndices.push_back(1);
             #if defined(HAVE_SFM)
-                // Run BA on snapshot (may take time) - uses Optimizer which will use g2o if enabled
+                CV_LOG_DEBUG(NULL, "Backend: Running BA");
                 Optimizer::localBundleAdjustmentSFM(kfs_snapshot, mps_snapshot, localKfIndices, fixedKfIndices,
                                                 loader.fx(), loader.fy(), loader.cx(), loader.cy(), options.backendIterations);
+                CV_LOG_DEBUG(NULL, "Backend: BA completed");
+            #else
+                CV_LOG_DEBUG(NULL, "Backend: HAVE_SFM not defined, BA skipped");
             #endif
                 // write back optimized poses/points into main map under lock using id-based lookup
                 std::lock_guard<std::mutex> lk2(mapMutex);
@@ -157,6 +225,8 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                         mps_ref[idx].p = mp_opt.p;
                     }
                 }
+                backendBusy = false;
+                backendCv.notify_all();
             }
         });
     }
@@ -259,13 +329,11 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
 
             // Two-view initialization: if map is empty and this is the second frame, try to bootstrap
             if(map.keyframes().empty() && frame_id == 1){
-                std::cout << "Attempting two-view initialization (frame 0 + 1), matches=" << goodMatches.size() << std::endl;
                 Mat R_init, t_init;
                 std::vector<Point3d> pts3D;
                 std::vector<bool> isTri;
                 // call initializer using the matched keypoints between prev and current
                 if(initializer.initialize(prevKp, kps, goodMatches, loader.fx(), loader.fy(), loader.cx(), loader.cy(), R_init, t_init, pts3D, isTri)){
-                    std::cout << "Initializer: success, creating initial keyframes and mappoints (" << pts3D.size() << ")" << std::endl;
                     // build two keyframes: previous (id = frame_id-1) and current (id = frame_id)
                     Mat prevImg;
                     if(!prevGray.empty()){
@@ -273,7 +341,11 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                         else prevImg = prevGray.clone();
                     }
                     KeyFrame kf0(frame_id - 1, prevImg, prevKp, prevDesc, Mat::eye(3,3,CV_64F), Mat::zeros(3,1,CV_64F));
-                    KeyFrame kf1(frame_id, frame, kps, desc, R_init, t_init);
+                    // recoverPose returns R,t such that x2 = R*x1 + t (cam1 -> cam2).
+                    // Our map uses camera->world rotation (R_w) and camera center in world (C_w).
+                    Mat Rwc1 = R_init.t();
+                    Mat Cw1 = (-Rwc1 * t_init) * scaleM;
+                    KeyFrame kf1(frame_id, frame, kps, desc, Rwc1, Cw1);
 
                     // convert initializer 3D points (in first camera frame) to MapPoints in world coords (world==first)
                     std::vector<MapPoint> newMps;
@@ -281,7 +353,7 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                     for(size_t i=0;i<pts3D.size();++i){
                         if(!isTri[i]) continue;
                         MapPoint mp;
-                        mp.p = pts3D[i];
+                        mp.p = Point3d(pts3D[i].x * scaleM, pts3D[i].y * scaleM, pts3D[i].z * scaleM);
                         // observation indices come from goodMatches order
                         if(i < goodMatches.size()){
                             const DMatch &m = goodMatches[i];
@@ -300,19 +372,19 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                         if(!newMps.empty()) map.addMapPoints(newMps);
                     }
 
-                    // set global pose to second keyframe (apply scale)
+                    // set global pose to second keyframe
                     Mat t_d; kf1.t_w.convertTo(t_d, CV_64F);
-                    t_g = t_d * scaleM;
+                    t_g = t_d;
                     R_g = kf1.R_w.clone();
                     double x = t_g.at<double>(0);
                     double z = t_g.at<double>(2);
-                    vis.addPose(x,-z);
+                    vis.addPose(x, z);
 
                     // Record initial trajectory entries
                     double ts0 = extractTimestamp(imgPath, frame_id - 1);
                     double ts1 = extractTimestamp(imgPath, frame_id);
-                    trajectory.push_back({ts0, Mat::eye(3,3,CV_64F), Mat::zeros(3,1,CV_64F)});
-                    trajectory.push_back({ts1, R_g.clone(), t_g.clone()});
+                    trajectory.push_back({frame_id - 1, ts0, Mat::eye(3,3,CV_64F), Mat::zeros(3,1,CV_64F)});
+                    trajectory.push_back({frame_id, ts1, R_g.clone(), t_g.clone()});
 
                     // notify backend to run BA on initial map
                     backendRequests.fetch_add(1);
@@ -321,19 +393,15 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                     prevGray = gray.clone(); prevKp = kps; prevDesc = desc.clone();
                     frame_id++;
                     continue;
-                } else {
-                    std::cout << "Initializer: failed to initialize from first two frames" << std::endl;
                 }
             }
 
-            // 变量提前声明，保证后续可用
             Mat R_est, t_est, mask_est;
             int inliers_est = 0;
             bool ok_est = false;
             bool ok_pnp = false;
             Mat R_pnp, t_pnp; int inliers_pnp = 0;
             int preMatches_pnp = 0, postMatches_pnp = 0; double meanReproj_pnp = 0.0;
-            // 统一输出变量
             Mat R_use, t_use, mask_use;
             int inliers = 0;
             int matchCount = post_matches;
@@ -346,19 +414,15 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                 ok_pnp = localizer.tryPnP(map, desc, kps, loader.fx(), loader.fy(), loader.cx(), loader.cy(), gray.cols, gray.rows,
                                 options.minInliers, R_pnp, t_pnp, inliers_pnp, frame_id, &frame, runDirStr,
                                 &preMatches_pnp, &postMatches_pnp, &meanReproj_pnp);
-                if(ok_pnp){
-                    std::cout << "PnP solved: preMatches="<<preMatches_pnp<<" post="<<postMatches_pnp<<" inliers="<<inliers_pnp<<" meanReproj="<<meanReproj_pnp<<std::endl;
-                }
+                (void)preMatches_pnp; (void)postMatches_pnp; (void)meanReproj_pnp;
             }
             if(ok_est || ok_pnp){
-                // 选择用哪个结果
                 R_use = ok_est ? R_est : R_pnp;
                 t_use = ok_est ? t_est : t_pnp;
-                mask_use = ok_est ? mask_est : Mat(); // PnP没有mask
+                mask_use = ok_est ? mask_est : Mat();
                 inliers = ok_est ? inliers_est : inliers_pnp;
                 matchCount = post_matches;
 
-                // integrate判据
                 integrate = true;
                 if(inliers < options.minInliers || matchCount < options.minMatches){
                     integrate = false;
@@ -381,67 +445,125 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                 }
 
                 if(integrate){
-                    // update global pose
-                    Mat t_d; t_use.convertTo(t_d, CV_64F);
-                    Mat t_scaled = t_d * scaleM;
-                    Mat R_d; R_use.convertTo(R_d, CV_64F);
-                    t_g = t_g + R_g * t_scaled;
-                    R_g = R_g * R_d;
+                    // Pose convention: R_g camera->world, t_g camera center in world.
+                    if(ok_est){
+                        Mat R_d, t_d;
+                        R_use.convertTo(R_d, CV_64F);
+                        t_use.convertTo(t_d, CV_64F);
+                        Mat C2_in_c1 = (-R_d.t() * t_d) * scaleM;
+                        t_g = t_g + R_g * C2_in_c1;
+                        R_g = R_g * R_d.t();
+                    } else {
+                        Mat R_abs, C_abs;
+                        R_use.convertTo(R_abs, CV_64F);
+                        t_use.convertTo(C_abs, CV_64F);
+                        R_g = R_abs;
+                        t_g = C_abs;
+                    }
                     double x = t_g.at<double>(0);
                     double z = t_g.at<double>(2);
-                    vis.addPose(x,-z);
+                    vis.addPose(x, z);
 
-                    // Record trajectory entry for this keyframe
+                    // Log per-frame pose for timestamps.
                     double ts = extractTimestamp(imgPath, frame_id);
-                    trajectory.push_back({ts, R_g.clone(), t_g.clone()});
+                    trajectory.push_back({frame_id, ts, R_g.clone(), t_g.clone()});
 
-                    // create keyframe (use new constructor)
-                    KeyFrame kf(frame_id, frame, kps, desc, R_g, t_g);
-
-                    // triangulate new map points
-                    bool didTriangulate = false;
-                    std::vector<MapPoint> newPts;
-                    if(!map.keyframes().empty() && map.keyframes().back().id == frame_id - 1){
-                        const KeyFrame &last = map.keyframes().back();
-                        std::vector<Point2f> pts1n, pts2n; pts1n.reserve(pts1.size()); pts2n.reserve(pts2.size());
-                        double fx = loader.fx(), fy = loader.fy(), cx = loader.cx(), cy = loader.cy();
-                        for(size_t i=0;i<pts1.size();++i){
-                            pts1n.emplace_back(float((pts1[i].x - cx)/fx), float((pts1[i].y - cy)/fy));
-                            pts2n.emplace_back(float((pts2[i].x - cx)/fx), float((pts2[i].y - cy)/fy));
-                        }
-                        std::vector<int> pts1_kp_idx; pts1_kp_idx.reserve(goodMatches.size());
-                        std::vector<int> pts2_kp_idx; pts2_kp_idx.reserve(goodMatches.size());
-                        for(const auto &m: goodMatches){ pts1_kp_idx.push_back(m.queryIdx); pts2_kp_idx.push_back(m.trainIdx); }
-                        newPts = map.triangulateBetweenLastTwo(pts1n, pts2n, pts1_kp_idx, pts2_kp_idx, last, kf, fx, fy, cx, cy);
-                        if(!newPts.empty()) didTriangulate = true;
-                    }
-
-                    // insert keyframe and new points under lock
-                    std::lock_guard<std::mutex> lk(mapMutex);
-                    keyframes.push_back(std::move(kf));
-                    map.addKeyFrame(keyframes.back());
-                    if(didTriangulate){
-                        map.addMapPoints(newPts);
-                        std::cout << "Created keyframe " << frame_id << " and triangulated new map points (total=" << map.mappoints().size() << ")" << std::endl;
+                    // Keyframe insertion gating
+                    bool insertKeyframe = false;
+                    const int minGap = std::max(1, options.keyframeMinGap);
+                    const int maxGap = std::max(minGap, options.keyframeMaxGap);
+                    if(map.keyframes().empty()){
+                        insertKeyframe = true;
                     } else {
-                        std::cout << "Created keyframe " << frame_id << " (no triangulation)" << std::endl;
+                        const int lastKfId = map.keyframes().back().id;
+                        const int gap = frame_id - lastKfId;
+                        if(gap >= maxGap) insertKeyframe = true;
+                        else if(gap >= minGap && median_flow >= options.keyframeMinParallaxPx) insertKeyframe = true;
                     }
 
-                    if(options.enableMapMaintenance){
-                        const int interval = std::max(1, options.maintenanceInterval);
-                        if(static_cast<int>(map.keyframes().size()) % interval == 0){
-                            map.cullBadMapPoints();
-                            auto &mps = map.mappointsMutable();
-                            for(auto &mp : mps){
-                                if(mp.isBad) continue;
-                                map.updateMapPointDescriptor(mp);
+                    if(insertKeyframe){
+                        KeyFrame kf(frame_id, frame, kps, desc, R_g, t_g);
+
+                        // Triangulate against last KF
+                        bool didTriangulate = false;
+                        std::vector<MapPoint> newPts;
+                        if(!map.keyframes().empty() && !map.keyframes().back().desc.empty() && !kf.desc.empty()){
+                            const KeyFrame &last = map.keyframes().back();
+
+                            // Match last KF -> current KF
+                            std::vector<std::vector<DMatch>> knn_kf12, knn_kf21;
+                            matcher_->knnMatch(last.desc, kf.desc, knn_kf12, 2);
+                            matcher_->knnMatch(kf.desc, last.desc, knn_kf21, 2);
+                            std::vector<DMatch> kfMatches;
+                            kfMatches.reserve(knn_kf12.size());
+                            const float ratio_kf = 0.75f;
+                            for(size_t qi = 0; qi < knn_kf12.size(); ++qi){
+                                if(knn_kf12[qi].empty()) continue;
+                                const DMatch &best = knn_kf12[qi][0];
+                                if(knn_kf12[qi].size() >= 2){
+                                    const DMatch &second = knn_kf12[qi][1];
+                                    if(second.distance > 0.0f && best.distance / second.distance > ratio_kf) continue;
+                                }
+                                int trainIdx = best.trainIdx;
+                                if(trainIdx < 0 || trainIdx >= (int)knn_kf21.size() || knn_kf21[trainIdx].empty()) continue;
+                                const DMatch &rbest = knn_kf21[trainIdx][0];
+                                if(rbest.trainIdx == (int)qi) kfMatches.push_back(best);
+                            }
+
+                            if(static_cast<int>(kfMatches.size()) > options.maxMatchesKeep){
+                                std::nth_element(kfMatches.begin(), kfMatches.begin() + options.maxMatchesKeep, kfMatches.end(),
+                                                 [](const DMatch &a, const DMatch &b){ return a.distance < b.distance; });
+                                kfMatches.resize(options.maxMatchesKeep);
+                            }
+
+                            if(!kfMatches.empty()){
+                                std::vector<Point2f> pts1n, pts2n;
+                                pts1n.reserve(kfMatches.size());
+                                pts2n.reserve(kfMatches.size());
+                                std::vector<int> pts1_kp_idx; pts1_kp_idx.reserve(kfMatches.size());
+                                std::vector<int> pts2_kp_idx; pts2_kp_idx.reserve(kfMatches.size());
+                                double fx = loader.fx(), fy = loader.fy(), cx = loader.cx(), cy = loader.cy();
+                                for(const auto &m : kfMatches){
+                                    const Point2f &p1 = last.kps[m.queryIdx].pt;
+                                    const Point2f &p2 = kf.kps[m.trainIdx].pt;
+                                    pts1n.emplace_back(float((p1.x - cx)/fx), float((p1.y - cy)/fy));
+                                    pts2n.emplace_back(float((p2.x - cx)/fx), float((p2.y - cy)/fy));
+                                    pts1_kp_idx.push_back(m.queryIdx);
+                                    pts2_kp_idx.push_back(m.trainIdx);
+                                }
+                                newPts = map.triangulateBetweenLastTwo(pts1n, pts2n, pts1_kp_idx, pts2_kp_idx, last, kf, fx, fy, cx, cy);
+                                if(!newPts.empty()) didTriangulate = true;
                             }
                         }
-                    }
-                    // Notify backend thread to run local BA asynchronously
-                    if(options.enableBackend){
-                        backendRequests.fetch_add(1);
-                        backendCv.notify_one();
+
+                        // insert keyframe and new points under lock
+                        {
+                            std::lock_guard<std::mutex> lk(mapMutex);
+                            keyframes.push_back(std::move(kf));
+                            map.addKeyFrame(keyframes.back());
+                            if(didTriangulate) map.addMapPoints(newPts);
+
+                            if(options.enableMapMaintenance){
+                                const int interval = std::max(1, options.maintenanceInterval);
+                                if(static_cast<int>(map.keyframes().size()) % interval == 0){
+                                    map.cullBadMapPoints();
+                                    map.cullRedundantKeyFrames(std::max(1, options.maxKeyframeCullsPerMaintenance));
+                                    auto &mps = map.mappointsMutable();
+                                    for(auto &mp : mps){
+                                        if(mp.isBad) continue;
+                                        map.updateMapPointDescriptor(mp);
+                                    }
+                                }
+                            }
+                            // Notify backend thread to run local BA asynchronously every N inserted keyframes
+                            if(options.enableBackend){
+                                const int interval = std::max(1, options.backendTriggerInterval);
+                                if(static_cast<int>(map.keyframes().size()) % interval == 0){
+                                    backendRequests.fetch_add(1);
+                                    backendCv.notify_one();
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -484,37 +606,118 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
         if(key == 27) break;
     }
 
-    // save trajectory with timestamp into result/ folder
+    // Trigger final BA before saving trajectory and wait synchronously
+    if(options.enableBackend){
+        CV_LOG_WARNING(NULL, "Triggering final backend optimization before saving trajectory...");
+        {
+            std::unique_lock<std::mutex> lk(mapMutex);
+            backendRequests.fetch_add(1);
+            backendCv.notify_one();
+            backendCv.wait(lk, [&]{ return backendRequests.load() == 0 && !backendBusy; });
+        }
+
+        // Run a final full-map BA synchronously (larger than sliding window)
+        std::vector<KeyFrame> kfs_snapshot;
+        std::vector<MapPoint> mps_snapshot;
+        {
+            std::lock_guard<std::mutex> lk(mapMutex);
+            kfs_snapshot = map.keyframes();
+            mps_snapshot = map.mappoints();
+        }
+        int K = static_cast<int>(kfs_snapshot.size());
+        if(K > 0){
+            std::vector<int> allIdx(K);
+            std::iota(allIdx.begin(), allIdx.end(), 0);
+            std::vector<int> fixed;
+            fixed.push_back(0);
+            if(K > 1) fixed.push_back(1);
+        #if defined(HAVE_SFM)
+            CV_LOG_WARNING(NULL, "Final BA: optimizing all keyframes");
+            Optimizer::localBundleAdjustmentSFM(kfs_snapshot, mps_snapshot, allIdx, fixed,
+                                                loader.fx(), loader.fy(), loader.cx(), loader.cy(), std::max(20, options.backendIterations * 2));
+            CV_LOG_WARNING(NULL, "Final BA: completed");
+            {
+                std::lock_guard<std::mutex> lk(mapMutex);
+                auto &kfs_ref = const_cast<std::vector<KeyFrame>&>(map.keyframes());
+                auto &mps_ref = const_cast<std::vector<MapPoint>&>(map.mappoints());
+                for(const auto &kf_opt : kfs_snapshot){
+                    int idx = map.keyframeIndex(kf_opt.id);
+                    if(idx >= 0 && idx < static_cast<int>(kfs_ref.size())){
+                        kfs_ref[idx].R_w = kf_opt.R_w.clone();
+                        kfs_ref[idx].t_w = kf_opt.t_w.clone();
+                    }
+                }
+                for(const auto &mp_opt : mps_snapshot){
+                    if(mp_opt.id <= 0) continue;
+                    int idx = map.mapPointIndex(mp_opt.id);
+                    if(idx >= 0 && idx < static_cast<int>(mps_ref.size())){
+                        mps_ref[idx].p = mp_opt.p;
+                    }
+                }
+            }
+        #else
+            CV_LOG_WARNING(NULL, "Final BA: HAVE_SFM not defined, skipped");
+        #endif
+        }
+    }
+
+    // save trajectory image into result/ folder
     try{
         // save trajectory into the per-run folder using a simple filename (no timestamp)
         std::string outDir = resultDirStr + "/" + runTimestamp;
         ensureDirectoryExists(outDir);
         std::string outPath = outDir + "/trajectory.png";
-        if(vis.saveTrajectory(outPath)){
-            std::cout << "Saved trajectory to " << outPath << std::endl;
-        } else {
-            std::cerr << "Failed to save trajectory to " << outPath << std::endl;
+        if(options.enableBackend && !map.keyframes().empty()){
+            std::vector<KeyFrame> kfs = map.keyframes();
+            std::sort(kfs.begin(), kfs.end(), [](const KeyFrame &a, const KeyFrame &b){ return a.id < b.id; });
+            std::vector<cv::Point2d> xz;
+            xz.reserve(kfs.size());
+            for(const auto &kf : kfs){
+                if(kf.t_w.empty()) continue;
+                xz.emplace_back(kf.t_w.at<double>(0,0), kf.t_w.at<double>(2,0));
+            }
+            vis.setTrajectoryXZ(xz);
         }
+        (void)vis.saveTrajectory(outPath);
     } catch(const std::exception &e){
-        std::cerr << "Error saving trajectory: " << e.what() << std::endl;
+        CV_LOG_ERROR(NULL, cv::format("Error saving trajectory: %s", e.what()));
     }
 
     // Write trajectory to TUM-format CSV file
+    // Extract final optimized poses from map keyframes (after backend BA)
+    std::vector<TrajectoryEntry> finalTrajectory;
+    if(options.enableBackend && !map.keyframes().empty()){
+        // Build map from frame_id to timestamp
+        std::unordered_map<int, double> idToTimestamp;
+        for(const auto &trajEntry : trajectory){
+            idToTimestamp[trajEntry.frame_id] = trajEntry.timestamp;
+        }
+        for(const auto &kf : map.keyframes()){
+            if(kf.t_w.empty() || kf.R_w.empty()) continue;
+            double ts = idToTimestamp.count(kf.id) ? idToTimestamp[kf.id] : static_cast<double>(kf.id);
+            finalTrajectory.push_back({kf.id, ts, kf.R_w.clone(), kf.t_w.clone()});
+        }
+        if(options.verbose) CV_LOG_WARNING(NULL, "Backend enabled: using optimized poses");
+    } else {
+        finalTrajectory = trajectory; // use front-end trajectory if backend disabled
+        if(options.verbose) CV_LOG_WARNING(NULL, "Backend disabled: using front-end poses");
+    }
+    
     try{
         std::string csvPath = resultDirStr + "/" + runTimestamp + "/trajectory_tum.csv";
         std::ofstream ofs(csvPath);
         if(!ofs.is_open()){
-            std::cerr << "Failed to open trajectory CSV: " << csvPath << std::endl;
+            CV_LOG_ERROR(NULL, cv::format("Failed to open trajectory CSV: %s", csvPath.c_str()));
         } else {
             ofs << "# timestamp,tx,ty,tz,qx,qy,qz,qw" << std::endl;
-            for(const auto &entry : trajectory){
+            for(const auto &entry : finalTrajectory){
                 if(entry.R_w.empty() || entry.t_w.empty()) continue;
-                Mat R, t;
-                entry.R_w.convertTo(R, CV_64F);
-                entry.t_w.convertTo(t, CV_64F);
+                Mat Rmat, tvec_w;
+                entry.R_w.convertTo(Rmat, CV_64F);
+                entry.t_w.convertTo(tvec_w, CV_64F);
                 // Convert rotation matrix to quaternion
                 cv::Matx33d Rm;
-                R.copyTo(Rm);
+                Rmat.copyTo(Rm);
                 double tr = Rm(0,0) + Rm(1,1) + Rm(2,2);
                 double qw, qx, qy, qz;
                 if(tr > 0){
@@ -545,14 +748,14 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
                 // Write in TUM format: timestamp,tx,ty,tz,qx,qy,qz,qw (integer nanoseconds)
                 long long ts_ns = static_cast<long long>(std::llround(entry.timestamp * 1e9));
                 ofs << ts_ns << ","
-                    << std::setprecision(9) << t.at<double>(0,0) << "," << t.at<double>(1,0) << "," << t.at<double>(2,0) << ","
+                    << std::setprecision(9) << tvec_w.at<double>(0,0) << "," << tvec_w.at<double>(1,0) << "," << tvec_w.at<double>(2,0) << ","
                     << qx << "," << qy << "," << qz << "," << qw << "\n";
             }
             ofs.close();
-            std::cout << "Saved trajectory CSV (" << trajectory.size() << " poses) to " << csvPath << std::endl;
+            if(options.verbose) CV_LOG_WARNING(NULL, "Saved trajectory CSV");
         }
     } catch(const std::exception &e){
-        std::cerr << "Error writing trajectory CSV: " << e.what() << std::endl;
+        CV_LOG_ERROR(NULL, cv::format("Error writing trajectory CSV: %s", e.what()));
     }
 
     // Shutdown backend thread gracefully
@@ -562,6 +765,7 @@ int VisualOdometry::run(const std::string &imageDir, double scaleM, const Visual
         if(backendThread.joinable()) backendThread.join();
     }
 
+    cv::utils::logging::setLogLevel(prevLogLevel);
     return 0;
 }
 

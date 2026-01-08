@@ -1,6 +1,6 @@
 #include "opencv2/slam/map.hpp"
 #include <opencv2/calib3d.hpp>
-#include <iostream>
+#include <opencv2/core/utils/logger.hpp>
 #include <algorithm>
 #include <limits>
 
@@ -8,6 +8,27 @@ namespace cv {
 namespace vo {
 
 MapManager::MapManager() {}
+
+void MapManager::setCameraIntrinsics(double fx, double fy, double cx, double cy){
+    fx_ = fx;
+    fy_ = fy;
+    cx_ = cx;
+    cy_ = cy;
+    hasIntrinsics_ = (fx_ > 1e-9 && fy_ > 1e-9);
+}
+
+void MapManager::setMapPointCullingParams(int minObservations, double minFoundRatio, double maxReprojErrorPx, int maxPointsKeep){
+    mpMinObservations_ = std::max(2, minObservations);
+    mpMinFoundRatio_ = std::max(0.0, std::min(1.0, minFoundRatio));
+    mpMaxReprojErrorPx_ = std::max(0.1, maxReprojErrorPx);
+    mpMaxPointsKeep_ = std::max(100, maxPointsKeep);
+}
+
+void MapManager::setRedundantKeyframeCullingParams(int minKeyframeObs, int minPointObs, double redundantRatio){
+    kfRedundantMinObs_ = std::max(10, minKeyframeObs);
+    kfRedundantMinPointObs_ = std::max(2, minPointObs);
+    kfRedundantRatio_ = std::max(0.0, std::min(1.0, redundantRatio));
+}
 
 void MapManager::addKeyFrame(const KeyFrame &kf){
     keyframes_.push_back(kf);
@@ -19,6 +40,22 @@ void MapManager::addMapPoints(const std::vector<MapPoint> &pts){
         if(p.id <= 0) p.id = next_mappoint_id_++;
         mpid2idx_[p.id] = static_cast<int>(mappoints_.size());
         mappoints_.push_back(p);
+    }
+}
+
+void MapManager::rebuildKeyframeIndex_(){
+    id2idx_.clear();
+    id2idx_.reserve(keyframes_.size());
+    for(size_t i = 0; i < keyframes_.size(); ++i){
+        id2idx_[keyframes_[i].id] = static_cast<int>(i);
+    }
+}
+
+void MapManager::rebuildMapPointIndex_(){
+    mpid2idx_.clear();
+    mpid2idx_.reserve(mappoints_.size());
+    for(size_t i = 0; i < mappoints_.size(); ++i){
+        mpid2idx_[mappoints_[i].id] = static_cast<int>(i);
     }
 }
 
@@ -47,13 +84,16 @@ std::vector<MapPoint> MapManager::triangulateBetweenLastTwo(const std::vector<Po
                                                             double fx, double fy, double cx, double cy){
     std::vector<MapPoint> newPoints;
     if(pts1n.empty() || pts2n.empty()) return newPoints;
-    // Relative pose from last -> current (we expect lastKf and curKf poses to be in world)
-    // compute relative transformation
-    // P1 = [I|0], P2 = [R_rel|t_rel] where R_rel = R_last^{-1} * R_cur, t_rel = R_last^{-1}*(t_cur - t_last)
-    Mat R_last = lastKf.R_w, t_last = lastKf.t_w;
-    Mat R_cur = curKf.R_w, t_cur = curKf.t_w;
-    Mat R_rel = R_last.t() * R_cur;
-    Mat t_rel = R_last.t() * (t_cur - t_last);
+    // Relative pose from last camera -> current camera.
+    // Pose convention: R_w is camera->world rotation, t_w is camera center in world (C_w).
+    // For triangulatePoints we need: X_cur = R * X_last + t, both in camera coordinates.
+    // With this convention:
+    //   R = R_cur^T * R_last
+    //   t = R_cur^T * (C_last - C_cur)
+    Mat R_last = lastKf.R_w, C_last = lastKf.t_w;
+    Mat R_cur = curKf.R_w, C_cur = curKf.t_w;
+    Mat R_rel = R_cur.t() * R_last;
+    Mat t_rel = R_cur.t() * (C_last - C_cur);
     Mat P1 = Mat::eye(3,4,CV_64F);
     Mat P2(3,4,CV_64F);
     for(int r=0;r<3;++r){
@@ -64,13 +104,13 @@ std::vector<MapPoint> MapManager::triangulateBetweenLastTwo(const std::vector<Po
     try {
         triangulatePoints(P1, P2, pts1n, pts2n, points4D);
     } catch(const cv::Exception &e) {
-        std::cerr << "triangulatePoints failed: " << e.what() << std::endl;
+        CV_LOG_DEBUG(NULL, "triangulatePoints failed");
         points4D.release();
     } catch(const std::exception &e) {
-        std::cerr << "triangulatePoints failed: " << e.what() << std::endl;
+        CV_LOG_DEBUG(NULL, "triangulatePoints failed");
         points4D.release();
     } catch(...) {
-        std::cerr << "triangulatePoints failed: unknown error" << std::endl;
+        CV_LOG_DEBUG(NULL, "triangulatePoints failed");
         points4D.release();
     }
     if(points4D.empty()) return newPoints;
@@ -172,9 +212,10 @@ void MapManager::applyOptimizedMapPoint(int mappointId, const Point3d &p){
 }
 
 void MapManager::cullBadMapPoints() {
-    const double MAX_REPROJ_ERROR = 3.0;  // pixels
-    const int MIN_OBSERVATIONS = 2;
-    const float MIN_FOUND_RATIO = 0.25f;
+    const int MIN_OBSERVATIONS = mpMinObservations_;
+    const float MIN_FOUND_RATIO = static_cast<float>(mpMinFoundRatio_);
+    const size_t MAX_POINTS_KEEP = static_cast<size_t>(mpMaxPointsKeep_);
+    const double MAX_REPROJ_ERROR = mpMaxReprojErrorPx_;
 
     for(auto &mp : mappoints_) {
         if(mp.isBad) continue;
@@ -192,36 +233,67 @@ void MapManager::cullBadMapPoints() {
             continue;
         }
 
-        // 3. Check reprojection error across observations
-        // Sample a few keyframes to check reprojection
-        int errorCount = 0;
-        int checkCount = 0;
-        for(const auto &obs : mp.observations) {
-            int kfId = obs.first;
-            int kfIdx = keyframeIndex(kfId);
-            if(kfIdx < 0 || kfIdx >= static_cast<int>(keyframes_.size())) continue;
+        // 3. Check reprojection error across observations (if intrinsics known)
+        if(hasIntrinsics_){
+            int errorCount = 0;
+            int checkCount = 0;
+            for(const auto &obs : mp.observations) {
+                int kfId = obs.first;
+                int kfIdx = keyframeIndex(kfId);
+                if(kfIdx < 0 || kfIdx >= static_cast<int>(keyframes_.size())) continue;
+                const KeyFrame &kf = keyframes_[kfIdx];
+                double error = computeReprojError(mp, kf, fx_, fy_, cx_, cy_);
 
-            const KeyFrame &kf = keyframes_[kfIdx];
-            // Use default camera params (should be passed in production code)
-            double fx = 500.0, fy = 500.0, cx = 320.0, cy = 240.0;
-            double error = computeReprojError(mp, kf, fx, fy, cx, cy);
-
-            checkCount++;
-            if(error > MAX_REPROJ_ERROR) {
-                errorCount++;
+                checkCount++;
+                if(error > MAX_REPROJ_ERROR) errorCount++;
+                if(checkCount >= 3) break;
             }
 
-            // Sample up to 3 observations for efficiency
-            if(checkCount >= 3) break;
-        }
-
-        // If majority of samples have high error, mark as bad
-        if(checkCount > 0 && errorCount > checkCount / 2) {
-            mp.isBad = true;
+            if(checkCount > 0 && errorCount > checkCount / 2) mp.isBad = true;
         }
     }
 
-    // Remove bad points
+    // Gather good points
+    std::vector<size_t> goodIdx; goodIdx.reserve(mappoints_.size());
+    for(size_t i = 0; i < mappoints_.size(); ++i){
+        if(!mappoints_[i].isBad) goodIdx.push_back(i);
+    }
+
+    // Enforce hard cap with score-based retention when too many points survive
+    if(goodIdx.size() > MAX_POINTS_KEEP){
+        struct ScoredIdx { double score; size_t idx; };
+        std::vector<ScoredIdx> scored; scored.reserve(goodIdx.size());
+        for(size_t idx : goodIdx){
+            const auto &mp = mappoints_[idx];
+            double found = static_cast<double>(std::max(0.05f, mp.getFoundRatio()));
+            // Prefer points with many observations and high found ratio.
+            // If intrinsics are known, also prefer low reprojection error.
+            double reproj = 0.0;
+            if(hasIntrinsics_){
+                std::vector<double> errs;
+                errs.reserve(3);
+                int checked = 0;
+                for(const auto &obs : mp.observations){
+                    int kfIdx = keyframeIndex(obs.first);
+                    if(kfIdx < 0 || kfIdx >= static_cast<int>(keyframes_.size())) continue;
+                    errs.push_back(computeReprojError(mp, keyframes_[kfIdx], fx_, fy_, cx_, cy_));
+                    if(++checked >= 3) break;
+                }
+                if(!errs.empty()){
+                    size_t mid = errs.size()/2;
+                    std::nth_element(errs.begin(), errs.begin()+mid, errs.end());
+                    reproj = errs[mid];
+                }
+            }
+            double score = static_cast<double>(mp.nObs) * found / (1.0 + reproj);
+            scored.push_back({score, idx});
+        }
+        std::nth_element(scored.begin(), scored.begin() + static_cast<long>(MAX_POINTS_KEEP), scored.end(),
+                         [](const ScoredIdx &a, const ScoredIdx &b){ return a.score > b.score; });
+        for(size_t i = MAX_POINTS_KEEP; i < scored.size(); ++i){
+            mappoints_[scored[i].idx].isBad = true;
+        }
+    }
     size_t before = mappoints_.size();
     mappoints_.erase(
         std::remove_if(mappoints_.begin(), mappoints_.end(),
@@ -230,10 +302,53 @@ void MapManager::cullBadMapPoints() {
     );
     size_t after = mappoints_.size();
 
-    if(before - after > 0) {
-        std::cout << "MapManager: culled " << (before - after) << " bad map points ("
-                  << after << " remain)" << std::endl;
+    if(after != before) rebuildMapPointIndex_();
+}
+
+void MapManager::cullRedundantKeyFrames(int maxCullPerCall){
+    if(maxCullPerCall <= 0) return;
+    if(keyframes_.size() <= 3) return;
+
+    const int protectFirst = 2;
+    const int protectLast = 2;
+    if(static_cast<int>(keyframes_.size()) <= protectFirst + protectLast) return;
+
+    int removed = 0;
+    for(int kfi = protectFirst; kfi < static_cast<int>(keyframes_.size()) - protectLast; ++kfi){
+        const int kfId = keyframes_[kfi].id;
+
+        int totalObs = 0;
+        int redundantObs = 0;
+        for(auto &mp : mappoints_){
+            if(mp.isBad) continue;
+            bool observedHere = false;
+            for(const auto &obs : mp.observations){
+                if(obs.first == kfId){ observedHere = true; break; }
+            }
+            if(!observedHere) continue;
+            totalObs++;
+            if(static_cast<int>(mp.observations.size()) >= kfRedundantMinPointObs_) redundantObs++;
+        }
+        if(totalObs < kfRedundantMinObs_) continue;
+        const double ratio = static_cast<double>(redundantObs) / static_cast<double>(totalObs);
+        if(ratio < kfRedundantRatio_) continue;
+
+        // Remove this keyframe: erase its observations from map points
+        for(auto &mp : mappoints_){
+            if(mp.isBad) continue;
+            auto &obs = mp.observations;
+            obs.erase(std::remove_if(obs.begin(), obs.end(), [&](const std::pair<int,int> &o){ return o.first == kfId; }), obs.end());
+            mp.nObs = static_cast<int>(obs.size());
+            if(mp.nObs < 2) mp.isBad = true;
+        }
+        keyframes_.erase(keyframes_.begin() + kfi);
+        rebuildKeyframeIndex_();
+        removed++;
+        if(removed >= maxCullPerCall) break;
+        kfi--; // re-check current index after erase
     }
+
+    if(removed > 0) cullBadMapPoints();
 }
 
 double MapManager::computeReprojError(const MapPoint &mp, const KeyFrame &kf,

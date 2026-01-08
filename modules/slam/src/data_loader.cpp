@@ -1,7 +1,7 @@
 #include "opencv2/slam/data_loader.hpp"
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
-#include <iostream>
+#include <opencv2/core/utils/logger.hpp>
 #include <fstream>
 #include <sstream>
 
@@ -15,7 +15,7 @@ bool ensureDirectoryExists(const std::string &dir){
         if(cv::utils::fs::exists(dir)) return cv::utils::fs::isDirectory(dir);
         return cv::utils::fs::createDirectories(dir);
     } catch(const std::exception &e) {
-        std::cerr << "ensureDirectoryExists: " << e.what() << std::endl;
+        CV_LOG_ERROR(NULL, cv::format("ensureDirectoryExists: %s", e.what()));
         return false;
     }
 }
@@ -25,11 +25,11 @@ DataLoader::DataLoader(const std::string &imageDir)
 {
     try {
         if(!cv::utils::fs::exists(imageDir) || !cv::utils::fs::isDirectory(imageDir)){
-            std::cerr << "DataLoader: imageDir does not exist or is not a directory: " << imageDir << std::endl;
+            CV_LOG_ERROR(NULL, cv::format("DataLoader: imageDir does not exist or is not a directory: %s", imageDir.c_str()));
             return;
         }
     } catch(const std::exception &e){
-        std::cerr << "DataLoader: filesystem error checking imageDir: " << e.what() << std::endl;
+        CV_LOG_ERROR(NULL, cv::format("DataLoader: filesystem error checking imageDir: %s", e.what()));
         return;
     }
 
@@ -37,13 +37,13 @@ DataLoader::DataLoader(const std::string &imageDir)
     try {
         glob(imageDir + "/*", imageFiles, false);
     } catch(const Exception &e){
-        std::cerr << "DataLoader: glob failed for '" << imageDir << "': " << e.what() << std::endl;
+        CV_LOG_ERROR(NULL, cv::format("DataLoader: glob failed for '%s': %s", imageDir.c_str(), e.what()));
         imageFiles.clear();
         return;
     }
 
     if(imageFiles.empty()){
-        std::cerr << "DataLoader: no image files found in " << imageDir << std::endl;
+        CV_LOG_ERROR(NULL, cv::format("DataLoader: no image files found in %s", imageDir.c_str()));
         return;
     }
 
@@ -83,7 +83,7 @@ bool DataLoader::loadIntrinsics(const std::string &yamlPath){
             while(ss >> v) vals.push_back(v);
             if(vals.size() >= 4){
                 fx_ = vals[0]; fy_ = vals[1]; cx_ = vals[2]; cy_ = vals[3];
-                std::cerr << "DataLoader: loaded intrinsics from " << yamlPath << std::endl;
+                CV_LOG_DEBUG(NULL, cv::format("DataLoader: loaded intrinsics from %s", yamlPath.c_str()));
                 return true;
             }
         }
@@ -102,7 +102,7 @@ bool DataLoader::getNextImage(Mat &image, std::string &imagePath){
     imagePath = imageFiles[currentIndex];
     image = imread(imagePath, IMREAD_UNCHANGED);
     if(image.empty()){
-        std::cerr << "DataLoader: couldn't read " << imagePath << ", skipping" << std::endl;
+        CV_LOG_WARNING(NULL, cv::format("DataLoader: couldn't read %s, skipping", imagePath.c_str()));
         currentIndex++;
         return getNextImage(image, imagePath); // try next
     }
