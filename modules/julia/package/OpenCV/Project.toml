@@ -1,0 +1,8 @@
+name = "OpenCV"
+uuid = "c5c8e1f8-82bd-4b4b-a82d-991e5c6b68de"
+authors = ["Archit Rungta <architrungta120@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+CxxWrap = "1f15a43c-97ca-5a2a-ae31-89f07a497df4"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

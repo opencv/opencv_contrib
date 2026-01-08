@@ -1,0 +1,1 @@
+./classify_test --src_dir=/Users/yidawang/Downloads/PASCAL3D+_release1.1/ImageCollection/ --network_forIMG=/Users/yidawang/Documents/buildboat/caffe/examples/triplet/pascal_triplet.prototxt --caffemodel=/Users/yidawang/Documents/buildboat/caffe/examples/triplet/pascal_triplet_iter_10000.caffemodel --gallery_out=1

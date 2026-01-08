@@ -1,0 +1,10 @@
+{
+    "missing_consts": {
+        "Ximgproc": {
+            "public": [
+                ["RO_STRICT", 0],
+                ["RO_IGNORE_BORDERS", 1]
+            ]
+        }
+    }
+}

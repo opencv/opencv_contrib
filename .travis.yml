@@ -1,0 +1,19 @@
+language: cpp
+compiler:
+  - gcc
+  - clang
+before_script:
+  - cd ../
+  - git clone --branch master --depth=1 https://github.com/opencv/opencv.git
+  - mkdir build-opencv
+  - cd build-opencv
+  - cmake 
+    -DBUILD_EXAMPLES=ON 
+    -DBUILD_PERF_TESTS=OFF 
+    -DBUILD_TESTS=OFF 
+    -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules 
+    ../opencv
+script:
+  - make -j5
+notifications:
+  email: false

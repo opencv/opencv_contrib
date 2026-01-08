@@ -1,0 +1,11 @@
+{
+    "AdditionalImports" : {
+        "*" : [ "\"bgsegm.hpp\"" ]
+    },
+    "func_arg_fix" : {
+        "Bgsegm" : {
+            "createBackgroundSubtractorGSOC" : { "mc" : {"ctype" : "LSBPCameraMotionCompensation"} },
+            "createBackgroundSubtractorLSBP" : { "mc" : {"ctype" : "LSBPCameraMotionCompensation"} }
+        }
+    }
+}

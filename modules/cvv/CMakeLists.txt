@@ -1,0 +1,41 @@
+if(NOT HAVE_QT OR NOT HAVE_CXX11 OR QT_VERSION_MAJOR LESS 5)
+  ocv_module_disable(cvv)
+  return()
+endif()
+
+set(the_description "Debug visualization framework")
+ocv_add_module(cvv opencv_core opencv_imgproc opencv_features2d WRAP python)
+ocv_warnings_disable(CMAKE_CXX_FLAGS -Wshadow -Wmissing-declarations)
+
+# Qt
+set(CVV_QT_MODULES Core Gui Widgets)
+if(QT_VERSION_MAJOR EQUAL 6)
+  list(APPEND CVV_QT_MODULES Core5Compat)
+endif()
+
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${CVV_QT_MODULES})
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# Automoc doesn't work properly with opencv_world build
+# Use QT<ver>_WRAP_CPP() directly instead
+file(GLOB_RECURSE CVV_MOC_HEADERS
+    "${CMAKE_CURRENT_LIST_DIR}/src/*.hpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/*.h"
+)
+if(QT_VERSION_MAJOR EQUAL 6)
+    QT6_WRAP_CPP(_MOC_OUTFILES ${CVV_MOC_HEADERS})
+elseif(QT_VERSION_MAJOR EQUAL 5)
+    QT5_WRAP_CPP(_MOC_OUTFILES ${CVV_MOC_HEADERS})
+endif()
+
+foreach(module ${CVV_QT_MODULES})
+  list(APPEND CVV_LIBRARIES ${Qt${QT_VERSION_MAJOR}${module}_LIBRARIES})
+endforeach()
+
+ocv_module_include_directories()
+ocv_glob_module_sources(SOURCES ${_MOC_OUTFILES})
+ocv_create_module(${CVV_LIBRARIES})
+ocv_add_accuracy_tests()
+ocv_add_perf_tests()
+ocv_add_samples()

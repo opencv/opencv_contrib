@@ -1,0 +1,5 @@
+{
+    "AdditionalImports" : {
+        "*" : [ "\"plot.hpp\"" ]
+    }
+}

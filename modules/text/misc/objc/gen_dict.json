@@ -1,0 +1,28 @@
+{
+    "AdditionalImports" : {
+        "*" : [ "\"text.hpp\"" ]
+    },
+    "func_arg_fix" : {
+        "Text" : {
+            "detectRegions" : { "method" : {"ctype" : "erGrouping_Modes"} },
+            "erGrouping" : { "method" : {"ctype" : "erGrouping_Modes"} },
+            "loadOCRHMMClassifier" : { "classifier" : {"ctype" : "classifier_type"} },
+            "(ERFilter*)createERFilterNM1:(NSString*)filename thresholdDelta:(int)thresholdDelta minArea:(float)minArea maxArea:(float)maxArea minProbability:(float)minProbability nonMaxSuppression:(BOOL)nonMaxSuppression minProbabilityDiff:(float)minProbabilityDiff" : { "createERFilterNM1" : {"name" : "createERFilterNM1FromFile"} },
+            "(ERFilter*)createERFilterNM2:(NSString*)filename minProbability:(float)minProbability" : { "createERFilterNM2" : {"name" : "createERFilterNM2FromFile"} }
+        },
+        "OCRBeamSearchDecoder" : {
+            "(OCRBeamSearchDecoder*)create:(NSString*)filename vocabulary:(NSString*)vocabulary transition_probabilities_table:(Mat*)transition_probabilities_table emission_probabilities_table:(Mat*)emission_probabilities_table mode:(decoder_mode)mode beam_size:(int)beam_size" : { "create" : {"name" : "createFromFile"} },
+            "create" : { "mode" : {"ctype" : "decoder_mode",
+                                   "defval" : ""
+            } }
+        },
+        "OCRHMMDecoder" : {
+            "(OCRHMMDecoder*)create:(NSString*)filename vocabulary:(NSString*)vocabulary transition_probabilities_table:(Mat*)transition_probabilities_table emission_probabilities_table:(Mat*)emission_probabilities_table mode:(decoder_mode)mode classifier:(int)classifier" : { "create" : {"name" : "createFromFile"} },
+            "create" : { "mode" : {"ctype" : "decoder_mode"} }
+        },
+        "OCRTesseract" : {
+            "create" : { "oem" : {"ctype" : "ocr_engine_mode"},
+                         "psmode" : {"ctype" : "page_seg_mode"} }
+        }
+    }
+}

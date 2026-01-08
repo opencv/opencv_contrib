@@ -1,0 +1,1 @@
+/home/anh/workspace/sferes/exp/images/imagenet/hen_256.png 1

@@ -1,0 +1,11 @@
+{
+    "AdditionalImports" : {
+        "*" : [ "\"img_hash.hpp\"" ]
+    },
+    "func_arg_fix" : {
+        "BlockMeanHash" : {
+            "create" : { "mode" : {"ctype" : "BlockMeanHashMode"} },
+            "setMode" : { "mode" : {"ctype" : "BlockMeanHashMode"} }
+        }
+    }
+}

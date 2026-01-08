@@ -1,0 +1,8 @@
+{
+    "AdditionalImports" : {
+        "*" : [ "\"tracking.hpp\"" ]
+    },
+    "namespace_ignore_list" : [
+        "cv.legacy"
+    ]
+}

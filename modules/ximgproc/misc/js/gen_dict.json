@@ -1,0 +1,12 @@
+{
+    "whitelist":
+    {
+        "": ["createEdgeDrawing"],
+        "ximgproc_EdgeDrawing": ["setParams", "detectEdges", "getEdgeImage"],
+        "ximgproc_EdgeDrawing_Params": ["Params", "PFmode"]
+    },
+    "namespace_prefix_override":
+    {
+        "ximgproc": ""
+    }
+}

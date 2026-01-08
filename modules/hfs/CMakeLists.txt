@@ -1,0 +1,10 @@
+if(HAVE_CUDA)
+  add_definitions(-D_HFS_CUDA_ON_)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wundef)
+  if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
+    ocv_module_include_directories(${CUDAToolkit_INCLUDE_DIRS})
+  endif()
+endif()
+
+set(the_description "Hierarchical Feature Selection for Efficient Image Segmentation")
+ocv_define_module(hfs opencv_core opencv_imgproc OPTIONAL WRAP python)
