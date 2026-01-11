@@ -2,6 +2,7 @@
 #include <opencv2/core.hpp>
 #include <vector>
 #include <unordered_map>
+#include <string>
 #include "opencv2/slam/keyframe.hpp"
 
 namespace cv {
@@ -88,6 +89,13 @@ public:
 
     // Statistics
     int countGoodMapPoints() const;
+
+    // Map lifecycle utilities
+    void clear();
+
+    // Persistence
+    bool save(const std::string &path) const;
+    bool load(const std::string &path);
 
 private:
     void rebuildKeyframeIndex_();

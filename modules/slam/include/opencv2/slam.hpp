@@ -14,8 +14,10 @@
 #include "opencv2/slam/matcher.hpp"
 #include "opencv2/slam/optimizer.hpp"
 #include "opencv2/slam/pose.hpp"
+#include "opencv2/slam/tracker.hpp"
 #include "opencv2/slam/visualizer.hpp"
-#include "opencv2/slam/vo.hpp"
+#include "opencv2/slam/visual_odometry.hpp"
+#include "opencv2/slam/slam_system.hpp"
 
 
 /** @defgroup slam Simultaneous Localization and Mapping

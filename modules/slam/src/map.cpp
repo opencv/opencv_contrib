@@ -9,6 +9,14 @@ namespace vo {
 
 MapManager::MapManager() {}
 
+void MapManager::clear(){
+    keyframes_.clear();
+    mappoints_.clear();
+    id2idx_.clear();
+    mpid2idx_.clear();
+    next_mappoint_id_ = 1;
+}
+
 void MapManager::setCameraIntrinsics(double fx, double fy, double cx, double cy){
     fx_ = fx;
     fy_ = fy;
@@ -441,6 +449,101 @@ int MapManager::countGoodMapPoints() const {
         if(!mp.isBad) count++;
     }
     return count;
+}
+
+bool MapManager::save(const std::string &path) const {
+    // Tip: use .yaml.gz/.yml.gz to enable built-in gzip compression when available.
+    cv::FileStorage fs(path, cv::FileStorage::WRITE);
+    if(!fs.isOpened()) return false;
+
+    fs << "has_intrinsics" << static_cast<int>(hasIntrinsics_);
+    fs << "fx" << fx_ << "fy" << fy_ << "cx" << cx_ << "cy" << cy_;
+    fs << "next_mappoint_id" << next_mappoint_id_;
+
+    fs << "keyframes" << "[";
+    for(const auto &kf : keyframes_){
+        fs << "{";
+        fs << "id" << kf.id;
+        fs << "R" << kf.R_w;
+        fs << "t" << kf.t_w;
+        std::vector<cv::KeyPoint> kps = kf.kps;
+        write(fs, "kps", kps);
+        fs << "desc" << kf.desc;
+        fs << "}";
+    }
+    fs << "]";
+
+    fs << "mappoints" << "[";
+    for(const auto &mp : mappoints_){
+        fs << "{";
+        fs << "id" << mp.id;
+        fs << "p" << mp.p;
+        fs << "isBad" << static_cast<int>(mp.isBad);
+        fs << "nFound" << mp.nFound;
+        fs << "nVisible" << mp.nVisible;
+        fs << "descriptor" << mp.descriptor;
+        fs << "observations" << "[";
+        for(const auto &obs : mp.observations){
+            fs << "{" << "kf" << obs.first << "kp" << obs.second << "}";
+        }
+        fs << "]";
+        fs << "}";
+    }
+    fs << "]";
+
+    return true;
+}
+
+bool MapManager::load(const std::string &path){
+    cv::FileStorage fs(path, cv::FileStorage::READ);
+    if(!fs.isOpened()) return false;
+
+    clear();
+
+    int hasIntr = 0;
+    fs["has_intrinsics"] >> hasIntr;
+    fs["fx"] >> fx_; fs["fy"] >> fy_; fs["cx"] >> cx_; fs["cy"] >> cy_;
+    hasIntrinsics_ = (hasIntr != 0);
+    fs["next_mappoint_id"] >> next_mappoint_id_;
+
+    cv::FileNode kfNode = fs["keyframes"];
+    if(kfNode.type() == cv::FileNode::SEQ){
+        for(const auto &n : kfNode){
+            int id = -1; Mat R, t, desc; std::vector<cv::KeyPoint> kps;
+            n["id"] >> id;
+            n["R"] >> R;
+            n["t"] >> t;
+            read(n["kps"], kps);
+            n["desc"] >> desc;
+            KeyFrame kf(id, Mat(), kps, desc, R, t);
+            keyframes_.push_back(kf);
+        }
+    }
+    rebuildKeyframeIndex_();
+
+    cv::FileNode mpNode = fs["mappoints"];
+    if(mpNode.type() == cv::FileNode::SEQ){
+        for(const auto &n : mpNode){
+            MapPoint mp;
+            n["id"] >> mp.id;
+            n["p"] >> mp.p;
+            int bad = 0; n["isBad"] >> bad; mp.isBad = (bad != 0);
+            n["nFound"] >> mp.nFound;
+            n["nVisible"] >> mp.nVisible;
+            n["descriptor"] >> mp.descriptor;
+            cv::FileNode obsNode = n["observations"];
+            if(obsNode.type() == cv::FileNode::SEQ){
+                for(const auto &o : obsNode){
+                    int kfId = -1, kpIdx = -1;
+                    o["kf"] >> kfId; o["kp"] >> kpIdx;
+                    mp.observations.emplace_back(kfId, kpIdx);
+                }
+            }
+            mappoints_.push_back(mp);
+        }
+    }
+    rebuildMapPointIndex_();
+    return true;
 }
 
 } // namespace vo

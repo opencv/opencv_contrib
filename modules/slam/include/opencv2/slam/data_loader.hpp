@@ -6,39 +6,69 @@
 namespace cv{
 namespace vo{
 
-bool ensureDirectoryExists(const std::string &dir);
+CV_EXPORTS bool ensureDirectoryExists(const std::string &dir);
 
-class DataLoader {
+/**
+ * @brief Simple helper to iterate image sequences on disk.
+ *
+ * DataLoader enumerates image files in a directory and provides simple
+ * sequential access for samples and demos. This class does not perform
+ * any image decoding policy beyond forwarding files to OpenCV's IO.
+ */
+class CV_EXPORTS DataLoader {
 public:
-    // 构造：传入图像目录（可以是相对或绝对路径）
+    /**
+     * @brief Construct a DataLoader for the given image directory.
+     * @param imageDir Directory containing image files (absolute or relative path).
+     */
     DataLoader(const std::string &imageDir);
 
-    // 获取下一张图像，成功返回 true 并填充 image 与 imagePath；到末尾返回 false
+    /**
+     * @brief Load the next image in the sequence.
+     * @param image Output image (decoded by OpenCV).
+     * @param imagePath Output path of the loaded image file.
+     * @return True if an image was loaded; false when the sequence has ended.
+     */
     bool getNextImage(Mat &image, std::string &imagePath);
 
-    // 重置到序列开始
+    /**
+     * @brief Reset the internal iterator to the beginning of the sequence.
+     */
     void reset();
 
-    // 是否还有图像
+    /**
+     * @brief Check whether more images are available.
+     * @return True when there are remaining images to read.
+     */
     bool hasNext() const;
 
-    // 图像总数
+    /**
+     * @brief Get total number of images discovered in the directory.
+     * @return Number of image files.
+     */
     size_t size() const;
 
-    // 尝试加载并返回相机内参（fx, fy, cx, cy），返回是否成功
+    /**
+     * @brief Try to load camera intrinsics from a YAML file.
+     * @param yamlPath Path to the YAML file containing camera parameters.
+     * @return True on success, false otherwise.
+     */
     bool loadIntrinsics(const std::string &yamlPath);
 
-    // 内参访问
+    /** @brief Focal length in x. */
     double fx() const { return fx_; }
+    /** @brief Focal length in y. */
     double fy() const { return fy_; }
+    /** @brief Principal point x-coordinate. */
     double cx() const { return cx_; }
+    /** @brief Principal point y-coordinate. */
     double cy() const { return cy_; }
 
 private:
     std::vector<std::string> imageFiles;
     size_t currentIndex;
 
-    // 相机内参（若未加载则为回退值）
+    // Camera intrinsics (fallback values when not loaded)
     double fx_, fy_, cx_, cy_;
 };
 

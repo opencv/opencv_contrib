@@ -1,64 +1,10 @@
 #include "opencv2/slam/visualizer.hpp"
+#include "opencv2/slam/visual_odometry.hpp"
 #include <opencv2/imgproc.hpp>
-#include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>
 
 namespace cv {
 namespace vo {
-
-Tracker::Tracker()
-    : feat_(), matcher_(), frame_id_(0)
-{
-}
-
-bool Tracker::processFrame(const Mat &gray, const std::string & /*imagePath*/, Mat &imgOut, Mat & /*R_out*/, Mat & /*t_out*/, std::string &info)
-{
-    if(gray.empty()) return false;
-    // detect
-    std::vector<KeyPoint> kps;
-    Mat desc;
-    feat_.detectAndCompute(gray, kps, desc);
-
-    if(!prevGray_.empty() && !prevDesc_.empty() && !desc.empty()){
-        // match
-        std::vector<DMatch> goodMatches;
-        matcher_.knnMatch(prevDesc_, desc, goodMatches);
-
-        // draw matches for visualization
-        drawMatches(prevGray_, prevKp_, gray, kps, goodMatches, imgOut,
-                        Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-
-        // prepare points
-        std::vector<Point2f> pts1, pts2;
-        for(const auto &m: goodMatches){
-            pts1.push_back(prevKp_[m.queryIdx].pt);
-            pts2.push_back(kps[m.trainIdx].pt);
-        }
-
-        if(pts1.size() >= 8){
-            Mat R, t, mask;
-            int inliers = 0;
-            // Note: we don't have intrinsics here; caller should provide via global or arguments. For now, caller will use PoseEstimator directly if needed.
-            // We'll estimate using default focal/pp later (caller will adapt). Return false for now so caller can invoke PoseEstimator separately.
-            // But to keep compatibility, leave R_out/t_out empty and set info.
-            info = "matches=" + std::to_string(goodMatches.size()) + ", inliers=" + std::to_string(inliers);
-            // update prev buffers below
-        } else {
-            info = "matches=" + std::to_string(goodMatches.size()) + ", inliers=0";
-        }
-    } else {
-        // first frame: draw keypoints
-        drawKeypoints(gray, kps, imgOut, Scalar::all(-1), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-        info = "first_frame";
-    }
-
-    // update prev
-    prevGray_ = gray.clone();
-    prevKp_ = kps;
-    prevDesc_ = desc.clone();
-    frame_id_++;
-    return true;
-}
 
 Visualizer::Visualizer(int W, int H, double meters_per_pixel)
     : meters_per_pixel_(meters_per_pixel), mapSize_(W,H)
@@ -74,7 +20,7 @@ Point Visualizer::worldToPixel(const Point2d &p) const {
 }
 
 void Visualizer::addPose(double x, double z){
-    traj_.emplace_back(x,z);
+    traj_.emplace_back(x,-z);
 }
 
 void Visualizer::clearTrajectory(){
@@ -89,6 +35,16 @@ void Visualizer::showFrame(const Mat &frame){
     if(frame.empty()) return;
     // Do not draw heading overlay on video frames; only show raw frame.
     imshow("frame", frame);
+}
+
+void Visualizer::drawTrackingInfo(Mat &frame, const TrackingResult &res){
+    if(frame.empty()) return;
+    std::string info = res.ok ? "TRACKING" : "NOT TRACKING";
+    info += " matches=" + std::to_string(res.numMatches);
+    info += " inliers=" + std::to_string(res.numInliers);
+    info += " state=" + std::to_string(res.state);
+    Scalar color = res.ok ? Scalar(0, 255, 0) : Scalar(0, 0, 255);
+    putText(frame, info, Point(10, 30), FONT_HERSHEY_SIMPLEX, 0.7, color, 2, LINE_AA);
 }
 
 void Visualizer::showTopdown(){

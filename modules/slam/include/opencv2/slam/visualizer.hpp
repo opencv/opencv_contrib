@@ -2,27 +2,14 @@
 #include <opencv2/core.hpp>
 #include <vector>
 #include <string>
-#include "opencv2/slam/feature.hpp"
-#include "opencv2/slam/matcher.hpp"
+#include "opencv2/slam/tracker.hpp"
 
 namespace cv {
 namespace vo {
 
-class Tracker {
-public:
-    Tracker();
-    // Process a gray image, returns true if a pose was estimated. imgOut contains visualization (matches or keypoints)
-    bool processFrame(const Mat &gray, const std::string &imagePath, Mat &imgOut, Mat &R_out, Mat &t_out, std::string &info);
-private:
-    FeatureExtractor feat_;
-    Matcher matcher_;
+struct TrackingResult;
 
-    Mat prevGray_, prevDesc_;
-    std::vector<KeyPoint> prevKp_;
-    int frame_id_;
-};
-
-class Visualizer {
+class CV_EXPORTS Visualizer {
 public:
     Visualizer(int W=1000, int H=800, double meters_per_pixel=0.02);
     // Update trajectory (x,z coordinates)
@@ -31,6 +18,8 @@ public:
     void setTrajectoryXZ(const std::vector<cv::Point2d> &xz);
     // Show frame window
     void showFrame(const Mat &frame);
+    // Overlay tracking info text onto a frame
+    void drawTrackingInfo(Mat &frame, const TrackingResult &res);
     // Show top-down trajectory
     void showTopdown();
     // Save trajectory image to file
