@@ -35,6 +35,8 @@ struct CV_EXPORTS_W_SIMPLE TrackingResult {
     CV_PROP_RW bool keyframeInserted = false; //!< True if this frame became a keyframe
     CV_PROP_RW int frameId = -1;              //!< Frame ID
     CV_PROP_RW double timestamp = 0.0;        //!< Frame timestamp
+    CV_PROP_RW std::vector<cv::Point2f> matchPoints; //!< Matched points in current frame (for visualization)
+    CV_PROP_RW std::vector<uchar> inlierMask;        //!< Inlier mask aligned with matchPoints
 };
 
 /**
@@ -53,11 +55,16 @@ struct CV_EXPORTS_W_SIMPLE VisualOdometryOptions {
     CV_PROP_RW double flowZeroThresh = 0.3;         //!< Flow zero threshold
     CV_PROP_RW double minTranslationNorm = 1e-4;    //!< Min translation norm
     CV_PROP_RW double minRotationRad = 0.5 * CV_PI / 180.0; //!< Min rotation (radians)
+    CV_PROP_RW double pnpMaxReprojError = 5.0;      //!< Max mean reprojection error (px) to accept PnP
 
     // --- Keyframe insertion policy ---
     CV_PROP_RW int keyframeMinGap = 1;              //!< Minimum frames between keyframes
     CV_PROP_RW int keyframeMaxGap = 8;              //!< Maximum frames before forcing keyframe
     CV_PROP_RW double keyframeMinParallaxPx = 8.0;  //!< Minimum parallax in pixels
+
+    // --- Triangulation filtering ---
+    CV_PROP_RW double triMaxReprojErrorPx = 2.0;    //!< Max reprojection error to keep triangulated points
+    CV_PROP_RW double triMinParallaxDeg = 1.0;      //!< Min parallax (degrees) between views
 
     // --- Verbose logging ---
     CV_PROP_RW bool verbose = false;                //!< Enable verbose logging

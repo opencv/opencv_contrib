@@ -126,7 +126,7 @@ bool Initializer::reconstructF(const std::vector<Point2f> &pts1,
 
     if(inliers < 30) return false;
 
-    // Triangulate
+    // Triangulate (use normalized coordinates with P1=I, P2=[R|t])
     points3D.resize(pts1.size());
     isTriangulated.resize(pts1.size(), false);
 
@@ -134,7 +134,15 @@ bool Initializer::reconstructF(const std::vector<Point2f> &pts1,
     Mat P2;
     hconcat(R, t, P2);
 
-    triangulate(P1, P2, pts1, pts2, points3D);
+    std::vector<Point2f> pts1n, pts2n;
+    pts1n.reserve(pts1.size());
+    pts2n.reserve(pts2.size());
+    for(size_t i = 0; i < pts1.size(); ++i){
+        pts1n.emplace_back(static_cast<float>((pts1[i].x - cx) / fx), static_cast<float>((pts1[i].y - cy) / fy));
+        pts2n.emplace_back(static_cast<float>((pts2[i].x - cx) / fx), static_cast<float>((pts2[i].y - cy) / fy));
+    }
+
+    triangulate(P1, P2, pts1n, pts2n, points3D);
 
     // Check quality
     std::vector<bool> isGood;
@@ -176,7 +184,14 @@ bool Initializer::reconstructH(const std::vector<Point2f> &pts1,
             P2.at<double>(r, 3) = ts[i].at<double>(r, 0);
         }
 
-        triangulate(P1, P2, pts1, pts2, pts3D);
+        std::vector<Point2f> pts1n, pts2n;
+        pts1n.reserve(pts1.size());
+        pts2n.reserve(pts2.size());
+        for(size_t k = 0; k < pts1.size(); ++k){
+            pts1n.emplace_back(static_cast<float>((pts1[k].x - cx) / fx), static_cast<float>((pts1[k].y - cy) / fy));
+            pts2n.emplace_back(static_cast<float>((pts2[k].x - cx) / fx), static_cast<float>((pts2[k].y - cy) / fy));
+        }
+        triangulate(P1, P2, pts1n, pts2n, pts3D);
         int nGood = checkRT(Rs[i], ts[i], pts1, pts2, pts3D, isGood, fx, fy, cx, cy, par);
 
         allPoints[i] = pts3D;
@@ -279,10 +294,20 @@ void Initializer::triangulate(const Mat &P1, const Mat &P2,
     Mat pts4D;
     triangulatePoints(P1, P2, pts1, pts2, pts4D);
 
-    for(int i = 0; i < pts4D.cols; ++i) {
-        Mat x = pts4D.col(i);
-        x /= x.at<float>(3, 0);
-        points3D[i] = Point3d(x.at<float>(0,0), x.at<float>(1,0), x.at<float>(2,0));
+    Mat pts4D64;
+    if(pts4D.type() != CV_64F) pts4D.convertTo(pts4D64, CV_64F);
+    else pts4D64 = pts4D;
+
+    for(int i = 0; i < pts4D64.cols; ++i) {
+        const double w = pts4D64.at<double>(3, i);
+        if(std::abs(w) < 1e-12) {
+            points3D[i] = Point3d(0,0,0);
+            continue;
+        }
+        const double X = pts4D64.at<double>(0, i) / w;
+        const double Y = pts4D64.at<double>(1, i) / w;
+        const double Z = pts4D64.at<double>(2, i) / w;
+        points3D[i] = Point3d(X, Y, Z);
     }
 }
 

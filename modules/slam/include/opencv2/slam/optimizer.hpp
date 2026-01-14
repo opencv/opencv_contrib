@@ -7,6 +7,14 @@
 namespace cv {
 namespace vo {
 
+struct PoseGraphEdge {
+    int i = -1;   // from keyframe id
+    int j = -1;   // to keyframe id
+    cv::Mat R_ij; // 3x3, camera->world of relative? stored as Rwc form of transform from i to j (R_ij is R_w component of T_ij when composed as X_j = R_ij * X_i + t_ij)
+    cv::Mat t_ij; // 3x1, translation in world frame of i (same convention as above)
+    double weight = 1.0;
+};
+
 // Bundle Adjustment Optimizer using OpenCV-based Levenberg-Marquardt
 // Note: For production, should use g2o or Ceres for better performance
 class Optimizer {
@@ -52,6 +60,18 @@ public:
         double fx, double fy, double cx, double cy,
         int iterations = 20);
 #endif
+
+    // Pose-graph optimization (loop-closure constraints).
+    // Edges use module pose convention: keyframe pose is (R_w, C_w).
+    // The relative constraint T_ij (R_ij, t_ij) represents the expected transform from i to j:
+    //   R_pred = R_i^T * R_j, t_pred = R_i^T * (C_j - C_i);
+    // Residual is formed on SE3 using small-angle approximation.
+    static void poseGraphOptimize(
+        std::vector<KeyFrame> &keyframes,
+        const std::vector<PoseGraphEdge> &edges,
+        const std::vector<int> &fixedKfIds,
+        int iterations = 10,
+        double step = 0.5);
 
 private:
     // Compute reprojection error and Jacobian

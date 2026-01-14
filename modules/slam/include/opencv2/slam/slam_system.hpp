@@ -73,8 +73,12 @@ public:
     CV_WRAP TrackingResult track(cv::InputArray frame, double timestamp = 0.0);
 
     CV_WRAP bool saveTrajectoryTUM(const std::string& path) const;
+    CV_WRAP bool saveOptimizedTrajectoryTUM(const std::string& path) const;
     CV_WRAP bool saveMap(const std::string& path) const;
     CV_WRAP bool loadMap(const std::string& path);
+
+    // Load a DBoW3 vocabulary for loop detection (optional; ignored if DBoW3 is not compiled in).
+    CV_WRAP bool setLoopVocabulary(const std::string& path);
 
     CV_WRAP void reset();
 

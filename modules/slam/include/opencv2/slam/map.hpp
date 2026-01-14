@@ -65,7 +65,9 @@ public:
                                                     const std::vector<int> &pts1_kp_idx,
                                                     const std::vector<int> &pts2_kp_idx,
                                                     const KeyFrame &lastKf, const KeyFrame &curKf,
-                                                    double fx, double fy, double cx, double cy);
+                                                    double fx, double fy, double cx, double cy,
+                                                    double maxReprojPx = 2.0,
+                                                    double minParallaxRad = 1.0 * CV_PI / 180.0);
 
     // Lookup keyframe index by id (-1 if not found)
     int keyframeIndex(int id) const;
@@ -86,6 +88,7 @@ public:
     double computeReprojError(const MapPoint &mp, const KeyFrame &kf,
                              double fx, double fy, double cx, double cy) const;
     void updateMapPointDescriptor(MapPoint &mp);
+    void updateAllMapPointDescriptors();
 
     // Statistics
     int countGoodMapPoints() const;

@@ -89,7 +89,8 @@ std::vector<MapPoint> MapManager::triangulateBetweenLastTwo(const std::vector<Po
                                                             const std::vector<int> &pts1_kp_idx,
                                                             const std::vector<int> &pts2_kp_idx,
                                                             const KeyFrame &lastKf, const KeyFrame &curKf,
-                                                            double fx, double fy, double cx, double cy){
+                                                            double fx, double fy, double cx, double cy,
+                                                            double maxReprojPx, double minParallaxRad){
     std::vector<MapPoint> newPoints;
     if(pts1n.empty() || pts2n.empty()) return newPoints;
     // Relative pose from last camera -> current camera.
@@ -161,22 +162,20 @@ std::vector<MapPoint> MapManager::triangulateBetweenLastTwo(const std::vector<Po
         }
         // if we have observed pixel locations, check reprojection error
         bool pass = true;
-        const double MAX_REPROJ_PX = 2.0;
         if(obs_u1 >= 0 && obs_v1 >= 0){
             double e1 = std::hypot(u1 - obs_u1, v1 - obs_v1);
-            if(e1 > MAX_REPROJ_PX) pass = false;
+            if(e1 > maxReprojPx) pass = false;
         }
         if(obs_u2 >= 0 && obs_v2 >= 0){
             double e2 = std::hypot(u2 - obs_u2, v2 - obs_v2);
-            if(e2 > MAX_REPROJ_PX) pass = false;
+            if(e2 > maxReprojPx) pass = false;
         }
         // parallax check: angle between viewing rays (in last frame)
         Mat ray1 = Xc_last / norm(Xc_last);
         Mat ray2 = Xc_cur / norm(Xc_cur);
         double cos_par = ray1.dot(ray2);
         double parallax = std::acos(std::min(1.0, std::max(-1.0, cos_par)));
-        const double MIN_PARALLAX_RAD = 1.0 * CV_PI / 180.0; // 1 degree
-        if(parallax < MIN_PARALLAX_RAD) pass = false;
+        if(parallax < minParallaxRad) pass = false;
         if(!pass) continue;
         // attach observations using provided keypoint indices when available
         int kp1idx = (c < static_cast<int>(pts1_kp_idx.size())) ? pts1_kp_idx[c] : -1;
@@ -443,6 +442,13 @@ void MapManager::updateMapPointDescriptor(MapPoint &mp) {
     }
 }
 
+void MapManager::updateAllMapPointDescriptors(){
+    for(auto &mp : mappoints_){
+        if(mp.observations.empty()) continue;
+        updateMapPointDescriptor(mp);
+    }
+}
+
 int MapManager::countGoodMapPoints() const {
     int count = 0;
     for(const auto &mp : mappoints_) {
@@ -464,6 +470,7 @@ bool MapManager::save(const std::string &path) const {
     for(const auto &kf : keyframes_){
         fs << "{";
         fs << "id" << kf.id;
+        fs << "timestamp" << kf.timestamp;
         fs << "R" << kf.R_w;
         fs << "t" << kf.t_w;
         std::vector<cv::KeyPoint> kps = kf.kps;
@@ -509,13 +516,17 @@ bool MapManager::load(const std::string &path){
     cv::FileNode kfNode = fs["keyframes"];
     if(kfNode.type() == cv::FileNode::SEQ){
         for(const auto &n : kfNode){
-            int id = -1; Mat R, t, desc; std::vector<cv::KeyPoint> kps;
+            int id = -1; double timestamp = 0.0; Mat R, t, desc; std::vector<cv::KeyPoint> kps;
             n["id"] >> id;
+            // timestamp is optional for backward compatibility
+            if(n["timestamp"].type() != cv::FileNode::NONE){
+                n["timestamp"] >> timestamp;
+            }
             n["R"] >> R;
             n["t"] >> t;
             read(n["kps"], kps);
             n["desc"] >> desc;
-            KeyFrame kf(id, Mat(), kps, desc, R, t);
+            KeyFrame kf(id, timestamp, Mat(), kps, desc, R, t);
             keyframes_.push_back(kf);
         }
     }

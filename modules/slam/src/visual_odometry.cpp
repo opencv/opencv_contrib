@@ -41,6 +41,32 @@ public:
         if(t_out.needed()) t_w_.copyTo(t_out);
     }
 
+    // Sync pose from map if current frame corresponds to an optimized keyframe
+    void syncFromMap(const MapManager* map, int currentFrameId) {
+        if(!map || currentFrameId < 0) return;
+        const auto& kfs = map->keyframes();
+        if(kfs.empty()) return;
+        
+        // Check if current frame is a keyframe that has been optimized
+        int kfIdx = map->keyframeIndex(currentFrameId);
+        if(kfIdx >= 0 && kfIdx < static_cast<int>(kfs.size())){
+            const auto& kf = kfs[kfIdx];
+            // Only sync if the keyframe pose is valid and different from current
+            if(!kf.R_w.empty() && !kf.t_w.empty() && 
+               kf.R_w.rows == 3 && kf.R_w.cols == 3 &&
+               kf.t_w.rows == 3 && kf.t_w.cols == 1){
+                // Check if poses are significantly different (avoid unnecessary updates)
+                Mat diff = kf.t_w - t_w_;
+                double translationDiff = cv::norm(diff);
+                // Only sync if difference is meaningful (avoid noise)
+                if(translationDiff > 1e-6){
+                    R_w_ = kf.R_w.clone();
+                    t_w_ = kf.t_w.clone();
+                }
+            }
+        }
+    }
+
 private:
     Ptr<Feature2D> detector_;
     Ptr<DescriptorMatcher> matcher_;
@@ -93,6 +119,11 @@ TrackingResult VisualOdometry::Impl::track(InputArray frameIn, double timestamp,
         return res;
     }
 
+    // Sync pose from map if this frame corresponds to an optimized keyframe
+    if(map && allowMapping && state_ == TrackingState::TRACKING){
+        syncFromMap(map, frameId_);
+    }
+
     Mat frame = frameIn.getMat();
     Mat color = frame.channels() == 1 ? Mat() : frame;
     if(color.empty()){ cvtColor(frame, color, COLOR_GRAY2BGR); }
@@ -138,6 +169,10 @@ TrackingResult VisualOdometry::Impl::track(InputArray frameIn, double timestamp,
         auto tmp = flows; size_t mid = tmp.size()/2; std::nth_element(tmp.begin(), tmp.begin()+mid, tmp.end()); median_flow = tmp[mid];
     }
 
+    // For visualization: store current-frame match locations and initialize inlier mask.
+    res.matchPoints = pts2;
+    res.inlierMask.assign(pts2.size(), 0);
+
     // Localization mode: do not modify the map, use PnP against an existing map with quality checks.
     if(map && !allowMapping){
         Mat R_pnp, t_pnp; int inliers_pnp = 0; bool ok_pnp = false;
@@ -175,10 +210,12 @@ TrackingResult VisualOdometry::Impl::track(InputArray frameIn, double timestamp,
         bool okInit = initializer_.initialize(prevKps_, kps, matches, fx_, fy_, cx_, cy_, R_init, t_init, pts3D, isTri);
         if(okInit){
             Mat prevImg = prevColor_.empty() ? prevGray_ : prevColor_;
-            KeyFrame kf0(frameId_ - 1, prevImg, prevKps_, prevDesc_, Mat::eye(3,3,CV_64F), Mat::zeros(3,1,CV_64F));
+            // Use previous timestamp (approximate) for kf0, current timestamp for kf1
+            double prevTimestamp = timestamp > 0.0 ? timestamp - 0.033 : 0.0; // Assume ~30fps if unknown
+            KeyFrame kf0(frameId_ - 1, prevTimestamp, prevImg, prevKps_, prevDesc_, Mat::eye(3,3,CV_64F), Mat::zeros(3,1,CV_64F));
             Mat Rwc1 = R_init.t();
             Mat Cw1 = (-Rwc1 * t_init) * scale_;
-            KeyFrame kf1(frameId_, color, kps, desc, Rwc1, Cw1);
+            KeyFrame kf1(frameId_, timestamp, color, kps, desc, Rwc1, Cw1);
 
             std::vector<MapPoint> newMps; newMps.reserve(pts3D.size());
             for(size_t i=0;i<pts3D.size();++i){
@@ -194,6 +231,7 @@ TrackingResult VisualOdometry::Impl::track(InputArray frameIn, double timestamp,
             map->addKeyFrame(kf0);
             map->addKeyFrame(kf1);
             if(!newMps.empty()) map->addMapPoints(newMps);
+            map->updateAllMapPointDescriptors();
 
             R_w_ = kf1.R_w.clone();
             t_w_ = kf1.t_w.clone();
@@ -211,6 +249,13 @@ TrackingResult VisualOdometry::Impl::track(InputArray frameIn, double timestamp,
     Mat R_est, t_est, mask_est; int inliers_est = 0; bool ok_est = false;
     if(pts1.size() >= static_cast<size_t>(std::max(8, options_.minMatches))){
         ok_est = poseEst_.estimate(pts1, pts2, fx_, fy_, cx_, cy_, R_est, t_est, mask_est, inliers_est);
+        if(ok_est && !mask_est.empty() && mask_est.total() == pts2.size()){
+            // Copy inlier flags (mask is CV_8U 0/1 or 0/255)
+            for(size_t i = 0; i < pts2.size(); ++i){
+                uchar v = mask_est.at<uchar>(static_cast<int>(i));
+                res.inlierMask[i] = (v != 0) ? 1 : 0;
+            }
+        }
     }
 
     Mat R_pnp, t_pnp; int inliers_pnp = 0; bool ok_pnp = false; int pnpMatches = 0; double pnpMeanReproj = std::numeric_limits<double>::infinity();
@@ -220,7 +265,7 @@ TrackingResult VisualOdometry::Impl::track(InputArray frameIn, double timestamp,
                                    nullptr, &pnpMatches, &pnpMeanReproj);
         if(ok_pnp){
             if(pnpMatches > 0 && inliers_pnp < static_cast<int>(pnpMatches * options_.minInlierRatio)) ok_pnp = false;
-            if(pnpMeanReproj > 5.0) ok_pnp = false;
+            if(pnpMeanReproj > options_.pnpMaxReprojError) ok_pnp = false;
         }
     }
 
@@ -283,7 +328,22 @@ TrackingResult VisualOdometry::Impl::track(InputArray frameIn, double timestamp,
         if(matchCount > 0 && inliers_use < static_cast<int>(matchCount * options_.minInlierRatio)) insertKf = false;
 
         if(insertKf){
-            KeyFrame kf(frameId_, color, kps, desc, R_w_, t_w_);
+            // Before inserting keyframe, check if map has optimized pose for this frame
+            if(map){
+                int kfIdx = map->keyframeIndex(frameId_);
+                if(kfIdx >= 0){
+                    const auto& kfs = map->keyframes();
+                    if(kfIdx < static_cast<int>(kfs.size())){
+                        const auto& optimizedKf = kfs[kfIdx];
+                        // Use optimized pose if available
+                        if(!optimizedKf.R_w.empty() && !optimizedKf.t_w.empty()){
+                            R_w_ = optimizedKf.R_w.clone();
+                            t_w_ = optimizedKf.t_w.clone();
+                        }
+                    }
+                }
+            }
+            KeyFrame kf(frameId_, timestamp, color, kps, desc, R_w_, t_w_);
             map->addKeyFrame(kf);
             res.keyframeInserted = true;
 
@@ -306,8 +366,11 @@ TrackingResult VisualOdometry::Impl::track(InputArray frameIn, double timestamp,
                     idx1.push_back(m.queryIdx);
                     idx2.push_back(m.trainIdx);
                 }
-                auto newMps = map->triangulateBetweenLastTwo(pts1n, pts2n, idx1, idx2, lastKf, curKf, fx_, fy_, cx_, cy_);
+                double parallaxRad = options_.triMinParallaxDeg * CV_PI / 180.0;
+                auto newMps = map->triangulateBetweenLastTwo(pts1n, pts2n, idx1, idx2, lastKf, curKf,
+                                                            fx_, fy_, cx_, cy_, options_.triMaxReprojErrorPx, parallaxRad);
                 if(!newMps.empty()) map->addMapPoints(newMps);
+                map->updateAllMapPointDescriptors();
             }
         }
     }

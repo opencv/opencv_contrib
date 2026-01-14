@@ -239,19 +239,83 @@ void Optimizer::localBundleAdjustmentSFM(
 
                     Mat K = (Mat_<double>(3,3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
 
+                    // Pose convention in this module:
+                    //   R_w = Rwc (camera->world), t_w = Cw (camera center in world)
+                    // cv::sfm::bundleAdjust expects:
+                    //   R = Rcw (world->camera), t = tcw where Xc = Rcw*Xw + tcw
                     std::vector<Mat> Rs, Ts;
                     Rs.reserve(V); Ts.reserve(V);
                     for (size_t vi = 0; vi < V; ++vi) {
-                        Rs.push_back(keyframes[views[vi]].R_w.clone());
-                        Ts.push_back(keyframes[views[vi]].t_w.clone());
+                        const Mat Rwc = keyframes[views[vi]].R_w;
+                        const Mat Cw = keyframes[views[vi]].t_w;
+                        Mat Rcw = Rwc.t();
+                        Mat tcw = -Rcw * Cw;
+                        Rs.push_back(Rcw.clone());
+                        Ts.push_back(tcw.clone());
+                    }
+
+                    // Gauge fixing: remember prior pose of the first fixed keyframe (if any)
+                    // so we can re-anchor the BA solution back to the original world frame.
+                    Mat Rwc_fixed_prior, Cw_fixed_prior;
+                    int fixedViewKfIdx = -1;
+                    if (!fixedKfIndices.empty()) {
+                        int fixedIdx = fixedKfIndices.front();
+                        if (fixedIdx >= 0 && fixedIdx < static_cast<int>(keyframes.size())) {
+                            fixedViewKfIdx = fixedIdx;
+                            Rwc_fixed_prior = keyframes[fixedIdx].R_w.clone();
+                            Cw_fixed_prior = keyframes[fixedIdx].t_w.clone();
+                        }
                     }
 
                     cv::sfm::bundleAdjust(points2dMats, K, Rs, Ts, points3dMat);
 
+                    // Convert optimized poses back to module convention (Rwc, Cw)
+                    std::vector<Mat> Rwc_opt(V), Cw_opt(V);
+                    for (size_t vi = 0; vi < V; ++vi) {
+                        Mat Rcw = Rs[vi];
+                        Mat tcw = Ts[vi];
+                        if (Rcw.type() != CV_64F) Rcw.convertTo(Rcw, CV_64F);
+                        if (tcw.type() != CV_64F) tcw.convertTo(tcw, CV_64F);
+                        Mat Rwc = Rcw.t();
+                        Mat Cw = -Rwc * tcw;
+                        Rwc_opt[vi] = Rwc;
+                        Cw_opt[vi] = Cw;
+                    }
+
+                    // If we have a fixed prior pose, compute a world-frame transform that
+                    // aligns the optimized fixed keyframe back to its prior (anchors gauge).
+                    Mat Rg = Mat::eye(3, 3, CV_64F);
+                    Mat tg = Mat::zeros(3, 1, CV_64F);
+                    if (fixedViewKfIdx >= 0 && !Rwc_fixed_prior.empty() && !Cw_fixed_prior.empty()) {
+                        // Find the view index that corresponds to fixedViewKfIdx
+                        int fixedVi = -1;
+                        for (size_t vi = 0; vi < V; ++vi) {
+                            if (views[vi] == fixedViewKfIdx) { fixedVi = static_cast<int>(vi); break; }
+                        }
+                        if (fixedVi >= 0 && !Rwc_opt[fixedVi].empty() && !Cw_opt[fixedVi].empty()) {
+                            const Mat &R0 = Rwc_opt[fixedVi];
+                            const Mat &C0 = Cw_opt[fixedVi];
+                            Rg = Rwc_fixed_prior * R0.t();
+                            tg = Cw_fixed_prior - Rg * C0;
+
+                            // Apply gauge transform to all optimized cameras
+                            for (size_t vi = 0; vi < V; ++vi) {
+                                Rwc_opt[vi] = Rg * Rwc_opt[vi];
+                                Cw_opt[vi] = Rg * Cw_opt[vi] + tg;
+                            }
+                            // Apply gauge transform to optimized points
+                            for (int j = 0; j < N; ++j) {
+                                Mat p = points3dMat.col(j);
+                                Mat p2 = Rg * p + tg;
+                                p2.copyTo(points3dMat.col(j));
+                            }
+                        }
+                    }
+
                     // Write back optimized poses (only for the views we optimized)
                     for (size_t vi = 0; vi < V; ++vi) {
-                        keyframes[views[vi]].R_w = Rs[vi].clone();
-                        keyframes[views[vi]].t_w = Ts[vi].clone();
+                        keyframes[views[vi]].R_w = Rwc_opt[vi].clone();
+                        keyframes[views[vi]].t_w = Cw_opt[vi].clone();
                     }
                     // Write back optimized points
                     for (int j = 0; j < N; ++j) {
@@ -417,8 +481,17 @@ bool Optimizer::optimizePose(
     if(!success) return false;
     Mat R;
     Rodrigues(rvec, R);
-    kf.R_w = R;
-    kf.t_w = tvec;
+
+    // solvePnP returns Rcw/tcw (world->camera): Xc = Rcw*Xw + tcw.
+    // Module pose convention is Rwc (camera->world) and Cw (camera center in world).
+    Mat Rcw = R;
+    Mat tcw = tvec;
+    if(Rcw.type() != CV_64F) Rcw.convertTo(Rcw, CV_64F);
+    if(tcw.type() != CV_64F) tcw.convertTo(tcw, CV_64F);
+    Mat Rwc = Rcw.t();
+    Mat Cw = -Rwc * tcw;
+    kf.R_w = Rwc;
+    kf.t_w = Cw;
     for(int i = 0; i < inliersMask.rows && i < static_cast<int>(inliers.size()); ++i)
         inliers[i] = (inliersMask.at<uchar>(i,0) != 0);
 
@@ -432,14 +505,124 @@ void Optimizer::globalBundleAdjustmentSFM(
     double fx, double fy, double cx, double cy,
     int iterations) {
 
-    CV_LOG_INFO(NULL, "Optimizer: Global BA");
     std::vector<int> localKfIndices;
     for(size_t i = 1; i < keyframes.size(); ++i) localKfIndices.push_back(static_cast<int>(i));
     std::vector<int> fixedKfIndices = {0};
     localBundleAdjustmentSFM(keyframes, mappoints, localKfIndices, fixedKfIndices, fx, fy, cx, cy, iterations);
-    CV_LOG_INFO(NULL, "Optimizer: Global BA completed");
 }
 #endif
+
+void Optimizer::poseGraphOptimize(
+    std::vector<KeyFrame> &keyframes,
+    const std::vector<PoseGraphEdge> &edges,
+    const std::vector<int> &fixedKfIds,
+    int iterations,
+    double step) {
+
+    if(keyframes.empty() || edges.empty()) return;
+
+#if defined(HAVE_G2O)
+    {
+        typedef g2o::BlockSolver< g2o::BlockSolverTraits<6,3> > Block;
+        auto linearSolver = std::make_unique<g2o::LinearSolverDense<Block::PoseMatrixType>>();
+        auto blockSolver = std::make_unique<Block>(std::move(linearSolver));
+        auto solver = new g2o::OptimizationAlgorithmLevenberg(std::move(blockSolver));
+
+        g2o::SparseOptimizer optimizer;
+        optimizer.setAlgorithm(solver);
+        optimizer.setVerbose(false);
+
+        std::unordered_map<int,int> id2vid;
+        for(const auto &kf : keyframes){ id2vid[kf.id] = kf.id; }
+
+        for(const auto &kf : keyframes){
+            auto *v = new g2o::VertexSE3Expmap();
+            Mat Rwc = kf.R_w, Cw = kf.t_w;
+            if(Rwc.type() != CV_64F) Rwc.convertTo(Rwc, CV_64F);
+            if(Cw.type() != CV_64F) Cw.convertTo(Cw, CV_64F);
+            Mat Rcw = Rwc.t();
+            Mat tcw = -Rcw * Cw;
+            Eigen::Matrix3d Re; Eigen::Vector3d te;
+            cv2eigen(Rcw, Re); cv2eigen(tcw, te);
+            v->setId(kf.id);
+            v->setEstimate(g2o::SE3Quat(Re, te));
+            if(std::find(fixedKfIds.begin(), fixedKfIds.end(), kf.id) != fixedKfIds.end()) v->setFixed(true);
+            optimizer.addVertex(v);
+        }
+
+        for(const auto &e : edges){
+            if(id2vid.find(e.i)==id2vid.end() || id2vid.find(e.j)==id2vid.end()) continue;
+            Mat Rij = e.R_ij, tij = e.t_ij;
+            if(Rij.empty() || tij.empty()) continue;
+            if(Rij.type() != CV_64F) Rij.convertTo(Rij, CV_64F);
+            if(tij.type() != CV_64F) tij.convertTo(tij, CV_64F);
+            Mat Rji = Rij.t();
+            Mat tji = -Rji * tij;
+            Eigen::Matrix3d Re; Eigen::Vector3d te;
+            cv2eigen(Rji, Re); cv2eigen(tji, te);
+            auto *edge = new g2o::EdgeSE3Expmap();
+            edge->setVertex(0, optimizer.vertex(id2vid[e.i]));
+            edge->setVertex(1, optimizer.vertex(id2vid[e.j]));
+            edge->setMeasurement(g2o::SE3Quat(Re, te));
+            edge->setInformation(Eigen::Matrix<double,6,6>::Identity() * e.weight);
+            auto *rk = new g2o::RobustKernelHuber(); rk->setDelta(1.0); edge->setRobustKernel(rk);
+            optimizer.addEdge(edge);
+        }
+
+        optimizer.initializeOptimization();
+        optimizer.optimize(iterations);
+
+        for(auto &kf : keyframes){
+            auto *v = dynamic_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(id2vid[kf.id]));
+            if(!v) continue;
+            g2o::SE3Quat est = v->estimate();
+            Eigen::Matrix3d Rcw = est.rotation().toRotationMatrix();
+            Eigen::Vector3d tcw = est.translation();
+            Mat Rcw_cv, tcw_cv; eigen2cv(Rcw, Rcw_cv); eigen2cv(tcw, tcw_cv);
+            Mat Rwc = Rcw_cv.t(); Mat Cw = -Rwc * tcw_cv;
+            kf.R_w = Rwc.clone(); kf.t_w = Cw.clone();
+        }
+        return;
+    }
+#endif
+
+    // Fallback: simple iterative small-angle correction
+    std::unordered_map<int,int> id2idx; id2idx.reserve(keyframes.size());
+    for(size_t i=0;i<keyframes.size();++i) id2idx[keyframes[i].id] = static_cast<int>(i);
+    std::unordered_set<int> fixed(fixedKfIds.begin(), fixedKfIds.end());
+
+    for(int it=0; it<iterations; ++it){
+        for(const auto &e : edges){
+            auto itI = id2idx.find(e.i); auto itJ = id2idx.find(e.j);
+            if(itI==id2idx.end() || itJ==id2idx.end()) continue;
+            int ii = itI->second, jj = itJ->second;
+            KeyFrame &Ki = keyframes[ii];
+            KeyFrame &Kj = keyframes[jj];
+            Mat Ri = Ki.R_w.clone(), Rj = Kj.R_w.clone();
+            Mat Ci = Ki.t_w.clone(), Cj = Kj.t_w.clone();
+            if(Ri.empty()||Rj.empty()||Ci.empty()||Cj.empty()) continue;
+            Mat R_pred = Ri.t() * Rj;
+            Mat t_pred = Ri.t() * (Cj - Ci);
+            Mat R_err = e.R_ij.t() * R_pred;
+            Mat t_err = e.R_ij.t() * t_pred - e.t_ij;
+            Mat w; Rodrigues(R_err, w);
+            Mat dt = t_err;
+
+            if(!fixed.count(Kj.id)){
+                Mat dRj; Rodrigues(w * (-step*0.5), dRj);
+                Rj = Rj * dRj;
+                Cj = Cj + Rj * (dt * (-step*0.5));
+            }
+            if(!fixed.count(Ki.id)){
+                Mat dRi; Rodrigues(w * (step*0.5), dRi);
+                Ri = dRi * Ri;
+                Ci = Ci + Ri * (dt * (step*0.5));
+            }
+            Ki.R_w = Ri; Ki.t_w = Ci;
+            Kj.R_w = Rj; Kj.t_w = Cj;
+        }
+    }
+}
 
 double Optimizer::computeReprojectionError(
     const Point3d &point3D,
