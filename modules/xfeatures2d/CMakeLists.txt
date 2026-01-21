@@ -5,6 +5,8 @@ if(HAVE_CUDA)
 endif()
 ocv_define_module(xfeatures2d opencv_core opencv_imgproc opencv_features opencv_3d OPTIONAL opencv_shape opencv_ml opencv_cudaarithm WRAP python java objc)
 
+ocv_install_3rdparty_licenses(xfeatures2d "${CMAKE_CURRENT_SOURCE_DIR}/src/kaze/LICENSE.KAZE" "${CMAKE_CURRENT_SOURCE_DIR}/src/kaze/LICENSE.AKAZE")
+
 if(HAVE_CUDA AND ENABLE_CUDA_FIRST_CLASS_LANGUAGE AND HAVE_opencv_cudaarithm)
   ocv_target_link_libraries(${the_module} PRIVATE CUDA::cudart${CUDA_LIB_EXT})
 endif()
