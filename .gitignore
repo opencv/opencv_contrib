@@ -10,3 +10,7 @@ tags
 tegra/
 *.i
 .download*
+ual Studio 17 2022
+build_sample
+build.py
+validate_headers.py
