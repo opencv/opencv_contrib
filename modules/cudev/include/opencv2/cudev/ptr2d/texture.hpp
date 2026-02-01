@@ -175,8 +175,14 @@ namespace cv {  namespace cudev {
             texRes.resType = cudaResourceTypePitch2D;
             texRes.res.pitch2D.height = rows;
             texRes.res.pitch2D.width = cols;
-            // temporary fix for single row/columns until TexturePtr is reworked
-            if (rows == 1 || cols == 1) {
+
+            // Check if step meets CUDA texture pitch requirements
+            // CUDA textures require pitch to be properly aligned and >= minimum required size
+            const size_t minPitch = cols * sizeof(T1);
+            const bool needsReallocation = (rows == 1) || (cols == 1) || (step < minPitch);
+
+            if (needsReallocation) {
+                // Allocate properly aligned memory using cudaMallocPitch
                 size_t dStep = 0;
                 CV_CUDEV_SAFE_CALL(cudaMallocPitch(&internalSrc, &dStep, cols * sizeof(T1), rows));
                 CV_CUDEV_SAFE_CALL(cudaMemcpy2D(internalSrc, dStep, data, step, cols * sizeof(T1), rows, cudaMemcpyDeviceToDevice));
