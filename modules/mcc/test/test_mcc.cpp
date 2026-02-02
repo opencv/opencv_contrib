@@ -53,6 +53,20 @@ TEST(CV_mccRunCCheckerDrawTest, accuracy_VINYL18)
     pChecker->setBox({{0, 0}, {480, 0}, {480, 640}, {0, 640}});
     runCCheckerDraw(pChecker, 640, 480, 18);
 }
+TEST(CV_mccRunCCheckerDrawTest, accuracy_SPYDERCHECKR24_V2)
+{
+    Ptr<CChecker> pChecker = CChecker::create();
+    pChecker->setTarget(SPYDERCHECKR24_V2);
+    pChecker->setBox({{0, 0}, {480, 0}, {480, 640}, {0, 640}});
+    runCCheckerDraw(pChecker, 640, 480, 24);
+}
+TEST(CV_mccRunCCheckerDrawTest, accuracy_SPYDERCHECKR48_V2)
+{
+    Ptr<CChecker> pChecker = CChecker::create();
+    pChecker->setTarget(SPYDERCHECKR48_V2);
+    pChecker->setBox({{0, 0}, {480, 0}, {480, 640}, {0, 640}});
+    runCCheckerDraw(pChecker, 640, 480, 48);
+}
 
 /****************************************************************************************\
  *                Test detection works properly on the simplest images
@@ -75,10 +89,17 @@ TEST(CV_mccRunCCheckerDetectorBasic, accuracy_MCC24)
 {
     runCCheckerDetectorBasic("MCC24.png", MCC24);
 }
-
 TEST(CV_mccRunCCheckerDetectorBasic, accuracy_VINYL18)
 {
     runCCheckerDetectorBasic("VINYL18.png", VINYL18);
+}
+TEST(CV_mccRunCCheckerDetectorBasic, accuracy_SPYDERCHECKR24_V2)
+{
+    runCCheckerDetectorBasic("Spyder24.png", SPYDERCHECKR24_V2);
+}
+TEST(CV_mccRunCCheckerDetectorBasic, accuracy_SPYDERCHECKR48_V2)
+{
+    runCCheckerDetectorBasic("Spyder48.png", SPYDERCHECKR48_V2);
 }
 
 TEST(CV_mcc_ccm_test, detect_Macbeth)
