@@ -30,7 +30,6 @@
 
 #include "checker_model.hpp"
 #include "dictionary.hpp"
-#include <iostream>////////////
 namespace cv
 {
 namespace mcc
