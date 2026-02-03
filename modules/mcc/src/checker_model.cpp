@@ -30,6 +30,7 @@
 
 #include "checker_model.hpp"
 #include "dictionary.hpp"
+
 namespace cv
 {
 namespace mcc
@@ -92,8 +93,7 @@ CChartModel::CChartModel(const TYPECHART chartType)
             chart[color].assign(CChartVinylColors[color] , CChartVinylColors[color] + 9 );
     
         break;
-    case SPYDERCHECKR48_V2: // SpyderCheckr 48 
-
+    case SPYDERCHECKR48_V2: // SpyderCheckr 48 (v2)
         size = cv::Size2i(6, 8);         
         boxsize = cv::Size2f(16.75f, 22.25f); 
         box.resize(4);
@@ -110,8 +110,8 @@ CChartModel::CChartModel(const TYPECHART chartType)
            chart[color].assign(CSpyder48Colors[color], CSpyder48Colors[color] + 9);
 
         break;
-    case SPYDERCHECKR24_V2: // SpyderCheckr 24
-    {
+    case SPYDERCHECKR24_V2:
+    { 
         CChartModel full(SPYDERCHECKR48_V2);
         size = cv::Size2i(6, 4); // 4x6 = 24
         boxsize = full.boxsize;
@@ -125,17 +125,17 @@ CChartModel::CChartModel(const TYPECHART chartType)
         const int cols = full.size.height; 
 
         for (int r = 0; r < rows; r++)
-         {
+        {
             for (int c = 4; c < 8; c++)
-             {
-               int idxFull = r * cols + c;
+            {
+                int idxFull = r * cols + c;
 
-               for (int k = 0; k < 4; k++)
+                for (int k = 0; k < 4; k++)
                     cellchart.push_back(full.cellchart[4 * idxFull + k]);
 
                 center.push_back(full.center[idxFull]);
                 chart.push_back(full.chart[idxFull]);
-             }
+            }
         }
 
         break;    
