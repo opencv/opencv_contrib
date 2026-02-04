@@ -1,52 +1,28 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
-import sys
 import cv2 as cv
 import numpy as np
+import sys
 
-
-def _pick_api():
-    """Prefer cv.reg.*; fallback to underscore-style bindings when needed."""
-    reg = getattr(cv, "reg", None)
-
-    if reg is not None and all(
-        hasattr(reg, n)
-        for n in ("MapShift", "MapperGradShift", "MapperPyramid", "MapTypeCaster_toShift")
-    ):
-        return reg.MapShift, reg.MapperGradShift, reg.MapperPyramid, reg.MapTypeCaster_toShift
-
-    if (
-        reg is not None
-        and hasattr(reg, "MapTypeCaster_toShift")
-        and all(hasattr(cv, n) for n in ("reg_MapShift", "reg_MapperGradShift", "reg_MapperPyramid"))
-    ):
-        return cv.reg_MapShift, cv.reg_MapperGradShift, cv.reg_MapperPyramid, reg.MapTypeCaster_toShift
-
-    return None
-
-
-# keep original behavior: expects an image path argument
-img1 = cv.imread(sys.argv[1], cv.IMREAD_COLOR)
-if img1 is None:
-    raise FileNotFoundError(f"Could not read image: {sys.argv[1]}")
-
-api = _pick_api()
-if api is None:
-    raise RuntimeError("Required OpenCV reg bindings are not available (install opencv-contrib).")
-
-MapShift, MapperGradShift, MapperPyramid, MapTypeCaster_toShift = api
-
+img1 = cv.imread(sys.argv[1])
 img1 = img1.astype(np.float32)
+
 shift = np.array([5.0, 5.0], dtype=np.float32)
 
-map_test = MapShift(shift)
-img2 = map_test.warp(img1)
+# Prefer dot-notation (cv.reg.*), fallback to underscore bindings when needed
+MapShift = getattr(cv.reg, "MapShift", getattr(cv, "reg_MapShift"))
+MapperGradShift = getattr(cv.reg, "MapperGradShift", getattr(cv, "reg_MapperGradShift"))
+MapperPyramid = getattr(cv.reg, "MapperPyramid", getattr(cv, "reg_MapperPyramid"))
+MapTypeCaster_toShift = cv.reg.MapTypeCaster_toShift
+
+mapTest = MapShift(shift)
+img2 = mapTest.warp(img1)
 
 # Avoid nested construction (reported to segfault in some builds)
 mapper = MapperGradShift()
-mapp_pyr = MapperPyramid(mapper)
+mappPyr = MapperPyramid(mapper)
 
-res_map = mapp_pyr.calculate(img1, img2)
-map_shift = MapTypeCaster_toShift(res_map)
+resMap = mappPyr.calculate(img1, img2)
+mapShift = MapTypeCaster_toShift(resMap)
 
-print(map_shift.getShift())
+print(mapShift.getShift())
