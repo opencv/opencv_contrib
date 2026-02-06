@@ -31,11 +31,8 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
-
-#include "opencv2/core/cvstd.hpp"
 #include "precomp.hpp"
 
-#include <H5Tpublic.h>
 #include <cstdio>
 #include <hdf5.h>
 
@@ -51,17 +48,19 @@ namespace cv
 {
 namespace hdf
 {
-inline void print_type_info(hid_t type, const String& prefix = "") {
-
+inline void print_type_info(hid_t type, const String& prefix = "")
+{
     printf("%s Type: %lld, class=%d, size=%d, order=%d, is valid=%d\n", prefix.c_str(), (long long)type, H5Tget_class(type), H5Tget_size(type), H5Tget_order(type), H5Iis_valid(type));
-    #if defined(CV_BIG_ENDIAN)
-      return H5Tcopy(H5T_IEEE_F16BE);
-  #elif defined(CV_LITTLE_ENDIAN)
-      // Default to Little Endian (x86, ARM, etc.)
-      return H5Tcopy(H5T_IEEE_F16LE);
-  #endif
 }
 
+bool HDF5_has_f16_support()
+{
+    #if defined(H5T_IEEE_F16LE) && defined(H5T_IEEE_F16BE) && defined(H5T_NATIVE_FLOAT16)
+      return true;
+    #else
+      return false;
+    #endif
+}
 
 class HDF5Impl CV_FINAL : public HDF5
 {
@@ -70,6 +69,8 @@ public:
     HDF5Impl( const String& HDF5Filename );
 
     virtual ~HDF5Impl() CV_OVERRIDE { close(); };
+
+    virtual bool has_f16_support() const CV_OVERRIDE;
 
     // close and release
     virtual void close( ) CV_OVERRIDE;
@@ -227,6 +228,10 @@ private:
     inline hid_t GetSafeMemType(hid_t dstype, int& cvType) const;
 };
 
+bool HDF5Impl::has_f16_support() const
+{
+    return HDF5_has_f16_support();
+}
 inline hid_t HDF5Impl::GetH5type( int cvType ) const
 {
     hid_t h5Type = -1;
@@ -297,7 +302,6 @@ inline int HDF5Impl::GetCVtype( hid_t h5Type ) const
       cvType = CV_32S;
     else
       CV_Error_(Error::StsInternal, ("Unknown H5Type: %lld.", (long long)h5Type));
-    print_type_info(h5Type, "GetCVtype");
     return cvType;
 }
 
