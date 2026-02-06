@@ -10,7 +10,6 @@
 #include "opencv2/core/cvdef.h"
 #include "opencv2/hdf/hdf5.hpp"
 #include "test_precomp.hpp"
-#include <iostream>
 
 namespace opencv_test { namespace {
 
@@ -379,10 +378,7 @@ TEST_F(HDF5_Test, test_attribute_InutArray_OutputArray_2d)
 TEST_F(HDF5_Test, write_read_dataset_CV_16F)
 {
     if (!hdf::HDF5_has_f16_support())
-    {
-        std::cout << "HDF5 float16 support is not available in this build." << std::endl;
         return;
-    }
     reset();
     String dataset_half = "/half";
     m_hdf_io = hdf::open(m_filename);
@@ -404,10 +400,7 @@ TEST_F(HDF5_Test, write_read_dataset_CV_16F)
 TEST_F(HDF5_Test, write_read_dataset_CV_16FC2)
 {
     if (!hdf::HDF5_has_f16_support())
-    {
-        std::cout << "HDF5 float16 support is not available in this build." << std::endl;
         return;
-    }
     reset();
     String dataset_half_array = "/halfc2";
     m_hdf_io = hdf::open(m_filename);
@@ -429,10 +422,7 @@ TEST_F(HDF5_Test, write_read_dataset_CV_16FC2)
 TEST_F(HDF5_Test, attribute_CV_16FC2_matrix)
 {
     if (!hdf::HDF5_has_f16_support())
-    {
-        std::cout << "HDF5 float16 support is not available in this build." << std::endl;
         return;
-    }
     reset();
     String attr_name = "half_array";
     int rows = 2, cols = 3, channels = 2;
@@ -453,10 +443,7 @@ TEST_F(HDF5_Test, attribute_CV_16FC2_matrix)
 TEST_F(HDF5_Test, attribute_CV_16F_matrix)
 {
     if (!hdf::HDF5_has_f16_support())
-    {
-        std::cout << "HDF5 float16 support is not available in this build." << std::endl;
         return;
-    }
     reset();
     String attr_name = "half_array";
     int rows = 2, cols = 3, channels = 2;
@@ -477,10 +464,7 @@ TEST_F(HDF5_Test, attribute_CV_16F_matrix)
 TEST_F(HDF5_Test, attribute_CV_16F_scalar)
 {
     if (!hdf::HDF5_has_f16_support())
-    {
-        std::cout << "HDF5 float16 support is not available in this build." << std::endl;
         return;
-    }
     reset();
     String attr_name = "half_float";
     cv::hfloat attr_value = cv::hfloat(123.456789f);
