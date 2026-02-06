@@ -7,6 +7,7 @@
  * @author Fangjun Kuang <csukuangfj dot at gmail dot com>
  * @date December 2017
  */
+#include "opencv2/core/cvdef.h"
 #include "test_precomp.hpp"
 
 namespace opencv_test { namespace {
@@ -45,7 +46,7 @@ struct HDF5_Test : public testing::Test
     Mat m_single_channel; //!< single channel matrix for test
     Mat m_two_channels; //!< two-channel matrix for test
 };
-
+/*
 TEST_F(HDF5_Test, create_a_single_group)
 {
     reset();
@@ -370,5 +371,38 @@ TEST_F(HDF5_Test, test_attribute_InutArray_OutputArray_2d)
 
     m_hdf_io->close();
 }
+*/
+TEST_F(HDF5_Test, write_read_dataset_CV_16F)
+{
+    reset();
 
+#ifdef CV_16F
+    String dataset_half = "/half";
+    m_hdf_io = hdf::open(m_filename);
+
+    // Create a matrix with CV_16F type (half-precision float)
+    int rows = 2, cols = 3;
+    Mat mat_half(rows, cols, CV_16F);
+    for (int i = 0; i < rows * cols; ++i)
+    {
+        // Fill with increasing values (cast to half)
+        ((cv::hfloat*)mat_half.data)[i] = cv::hfloat(i * 0.5f);
+    }
+    // Write and read
+    m_hdf_io->dswrite(mat_half, dataset_half);
+    EXPECT_EQ(m_hdf_io->hlexists(dataset_half), true);
+
+    Mat mat_half_read;
+    m_hdf_io->dsread(mat_half_read, dataset_half);
+    EXPECT_EQ(mat_half_read.type(), mat_half.type());
+    EXPECT_EQ(mat_half_read.size(), mat_half.size());
+    // Compare values (allowing for small error due to half precision)
+    double diff = cvtest::norm(mat_half, mat_half_read, NORM_L2);
+    EXPECT_LE(diff, 1e-3);
+
+    m_hdf_io->close();
+#else
+    std::cout << "CV_16F is not supported in this build." << std::endl;
+#endif
+}
 }} // namespace

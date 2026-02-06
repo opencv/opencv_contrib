@@ -32,9 +32,18 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
+#include "opencv2/core/cvstd.hpp"
 #include "precomp.hpp"
 
+#include <H5Tpublic.h>
+#include <cstdio>
 #include <hdf5.h>
+
+#if defined(__BYTE_ORDER__)&&(__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+    constexpr bool is_big_endian = true;
+#else
+    constexpr bool is_big_endian = false;
+#endif
 
 using namespace std;
 
@@ -42,6 +51,17 @@ namespace cv
 {
 namespace hdf
 {
+inline void print_type_info(hid_t type, const String& prefix = "") {
+
+    printf("%s Type: %lld, class=%d, size=%d, order=%d, is valid=%d\n", prefix.c_str(), (long long)type, H5Tget_class(type), H5Tget_size(type), H5Tget_order(type), H5Iis_valid(type));
+    #if defined(CV_BIG_ENDIAN)
+      return H5Tcopy(H5T_IEEE_F16BE);
+  #elif defined(CV_LITTLE_ENDIAN)
+      // Default to Little Endian (x86, ARM, etc.)
+      return H5Tcopy(H5T_IEEE_F16LE);
+  #endif
+}
+
 
 class HDF5Impl CV_FINAL : public HDF5
 {
@@ -203,6 +223,8 @@ private:
     //! translate h5Type -> cvType
     inline int GetCVtype( hid_t h5Type ) const;
 
+    //! h5Type -> native h5Type with safety checks for 16-bit float and get cvType
+    inline hid_t GetSafeMemType(hid_t dstype, int& cvType) const;
 };
 
 inline hid_t HDF5Impl::GetH5type( int cvType ) const
@@ -229,6 +251,11 @@ inline hid_t HDF5Impl::GetH5type( int cvType ) const
       case CV_16S:
         h5Type = H5T_NATIVE_SHORT;
         break;
+      #if defined(H5T_IEEE_F16LE)
+      case CV_16F:
+        h5Type = H5T_IEEE_F16LE;
+        break;
+      #endif
       case CV_32S:
         h5Type = H5T_NATIVE_INT;
         break;
@@ -254,12 +281,40 @@ inline int HDF5Impl::GetCVtype( hid_t h5Type ) const
       cvType = CV_16U;
     else if ( H5Tequal( h5Type, H5T_NATIVE_SHORT  ) )
       cvType = CV_16S;
+    #if defined(H5T_IEEE_F16LE)
+    else if ( H5Tequal( h5Type, H5T_IEEE_F16LE ) )
+      cvType = CV_16F;
+    #endif
+    #if defined(H5T_IEEE_F16BE)
+    else if ( H5Tequal( h5Type, H5T_IEEE_F16BE ) )
+      cvType = CV_16F;
+    #endif
+    #if defined(H5T_NATIVE_FLOAT16)
+    else if (H5Iis_valid(H5T_NATIVE_FLOAT16) && H5Tequal( h5Type, H5T_NATIVE_FLOAT16 ) )
+      cvType = CV_16F;
+    #endif
     else if ( H5Tequal( h5Type, H5T_NATIVE_INT    ) )
       cvType = CV_32S;
     else
       CV_Error_(Error::StsInternal, ("Unknown H5Type: %lld.", (long long)h5Type));
-
+    print_type_info(h5Type, "GetCVtype");
     return cvType;
+}
+
+inline hid_t HDF5Impl::GetSafeMemType(hid_t dstype, int& cvType) const
+{
+    hid_t h5_native_type = H5Tget_native_type(dstype, H5T_DIR_ASCEND);
+    #if defined(H5T_IEEE_F16LE) && defined(H5T_IEEE_F16BE)
+    if (H5Tget_class(dstype) == H5T_FLOAT && H5Tget_size(dstype) == 2) 
+    {
+      cvType = CV_16F;
+      if (H5Tget_class(h5_native_type) == H5T_FLOAT && H5Tget_size(h5_native_type) ==2)
+        return h5_native_type; // H2T_NATIVE_FLOAT16, use it directly
+      return is_big_endian? H5Tcopy(H5T_IEEE_F16BE) : H5Tcopy(H5T_IEEE_F16LE);
+    }
+    #endif
+    cvType = GetCVtype(h5_native_type);
+    return h5_native_type; 
 }
 
 HDF5Impl::HDF5Impl( const String& _hdf5_filename )
@@ -508,6 +563,7 @@ void HDF5Impl::atread(OutputArray value, const String& atlabel)
 
     int nchannels = 1;
     hid_t h5type;
+    int dtype;
     if (H5Tget_class(atype) == H5T_ARRAY)
     {
         hsize_t dims;
@@ -515,14 +571,11 @@ void HDF5Impl::atread(OutputArray value, const String& atlabel)
         nchannels = (int) dims;
 
         hid_t super_type = H5Tget_super(atype);
-        h5type = H5Tget_native_type(super_type, H5T_DIR_ASCEND);
+        h5type = GetSafeMemType(super_type, dtype);
         H5Tclose(super_type);
     }
     else
-        h5type = H5Tget_native_type(atype, H5T_DIR_ASCEND);
-
-    int dtype = GetCVtype(h5type);
-
+        h5type = GetSafeMemType(atype, dtype);
     value.create(rank, dim_vec.data(), CV_MAKETYPE(dtype, nchannels));
     H5Aread(attr, atype, value.getMat().data);
 
@@ -817,7 +870,7 @@ void HDF5Impl::dsread( OutputArray Array, const String& dslabel,
 
     // get data type
     hid_t dstype = H5Dget_type( dsdata );
-
+    int dType;
     int channs = 1;
     if ( H5Tget_class( dstype ) == H5T_ARRAY )
     {
@@ -827,13 +880,9 @@ void HDF5Impl::dsread( OutputArray Array, const String& dslabel,
       channs = (int) ardims[0];
       // fetch depth
       hid_t tsuper = H5Tget_super( dstype );
-      h5type = H5Tget_native_type( tsuper, H5T_DIR_ASCEND );
-      H5Tclose( tsuper );
+      h5type = GetSafeMemType(tsuper, dType);
     } else
-      h5type = H5Tget_native_type( dstype, H5T_DIR_ASCEND );
-
-    int dType = GetCVtype( h5type );
-
+      h5type = GetSafeMemType(dstype, dType);
     // get file space
     hid_t fspace = H5Dget_space( dsdata );
 
