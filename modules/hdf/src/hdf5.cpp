@@ -258,7 +258,7 @@ inline hid_t HDF5Impl::GetH5type( int cvType ) const
         break;
       #if defined(H5T_IEEE_F16LE)
       case CV_16F:
-        h5Type = H5T_IEEE_F16LE;
+        h5Type = is_big_endian? H5T_IEEE_F16BE : H5T_IEEE_F16LE;
         break;
       #endif
       case CV_32S:
