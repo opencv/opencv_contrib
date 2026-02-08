@@ -38,6 +38,13 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
+/** following typedefs used in k3 support (github.com/opencv/opencv_contrib/issues/3952)
+      should go to opencv2/core/matx.hpp at some point */
+typedef cv::Matx<float,  1, 5> Matx15f;
+typedef cv::Matx<double, 1, 5> Matx15d;
+typedef cv::Matx<float,  2, 5> Matx25f;
+typedef cv::Matx<double, 2, 5> Matx25d;
+typedef cv::Vec<double,  5>    Vec5d;
 
 #ifndef __OPENCV_OMNIDIR_HPP__
 #define __OPENCV_OMNIDIR_HPP__
@@ -46,13 +53,6 @@
 #include "opencv2/core/affine.hpp"
 #include <vector>
 
-/** following typedefs used in k3 support (github.com/opencv/opencv_contrib/issues/3952)
-      should go to opencv2/core/matx.hpp at some point */
-typedef cv::Matx<float,  1, 5> Matx15f;
-typedef cv::Matx<double, 1, 5> Matx15d;
-typedef cv::Matx<float,  2, 5> Matx25f;
-typedef cv::Matx<double, 2, 5> Matx25d;
-typedef cv::Vec<double,  5>    Vec5d;
 
 namespace cv
 {
@@ -278,10 +278,12 @@ namespace internal
     void decodeParametersStereo(InputArray parameters, OutputArray K1, OutputArray K2, OutputArray om, OutputArray T, OutputArrayOfArrays omL,
         OutputArrayOfArrays tL, OutputArray D1, OutputArray D2, double& xi1, double& xi2);
 
-    void estimateUncertainties(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints, InputArray parameters, Mat& errors, Vec2d& std_error, double& rms, int flags);
+    void estimateUncertainties(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints, InputArray parameters,
+    Mat& errors, Vec2d& std_error, double& rms, int flags, bool useK3);
 
-    void estimateUncertaintiesStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2, InputArray parameters, Mat& errors,
-        Vec2d& std_error, double& rms, int flags);
+   
+    void estimateUncertaintiesStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2,
+    InputArray parameters, Mat& errors, Vec2d& std_error, double& rms, int flags, bool useK3);
 
     double computeMeanReproErr(InputArrayOfArrays imagePoints, InputArrayOfArrays proImagePoints);
 
@@ -294,12 +296,20 @@ namespace internal
     void subMatrix(const Mat& src, Mat& dst, const std::vector<int>& cols, const std::vector<int>& rows);
 
     void flags2idx(int flags, std::vector<int>& idx, int n);
+    void flags2idx(int flags, std::vector<int>& idx, int n, bool useK3);
+
+    
 
     void flags2idxStereo(int flags, std::vector<int>& idx, int n);
+    void flags2idxStereo(int flags, std::vector<int>& idx, int n, bool useK3);
 
     void fillFixed(Mat&G, int flags, int n);
+    void fillFixed(Mat& G, int flags, int n, bool useK3);
+
 
     void fillFixedStereo(Mat& G, int flags, int n);
+    void fillFixedStereo(Mat& G, int flags, int n, bool useK3);
+
 
     double findMedian(const Mat& row);
 
@@ -309,6 +319,13 @@ namespace internal
 
     void compose_motion(InputArray _om1, InputArray _T1, InputArray _om2, InputArray _T2, Mat& om3, Mat& T3, Mat& dom3dom1,
         Mat& dom3dT1, Mat& dom3dom2, Mat& dom3dT2, Mat& dT3dom1, Mat& dT3dT1, Mat& dT3dom2, Mat& dT3dT2);
+
+    void computeJacobian(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints,
+    InputArray parameters, Mat& JTJ_inv, Mat& JTE, int flags, double epsilon, bool useK3);
+
+    void computeJacobianStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2,
+    InputArray parameters, Mat& JTJ_inv, Mat& JTE, int flags, double epsilon, bool useK3);
+
 
     //void JRodriguesMatlab(const Mat& src, Mat& dst);
 
