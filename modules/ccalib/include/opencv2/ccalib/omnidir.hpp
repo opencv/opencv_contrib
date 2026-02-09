@@ -38,13 +38,7 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-/** following typedefs used in k3 support (github.com/opencv/opencv_contrib/issues/3952)
-      should go to opencv2/core/matx.hpp at some point */
-typedef cv::Matx<float,  1, 5> Matx15f;
-typedef cv::Matx<double, 1, 5> Matx15d;
-typedef cv::Matx<float,  2, 5> Matx25f;
-typedef cv::Matx<double, 2, 5> Matx25d;
-typedef cv::Vec<double,  5>    Vec5d;
+
 
 #ifndef __OPENCV_OMNIDIR_HPP__
 #define __OPENCV_OMNIDIR_HPP__
@@ -56,6 +50,13 @@ typedef cv::Vec<double,  5>    Vec5d;
 
 namespace cv
 {
+    /** following typedefs used in k3 support (github.com/opencv/opencv_contrib/issues/3952)
+      should go to opencv2/core/matx.hpp at some point */
+    typedef Matx<float,  1, 5> Matx15f;
+    typedef Matx<double, 1, 5> Matx15d;
+    typedef Matx<float,  2, 5> Matx25f;
+    typedef Matx<double, 2, 5> Matx25d;
+    typedef Vec<double,  5>    Vec5d;
 namespace omnidir
 {
     //! @addtogroup ccalib
