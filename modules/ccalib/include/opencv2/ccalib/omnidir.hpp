@@ -282,7 +282,7 @@ namespace internal
     void estimateUncertainties(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints, InputArray parameters,
     Mat& errors, Vec2d& std_error, double& rms, int flags, bool useK3);
 
-   
+
     void estimateUncertaintiesStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2,
     InputArray parameters, Mat& errors, Vec2d& std_error, double& rms, int flags, bool useK3);
 
@@ -299,7 +299,7 @@ namespace internal
     void flags2idx(int flags, std::vector<int>& idx, int n);
     void flags2idx(int flags, std::vector<int>& idx, int n, bool useK3);
 
-    
+
 
     void flags2idxStereo(int flags, std::vector<int>& idx, int n);
     void flags2idxStereo(int flags, std::vector<int>& idx, int n, bool useK3);
