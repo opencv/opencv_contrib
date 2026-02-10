@@ -35,13 +35,13 @@
 
 #include <cstdio>
 #include <hdf5.h>
-
+#if defined(H5T_IEEE_F16LE)
 #if defined(__BYTE_ORDER__)&&(__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
     constexpr bool is_big_endian = true;
 #else
     constexpr bool is_big_endian = false;
 #endif
-
+#endif
 using namespace std;
 
 namespace cv
@@ -50,7 +50,7 @@ namespace hdf
 {
 inline void print_type_info(hid_t type, const String& prefix = "")
 {
-    printf("%s Type: %lld, class=%d, size=%d, order=%d, is valid=%d\n", prefix.c_str(), (long long)type, H5Tget_class(type), H5Tget_size(type), H5Tget_order(type), H5Iis_valid(type));
+    printf("%s Type: %lld, class=%d, size=%zu, order=%d, is valid=%d\n", prefix.c_str(), (long long)type, H5Tget_class(type), H5Tget_size(type), H5Tget_order(type), H5Iis_valid(type));
 }
 
 bool HDF5_has_f16_support()
@@ -566,7 +566,7 @@ void HDF5Impl::atread(OutputArray value, const String& atlabel)
     vector<int> dim_vec(dim_vec_.begin(), dim_vec_.end());
 
     int nchannels = 1;
-    hid_t h5type;
+
     int dtype;
     if (H5Tget_class(atype) == H5T_ARRAY)
     {
@@ -575,11 +575,11 @@ void HDF5Impl::atread(OutputArray value, const String& atlabel)
         nchannels = (int) dims;
 
         hid_t super_type = H5Tget_super(atype);
-        h5type = GetSafeMemType(super_type, dtype);
+        GetSafeMemType(super_type, dtype);
         H5Tclose(super_type);
     }
     else
-        h5type = GetSafeMemType(atype, dtype);
+        GetSafeMemType(atype, dtype);
     value.create(rank, dim_vec.data(), CV_MAKETYPE(dtype, nchannels));
     H5Aread(attr, atype, value.getMat().data);
 
