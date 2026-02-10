@@ -584,29 +584,9 @@ namespace cv { namespace cuda { namespace device
     template void MHCdemosaic<1, ushort>(PtrStepSz<ushort> src, int2 sourceOffset, PtrStepSz<ushort> dst, int2 firstRed, cudaStream_t stream);
     template void MHCdemosaic<3, ushort>(PtrStepSz<ushort> src, int2 sourceOffset, PtrStepSz<ushort> dst, int2 firstRed, cudaStream_t stream);
     template void MHCdemosaic<4, ushort>(PtrStepSz<ushort> src, int2 sourceOffset, PtrStepSz<ushort> dst, int2 firstRed, cudaStream_t stream);
-
-    // Implement MHCdemosaic for float and with a result of 3 channels
-    void MHCdemosaic_float3(PtrStepSzf src, int2 sourceOffset, PtrStepSzf dst, int2 firstRed, cudaStream_t stream)
-    {
-        typedef typename TypeVec<float, 3>::vec_type dst_t;
-
-        const dim3 block(32, 8);
-        const dim3 grid(divUp(src.cols, block.x), divUp(src.rows, block.y));
-
-        if (sourceOffset.x || sourceOffset.y) {
-            cv::cudev::TextureOff<float> texSrc(src, sourceOffset.y, sourceOffset.x);
-            MHCdemosaic<dst_t, cv::cudev::TextureOffPtr<float>><<<grid, block, 0, stream>>>((PtrStepSz<dst_t>)dst, texSrc, firstRed);
-        }
-        else {
-            cv::cudev::Texture<float> texSrc(src);
-            MHCdemosaic<dst_t, cv::cudev::TexturePtr<float>><<<grid, block, 0, stream>>>((PtrStepSz<dst_t>)dst, texSrc, firstRed);
-        }
-
-        cudaSafeCall( cudaGetLastError() );
-
-        if (stream == 0)
-            cudaSafeCall( cudaDeviceSynchronize() );
-    }
+    template void MHCdemosaic<1, float>(PtrStepSzf src, int2 sourceOffset, PtrStepSzf dst, int2 firstRed, cudaStream_t stream);
+    template void MHCdemosaic<3, float>(PtrStepSzf src, int2 sourceOffset, PtrStepSzf dst, int2 firstRed, cudaStream_t stream);
+    template void MHCdemosaic<4, float>(PtrStepSzf src, int2 sourceOffset, PtrStepSzf dst, int2 firstRed, cudaStream_t stream);
 }}}
 
 #endif /* CUDA_DISABLER */
