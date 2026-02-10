@@ -309,7 +309,7 @@ inline hid_t HDF5Impl::GetSafeMemType(hid_t dstype, int& cvType) const
 {
     hid_t h5_native_type = H5Tget_native_type(dstype, H5T_DIR_ASCEND);
     #if defined(H5T_IEEE_F16LE) && defined(H5T_IEEE_F16BE)
-    if (H5Tget_class(dstype) == H5T_FLOAT && H5Tget_size(dstype) == 2) 
+    if (H5Tget_class(dstype) == H5T_FLOAT && H5Tget_size(dstype) == 2)
     {
       cvType = CV_16F;
       if (H5Tget_class(h5_native_type) == H5T_FLOAT && H5Tget_size(h5_native_type) ==2)
@@ -318,7 +318,7 @@ inline hid_t HDF5Impl::GetSafeMemType(hid_t dstype, int& cvType) const
     }
     #endif
     cvType = GetCVtype(h5_native_type);
-    return h5_native_type; 
+    return h5_native_type;
 }
 
 HDF5Impl::HDF5Impl( const String& _hdf5_filename )
