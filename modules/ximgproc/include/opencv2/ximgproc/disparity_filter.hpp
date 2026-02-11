@@ -65,7 +65,8 @@ public:
     @param filtered_disparity_map output disparity map.
 
     @param disparity_map_right optional argument, some implementations might also use the disparity map
-    of the right view to compute confidence maps, for instance.
+    of the right view to compute confidence maps. If provided, it must be a single-channel CV_32F matrix,
+    otherwise a runtime assertion will fail.
 
     @param ROI region of the disparity map to filter. Optional, usually it should be set automatically.
 

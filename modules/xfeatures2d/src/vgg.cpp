@@ -559,12 +559,7 @@ void VGG_Impl::write (FileStorage& fs) const
     }
 }
 
-String VGG::getDefaultName() const
-{
-    return (Feature2D::getDefaultName() + ".VGG");
-}
-
-#endif
+#endif // OPENCV_XFEATURES2D_HAS_VGG_DATA
 
 Ptr<VGG> VGG::create( int desc, float isigma, bool img_normalize, bool use_scale_orientation,
                       float scale_factor, bool dsc_normalize )
@@ -578,6 +573,10 @@ Ptr<VGG> VGG::create( int desc, float isigma, bool img_normalize, bool use_scale
 #endif
 }
 
+String VGG::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".VGG");
+}
 
 } // END NAMESPACE XFEATURES2D
 } // END NAMESPACE CV
