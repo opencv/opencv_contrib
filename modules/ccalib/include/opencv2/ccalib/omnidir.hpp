@@ -39,14 +39,12 @@
 //
 //M*/
 
-
 #ifndef __OPENCV_OMNIDIR_HPP__
 #define __OPENCV_OMNIDIR_HPP__
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/affine.hpp"
 #include <vector>
-
 
 namespace cv
 {
@@ -71,7 +69,9 @@ namespace omnidir
         CALIB_FIX_P2                = 32,
         CALIB_FIX_XI                = 64,
         CALIB_FIX_GAMMA             = 128,
-        CALIB_FIX_CENTER            = 256
+        CALIB_FIX_CENTER            = 256,
+        CALIB_FIX_K3                = 512
+
     };
 
     enum{
@@ -280,11 +280,10 @@ namespace internal
         OutputArrayOfArrays tL, OutputArray D1, OutputArray D2, double& xi1, double& xi2);
 
     void estimateUncertainties(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints, InputArray parameters,
-    Mat& errors, Vec2d& std_error, double& rms, int flags, bool useK3);
-
+    Mat& errors, Vec2d& std_error, double& rms, int flags);
 
     void estimateUncertaintiesStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2,
-    InputArray parameters, Mat& errors, Vec2d& std_error, double& rms, int flags, bool useK3);
+    InputArray parameters, Mat& errors, Vec2d& std_error, double& rms, int flags);
 
     double computeMeanReproErr(InputArrayOfArrays imagePoints, InputArrayOfArrays proImagePoints);
 
@@ -297,20 +296,12 @@ namespace internal
     void subMatrix(const Mat& src, Mat& dst, const std::vector<int>& cols, const std::vector<int>& rows);
 
     void flags2idx(int flags, std::vector<int>& idx, int n);
-    void flags2idx(int flags, std::vector<int>& idx, int n, bool useK3);
-
-
 
     void flags2idxStereo(int flags, std::vector<int>& idx, int n);
-    void flags2idxStereo(int flags, std::vector<int>& idx, int n, bool useK3);
 
     void fillFixed(Mat&G, int flags, int n);
-    void fillFixed(Mat& G, int flags, int n, bool useK3);
-
 
     void fillFixedStereo(Mat& G, int flags, int n);
-    void fillFixedStereo(Mat& G, int flags, int n, bool useK3);
-
 
     double findMedian(const Mat& row);
 
@@ -320,13 +311,6 @@ namespace internal
 
     void compose_motion(InputArray _om1, InputArray _T1, InputArray _om2, InputArray _T2, Mat& om3, Mat& T3, Mat& dom3dom1,
         Mat& dom3dT1, Mat& dom3dom2, Mat& dom3dT2, Mat& dT3dom1, Mat& dT3dT1, Mat& dT3dom2, Mat& dT3dT2);
-
-    void computeJacobian(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints,
-    InputArray parameters, Mat& JTJ_inv, Mat& JTE, int flags, double epsilon, bool useK3);
-
-    void computeJacobianStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2,
-    InputArray parameters, Mat& JTJ_inv, Mat& JTE, int flags, double epsilon, bool useK3);
-
 
     //void JRodriguesMatlab(const Mat& src, Mat& dst);
 
