@@ -100,7 +100,7 @@ static void testShift(const Mat& img1)
     Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapShift* mapShift = dynamic_cast<MapShift*>(mapPtr.get());
+    Ptr<MapShift> mapShift = dynamic_cast<MapShift*>(mapPtr.get());
     cout << endl << "--- Testing shift mapper ---" << endl;
     cout << Mat(shift) << endl;
     cout << Mat(mapShift->getShift()) << endl;
@@ -173,7 +173,7 @@ static void testSimilarity(const Mat& img1)
     Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
+    Ptr<MapAffine> mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
     cout << endl << "--- Testing similarity mapper ---" << endl;
     cout << Mat(linTr) << endl;
     cout << Mat(shift) << endl;
@@ -207,7 +207,7 @@ static void testAffine(const Mat& img1)
     Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
+    Ptr<MapAffine> mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
     cout << endl << "--- Testing affine mapper ---" << endl;
     cout << Mat(linTr) << endl;
     cout << Mat(shift) << endl;
@@ -240,7 +240,7 @@ static void testProjective(const Mat& img1)
     Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapProjec* mapProj = dynamic_cast<MapProjec*>(mapPtr.get());
+    Ptr<MapProjec> mapProj = dynamic_cast<MapProjec*>(mapPtr.get());
     mapProj->normalize();
     cout << endl << "--- Testing projective transformation mapper ---" << endl;
     cout << Mat(projTr) << endl;
@@ -355,7 +355,7 @@ static void calcHomographyPixel(const Mat& img1, const Mat& img2)
     Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapProjec* mapProj = dynamic_cast<MapProjec*>(mapPtr.get());
+    Ptr<MapProjec> mapProj = dynamic_cast<MapProjec*>(mapPtr.get());
     mapProj->normalize();
     cout << "--- Pixel-based method\n" << Mat(mapProj->getProjTr()) << endl;
 
