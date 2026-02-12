@@ -10,5 +10,3 @@ tags
 tegra/
 *.i
 .download*
-keyfile.txt
-keyfile.txt.pub
