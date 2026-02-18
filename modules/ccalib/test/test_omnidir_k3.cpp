@@ -29,7 +29,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
-#include <cstdlib> 
+#include <cstdlib>
 
 
 namespace opencv_test {
@@ -347,7 +347,7 @@ TEST(Omnidir_K3_Hard, RealData_5params_K3_Free_StabilityAndSanity)
     ASSERT_EQ((int)D5.total(), 5);
 
     // maps should be constructible with 5-param distortion (k3 included)
-    Mat xiMat(1,1,CV_64F); 
+    Mat xiMat(1,1,CV_64F);
     xiMat.at<double>(0,0) = xi.at<double>(0,0);
     Mat map1, map2;
     omnidir::initUndistortRectifyMap(
