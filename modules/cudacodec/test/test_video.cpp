@@ -1400,15 +1400,17 @@ CUDA_TEST_P(YuvConverter, Reader)
     const cudacodec::BitDepth bitDepth = static_cast<cudacodec::BitDepth>(static_cast<int>(GET_PARAM(3)));
     const bool planar = GET_PARAM(4);
     const bool fullRange = GET_PARAM(5);
-    std::string imgPath = std::string(cvtest::TS::ptr()->get_data_path()) + "../python/images/baboon.jpg";
     Ptr<cv::cudacodec::NVSurfaceToColorConverter> yuvConverter = cudacodec::createNVSurfaceToColorConverter(cv::cudacodec::ColorSpaceStandard::BT601, fullRange);
-    Mat bgr = imread(imgPath), bgrHost;
+    const int rows = 64, cols = 128;
+    Mat bgr(rows, cols, CV_8UC3);
+    cv::randu(bgr, Scalar(0, 0, 0), Scalar(255, 255, 255));
+    Mat bgrHost;
     Mat nv12Interleaved, bgrFromYuv;
     generateTestImages(bgr, nv12Interleaved, bgrFromYuv, surfaceFormat, outputFormat, bitDepth, planar, fullRange);
     GpuMat nv12Device(nv12Interleaved), bgrDevice(bgrFromYuv.size(), bgrFromYuv.type());
     yuvConverter->convert(nv12Device, bgrDevice, surfaceFormat, outputFormat, bitDepth, planar);
     bgrDevice.download(bgrHost);
-    EXPECT_MAT_NEAR(bgrFromYuv, bgrHost, bitDepth == cudacodec::BitDepth::EIGHT ? 2 :512);
+    EXPECT_MAT_NEAR(bgrFromYuv, bgrHost, bitDepth == cudacodec::BitDepth::EIGHT ? 2 : 512);
 }
 
 #define BIT_DEPTHS testing::Values(BitDepths(cudacodec::BitDepth::EIGHT), BitDepths(cudacodec::BitDepth::SIXTEEN))
