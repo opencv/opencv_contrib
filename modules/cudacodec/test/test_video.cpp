@@ -89,7 +89,7 @@ std::array<std::array<float, 3>, 3> getRgb2YuvMatrix(const bool fullRange = fals
     } };
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            if (j == 0)
+            if (i == 0)
                 mat[i][j] = (float)(1.0 * (white - black) / max * mat[i][j]);
             else
                 mat[i][j] = (float)(1.0 * (uvWhite - black) / max * mat[i][j]);
