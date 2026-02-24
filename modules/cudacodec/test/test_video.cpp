@@ -47,7 +47,7 @@ namespace opencv_test {
 
 #if defined(HAVE_NVCUVID) || defined(HAVE_NVCUVENC) || defined(HAVE_CUDA)
 
-void inline GetConstants(float& wr, float& wb, int& black, int& white, int& uvWhite, int& max, bool fullRange = false) {
+void inline GetConstantsEx(int iMatrix, float& wr, float& wb, int& black, int& white, int& uvWhite, int& max, bool fullRange = false) {
     if (fullRange) {
         black = 0; white = 255; uvWhite = 255;
     }
@@ -55,13 +55,43 @@ void inline GetConstants(float& wr, float& wb, int& black, int& white, int& uvWh
         black = 16; white = 235; uvWhite = 240;
     }
     max = 255;
-    wr = 0.2990f; wb = 0.1140f;
+    switch (static_cast<cv::cudacodec::ColorSpaceStandard>(iMatrix))
+    {
+    case cv::cudacodec::ColorSpaceStandard::BT709:
+    default:
+        wr = 0.2126f; wb = 0.0722f;
+        break;
+    case cv::cudacodec::ColorSpaceStandard::FCC:
+        wr = 0.30f; wb = 0.11f;
+        break;
+    case cv::cudacodec::ColorSpaceStandard::BT470:
+    case cv::cudacodec::ColorSpaceStandard::BT601:
+        wr = 0.2990f; wb = 0.1140f;
+        break;
+    case cv::cudacodec::ColorSpaceStandard::SMPTE240M:
+        wr = 0.212f; wb = 0.087f;
+        break;
+    case cv::cudacodec::ColorSpaceStandard::BT2020:
+    case cv::cudacodec::ColorSpaceStandard::BT2020C:
+        wr = 0.2627f; wb = 0.0593f;
+        // 10-bit only
+        black <<= 8;
+        white <<= 8;
+        uvWhite <<= 8;
+        max = (1 << 16) - 1;
+        break;
+    }
 }
 
-std::array<std::array<float, 3>, 3> getYuv2RgbMatrix(const bool fullRange = false) {
+void inline GetConstants(float& wr, float& wb, int& black, int& white, int& uvWhite, int& max, bool fullRange = false) {
+    GetConstantsEx(static_cast<int>(cv::cudacodec::ColorSpaceStandard::BT601), wr, wb, black, white, uvWhite, max, fullRange);
+}
+
+
+std::array<std::array<float, 3>, 3> getYuv2RgbMatrixEx(const cv::cudacodec::ColorSpaceStandard colorSpace, const bool fullRange = false) {
     float wr, wb;
     int black, white, uvWhite, max;
-    GetConstants(wr, wb, black, white, uvWhite, max, fullRange);
+    GetConstantsEx(static_cast<int>(colorSpace), wr, wb, black, white, uvWhite, max, fullRange);
     std::array<std::array<float, 3>, 3> mat = { {
         {1.0f, 0.0f, (1.0f - wr) / 0.5f},
         {1.0f, -wb * (1.0f - wb) / 0.5f / (1 - wb - wr), -wr * (1 - wr) / 0.5f / (1 - wb - wr)},
@@ -78,10 +108,15 @@ std::array<std::array<float, 3>, 3> getYuv2RgbMatrix(const bool fullRange = fals
     return mat;
 }
 
-std::array<std::array<float, 3>, 3> getRgb2YuvMatrix(const bool fullRange = false) {
+std::array<std::array<float, 3>, 3> getYuv2RgbMatrix(const bool fullRange = false) {
+    return getYuv2RgbMatrixEx(cv::cudacodec::ColorSpaceStandard::BT601, fullRange);
+}
+
+
+std::array<std::array<float, 3>, 3> getRgb2YuvMatrixEx(const cv::cudacodec::ColorSpaceStandard colorSpace, const bool fullRange = false) {
     float wr, wb;
     int black, white, max, uvWhite;
-    GetConstants(wr, wb, black, white, uvWhite, max, fullRange);
+    GetConstantsEx(static_cast<int>(colorSpace), wr, wb, black, white, uvWhite, max, fullRange);
     std::array<std::array<float, 3>, 3> mat = { {
         {wr, 1.0f - wb - wr, wb},
         {-0.5f * wr / (1.0f - wb), -0.5f * (1 - wb - wr) / (1.0f - wb), 0.5f},
@@ -96,6 +131,10 @@ std::array<std::array<float, 3>, 3> getRgb2YuvMatrix(const bool fullRange = fals
         }
     }
     return mat;
+}
+
+std::array<std::array<float, 3>, 3> getRgb2YuvMatrix(const bool fullRange = false) {
+    return getRgb2YuvMatrixEx(cv::cudacodec::ColorSpaceStandard::BT601, fullRange);
 }
 
 CV_ENUM(ColorFormats, cudacodec::ColorFormat::BGR, cudacodec::ColorFormat::BGRA, cudacodec::ColorFormat::RGB, cudacodec::ColorFormat::RGBA, cudacodec::ColorFormat::GRAY)
