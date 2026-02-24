@@ -233,7 +233,197 @@ void generateYuv444(Mat bgr, Mat& yuv444, Mat& bgrFromYuv, const bool fullRange)
     bgrFromYuv32F.convertTo(bgrFromYuv, CV_8UC3);
 }
 
-void generateTestImages(Mat bgrIn, Mat& testImg, Mat& out, const cudacodec::SurfaceFormat inputFormat, const cudacodec::ColorFormat outputFormat, const cudacodec::BitDepth outputBitDepth = cudacodec::BitDepth::EIGHT, bool planar = false, const bool fullRange = false) {
+// convert BGR16 to the requested output format, apply bit depth conversion and planar layout
+void convertBT2020Output(const Mat& bgrOut16, const Mat& y16, Mat& out,
+    const cudacodec::ColorFormat outputFormat, const cudacodec::BitDepth outputBitDepth,
+    const cv::cudacodec::ColorSpaceStandard colorSpace, bool planar, bool fullRange, int max)
+{
+    Mat imgOut16;
+    switch (outputFormat)
+    {
+    case cudacodec::ColorFormat::BGR:
+        imgOut16 = bgrOut16;
+        break;
+    case cudacodec::ColorFormat::BGRA:
+        cv::cvtColor(bgrOut16, imgOut16, COLOR_BGR2BGRA);
+        break;
+    case cudacodec::ColorFormat::RGB:
+        cv::cvtColor(bgrOut16, imgOut16, COLOR_BGR2RGB);
+        break;
+    case cudacodec::ColorFormat::RGBA:
+        cv::cvtColor(bgrOut16, imgOut16, COLOR_BGR2RGBA);
+        break;
+    case cudacodec::ColorFormat::GRAY: {
+        const int low = fullRange ? 0 : (1 << 12);
+        std::array<std::array<float, 3>, 3> invMatrix = getYuv2RgbMatrixEx(colorSpace, fullRange);
+        const float lumaCoeff = invMatrix[0][0];
+        Mat yF;
+        y16.convertTo(yF, CV_32F);
+        yF -= low;
+        yF = lumaCoeff * yF;
+        yF = cv::max(yF, 0);
+        yF = cv::min(yF, (double)max);
+        Mat grayFromY;
+        yF.convertTo(grayFromY, CV_16U);
+        imgOut16 = grayFromY;
+        break;
+    }
+    default:
+       CV_Error(Error::StsUnsupportedFormat, "Unsupported output format");
+    }
+
+    // Handle bit depth conversion
+    if (outputBitDepth == cudacodec::BitDepth::EIGHT) {
+        Mat imgOut8;
+        imgOut16.convertTo(imgOut8, outputFormat == cudacodec::ColorFormat::GRAY ? CV_8U : CV_8UC(imgOut16.channels()), 1.0 / 256.0);
+        imgOut16 = imgOut8;
+    }
+
+    if (planar && outputFormat != cudacodec::ColorFormat::GRAY) {
+        std::vector<Mat> splits;
+        cv::split(imgOut16, splits);
+        const int type = CV_MAKE_TYPE(CV_MAT_DEPTH(imgOut16.flags), 1);
+        out = Mat(imgOut16.rows * imgOut16.channels(), imgOut16.cols, type);
+        for (int i = 0; i < imgOut16.channels(); i++)
+            splits[i].copyTo(out(Rect(0, i * imgOut16.rows, imgOut16.cols, imgOut16.rows)));
+    }
+    else {
+        imgOut16.copyTo(out);
+    }
+}
+
+// inverse YUV to BGR conversion using the given matrix
+Mat inverseBT2020ToBgr16(const Mat& yQ, const Mat& uQ, const Mat& vQ,
+    const cv::cudacodec::ColorSpaceStandard colorSpace, bool fullRange, int max)
+{
+    std::array<std::array<float, 3>, 3> invMatrix = getYuv2RgbMatrixEx(colorSpace, fullRange);
+    Mat bgrSplitOut[3];
+    bgrSplitOut[2] = invMatrix[0][0] * yQ + invMatrix[0][2] * vQ;
+    bgrSplitOut[1] = invMatrix[1][0] * yQ + invMatrix[1][1] * uQ + invMatrix[1][2] * vQ;
+    bgrSplitOut[0] = invMatrix[2][0] * yQ + invMatrix[2][1] * uQ;
+
+    Mat bgrOut32F;
+    cv::merge(bgrSplitOut, 3, bgrOut32F);
+    bgrOut32F = cv::max(bgrOut32F, 0);
+    bgrOut32F = cv::min(bgrOut32F, (double)max);
+    Mat bgrOut16;
+    bgrOut32F.convertTo(bgrOut16, CV_16UC3);
+    return bgrOut16;
+}
+
+void generateTestImagesBT2020(Mat bgrIn, Mat& testImg, Mat& out, const cudacodec::SurfaceFormat inputFormat,
+    const cudacodec::ColorFormat outputFormat, const cudacodec::ColorSpaceStandard colorSpace,
+    const cudacodec::BitDepth outputBitDepth = cudacodec::BitDepth::SIXTEEN, bool planar = false, const bool fullRange = false)
+{
+    float wr, wb;
+    int black, white, uvWhite, max;
+    GetConstantsEx(static_cast<int>(colorSpace), wr, wb, black, white, uvWhite, max, fullRange);
+
+    const int yAdj = fullRange ? 0 : black;
+    const int uvAdj = (uvWhite + (fullRange ? 0 : black)) / 2 + (fullRange ? 0 : 1);
+
+    // Convert input BGR (8-bit) to float and then to YUV using BT2020 matrix
+    Mat bgr32F;
+    bgrIn.convertTo(bgr32F, CV_32F);
+    // Scale to full 16-bit range
+    bgr32F *= max / 255.0;
+    Mat bgrSplit32F[3];
+    cv::split(bgr32F, bgrSplit32F);
+
+    std::array<std::array<float, 3>, 3> fwdMatrix = getRgb2YuvMatrixEx(colorSpace, fullRange);
+
+    Mat Y = fwdMatrix[0][0] * bgrSplit32F[2] + fwdMatrix[0][1] * bgrSplit32F[1] + fwdMatrix[0][2] * bgrSplit32F[0] + yAdj;
+    Mat U = fwdMatrix[1][0] * bgrSplit32F[2] + fwdMatrix[1][1] * bgrSplit32F[1] + fwdMatrix[1][2] * bgrSplit32F[0] + uvAdj;
+    Mat V = fwdMatrix[2][0] * bgrSplit32F[2] + fwdMatrix[2][1] * bgrSplit32F[1] + fwdMatrix[2][2] * bgrSplit32F[0] + uvAdj;
+
+    // Clamp to valid range
+    Y = cv::max(Y, 0); Y = cv::min(Y, (double)max);
+    U = cv::max(U, 0); U = cv::min(U, (double)max);
+    V = cv::max(V, 0); V = cv::min(V, (double)max);
+
+    Mat yuv16;
+    Mat y16;
+    Y.convertTo(y16, CV_16U);
+
+    switch (inputFormat) {
+    case cudacodec::SurfaceFormat::SF_P016: {
+        // P016: NV12-like layout with 16-bit samples
+        // Subsample U and V for 4:2:0
+        Mat uSub, vSub;
+        cv::resize(U, uSub, Size(bgrIn.cols / 2, bgrIn.rows / 2), 0, 0, INTER_AREA);
+        cv::resize(V, vSub, Size(bgrIn.cols / 2, bgrIn.rows / 2), 0, 0, INTER_AREA);
+
+        Mat u16, v16;
+        uSub.convertTo(u16, CV_16U);
+        vSub.convertTo(v16, CV_16U);
+
+        // Interleave UV
+        Mat uvInterleaved;
+        Mat uvArr[2] = { u16, v16 };
+        cv::merge(uvArr, 2, uvInterleaved);
+        Mat uvFlat(uvInterleaved.rows, uvInterleaved.cols * 2, CV_16U, uvInterleaved.data, uvInterleaved.step);
+
+        yuv16 = Mat(static_cast<int>(bgrIn.rows * 1.5), bgrIn.cols, CV_16U);
+        y16.copyTo(yuv16(Rect(0, 0, bgrIn.cols, bgrIn.rows)));
+        uvFlat.copyTo(yuv16(Rect(0, bgrIn.rows, bgrIn.cols, bgrIn.rows / 2)));
+
+        // Reconstruct U/V at full resolution for reference
+        Mat uFull, vFull;
+        cv::resize(uSub, uFull, bgrIn.size(), 0, 0, INTER_NEAREST);
+        cv::resize(vSub, vFull, bgrIn.size(), 0, 0, INTER_NEAREST);
+
+        // Convert quantized YUV back to float for inverse
+        Mat yQ, uQ, vQ;
+        y16.convertTo(yQ, CV_32F);
+        uFull.convertTo(uQ, CV_32F);
+        vFull.convertTo(vQ, CV_32F);
+
+        yQ -= yAdj;
+        uQ -= uvAdj;
+        vQ -= uvAdj;
+
+        Mat bgrOut16 = inverseBT2020ToBgr16(yQ, uQ, vQ, colorSpace, fullRange, max);
+        convertBT2020Output(bgrOut16, y16, out, outputFormat, outputBitDepth, colorSpace, planar, fullRange, max);
+        break;
+    }
+    case cudacodec::SurfaceFormat::SF_YUV444_16Bit: {
+        Mat u16, v16;
+        U.convertTo(u16, CV_16U);
+        V.convertTo(v16, CV_16U);
+
+        yuv16 = Mat(bgrIn.rows * 3, bgrIn.cols, CV_16U);
+        y16.copyTo(yuv16(Rect(0, 0, bgrIn.cols, bgrIn.rows)));
+        u16.copyTo(yuv16(Rect(0, bgrIn.rows, bgrIn.cols, bgrIn.rows)));
+        v16.copyTo(yuv16(Rect(0, 2 * bgrIn.rows, bgrIn.cols, bgrIn.rows)));
+
+        // Convert quantized YUV back to float for inverse
+        Mat yQ, uQ, vQ;
+        y16.convertTo(yQ, CV_32F);
+        u16.convertTo(uQ, CV_32F);
+        v16.convertTo(vQ, CV_32F);
+
+        yQ -= yAdj;
+        uQ -= uvAdj;
+        vQ -= uvAdj;
+
+        Mat bgrOut16 = inverseBT2020ToBgr16(yQ, uQ, vQ, colorSpace, fullRange, max);
+        convertBT2020Output(bgrOut16, y16, out, outputFormat, outputBitDepth, colorSpace, planar, fullRange, max);
+        break;
+    }
+    default:
+        CV_Error(Error::StsUnsupportedFormat, "BT2020 test only supports 16-bit surface formats");
+    }
+
+    testImg = yuv16;
+}
+
+void generateTestImages(Mat bgrIn, Mat& testImg, Mat& out, const cudacodec::SurfaceFormat inputFormat, const cudacodec::ColorFormat outputFormat, const cudacodec::BitDepth outputBitDepth = cudacodec::BitDepth::EIGHT, bool planar = false, const bool fullRange = false, const cv::cudacodec::ColorSpaceStandard colorSpace = cv::cudacodec::ColorSpaceStandard::BT601) {
+    const bool isBT601 = (colorSpace == cv::cudacodec::ColorSpaceStandard::BT601 || colorSpace == cv::cudacodec::ColorSpaceStandard::BT470);
+    if (!isBT601) {
+        generateTestImagesBT2020(bgrIn, testImg, out, inputFormat, outputFormat, colorSpace, outputBitDepth, planar, fullRange);
+        return;
+    }
+
     Mat imgOutFromYuv, imgOut8;
     Mat yuv8;
 
@@ -1426,7 +1616,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, Seek, ALL_DEVICES);
 
 #if defined(HAVE_CUDA)
 
-PARAM_TEST_CASE(YuvConverter, cv::cuda::DeviceInfo, SurfaceFormats, ColorFormats, BitDepths, bool, bool)
+PARAM_TEST_CASE(YuvConverter, cv::cuda::DeviceInfo, SurfaceFormats, ColorFormats, BitDepths, bool, bool, int)
 {
 };
 
@@ -1438,21 +1628,31 @@ CUDA_TEST_P(YuvConverter, Reader)
     const cudacodec::BitDepth bitDepth = static_cast<cudacodec::BitDepth>(static_cast<int>(GET_PARAM(3)));
     const bool planar = GET_PARAM(4);
     const bool fullRange = GET_PARAM(5);
-    Ptr<cv::cudacodec::NVSurfaceToColorConverter> yuvConverter = cudacodec::createNVSurfaceToColorConverter(cv::cudacodec::ColorSpaceStandard::BT601, fullRange);
+    const cudacodec::ColorSpaceStandard colorSpace = static_cast<cudacodec::ColorSpaceStandard>(GET_PARAM(6));
+    Ptr<cv::cudacodec::NVSurfaceToColorConverter> yuvConverter = cudacodec::createNVSurfaceToColorConverter(colorSpace, fullRange);
     const int rows = 64, cols = 128;
     Mat bgr(rows, cols, CV_8UC3);
     cv::randu(bgr, Scalar(0, 0, 0), Scalar(255, 255, 255));
     Mat bgrHost;
-    Mat nv12Interleaved, bgrFromYuv;
-    generateTestImages(bgr, nv12Interleaved, bgrFromYuv, surfaceFormat, outputFormat, bitDepth, planar, fullRange);
-    GpuMat nv12Device(nv12Interleaved), bgrDevice(bgrFromYuv.size(), bgrFromYuv.type());
-    yuvConverter->convert(nv12Device, bgrDevice, surfaceFormat, outputFormat, bitDepth, planar);
-    bgrDevice.download(bgrHost);
-    EXPECT_MAT_NEAR(bgrFromYuv, bgrHost, bitDepth == cudacodec::BitDepth::EIGHT ? 2 : 512);
+    Mat yuvInterleaved, bgrFromYuv;
+    generateTestImages(bgr, yuvInterleaved, bgrFromYuv, surfaceFormat, outputFormat, bitDepth, planar, fullRange, colorSpace);
+    GpuMat yuvDevice(yuvInterleaved), outDevice(bgrFromYuv.size(), bgrFromYuv.type());
+    yuvConverter->convert(yuvDevice, outDevice, surfaceFormat, outputFormat, bitDepth, planar);
+    outDevice.download(bgrHost);
+    const double tolerance = bitDepth == cudacodec::BitDepth::EIGHT ? 2 : 512;
+    EXPECT_MAT_NEAR(bgrFromYuv, bgrHost, tolerance);
 }
 
 #define BIT_DEPTHS testing::Values(BitDepths(cudacodec::BitDepth::EIGHT), BitDepths(cudacodec::BitDepth::SIXTEEN))
-INSTANTIATE_TEST_CASE_P(CUDA_Codec, YuvConverter, testing::Combine(
-    ALL_DEVICES, SurfaceFormats::all(), ColorFormats::all(), BIT_DEPTHS, testing::Bool(), testing::Bool()));
+INSTANTIATE_TEST_CASE_P(CUDA_Codec_BT601, YuvConverter, testing::Combine(
+    ALL_DEVICES, SurfaceFormats::all(), ColorFormats::all(), BIT_DEPTHS, testing::Bool(), testing::Bool(),
+    testing::Values(static_cast<int>(cudacodec::ColorSpaceStandard::BT601))));
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec_BT2020, YuvConverter, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(SurfaceFormats(cudacodec::SurfaceFormat::SF_P016), SurfaceFormats(cudacodec::SurfaceFormat::SF_YUV444_16Bit)),
+    ColorFormats::all(), BIT_DEPTHS, testing::Bool(), testing::Bool(),
+    testing::Values(static_cast<int>(cudacodec::ColorSpaceStandard::BT2020))));
 
 #endif // HAVE_CUDA
+}} // namespace
