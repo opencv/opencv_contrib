@@ -259,13 +259,12 @@ void generateTestImages(Mat bgrIn, Mat& testImg, Mat& out, const cudacodec::Surf
         imgOutBitDepthOut = imgOut8;
 
     if (planar && outputFormat != cudacodec::ColorFormat::GRAY) {
-        Mat* bgrSplit = new Mat[imgOutBitDepthOut.channels()];
+        std::vector<Mat> bgrSplit;
         cv::split(imgOutBitDepthOut, bgrSplit);
         const int type = CV_MAKE_TYPE(CV_MAT_DEPTH(imgOutBitDepthOut.flags), 1);
         out = Mat(imgOutBitDepthOut.rows * imgOutBitDepthOut.channels(), imgOutBitDepthOut.cols, type);
         for (int i = 0; i < imgOut8.channels(); i++)
             bgrSplit[i].copyTo(out(Rect(0, i * imgOut8.rows, imgOut8.cols, imgOut8.rows)));
-        delete[] bgrSplit;
     }
     else
         imgOutBitDepthOut.copyTo(out);
