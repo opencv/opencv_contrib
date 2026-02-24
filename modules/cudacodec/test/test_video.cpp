@@ -448,6 +448,8 @@ void generateTestImages(Mat bgrIn, Mat& testImg, Mat& out, const cudacodec::Surf
         else
             generateYuv444(bgrIn, yuv8, imgOutFromYuv, fullRange);
         break;
+    default:
+        CV_Error(Error::StsUnsupportedFormat, "Unsupported input surface format");
     }
 
     if (inputFormat == cudacodec::SurfaceFormat::SF_P016 || inputFormat == cudacodec::SurfaceFormat::SF_YUV444_16Bit) {
@@ -477,6 +479,8 @@ void generateTestImages(Mat bgrIn, Mat& testImg, Mat& out, const cudacodec::Surf
         imgOut8 = imgOutFromYuv;
         break;
     }
+    default:
+        CV_Error(Error::StsUnsupportedFormat, "Unsupported output color format");
     }
 
     Mat imgOutBitDepthOut;
