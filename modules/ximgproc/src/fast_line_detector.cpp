@@ -266,6 +266,8 @@ bool FastLineDetectorImpl::mergeSegments(const SEGMENT& seg1, const SEGMENT& seg
     float seg2len = sqrt((seg2.x1 - seg2.x2)*(seg2.x1 - seg2.x2)+(seg2.y1 - seg2.y2)*(seg2.y1 - seg2.y2));
     float middist = sqrt((seg1mid.x - seg2mid.x)*(seg1mid.x - seg2mid.x) + (seg1mid.y - seg2mid.y)*(seg1mid.y - seg2mid.y));
     float angdiff = fabs(seg1.angle - seg2.angle);
+    while (angdiff >= (float)CV_PI) angdiff -= (float)CV_PI;
+    angdiff = std::min(angdiff, (float)CV_PI - angdiff);;
 
     float dist = (float)distPointLine(ori, l1);
 
