@@ -333,7 +333,7 @@ static void loadStereoRealDataPairs(Size board, float square,
             continue;
         }
         if (imageSizeL.empty())
-        { 
+        {
             imageSizeL = imgL.size();
         }
         if (imageSizeR.empty())
@@ -571,7 +571,7 @@ TEST(Omnidir_K3_Hard, RealData_GoldenCoefficients_4params)
     ASSERT_EQ((int)D4.total(), 4);
 
     // --- GOLDEN VALUES (FILL THESE FROM BASELINE RUN) ---
-    
+
     const double GOLD_fx = 978.1963596766802;
     const double GOLD_fy = 978.1142764489673;
     const double GOLD_cx = 342.3670276970017;
