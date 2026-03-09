@@ -18,29 +18,6 @@ using namespace cv;
 using std::vector;
 using std::string;
 
-// Returns the maximum absolute element-wise difference between two Mats.
-static double maxAbsDiff(const Mat& a, const Mat& b)
-{
-    CV_Assert(a.size() == b.size());
-    CV_Assert(a.type() == b.type());
-    Mat diff;
-    absdiff(a, b, diff);
-    double maxv = 0.0;
-    minMaxLoc(diff.reshape(1), nullptr, &maxv);
-    return maxv;
-}
-
-//Generates the 3D chessboard corner coordinates for a given board size and square spacing.
-static vector<Point3f> makeChessboard3D(Size board, float square)
-{
-    vector<Point3f> obj;
-    obj.reserve((size_t)board.area());
-    for (int y = 0; y < board.height; ++y)
-        for (int x = 0; x < board.width; ++x)
-            obj.emplace_back((float)x * square, (float)y * square, 0.f);
-    return obj;
-}
-
 static std::string getTestDataRoot()
 {
     std::string root = cvtest::TS::ptr()->get_data_path();
@@ -62,7 +39,91 @@ static std::string getDataPath()
     return getTestDataRoot() + "cv/stereo/case1/";
 }
 
-//Detects chessboard corners.
+static vector<String> getLeftImageFilenames()
+{
+    const string dir = getDataPath();
+    vector<String> filenames;
+    cv::glob(dir + "left*.png", filenames, false);
+    std::sort(filenames.begin(), filenames.end());
+
+    if (filenames.size() < 5)
+    {
+        throw cvtest::SkipTestException(
+            "opencv_extra stereo/case1 data not found (need >= 5 left*.png). "
+            "Expected: <data_path>/cv/stereo/case1/left*.png");
+    }
+    return filenames;
+}
+
+static vector<String> getRightImageFilenames()
+{
+    const string dir = getDataPath();
+    vector<String> filenames;
+    cv::glob(dir + "right*.png", filenames, false);
+    std::sort(filenames.begin(), filenames.end());
+
+    if (filenames.size() < 5)
+    {
+        throw cvtest::SkipTestException(
+            "opencv_extra stereo/case1 data not found (need >= 5 right*.png). "
+            "Expected: <data_path>/cv/stereo/case1/right*.png");
+    }
+    return filenames;
+}
+
+// Extract a numeric "index" from a filename like ".../left01.png" or ".../right12.png".
+// We just take the last contiguous digit run in the stem.
+static int extractLastNumberFromPath(const cv::String& path)
+{
+    // basename without extension
+    string s(path.c_str());
+    // Remove directory
+    size_t slash = s.find_last_of("/\\");
+    string base = (slash == string::npos) ? s : s.substr(slash + 1);
+    // Remove extension
+    size_t dot = base.find_last_of('.');
+    string stem = (dot == string::npos) ? base : base.substr(0, dot);
+
+    // Find last digit run
+    int end = (int)stem.size() - 1;
+    while (end >= 0 && !std::isdigit((unsigned char)stem[(size_t)end])) end--;
+    if (end < 0) return -1;
+
+    int start = end;
+    while (start >= 0 && std::isdigit((unsigned char)stem[(size_t)start])) start--;
+    start++;
+
+    try {
+        return std::stoi(stem.substr((size_t)start, (size_t)(end - start + 1)));
+    } catch (...) {
+        return -1;
+    }
+}
+
+// Builds a map: index -> filepath for all files matching pattern.
+static std::map<int, cv::String> indexFiles(const vector<cv::String>& filenames)
+{
+    std::map<int, cv::String> m;
+    for (const auto& filename : filenames)
+    {
+        int idx = extractLastNumberFromPath(filename);
+        if (idx < 0) continue;
+        // If duplicates exist, keep first (or overwrite; doesn't matter much)
+        if (!m.count(idx)) m[idx] = filename;
+    }
+    return m;
+}
+
+static vector<Point3f> makeChessboard3D(Size board, float square)
+{
+    vector<Point3f> obj;
+    obj.reserve((size_t)board.area());
+    for (int y = 0; y < board.height; ++y)
+        for (int x = 0; x < board.width; ++x)
+            obj.emplace_back((float)x * square, (float)y * square, 0.f);
+    return obj;
+}
+
 static bool detectCorners(const Mat& gray, Size board, vector<Point2f>& corners)
 {
     bool ok = findChessboardCorners(gray, board, corners,CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
@@ -73,7 +134,6 @@ static bool detectCorners(const Mat& gray, Size board, vector<Point2f>& corners)
     cornerSubPix(gray, corners,Size(11,11), Size(-1,-1),TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 50, 1e-4));
     return true;
 }
-
 
 // Compute reprojection RMS using omnidir::projectPoints.
 // If idx is non-empty, only the used views are evaluated (calibrate may reject some).
@@ -116,25 +176,19 @@ static double computeReprojRms(const vector<vector<Point3f>>& objectPoints,
     return (n > 0) ? std::sqrt(sse / (double)n) : 0.0;
 }
 
-static void loadRealData(Size board, float square, vector<vector<Point3f>>& objectPoints, vector<vector<Point2f>>& imagePoints, Size& imageSize)
+static void loadRealData(const vector<String>& filenames,
+                         Size board, float square,
+                         vector<vector<Point3f>>& objectPoints,
+                         vector<vector<Point2f>>& imagePoints,
+                         Size& imageSize)
 {
-    const std::string dir = getDataPath();
-    vector<String> files;
-    cv::glob(dir + "left*.png", files, false);
-    std::sort(files.begin(), files.end());
-    if (files.size() < 5)
-    {
-        throw cvtest::SkipTestException(
-            "opencv_extra stereo/case1 data not found (need >= 5 left*.png). "
-            "Expected: <data_path>/cv/stereo/case1/left*.png");
-    }
     objectPoints.clear();
     imagePoints.clear();
     imageSize = Size();
     const auto obj = makeChessboard3D(board, square);
-    for (const auto& f : files)
+    for (const auto& filename  : filenames)
     {
-        Mat img = imread(f, IMREAD_GRAYSCALE);
+        Mat img = imread(filename, IMREAD_GRAYSCALE);
         if (img.empty())
         {
             continue;
@@ -153,8 +207,77 @@ static void loadRealData(Size board, float square, vector<vector<Point3f>>& obje
     }
     if (objectPoints.size() < 5)
     {
-        throw cvtest::SkipTestException("Not enough valid chessboard detections in: " + dir);
+        throw cvtest::SkipTestException("Not enough valid chessboard detections in: " + getDataPath());
     }
+}
+
+// Loads stereo chessboard observations from opencv_extra testdata (case1).
+// Pairs left/right images by the numeric index in the filename, detects corners in both,
+// and fills objectPoints + imagePointsL/R for stereoCalibrate.
+static void loadStereoRealDataPairs(const vector<String>& leftFilenames,
+                                    const vector<String>& rightFilenames,
+                                    Size board, float square,
+                                    vector<vector<Point3f>>& objectPoints,
+                                    vector<vector<Point2f>>& imagePointsL,
+                                    vector<vector<Point2f>>& imagePointsR,
+                                    Size& imageSizeL,
+                                    Size& imageSizeR)
+{
+    auto L = indexFiles(leftFilenames);
+    auto R = indexFiles(rightFilenames);
+
+    // Intersect indices
+    vector<int> common;
+    common.reserve(std::min(L.size(), R.size()));
+    for (const auto& kv : L)
+    {
+        if (R.count(kv.first))
+        {
+            common.push_back(kv.first);
+        }
+    }
+    if (common.size() < 5)
+    {
+        throw cvtest::SkipTestException("Not enough left/right pairs with matching indices.");
+    }
+    std::sort(common.begin(), common.end());
+    objectPoints.clear();
+    imagePointsL.clear();
+    imagePointsR.clear();
+    imageSizeL = Size();
+    imageSizeR = Size();
+    const auto obj = makeChessboard3D(board, square);
+    for (int id : common)
+    {
+        Mat imgL = imread(L[id], IMREAD_GRAYSCALE);
+        Mat imgR = imread(R[id], IMREAD_GRAYSCALE);
+        if (imgL.empty() || imgR.empty())
+        {
+            continue;
+        }
+        if (imageSizeL.empty())
+        {
+            imageSizeL = imgL.size();
+        }
+        if (imageSizeR.empty())
+        {
+            imageSizeR = imgR.size();
+        }
+        // If your dataset is guaranteed same size, assert:
+        if (imgL.size() != imageSizeL || imgR.size() != imageSizeR)
+        {
+            continue;
+        }
+        vector<Point2f> cL, cR;
+        if (!detectCorners(imgL, board, cL)) continue;
+        if (!detectCorners(imgR, board, cR)) continue;
+
+        objectPoints.push_back(obj);
+        imagePointsL.push_back(std::move(cL));
+        imagePointsR.push_back(std::move(cR));
+    }
+    if (objectPoints.size() < 5)
+        throw cvtest::SkipTestException("Not enough valid stereo chessboard detections.");
 }
 
 // Synthetic data generator (deterministic, k3 observable)
@@ -235,126 +358,6 @@ static void synthesizeOmniData(int nViews,
                  "synthesizeOmniData: Could not generate enough valid views (k3 observable). "
                  "Try increasing maxTries or relaxing constraints.");
     }
-}
-
-// Extract a numeric "index" from a filename like ".../left01.png" or ".../right12.png".
-// We just take the last contiguous digit run in the stem.
-static int extractLastNumberFromPath(const cv::String& path)
-{
-    // basename without extension
-    string s(path.c_str());
-    // Remove directory
-    size_t slash = s.find_last_of("/\\");
-    string base = (slash == string::npos) ? s : s.substr(slash + 1);
-    // Remove extension
-    size_t dot = base.find_last_of('.');
-    string stem = (dot == string::npos) ? base : base.substr(0, dot);
-
-    // Find last digit run
-    int end = (int)stem.size() - 1;
-    while (end >= 0 && !std::isdigit((unsigned char)stem[(size_t)end])) end--;
-    if (end < 0) return -1;
-
-    int start = end;
-    while (start >= 0 && std::isdigit((unsigned char)stem[(size_t)start])) start--;
-    start++;
-
-    try {
-        return std::stoi(stem.substr((size_t)start, (size_t)(end - start + 1)));
-    } catch (...) {
-        return -1;
-    }
-}
-
-// Builds a map: index -> filepath for all files matching pattern.
-static std::map<int, cv::String> indexFiles(const vector<cv::String>& files)
-{
-    std::map<int, cv::String> m;
-    for (const auto& f : files)
-    {
-        int idx = extractLastNumberFromPath(f);
-        if (idx < 0) continue;
-        // If duplicates exist, keep first (or overwrite; doesn't matter much)
-        if (!m.count(idx)) m[idx] = f;
-    }
-    return m;
-}
-
-// Loads stereo chessboard observations from opencv_extra testdata (case1).
-// Pairs left/right images by the numeric index in the filename, detects corners in both,
-// and fills objectPoints + imagePointsL/R for stereoCalibrate.
-static void loadStereoRealDataPairs(Size board, float square,
-                                    vector<vector<Point3f>>& objectPoints,
-                                    vector<vector<Point2f>>& imagePointsL,
-                                    vector<vector<Point2f>>& imagePointsR,
-                                    Size& imageSizeL,
-                                    Size& imageSizeR)
-{
-    const std::string dir = getDataPath();
-    vector<cv::String> leftFiles, rightFiles;
-    cv::glob(dir + "left*.png", leftFiles, false);
-    cv::glob(dir + "right*.png", rightFiles, false);
-
-    if (leftFiles.size() < 5 || rightFiles.size() < 5)
-        throw cvtest::SkipTestException(
-            "opencv_extra stereo/case1 data not found (need >= 5 left*.png and right*.png). "
-            "Expected: <data_path>/cv/stereo/case1/left*.png and right*.png");
-
-    auto L = indexFiles(leftFiles);
-    auto R = indexFiles(rightFiles);
-
-    // Intersect indices
-    vector<int> common;
-    common.reserve(std::min(L.size(), R.size()));
-    for (const auto& kv : L)
-    {
-        if (R.count(kv.first))
-        {
-            common.push_back(kv.first);
-        }
-    }
-    if (common.size() < 5)
-    {
-        throw cvtest::SkipTestException("Not enough left/right pairs with matching indices in: " + dir);
-    }
-    std::sort(common.begin(), common.end());
-    objectPoints.clear();
-    imagePointsL.clear();
-    imagePointsR.clear();
-    imageSizeL = Size();
-    imageSizeR = Size();
-    const auto obj = makeChessboard3D(board, square);
-    for (int id : common)
-    {
-        Mat imgL = imread(L[id], IMREAD_GRAYSCALE);
-        Mat imgR = imread(R[id], IMREAD_GRAYSCALE);
-        if (imgL.empty() || imgR.empty())
-        {
-            continue;
-        }
-        if (imageSizeL.empty())
-        {
-            imageSizeL = imgL.size();
-        }
-        if (imageSizeR.empty())
-        {
-            imageSizeR = imgR.size();
-        }
-        // If your dataset is guaranteed same size, assert:
-        if (imgL.size() != imageSizeL || imgR.size() != imageSizeR)
-        {
-            continue;
-        }
-        vector<Point2f> cL, cR;
-        if (!detectCorners(imgL, board, cL)) continue;
-        if (!detectCorners(imgR, board, cR)) continue;
-
-        objectPoints.push_back(obj);
-        imagePointsL.push_back(std::move(cL));
-        imagePointsR.push_back(std::move(cR));
-    }
-    if (objectPoints.size() < 5)
-        throw cvtest::SkipTestException("Not enough valid stereo chessboard detections in: " + dir);
 }
 
 // Synthetic stereo generator (deterministic).
@@ -485,7 +488,8 @@ TEST(Omnidir_K3_Hard, RealData_5params_K3_Free_StabilityAndSanity)
     std::vector<std::vector<Point3f>> objPts;
     std::vector<std::vector<Point2f>> imgPts;
     Size imageSize;
-    loadRealData(board, square, objPts, imgPts, imageSize);
+    const vector<String> filenames = getLeftImageFilenames();
+    loadRealData(filenames, board, square, objPts, imgPts, imageSize);
     // 5-parameter model (k3 included)
     Mat K  = Mat::eye(3,3,CV_64F);
     Mat xi(1,1,CV_64F); xi.at<double>(0,0) = 1.0;
@@ -557,7 +561,8 @@ TEST(Omnidir_K3_Hard, RealData_GoldenCoefficients_4params)
     vector<vector<Point3f>> objPts;
     vector<vector<Point2f>> imgPts;
     Size imageSize;
-    loadRealData(board, square, objPts, imgPts, imageSize);
+    const vector<String> filenames = getLeftImageFilenames();
+    loadRealData(filenames, board, square, objPts, imgPts, imageSize);
     Mat K  = Mat::eye(3,3,CV_64F);
     Mat xi = Mat(1,1,CV_64F); xi.at<double>(0,0) = 1.0;
     Mat D4 = Mat(1,4,CV_64F, Scalar(0));
@@ -611,8 +616,6 @@ TEST(Omnidir_K3_Hard, RealData_GoldenCoefficients_4params)
 // within tight tolerances.
 TEST(Omnidir_K3_Hard, BackwardCompat_4coeffs_equals_5coeffs_k3_zero_project_and_maps)
 {
-    using namespace cv;
-
     const Matx33d K(520, 0, 320,
                     0, 520, 240,
                     0,   0,   1);
@@ -665,7 +668,7 @@ TEST(Omnidir_K3_Hard, BackwardCompat_4coeffs_equals_5coeffs_k3_zero_project_and_
     ASSERT_EQ(und4.total(), und5.total());
     ASSERT_EQ(und4.type(), und5.type());
 
-    EXPECT_LT(maxAbsDiff(und4, und5), 1e-8);
+    EXPECT_LT(cv::norm(und4, und5, cv::NORM_INF), 1e-8);
 
     // --- initUndistortRectifyMap equality ---
     Mat m1_4, m2_4, m1_5, m2_5;
@@ -677,8 +680,8 @@ TEST(Omnidir_K3_Hard, BackwardCompat_4coeffs_equals_5coeffs_k3_zero_project_and_
     ASSERT_FALSE(m1_5.empty());
     ASSERT_FALSE(m2_5.empty());
 
-    EXPECT_LT(maxAbsDiff(m1_4, m1_5), 1e-6);
-    EXPECT_LT(maxAbsDiff(m2_4, m2_5), 1e-6);
+    EXPECT_LT(cv::norm(m1_4, m1_5, cv::NORM_INF), 1e-6);
+    EXPECT_LT(cv::norm(m2_4, m2_5, cv::NORM_INF), 1e-6);
 }
 
 // Deterministic synthetic validation of k3 parameter:
@@ -778,8 +781,9 @@ TEST(Omnidir_K3_Hard, Stereo_RealData_BackwardCompat_D4_equals_D5_k3_zero)
     vector<vector<Point3f>> objPts;
     vector<vector<Point2f>> imgL, imgR;
     Size szL, szR;
-    loadStereoRealDataPairs(board, square, objPts, imgL, imgR, szL, szR);
-
+    const vector<String> leftFilenames = getLeftImageFilenames();
+    const vector<String> rightFilenames = getRightImageFilenames();
+    loadStereoRealDataPairs(leftFilenames, rightFilenames, board, square, objPts, imgL, imgR, szL, szR);
     // --- Run A: legacy D4 model ---
     Mat K1_A = Mat::eye(3,3,CV_64F);
     Mat K2_A = Mat::eye(3,3,CV_64F);
@@ -865,8 +869,9 @@ TEST(Omnidir_K3_Hard, Stereo_RealData_5params_K3_Free_SanityAndRectifyMaps)
     vector<vector<Point3f>> objPts;
     vector<vector<Point2f>> imgL, imgR;
     Size szL, szR;
-    loadStereoRealDataPairs(board, square, objPts, imgL, imgR, szL, szR);
-
+    const vector<String> leftFilenames = getLeftImageFilenames();
+    const vector<String> rightFilenames = getRightImageFilenames();
+    loadStereoRealDataPairs(leftFilenames, rightFilenames, board, square, objPts, imgL, imgR, szL, szR);
     Mat K1 = Mat::eye(3,3,CV_64F);
     Mat K2 = Mat::eye(3,3,CV_64F);
     Mat xi1(1,1,CV_64F); xi1.at<double>(0,0) = 1.0;
@@ -1093,10 +1098,10 @@ TEST(Omnidir_K3_Hard, Stereo_BackwardCompat_D4_equals_D5_k3_zero_rectify_maps)
     ASSERT_FALSE(m1R_4.empty()); ASSERT_FALSE(m2R_4.empty());
     ASSERT_FALSE(m1R_5.empty()); ASSERT_FALSE(m2R_5.empty());
 
-    EXPECT_LT(maxAbsDiff(m1L_4, m1L_5), 1e-6);
-    EXPECT_LT(maxAbsDiff(m2L_4, m2L_5), 1e-6);
-    EXPECT_LT(maxAbsDiff(m1R_4, m1R_5), 1e-6);
-    EXPECT_LT(maxAbsDiff(m2R_4, m2R_5), 1e-6);
+    EXPECT_LT(cv::norm(m1L_4, m1L_5, cv::NORM_INF), 1e-6);
+    EXPECT_LT(cv::norm(m2L_4, m2L_5, cv::NORM_INF), 1e-6);
+    EXPECT_LT(cv::norm(m1R_4, m1R_5, cv::NORM_INF), 1e-6);
+    EXPECT_LT(cv::norm(m2R_4, m2R_5, cv::NORM_INF), 1e-6);
 }
 
 // Stereo real-data regression (legacy D4: k1,k2,p1,p2):
@@ -1110,8 +1115,9 @@ TEST(Omnidir_K3_Hard, Stereo_RealData_GoldenCoefficients_4params)
     std::vector<std::vector<cv::Point3f>> objPts;
     std::vector<std::vector<cv::Point2f>> imgL, imgR;
     cv::Size szL, szR;
-    loadStereoRealDataPairs(board, square, objPts, imgL, imgR, szL, szR);
-
+    const vector<String> leftFilenames = getLeftImageFilenames();
+    const vector<String> rightFilenames = getRightImageFilenames();
+    loadStereoRealDataPairs(leftFilenames, rightFilenames, board, square, objPts, imgL, imgR, szL, szR);
     cv::Mat K1 = cv::Mat::eye(3,3,CV_64F);
     cv::Mat K2 = cv::Mat::eye(3,3,CV_64F);
     cv::Mat xi1(1,1,CV_64F); xi1.at<double>(0,0) = 1.0;
