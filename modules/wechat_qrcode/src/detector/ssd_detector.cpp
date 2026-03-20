@@ -10,7 +10,7 @@
 namespace cv {
 namespace wechat_qrcode {
 int SSDDetector::init(const string& proto_path, const string& model_path) {
-    net_ = dnn::readNetFromCaffe(proto_path, model_path);
+    net_ = dnn::readNet(model_path, proto_path);
     return 0;
 }
 

@@ -12,7 +12,7 @@
 namespace cv {
 namespace wechat_qrcode {
 int SuperScale::init(const std::string &proto_path, const std::string &model_path) {
-    srnet_ = dnn::readNetFromCaffe(proto_path, model_path);
+    srnet_ = dnn::readNet(model_path, proto_path);
     net_loaded_ = true;
     return 0;
 }

@@ -52,7 +52,7 @@ Here's the brief summary of examples. For detailed usage and testing, refer `tut
 
 ```c++
 // Read the net along with it's trained weights
-cv::dnn::net = cv::dnn::readNetFromCaffe(model_defn, model_weights);
+cv::dnn::Net net = cv::dnn::readNet(model_weights, model_defn);
 
 // Read an image
 cv::Mat image = cv::imread(image_file);
