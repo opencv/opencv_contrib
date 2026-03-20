@@ -59,7 +59,7 @@ public:
     TextDetectorCNNImpl(const String& modelArchFilename, const String& modelWeightsFilename, std::vector<Size> detectionSizes) :
         sizes_(detectionSizes)
     {
-        net_ = readNetFromCaffe(modelArchFilename, modelWeightsFilename);
+        net_ = readNet(modelWeightsFilename, modelArchFilename);
         CV_Assert(!net_.empty());
         inputChannelCount_ = 3;
     }
