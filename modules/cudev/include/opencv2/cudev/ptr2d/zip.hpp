@@ -179,7 +179,7 @@ template <class PtrTuple> struct PtrTraits< ZipPtrSz<PtrTuple> > : PtrTraitsBase
 }}
 
 #if defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ > 12 || (__CUDACC_VER_MAJOR__ == 12 && __CUDACC_VER_MINOR__ >= 4))
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+namespace cuda { namespace std {
 
 template< class... Types >
 struct tuple_size< cv::cudev::ZipPtr<tuple<Types...> > >
@@ -198,7 +198,7 @@ template<size_t N, class... Types >
 struct tuple_element<N, cv::cudev::ZipPtrSz<tuple<Types...> > >
 : tuple_element<N, tuple<Types...> > { };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+}}
 
 #endif
 #endif
