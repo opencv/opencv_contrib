@@ -1020,9 +1020,6 @@ void NvidiaOpticalFlowImpl_2::calc(InputArray _frame0, InputArray _frame1, Input
     GpuMat flowXYGpuMat(Size((m_width + m_hwGridSize - 1) / m_hwGridSize,
         (m_height + m_hwGridSize - 1) / m_hwGridSize), CV_16SC2,
         (void*)m_flowXYcuDevPtr, m_outputBufferStrideInfo.strideInfo[0].strideXInBytes);
-    GpuMat flowXYGpuMatUpScaled(Size((m_width + m_gridSize - 1) / m_gridSize,
-        (m_height + m_gridSize - 1) / m_gridSize), CV_16SC2,
-        (void*)m_flowXYUpScaledcuDevPtr, m_outputUpScaledBufferStrideInfo.strideInfo[0].strideXInBytes);
 
     //check whether frame0 is Mat or GpuMat
     if (_frame0.isMat())
@@ -1105,6 +1102,9 @@ void NvidiaOpticalFlowImpl_2::calc(InputArray _frame0, InputArray _frame1, Input
 
     if (m_scaleFactor > 1)
     {
+        GpuMat flowXYGpuMatUpScaled(Size((m_width + m_gridSize - 1) / m_gridSize,
+            (m_height + m_gridSize - 1) / m_gridSize), CV_16SC2,
+            (void*)m_flowXYUpScaledcuDevPtr, m_outputUpScaledBufferStrideInfo.strideInfo[0].strideXInBytes);
         uint32_t nSrcWidth = flowXYGpuMat.size().width;
         uint32_t nSrcHeight = flowXYGpuMat.size().height;
         uint32_t nSrcPitch = m_outputBufferStrideInfo.strideInfo[0].strideXInBytes;
