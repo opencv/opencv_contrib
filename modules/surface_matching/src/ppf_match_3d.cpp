@@ -40,6 +40,7 @@
 
 #include "precomp.hpp"
 #include "hash_murmur.hpp"
+#include <fstream>
 
 namespace cv
 {
@@ -125,6 +126,7 @@ PPF3DDetector::PPF3DDetector()
   angle_step_radians = (360.0/angle_step_relative)*M_PI/180.0;
   angle_step = angle_step_radians;
   trained = false;
+  node_pool_ = nullptr;
 
   hash_table = NULL;
   hash_nodes = NULL;
@@ -141,6 +143,7 @@ PPF3DDetector::PPF3DDetector(const double RelativeSamplingStep, const double Rel
   //SceneSampleStep = 1.0/RelativeSceneSampleStep;
   angle_step = angle_step_radians;
   trained = false;
+  node_pool_ = nullptr;
 
   hash_table = NULL;
   hash_nodes = NULL;
@@ -181,17 +184,25 @@ void PPF3DDetector::computePPFFeatures(const Vec3d& p1, const Vec3d& n1,
 
 void PPF3DDetector::clearTrainingModels()
 {
-  if (this->hash_nodes)
-  {
-    free(this->hash_nodes);
-    this->hash_nodes=0;
-  }
-
-  if (this->hash_table)
-  {
-    hashtableDestroy(this->hash_table);
-    this->hash_table=0;
-  }
+      if (hash_table) {
+        hashtable_int* ht = (hashtable_int*)hash_table;
+        // 如果使用节点池，则清空桶以防 hashtableDestroy 释放池内存
+        if (node_pool_) {
+            for (size_t i = 0; i < ht->size; ++i) {
+                ht->nodes[i] = nullptr;
+            }
+        }
+        hashtableDestroy(hash_table);
+        hash_table = nullptr;
+    }
+    if (hash_nodes) {
+        free(hash_nodes);
+        hash_nodes = nullptr;
+    }
+    if (node_pool_) {
+        free(node_pool_);
+        node_pool_ = nullptr;
+    }
 }
 
 PPF3DDetector::~PPF3DDetector()
@@ -592,6 +603,175 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
   int numPosesAdded = sampled.rows/sceneSamplingStep;
 
   clusterPoses(poseList, numPosesAdded, results);
+}
+
+void PPF3DDetector::saveModel(const std::string& filename) const
+{
+    if (!trained) {
+        CV_Error(cv::Error::StsError, "Model not trained, nothing to save.");
+    }
+
+    std::ofstream ofs(filename, std::ios::binary);
+    if (!ofs.is_open()) {
+        CV_Error(cv::Error::StsError, "Cannot open file for writing.");
+    }
+
+    // Save training parameters
+    ofs.write(reinterpret_cast<const char*>(&sampling_step_relative), sizeof(sampling_step_relative));
+    ofs.write(reinterpret_cast<const char*>(&distance_step_relative), sizeof(distance_step_relative));
+    ofs.write(reinterpret_cast<const char*>(&angle_step_relative), sizeof(angle_step_relative));
+    ofs.write(reinterpret_cast<const char*>(&angle_step_radians), sizeof(angle_step_radians));
+    ofs.write(reinterpret_cast<const char*>(&angle_step), sizeof(angle_step));
+    ofs.write(reinterpret_cast<const char*>(&distance_step), sizeof(distance_step));
+    ofs.write(reinterpret_cast<const char*>(&num_ref_points), sizeof(num_ref_points));
+
+    // Save sampled point cloud
+    int rows = sampled_pc.rows;
+    int cols = sampled_pc.cols;
+    ofs.write(reinterpret_cast<const char*>(&rows), sizeof(rows));
+    ofs.write(reinterpret_cast<const char*>(&cols), sizeof(cols));
+    ofs.write(reinterpret_cast<const char*>(sampled_pc.data), rows * cols * sizeof(float));
+
+    // Save PPF matrix
+    rows = ppf.rows;
+    cols = ppf.cols;
+    ofs.write(reinterpret_cast<const char*>(&rows), sizeof(rows));
+    ofs.write(reinterpret_cast<const char*>(&cols), sizeof(cols));
+    ofs.write(reinterpret_cast<const char*>(ppf.data), rows * cols * sizeof(float));
+
+    // Save hash_nodes array
+    size_t numNodes = static_cast<size_t>(num_ref_points) * num_ref_points;
+    ofs.write(reinterpret_cast<const char*>(&numNodes), sizeof(numNodes));
+    ofs.write(reinterpret_cast<const char*>(hash_nodes), numNodes * sizeof(THash));
+
+    // Save bucket information for fast hash table reconstruction
+    hashtable_int* ht = (hashtable_int*)hash_table;
+    size_t tableSize = ht->size;
+    ofs.write(reinterpret_cast<const char*>(&tableSize), sizeof(tableSize));
+
+    for (size_t i = 0; i < tableSize; ++i) {
+        hashnode_i* node = ht->nodes[i];
+        std::vector<int> indices;
+        while (node) {
+            THash* th = (THash*)node->data;
+            ptrdiff_t idx = th - hash_nodes;   // Index within hash_nodes array
+            indices.push_back(static_cast<int>(idx));
+            node = node->next;
+        }
+        int count = static_cast<int>(indices.size());
+        ofs.write(reinterpret_cast<const char*>(&count), sizeof(count));
+        ofs.write(reinterpret_cast<const char*>(indices.data()), count * sizeof(int));
+    }
+}
+
+void PPF3DDetector::loadModel(const std::string& filename)
+{
+    std::ifstream ifs(filename, std::ios::binary);
+    if (!ifs.is_open()) {
+        CV_Error(cv::Error::StsError, "Cannot open file for reading.");
+    }
+
+    // Clear existing model to ensure safe loading
+    clearTrainingModels();
+
+    // Load training parameters
+    ifs.read(reinterpret_cast<char*>(&sampling_step_relative), sizeof(sampling_step_relative));
+    ifs.read(reinterpret_cast<char*>(&distance_step_relative), sizeof(distance_step_relative));
+    ifs.read(reinterpret_cast<char*>(&angle_step_relative), sizeof(angle_step_relative));
+    ifs.read(reinterpret_cast<char*>(&angle_step_radians), sizeof(angle_step_radians));
+    ifs.read(reinterpret_cast<char*>(&angle_step), sizeof(angle_step));
+    ifs.read(reinterpret_cast<char*>(&distance_step), sizeof(distance_step));
+    ifs.read(reinterpret_cast<char*>(&num_ref_points), sizeof(num_ref_points));
+
+    // Load sampled point cloud
+    int rows, cols;
+    ifs.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+    ifs.read(reinterpret_cast<char*>(&cols), sizeof(cols));
+    sampled_pc.create(rows, cols, CV_32F);
+    ifs.read(reinterpret_cast<char*>(sampled_pc.data), rows * cols * sizeof(float));
+
+    // Load PPF matrix
+    ifs.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+    ifs.read(reinterpret_cast<char*>(&cols), sizeof(cols));
+    ppf.create(rows, cols, CV_32F);
+    ifs.read(reinterpret_cast<char*>(ppf.data), rows * cols * sizeof(float));
+
+    // Load hash_nodes array
+    size_t numNodes;
+    ifs.read(reinterpret_cast<char*>(&numNodes), sizeof(numNodes));
+    if (numNodes != static_cast<size_t>(num_ref_points) * num_ref_points) {
+        CV_Error(cv::Error::StsError, "Invalid number of hash nodes.");
+    }
+
+    // Free old hash_nodes and node pool
+    if (hash_nodes) {
+        free(hash_nodes);
+        hash_nodes = nullptr;
+    }
+    if (node_pool_) {
+        free(node_pool_);
+        node_pool_ = nullptr;
+    }
+
+    hash_nodes = static_cast<THash*>(malloc(numNodes * sizeof(THash)));
+    if (!hash_nodes) {
+        CV_Error(cv::Error::StsNoMem, "Failed to allocate memory for hash nodes.");
+    }
+    ifs.read(reinterpret_cast<char*>(hash_nodes), numNodes * sizeof(THash));
+
+    // Reconstruct hash table
+    if (hash_table) {
+        hashtableDestroy(hash_table);
+        hash_table = nullptr;
+    }
+
+    // Read number of buckets
+    size_t tableSize;
+    ifs.read(reinterpret_cast<char*>(&tableSize), sizeof(tableSize));
+
+    // Create hash table (allocate only the nodes array)
+    hash_table = hashtableCreate(static_cast<int>(tableSize), nullptr);
+    hashtable_int* ht = (hashtable_int*)hash_table;
+
+    // Pre-allocate node pool for hashnode_i objects
+    node_pool_ = static_cast<hashnode_i*>(malloc(numNodes * sizeof(hashnode_i)));
+    if (!node_pool_) {
+        CV_Error(cv::Error::StsNoMem, "Failed to allocate node pool.");
+    }
+
+    // Rebuild linked lists per bucket
+    for (size_t i = 0; i < tableSize; ++i) {
+        int count;
+        ifs.read(reinterpret_cast<char*>(&count), sizeof(count));
+        if (count == 0) {
+            ht->nodes[i] = nullptr;
+            continue;
+        }
+
+        std::vector<int> indices(count);
+        ifs.read(reinterpret_cast<char*>(indices.data()), count * sizeof(int));
+
+        hashnode_i* prev = nullptr;
+        hashnode_i* head = nullptr;
+        for (int j = 0; j < count; ++j) {
+            int idx = indices[j];
+            THash* th = &hash_nodes[idx];
+            hashnode_i* node = &node_pool_[idx];
+            node->key = th->id;
+            node->data = th;
+            node->next = nullptr;
+
+            if (prev) {
+                prev->next = node;
+            } else {
+                head = node;
+            }
+            prev = node;
+        }
+        ht->nodes[i] = head;
+    }
+
+    trained = true;
 }
 
 } // namespace ppf_match_3d
