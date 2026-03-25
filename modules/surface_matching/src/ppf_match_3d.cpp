@@ -186,7 +186,7 @@ void PPF3DDetector::clearTrainingModels()
 {
       if (hash_table) {
         hashtable_int* ht = (hashtable_int*)hash_table;
-        // 如果使用节点池，则清空桶以防 hashtableDestroy 释放池内存
+        // Clear buckets to prevent hashtableDestroy from freeing pooled memory if node pool is used
         if (node_pool_) {
             for (size_t i = 0; i < ht->size; ++i) {
                 ht->nodes[i] = nullptr;
