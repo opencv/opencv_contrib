@@ -18,7 +18,7 @@ class SuperScale {
 public:
     SuperScale(){};
     ~SuperScale(){};
-    int init(const std::string &proto_path, const std::string &model_path);
+    int init(const std::string &onnx_path);
     Mat processImageScale(const Mat &src, float scale, const bool &use_sr, int sr_max_size = 160);
 
 private:
