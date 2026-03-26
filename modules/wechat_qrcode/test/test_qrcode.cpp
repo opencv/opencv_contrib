@@ -237,20 +237,16 @@ typedef testing::TestWithParam<std::string> Objdetect_QRCode_Multi;
 TEST_P(Objdetect_QRCode_Multi, regression) {
     const std::string name_current_image = GetParam();
     const std::string root = "qrcode/multiple/";
-    string path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt, path_sr_caffemodel;
-    string model_version = "_2021-01";
-    path_detect_prototxt = findDataFile("dnn/wechat"+model_version+"/detect.prototxt", false);
-    path_detect_caffemodel = findDataFile("dnn/wechat"+model_version+"/detect.caffemodel", false);
-    path_sr_prototxt = findDataFile("dnn/wechat"+model_version+"/sr.prototxt", false);
-    path_sr_caffemodel = findDataFile("dnn/wechat"+model_version+"/sr.caffemodel", false);
+    const string model_dir = "dnn/wechat_2021-01";
+    string path_detect = findDataFile(model_dir + "/detect.onnx", false);
+    string path_sr     = findDataFile(model_dir + "/sr.onnx", false);
 
     std::string image_path = findDataFile(root + name_current_image);
     Mat src = imread(image_path);
     ASSERT_FALSE(src.empty()) << "Can't read image: " << image_path;
 
     vector<Mat> points;
-    auto detector = wechat_qrcode::WeChatQRCode(path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt,
-                                                path_sr_caffemodel);
+    auto detector = wechat_qrcode::WeChatQRCode(path_detect, path_sr);
     vector<string> decoded_info = detector.detectAndDecode(src, points);
 
     const std::string dataset_config = findDataFile(root + "dataset_config.json");
@@ -287,15 +283,11 @@ TEST_P(Objdetect_QRCode_Multi, regression) {
 }
 
 TEST(Objdetect_QRCode_points_position, rotate45) {
-    string path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt, path_sr_caffemodel;
-    string model_version = "_2021-01";
-    path_detect_prototxt = findDataFile("dnn/wechat"+model_version+"/detect.prototxt", false);
-    path_detect_caffemodel = findDataFile("dnn/wechat"+model_version+"/detect.caffemodel", false);
-    path_sr_prototxt = findDataFile("dnn/wechat"+model_version+"/sr.prototxt", false);
-    path_sr_caffemodel = findDataFile("dnn/wechat"+model_version+"/sr.caffemodel", false);
+    const string model_dir = "dnn/wechat_2021-01";
+    string path_detect = findDataFile(model_dir + "/detect.onnx", false);
+    string path_sr     = findDataFile(model_dir + "/sr.onnx", false);
 
-    auto detector = wechat_qrcode::WeChatQRCode(path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt,
-                                                path_sr_caffemodel);
+    auto detector = wechat_qrcode::WeChatQRCode(path_detect, path_sr);
 
     const cv::String expect_msg = "OpenCV";
     QRCodeEncoder::Params params;
@@ -348,15 +340,11 @@ INSTANTIATE_TEST_CASE_P(/**/, Objdetect_QRCode_Curved, testing::ValuesIn(qrcode_
 INSTANTIATE_TEST_CASE_P(/**/, Objdetect_QRCode_Multi, testing::ValuesIn(qrcode_images_multiple));
 
 TEST(Objdetect_QRCode_Big, regression) {
-    string path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt, path_sr_caffemodel;
-    string model_version = "_2021-01";
-    path_detect_prototxt = findDataFile("dnn/wechat"+model_version+"/detect.prototxt", false);
-    path_detect_caffemodel = findDataFile("dnn/wechat"+model_version+"/detect.caffemodel", false);
-    path_sr_prototxt = findDataFile("dnn/wechat"+model_version+"/sr.prototxt", false);
-    path_sr_caffemodel = findDataFile("dnn/wechat"+model_version+"/sr.caffemodel", false);
+    const string model_dir = "dnn/wechat_2021-01";
+    string path_detect = findDataFile(model_dir + "/detect.onnx", false);
+    string path_sr     = findDataFile(model_dir + "/sr.onnx", false);
 
-    auto detector = wechat_qrcode::WeChatQRCode(path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt,
-                                                path_sr_caffemodel);
+    auto detector = wechat_qrcode::WeChatQRCode(path_detect, path_sr);
 
     const cv::String expect_msg = "OpenCV";
     QRCodeEncoder::Params params;
@@ -379,15 +367,11 @@ TEST(Objdetect_QRCode_Big, regression) {
 }
 
 TEST(Objdetect_QRCode_Tiny, regression) {
-    string path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt, path_sr_caffemodel;
-    string model_version = "_2021-01";
-    path_detect_prototxt = findDataFile("dnn/wechat"+model_version+"/detect.prototxt", false);
-    path_detect_caffemodel = findDataFile("dnn/wechat"+model_version+"/detect.caffemodel", false);
-    path_sr_prototxt = findDataFile("dnn/wechat"+model_version+"/sr.prototxt", false);
-    path_sr_caffemodel = findDataFile("dnn/wechat"+model_version+"/sr.caffemodel", false);
+    const string model_dir = "dnn/wechat_2021-01";
+    string path_detect = findDataFile(model_dir + "/detect.onnx", false);
+    string path_sr     = findDataFile(model_dir + "/sr.onnx", false);
 
-    auto detector = wechat_qrcode::WeChatQRCode(path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt,
-                                                path_sr_caffemodel);
+    auto detector = wechat_qrcode::WeChatQRCode(path_detect, path_sr);
 
     const cv::String expect_msg = "OpenCV";
     QRCodeEncoder::Params params;
@@ -411,18 +395,15 @@ TEST(Objdetect_QRCode_Tiny, regression) {
 
 typedef testing::TestWithParam<std::string> Objdetect_QRCode_Easy_Multi;
 TEST_P(Objdetect_QRCode_Easy_Multi, regression) {
-    string path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt, path_sr_caffemodel;
+    string path_detect, path_sr;
     string model_path = GetParam();
 
     if (!model_path.empty()) {
-        path_detect_prototxt = findDataFile(model_path + "/detect.prototxt", false);
-        path_detect_caffemodel = findDataFile(model_path + "/detect.caffemodel", false);
-        path_sr_prototxt = findDataFile(model_path + "/sr.prototxt", false);
-        path_sr_caffemodel = findDataFile(model_path + "/sr.caffemodel", false);
+        path_detect = findDataFile(model_path + "/detect.onnx", false);
+        path_sr     = findDataFile(model_path + "/sr.onnx", false);
     }
 
-    auto detector = wechat_qrcode::WeChatQRCode(path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt,
-                                                path_sr_caffemodel);
+    auto detector = wechat_qrcode::WeChatQRCode(path_detect, path_sr);
 
     const cv::String expect_msg1 = "OpenCV1", expect_msg2 = "OpenCV2";
     QRCodeEncoder::Params params;

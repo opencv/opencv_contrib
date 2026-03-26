@@ -23,15 +23,13 @@ std::string qrcode_images_multiple[] = {/*"2_qrcodes.png",*/ "3_qrcodes.png", "3
 
 WeChatQRCode createQRDetectorWithDNN(std::string& model_path)
 {
-    string path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt, path_sr_caffemodel;
+    string path_detect, path_sr;
     if (!model_path.empty())
     {
-        path_detect_prototxt = findDataFile(model_path + "/detect.prototxt", false);
-        path_detect_caffemodel = findDataFile(model_path + "/detect.caffemodel", false);
-        path_sr_prototxt = findDataFile(model_path + "/sr.prototxt", false);
-        path_sr_caffemodel = findDataFile(model_path + "/sr.caffemodel", false);
+        path_detect = findDataFile(model_path + "/detect.onnx", false);
+        path_sr     = findDataFile(model_path + "/sr.onnx", false);
     }
-    return WeChatQRCode(path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt, path_sr_caffemodel);
+    return WeChatQRCode(path_detect, path_sr);
 }
 
 typedef ::perf::TestBaseWithParam< tuple< std::string,std::string > > Perf_Objdetect_QRCode;

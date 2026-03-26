@@ -24,19 +24,18 @@ int main(int argc, char* argv[]) {
         cout << "    Usage: " << argv[0] << " <input_image>" << endl;
         return 0;
     }
-    // The model is downloaded to ${CMAKE_BINARY_DIR}/downloads/wechat_qrcode if cmake runs without warnings,
-    // otherwise you can download them from https://github.com/WeChatCV/opencv_3rdparty/tree/wechat_qrcode.
+    // ONNX models: detect.onnx and sr.onnx
+    // available in opencv_extra/testdata/dnn/wechat_2021-01/
     Ptr<wechat_qrcode::WeChatQRCode> detector;
 
     try {
-        detector = makePtr<wechat_qrcode::WeChatQRCode>("detect.prototxt", "detect.caffemodel",
-                                                        "sr.prototxt", "sr.caffemodel");
+        detector = makePtr<wechat_qrcode::WeChatQRCode>("detect.onnx", "sr.onnx");
     } catch (const std::exception& e) {
         cout <<
             "\n---------------------------------------------------------------\n"
             "Failed to initialize WeChatQRCode.\n"
-            "Please, download 'detector.*' and 'sr.*' from\n"
-            "https://github.com/WeChatCV/opencv_3rdparty/tree/wechat_qrcode\n"
+            "Please, provide 'detect.onnx' and 'sr.onnx' from\n"
+            "opencv_extra/testdata/dnn/wechat_2021-01/\n"
             "and put them into the current directory.\n"
             "---------------------------------------------------------------\n";
         cout << e.what() << endl;

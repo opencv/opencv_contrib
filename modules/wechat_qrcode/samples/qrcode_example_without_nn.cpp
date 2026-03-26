@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
     Ptr<wechat_qrcode::WeChatQRCode> detector;
 
     try {
-        detector = makePtr<wechat_qrcode::WeChatQRCode>("", "", "", "");
+        detector = makePtr<wechat_qrcode::WeChatQRCode>();
     } catch (const std::exception& e) {
         cout <<
             "\n---------------------------------------------------------------\n"

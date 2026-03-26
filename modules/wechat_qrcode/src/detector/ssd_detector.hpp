@@ -19,7 +19,7 @@ class SSDDetector {
 public:
     SSDDetector(){};
     ~SSDDetector(){};
-    int init(const std::string& proto_path, const std::string& model_path);
+    int init(const std::string& onnx_path);
     std::vector<Mat> forward(Mat img, const int target_width, const int target_height);
 
 private:
