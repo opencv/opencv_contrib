@@ -161,7 +161,7 @@ namespace
 void cv::cuda::device::normL2(InputArray _src, OutputArray _dst, InputArray _mask, Stream& stream)
 {
     typedef void (*func_t)(const GpuMat& _src, const GpuMat& mask, GpuMat& _dst, Stream& stream);
-    static const func_t funcs[] =
+    static const func_t funcs[CV_DEPTH_MAX] =
     {
         normL2Impl<uchar, double>,
         normL2Impl<schar, double>,
@@ -181,6 +181,7 @@ void cv::cuda::device::normL2(InputArray _src, OutputArray _dst, InputArray _mas
     GpuMat dst = getOutputMat(_dst, 1, 1, CV_64FC1, stream);
 
     const func_t func = funcs[src.depth()];
+    CV_Assert(func);
     func(src, mask, dst, stream);
 
     syncOutput(dst, _dst, stream);
