@@ -395,6 +395,7 @@ public:
      * @param stream Stream for the asynchronous version.
      */
     CV_WRAP virtual bool convert(InputArray yuv, OutputArray color, const SurfaceFormat surfaceFormat, const ColorFormat outputFormat, const BitDepth bitDepth = BitDepth::UNCHANGED, const bool planar = false, cuda::Stream& stream = cuda::Stream::Null()) = 0;
+    virtual ~NVSurfaceToColorConverter() {};
 };
 
 /** @brief Creates a NVSurfaceToColorConverter.

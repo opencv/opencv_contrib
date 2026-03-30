@@ -118,11 +118,11 @@ public:
 
     /** @brief Clears the train descriptor collection.
      */
-    CV_WRAP virtual void clear() = 0;
+    CV_WRAP virtual void clear() CV_OVERRIDE = 0;
 
     /** @brief Returns true if there are no train descriptors in the collection.
      */
-    CV_WRAP virtual bool empty() const = 0;
+    CV_WRAP virtual bool empty() const CV_OVERRIDE = 0;
 
     /** @brief Trains a descriptor matcher.
 
