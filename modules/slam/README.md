@@ -1,4 +1,4 @@
-# SLAM Module (cv_slam)
+# OpenCV VSLAM Module
 
 Monocular, stereo, and RGBD visual SLAM system for OpenCV.
 
@@ -65,8 +65,7 @@ make -j4
 ## Documentation
 
 - [Detailed documentation](doc/README.md)
-- [User guide](../../Docs/Project/USER_GUIDE.md)
-- [Benchmarks](../../Docs/Project/BENCHMARK.md)
+- [Benchmarks](docs/BENCHMARK.md)
 
 ## License
 

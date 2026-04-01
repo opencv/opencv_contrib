@@ -1,20 +1,20 @@
 /**
- * @brief 地图保存/加载示例
+ * @brief Map save/load example
  * 
- * 演示如何保存和加载 SLAM 地图：
- * 1. 运行 SLAM 并保存地图
- * 2. 重新加载地图
- * 3. 验证地图完整性
+ * Demonstrates how to save and load a SLAM map:
+ * 1. Run SLAM and save the map
+ * 2. Reload the map
+ * 3. Verify map integrity
  * 
- * 使用场景：
- * - 保存一次建图结果，多次使用
- * - 多机器人共享同一地图
- * - 离线建图 + 在线定位
+ * Use cases:
+ * - Save mapping results once and reuse multiple times
+ * - Share one map across multiple robots
+ * - Offline mapping + online localization
  * 
- * 使用方法：
+ * Usage:
  *   ./example_map_save_load <config.yaml> <vocab.fbow> <image_dir> <output_dir>
  * 
- * 示例：
+ * Example:
  *   ./example_map_save_load EuRoC_mono.yaml orb_vocab.fbow /path/to/images /tmp/output
  */
 
@@ -30,7 +30,7 @@
 #include <chrono>
 
 /**
- * @brief 从目录加载图像
+ * @brief Load images from a directory
  */
 std::vector<std::pair<std::string, double>> load_images(const std::string& data_dir) {
     std::vector<std::pair<std::string, double>> images;
@@ -53,7 +53,7 @@ std::vector<std::pair<std::string, double>> load_images(const std::string& data_
 }
 
 /**
- * @brief 运行 SLAM 并返回地图点数量
+ * @brief Run SLAM and return the number of map points
  */
 size_t run_slam(const std::string& config_file, const std::string& vocab_file,
                 const std::vector<std::pair<std::string, double>>& images,
@@ -118,7 +118,7 @@ size_t run_slam(const std::string& config_file, const std::string& vocab_file,
 }
 
 /**
- * @brief 加载地图并验证
+ * @brief Load and verify a map
  */
 bool load_and_verify_map(const std::string& config_file, const std::string& vocab_file,
                          const std::string& map_path,

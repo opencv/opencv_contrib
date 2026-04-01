@@ -1,15 +1,15 @@
 /**
- * @brief 完整 SLAM 流程示例
+ * @brief Complete SLAM pipeline example
  * 
- * 演示如何使用 cv::vo::VisualOdometry 运行完整的 SLAM 流程：
- * 1. 初始化 SLAM 系统
- * 2. 处理图像序列
- * 3. 保存地图和轨迹
+ * Demonstrates how to use cv::vo::VisualOdometry to run a full SLAM pipeline:
+ * 1. Initialize the SLAM system
+ * 2. Process an image sequence
+ * 3. Save the map and trajectory
  * 
- * 使用方法：
+ * Usage:
  *   ./example_full_slam <config.yaml> <vocab.fbow> <image_dir> <output_dir>
  * 
- * 示例：
+ * Example:
  *   ./example_full_slam EuRoC_mono.yaml orb_vocab.fbow /path/to/images /path/to/output
  */
 
@@ -25,7 +25,7 @@
 #include <chrono>
 
 /**
- * @brief 从 EuRoC 格式的 data.csv 加载图像路径和时间戳
+ * @brief Load image paths and timestamps from EuRoC-format data.csv
  */
 std::vector<std::pair<std::string, double>> load_image_timestamps(const std::string& data_dir) {
     std::vector<std::pair<std::string, double>> images;

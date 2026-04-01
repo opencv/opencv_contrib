@@ -1,20 +1,20 @@
 /**
- * @brief 纯定位模式示例
+ * @brief Pure localization mode example
  * 
- * 演示如何使用预建地图进行纯定位（不建图）：
- * 1. 加载预建地图
- * 2. 切换到 LOCALIZATION 模式
- * 3. 在已知环境中进行定位
+ * Demonstrates how to use a prebuilt map for pure localization (without mapping):
+ * 1. Load a prebuilt map
+ * 2. Switch to LOCALIZATION mode
+ * 3. Perform localization in a known environment
  * 
- * 使用场景：
- * - 机器人/AGV 在已知环境中的定位
- * - AR/VR 设备在预建地图中的跟踪
- * - 重复巡检任务（无需重复建图）
+ * Use cases:
+ * - Robot/AGV localization in a known environment
+ * - AR/VR device tracking on a prebuilt map
+ * - Repetitive inspection tasks (no need to rebuild the map)
  * 
- * 使用方法：
+ * Usage:
  *   ./example_localization_mode <config.yaml> <vocab.fbow> <map_path> <image_dir>
  * 
- * 示例：
+ * Example:
  *   ./example_localization_mode EuRoC_mono.yaml orb_vocab.fbow /tmp/map.msgpack /path/to/images
  */
 
@@ -30,7 +30,7 @@
 #include <chrono>
 
 /**
- * @brief 从目录加载图像（简化版本）
+ * @brief Load images from a directory (simplified version)
  */
 std::vector<std::pair<std::string, double>> load_images(const std::string& data_dir) {
     std::vector<std::pair<std::string, double>> images;
