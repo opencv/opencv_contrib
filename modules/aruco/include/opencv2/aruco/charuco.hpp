@@ -23,7 +23,7 @@ namespace aruco {
  * corners are provided, (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers, the
  * dimensions of this array should be Nx4. The order of the corners should be clockwise.
  * @param markerIds list of identifiers for each marker in corners
- * @param image input image necesary for corner refinement. Note that markers are not detected and
+ * @param image input image necessary for corner refinement. Note that markers are not detected and
  * should be sent in corners and ids parameters.
  * @param board layout of ChArUco board.
  * @param charucoCorners interpolated chessboard corners
@@ -79,8 +79,7 @@ CV_EXPORTS_W void detectCharucoDiamond(InputArray image, InputArrayOfArrays mark
                                        OutputArrayOfArrays diamondCorners, OutputArray diamondIds,
                                        InputArray cameraMatrix = noArray(),
                                        InputArray distCoeffs = noArray(),
-                                       Ptr<Dictionary> dictionary = makePtr<Dictionary>
-                                               (getPredefinedDictionary(PredefinedDictionaryType::DICT_4X4_50)));
+                                       Ptr<Dictionary> dictionary = Ptr<Dictionary>());
 
 
 /**
