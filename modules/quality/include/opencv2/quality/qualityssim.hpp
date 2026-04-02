@@ -75,8 +75,9 @@ protected:
         // return flag if this is empty
         bool empty() const { return I.empty() && I_2.empty() && mu.empty() && mu_2.empty() && sigma_2.empty(); }
 
-        // computes ssim and quality map for single frame
-        static std::pair<cv::Scalar, mat_type> compute(const _mat_data& lhs, const _mat_data& rhs);
+        // computes ssim and optionally quality map for single frame
+        // need_quality_map: if false, uses fast path without allocating full quality map
+        static std::pair<cv::Scalar, mat_type> compute(const _mat_data& lhs, const _mat_data& rhs, bool need_quality_map = true);
 
     };  // mat_data
 
