@@ -1,5 +1,7 @@
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
-
+if(WITH_HDF5_F16_SUPPORT)
+  add_definitions(-DOPENCV_REQUIRE_HDF5_F16_SUPPORT)
+endif()
 if(WIN32)
   # windows cmake internal lookups are broken for now
   # will lookup for headers and shared libs given HDF_DIR env
@@ -17,7 +19,11 @@ if(WIN32)
   endif()
 else()
   if(NOT CMAKE_CROSSCOMPILING) # iOS build should not reuse OSX package
-    find_package(HDF5)
+    if(WITH_HDF5_F16_SUPPORT)
+      find_package(HDF5 2.0 REQUIRED)
+    else()
+      find_package(HDF5)
+    endif()
   endif()
 endif()
 
@@ -26,6 +32,7 @@ if(NOT HDF5_FOUND)
 endif()
 
 set(HAVE_HDF5 1)
+
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Winvalid-offsetof)
 
