@@ -15,14 +15,26 @@ endif()
 
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${CVV_QT_MODULES})
 
-set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# Automoc doesn't work properly with opencv_world build
+# Use QT<ver>_WRAP_CPP() directly instead
+file(GLOB_RECURSE CVV_MOC_HEADERS
+    "${CMAKE_CURRENT_LIST_DIR}/src/*.hpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/*.h"
+)
+if(QT_VERSION_MAJOR EQUAL 6)
+    QT6_WRAP_CPP(_MOC_OUTFILES ${CVV_MOC_HEADERS})
+elseif(QT_VERSION_MAJOR EQUAL 5)
+    QT5_WRAP_CPP(_MOC_OUTFILES ${CVV_MOC_HEADERS})
+endif()
+
 foreach(module ${CVV_QT_MODULES})
   list(APPEND CVV_LIBRARIES ${Qt${QT_VERSION_MAJOR}${module}_LIBRARIES})
 endforeach()
 
-ocv_glob_module_sources()
 ocv_module_include_directories()
+ocv_glob_module_sources(SOURCES ${_MOC_OUTFILES})
 ocv_create_module(${CVV_LIBRARIES})
 ocv_add_accuracy_tests()
 ocv_add_perf_tests()
