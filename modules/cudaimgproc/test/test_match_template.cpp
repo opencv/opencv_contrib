@@ -171,6 +171,119 @@ INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, MatchTemplate32F, testing::Combine(
     testing::Values(TemplateMethod(cv::TM_SQDIFF), TemplateMethod(cv::TM_CCORR))));
 
 ////////////////////////////////////////////////////////////////////////////////
+// MatchTemplateMask8U (cv::matchTemplate with mask)
+
+PARAM_TEST_CASE(MatchTemplateMask8U, cv::cuda::DeviceInfo, cv::Size, TemplateSize, Channels, TemplateMethod)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    cv::Size templ_size;
+    int cn;
+    int method;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        templ_size = GET_PARAM(2);
+        cn = GET_PARAM(3);
+        method = GET_PARAM(4);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(MatchTemplateMask8U, Accuracy)
+{
+    cv::Mat image = randomMat(size, CV_MAKETYPE(CV_8U, cn));
+    cv::Mat templ = randomMat(templ_size, CV_MAKETYPE(CV_8U, cn));
+    cv::Mat mask = randomMat(templ_size, CV_8UC1);
+    cv::threshold(mask, mask, 128, 255, cv::THRESH_BINARY);
+
+    cv::Mat dst_gold;
+    cv::matchTemplate(image, templ, dst_gold, method, mask);
+
+    cv::cuda::GpuMat d_result;
+    cv::cuda::matchTemplate(loadMat(image), loadMat(templ), d_result, method, loadMat(mask));
+
+    cv::Mat h_dst(d_result);
+    ASSERT_EQ(dst_gold.size(), h_dst.size());
+    ASSERT_EQ(dst_gold.type(), h_dst.type());
+    for (int y = 0; y < h_dst.rows; ++y)
+    {
+        for (int x = 0; x < h_dst.cols; ++x)
+        {
+            float gold_val = dst_gold.at<float>(y, x);
+            float actual_val = h_dst.at<float>(y, x);
+            ASSERT_NEAR(gold_val, actual_val, 1e-2f) << y << ", " << x;
+        }
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, MatchTemplateMask8U, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    testing::Values(TemplateSize(cv::Size(5, 5)), TemplateSize(cv::Size(16, 16)), TemplateSize(cv::Size(30, 30))),
+    testing::Values(Channels(1), Channels(3)),
+    ALL_TEMPLATE_METHODS));
+
+////////////////////////////////////////////////////////////////////////////////
+// MatchTemplateMaskFloatingObject (module testdata: matchtemplate/srcImg.png, 0-floatingObject-*.png)
+
+struct MatchTemplateMaskFloatingObject : testing::TestWithParam<cv::cuda::DeviceInfo>
+{
+    cv::cuda::DeviceInfo devInfo;
+
+    virtual void SetUp()
+    {
+        devInfo = GetParam();
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(MatchTemplateMaskFloatingObject, AccuracyVsCpu)
+{
+    cv::Mat image = readImage("matchtemplate/srcImg.png");
+    cv::Mat templ = readImage("matchtemplate/0-floatingObject-img.png");
+    cv::Mat mask = readImage("matchtemplate/0-floatingObject-mask.png", cv::IMREAD_GRAYSCALE);
+
+    ASSERT_FALSE(image.empty());
+    ASSERT_FALSE(templ.empty());
+    ASSERT_FALSE(mask.empty());
+    ASSERT_EQ(templ.size(), mask.size());
+    ASSERT_EQ(image.type(), templ.type());
+
+    static const int methods[] = {
+        cv::TM_SQDIFF, cv::TM_SQDIFF_NORMED, cv::TM_CCORR, cv::TM_CCORR_NORMED, cv::TM_CCOEFF, cv::TM_CCOEFF_NORMED
+    };
+
+    for (size_t mi = 0; mi < sizeof(methods) / sizeof(methods[0]); ++mi)
+    {
+        const int method = methods[mi];
+
+        cv::Mat dstGold;
+        cv::matchTemplate(image, templ, dstGold, method, mask);
+
+        cv::cuda::GpuMat dstCuda;
+        cv::cuda::matchTemplate(loadMat(image), loadMat(templ), dstCuda, method, loadMat(mask));
+
+        cv::Mat h_dst(dstCuda);
+        ASSERT_EQ(dstGold.size(), h_dst.size());
+        ASSERT_EQ(dstGold.type(), h_dst.type());
+        for (int y = 0; y < h_dst.rows; ++y)
+        {
+            for (int x = 0; x < h_dst.cols; ++x)
+            {
+                ASSERT_NEAR(dstGold.at<float>(y, x), h_dst.at<float>(y, x), 1e-2f)
+                    << "method=" << method << " y=" << y << " x=" << x;
+            }
+        }
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, MatchTemplateMaskFloatingObject, ALL_DEVICES);
+
+////////////////////////////////////////////////////////////////////////////////
 // MatchTemplateBlackSource
 
 PARAM_TEST_CASE(MatchTemplateBlackSource, cv::cuda::DeviceInfo, TemplateMethod)

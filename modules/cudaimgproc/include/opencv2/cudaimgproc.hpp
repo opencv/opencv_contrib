@@ -718,6 +718,22 @@ The following methods are supported for the CV_32F images for now:
  */
 CV_EXPORTS_W Ptr<TemplateMatching> createTemplateMatching(int srcType, int method, Size user_block_size = Size());
 
+/** @brief Computes the cross-correlation of an image with a masked template (same functionality as cv::matchTemplate with a mask).
+
+Image and template are converted to CV_32F on the device. Mask must match the template size; CV_8U masks are binarized
+then converted to CV_32F, matching the CPU implementation.
+
+@param image Source image; CV_8U or CV_32F, 1–4 channels.
+@param templ Template; same type and channel count as image.
+@param result Output map CV_32FC1
+@param method Match method ( TM_SQDIFF , TM_SQDIFF_NORMED , TM_CCORR , TM_CCORR_NORMED , TM_CCOEFF , TM_CCOEFF_NORMED ).
+@param mask Mask with the same size as templ ; CV_8U or CV_32F, 1 channel or as many channels as templ .
+
+@sa matchTemplate
+ */
+CV_EXPORTS_W void matchTemplate(InputArray image, InputArray templ, OutputArray result, int method, InputArray mask,
+                                Stream& stream = Stream::Null());
+
 ////////////////////////// Bilateral Filter ///////////////////////////
 
 /** @brief Performs bilateral filtering of passed image
