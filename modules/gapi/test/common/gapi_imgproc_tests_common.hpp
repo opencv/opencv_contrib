@@ -11,6 +11,7 @@
 #include "../../include/opencv2/gapi/imgproc.hpp"
 
 #include <opencv2/imgproc.hpp>
+#include <opencv2/features.hpp>
 
 namespace opencv_test
 {

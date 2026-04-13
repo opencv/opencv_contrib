@@ -56,6 +56,10 @@
 #  include "opencv2/cudaimgproc.hpp"
 #endif
 
+#ifdef HAVE_OPENCV_CUDAFEATURES2D
+#  include "opencv2/cudafeatures2d.hpp"
+#endif
+
 namespace cv
 {
 namespace videostab
@@ -261,7 +265,7 @@ private:
     std::vector<Point2f> pointsPrevGood_, pointsGood_;
 };
 
-#if defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAOPTFLOW)
+#if defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAFEATURES2D) && defined(HAVE_OPENCV_CUDAOPTFLOW)
 
 class CV_EXPORTS KeypointBasedMotionEstimatorGpu : public ImageMotionEstimatorBase
 {
