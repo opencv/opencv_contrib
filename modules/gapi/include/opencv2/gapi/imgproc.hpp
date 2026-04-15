@@ -9,6 +9,7 @@
 #define OPENCV_GAPI_IMGPROC_HPP
 
 #include <opencv2/imgproc.hpp>
+#include <opencv2/features.hpp>
 
 #include <utility> // std::tuple
 

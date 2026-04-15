@@ -47,7 +47,7 @@
 #include "opencv2/opencv_modules.hpp"
 #include "clp.hpp"
 
-#if defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAOPTFLOW)
+#if defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAFEATURES2D) && defined(HAVE_OPENCV_CUDAOPTFLOW)
 #if !defined HAVE_CUDA || defined(CUDA_DISABLER)
 #include "opencv2/core/private/cuda_stubs.hpp"
 #else
@@ -55,7 +55,7 @@
 #endif
 #endif
 
-#if defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAOPTFLOW)
+#if defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAFEATURES2D) && defined(HAVE_OPENCV_CUDAOPTFLOW)
     #if !defined HAVE_CUDA || defined(CUDA_DISABLER)
         namespace cv { namespace cuda {
             static void compactPoints(GpuMat&, GpuMat&, const GpuMat&) { throw_no_cuda(); }
@@ -788,7 +788,7 @@ Mat KeypointBasedMotionEstimator::estimate(InputArray frame0, InputArray frame1,
     return motionEstimator_->estimate(pointsPrevGood_, pointsGood_, ok);
 }
 
-#if defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAOPTFLOW)
+#if defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAFEATURES2D) && defined(HAVE_OPENCV_CUDAOPTFLOW)
 
 KeypointBasedMotionEstimatorGpu::KeypointBasedMotionEstimatorGpu(Ptr<MotionEstimatorBase> estimator)
     : ImageMotionEstimatorBase(estimator->motionModel()), motionEstimator_(estimator)
@@ -863,7 +863,7 @@ Mat KeypointBasedMotionEstimatorGpu::estimate(const cuda::GpuMat &frame0, const 
     return motionEstimator_->estimate(hostPointsPrev_, hostPoints_, ok);
 }
 
-#endif // defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAOPTFLOW)
+#endif // defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAFEATURES2D) && defined(HAVE_OPENCV_CUDAOPTFLOW)
 
 
 Mat getMotion(int from, int to, const std::vector<Mat> &motions)
