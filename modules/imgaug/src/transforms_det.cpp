@@ -7,7 +7,7 @@
 
 namespace cv{
     namespace imgaug{
-        extern RNG rng;
+        RNG& getRNG();
 
         namespace det{
             int clamp(int v, int lo, int hi);
@@ -34,7 +34,7 @@ namespace cv{
 
             void RandomFlip::call(InputArray _src, OutputArray _dst, std::vector<cv::Rect>& target, std::vector<int>& labels) const{
                 CV_Assert(target.size() == labels.size());
-                bool flag = rng.uniform(0., 1.) < p;
+                bool flag = getRNG().uniform(0., 1.) < p;
 
                 Mat src = _src.getMat();
                 if(!flag){
@@ -99,8 +99,9 @@ namespace cv{
 
             void RandomTranslation::call(cv::InputArray _src, cv::OutputArray _dst, std::vector<cv::Rect> &bboxes, std::vector<int>& labels) const {
                 CV_Assert(bboxes.size() == labels.size());
-                int tx = rng.uniform(-translations[0], translations[0]);
-                int ty = rng.uniform(-translations[1], translations[1]);
+                RNG& rngRef = getRNG();
+                int tx = rngRef.uniform(-translations[0], translations[0]);
+                int ty = rngRef.uniform(-translations[1], translations[1]);
 
                 Mat translation_matrix = Mat::eye(2, 3, CV_32F);
                 float* data = translation_matrix.ptr<float>();
@@ -144,7 +145,7 @@ namespace cv{
                                       std::vector<int> &labels) const {
                 CV_Assert(bboxes.size() == labels.size());
                 Mat src = _src.getMat();
-                double angle = rng.uniform(angles[0], angles[1]);
+                double angle = getRNG().uniform(angles[0], angles[1]);
                 Mat rotation_matrix = getRotationMatrix2D(cv::Point2f(src.cols/2., src.rows/2.), angle, 1);
                 warpAffine(src, _dst, rotation_matrix, src.size());
 

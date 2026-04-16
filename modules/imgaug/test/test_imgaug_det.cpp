@@ -5,6 +5,21 @@
 
 namespace opencv_test{ namespace{
 
+Mat makeDeterministicDetectionImage(const Size& size = Size(96, 96))
+{
+    Mat img(size, CV_8UC3);
+    RNG localRng(2024);
+    localRng.fill(img, RNG::UNIFORM, Scalar::all(0), Scalar::all(256));
+    return img;
+}
+
+void expectSameImage(const Mat& lhs, const Mat& rhs)
+{
+    ASSERT_EQ(lhs.size(), rhs.size());
+    ASSERT_EQ(lhs.type(), rhs.type());
+    EXPECT_EQ(0.0, cv::norm(lhs, rhs, NORM_INF));
+}
+
 void read_annotation(const String& path, std::vector<Rect>& bboxes, std::vector<int>& labels){
     FILE* fp;
     fp = fopen(path.c_str(), "rt");
@@ -248,6 +263,52 @@ TEST(Aug_Det_RandomRotation, no_drop){
     }else{
         ts->set_failed_test_info(TS::FAIL_MISMATCH);
     }
+}
+
+TEST(Aug_Det_Reproducibility, detection_transform_same_seed_same_output){
+    Mat src = makeDeterministicDetectionImage();
+    Mat out1, out2;
+
+    std::vector<Rect> bboxes1{Rect(20, 16, 28, 30), Rect(48, 24, 20, 26)};
+    std::vector<Rect> bboxes2 = bboxes1;
+    std::vector<int> labels1{1, 2};
+    std::vector<int> labels2 = labels1;
+
+    uint64 seed = 321;
+    cv::imgaug::det::RandomTranslation aug(Vec2i(8, 6), 0.0f);
+
+    cv::imgaug::setSeed(seed);
+    aug.call(src, out1, bboxes1, labels1);
+
+    cv::imgaug::setSeed(seed);
+    aug.call(src, out2, bboxes2, labels2);
+
+    expectSameImage(out1, out2);
+    EXPECT_EQ(bboxes1, bboxes2);
+    EXPECT_EQ(labels1, labels2);
+}
+
+TEST(Aug_Det_Reproducibility, same_seed_same_bbox_result){
+    Mat src = makeDeterministicDetectionImage();
+    Mat out1, out2;
+
+    std::vector<Rect> bboxes1{Rect(24, 18, 20, 22)};
+    std::vector<Rect> bboxes2 = bboxes1;
+    std::vector<int> labels1{7};
+    std::vector<int> labels2 = labels1;
+
+    uint64 seed = 654;
+    cv::imgaug::det::RandomRotation aug(Vec2d(-20, 20), 0.0);
+
+    cv::imgaug::setSeed(seed);
+    aug.call(src, out1, bboxes1, labels1);
+
+    cv::imgaug::setSeed(seed);
+    aug.call(src, out2, bboxes2, labels2);
+
+    EXPECT_EQ(bboxes1, bboxes2);
+    EXPECT_EQ(labels1, labels2);
+    expectSameImage(out1, out2);
 }
 
 

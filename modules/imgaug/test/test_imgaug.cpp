@@ -5,6 +5,28 @@
 
 namespace opencv_test{ namespace{
 
+Mat makeReproducibleImage(const Size& size = Size(96, 96))
+{
+    Mat img(size, CV_8UC3);
+    RNG localRng(1337);
+    localRng.fill(img, RNG::UNIFORM, Scalar::all(0), Scalar::all(256));
+    return img;
+}
+
+void expectSameImage(const Mat& lhs, const Mat& rhs)
+{
+    ASSERT_EQ(lhs.size(), rhs.size());
+    ASSERT_EQ(lhs.type(), rhs.type());
+    EXPECT_EQ(0.0, cv::norm(lhs, rhs, NORM_INF));
+}
+
+void expectDifferentImage(const Mat& lhs, const Mat& rhs)
+{
+    ASSERT_EQ(lhs.size(), rhs.size());
+    ASSERT_EQ(lhs.type(), rhs.type());
+    EXPECT_NE(0.0, cv::norm(lhs, rhs, NORM_INF));
+}
+
 
 TEST(Aug_RandomCrop, no_padding){
     cout << "run test: no_padding" << endl;
@@ -325,6 +347,67 @@ TEST(Aug_ColorJitter, basic){
     }else{
         ts->set_failed_test_info(TS::FAIL_MISMATCH);
     }
+}
+
+TEST(Aug_Reproducibility, image_transform_same_seed_same_output){
+    Mat input = makeReproducibleImage();
+    Mat out1, out2;
+
+    uint64 seed = 123;
+    cv::imgaug::ColorJitter aug(Vec2d(0.4, 1.6), Vec2d(0.5, 1.5), Vec2d(0.5, 1.5), Vec2d(-0.2, 0.2));
+
+    cv::imgaug::setSeed(seed);
+    aug.call(input, out1);
+
+    cv::imgaug::setSeed(seed);
+    aug.call(input, out2);
+
+    expectSameImage(out1, out2);
+}
+
+TEST(Aug_Reproducibility, compose_same_seed_same_output){
+    Mat input = makeReproducibleImage();
+    Mat out1, out2, out3;
+
+    std::vector<cv::Ptr<cv::imgaug::Transform> > transforms{
+            cv::makePtr<cv::imgaug::RandomCrop>(Size(48, 48)),
+            cv::makePtr<cv::imgaug::ColorJitter>(Vec2d(0.4, 1.6), Vec2d(0.5, 1.5), Vec2d(0.5, 1.5), Vec2d(-0.2, 0.2))
+    };
+    cv::imgaug::Compose aug(transforms);
+    uint64 seed = 456;
+    uint64 differentSeed = 457;
+
+    cv::imgaug::setSeed(seed);
+    aug.call(input, out1);
+
+    cv::imgaug::setSeed(seed);
+    aug.call(input, out2);
+
+    expectSameImage(out1, out2);
+
+    cv::imgaug::setSeed(differentSeed);
+    aug.call(input, out3);
+
+    expectDifferentImage(out1, out3);
+}
+
+TEST(Aug_Reproducibility, same_seed_same_call_sequence){
+    Mat input = makeReproducibleImage();
+    Mat first1, second1, first2, second2;
+
+    cv::imgaug::RandomCrop aug(Size(40, 40));
+    uint64 seed = 789;
+
+    cv::imgaug::setSeed(seed);
+    aug.call(input, first1);
+    aug.call(input, second1);
+
+    cv::imgaug::setSeed(seed);
+    aug.call(input, first2);
+    aug.call(input, second2);
+
+    expectSameImage(first1, first2);
+    expectSameImage(second1, second2);
 }
 
 

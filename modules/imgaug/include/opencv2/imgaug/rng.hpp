@@ -12,16 +12,23 @@ namespace cv{
         //! @addtogroup imgaug
         //! @{
 
-        //! Initial state of the random number generator cv::imgaug::rng. If you don't manually set it using cv::imgaug::setSeed,
-        //! it will be set to the current tick count returned by cv::getTickCount.
+        //! Seed used to initialize cv::imgaug::rng. If you don't set it manually using cv::imgaug::setSeed,
+        //! it is initialized from the current tick count returned by cv::getTickCount.
         extern uint64 state;
 
-        //! Random number generator for data augmentation module
+        //! Random number generator for the data augmentation module.
         extern cv::RNG rng;
 
-        /** @brief Manually set the initial state of the random number generator cv::imgaug::rng.
+        /** @brief Set the seed of cv::imgaug::rng.
          *
-         * @param seed The seed value needed to generate a random number.
+         * Re-seeding the generator makes imgaug operations reproducible: using the same seed, the same input,
+         * and the same call order yields the same output. The random number generator state advances after each
+         * call that consumes random numbers.
+         *
+         * This function does not guarantee bitwise-identical results across OpenCV versions or different
+         * implementations.
+         *
+         * @param seed Seed value used to initialize cv::imgaug::rng.
          */
         CV_EXPORTS_W void setSeed(uint64 seed);
 

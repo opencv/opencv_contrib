@@ -7,7 +7,8 @@
 
 namespace cv{
     namespace imgaug{
-        extern RNG rng;
+        RNG& getRNG();
+        void shuffleIntArray(int* first, int* last);
 
         static void getRandomCropParams(int h, int w, int th, int tw, int* x, int* y);
         static void getRandomResizedCropParams(int height, int width, const Vec2d& scale, const Vec2d& ratio, Rect& rect);
@@ -54,8 +55,9 @@ namespace cv{
                 return;
             }
 
-            (*x) = rng.uniform(0, w-tw+1);
-            (*y) = rng.uniform(0, h-th+1);
+            RNG& rngRef = getRNG();
+            (*x) = rngRef.uniform(0, w-tw+1);
+            (*y) = rngRef.uniform(0, h-th+1);
 
         }
 
@@ -71,8 +73,7 @@ namespace cv{
         }
 
         void randomFlip(InputArray _src, OutputArray _dst, int flipCode, double p){
-
-            bool flag = rng.uniform(0., 1.) < p;
+            bool flag = getRNG().uniform(0., 1.) < p;
 
             Mat src = _src.getMat();
 
@@ -166,17 +167,18 @@ namespace cv{
             // https://github.com/pytorch/vision/blob/main/torchvision/transforms/transforms.py
 
             int area = height * width;
+            RNG& rngRef = getRNG();
 
             for (int i = 0; i < 10; i++) {
-                double target_area = rng.uniform(scale[0], scale[1]) * area;
-                double aspect_ratio = rng.uniform(ratio[0], ratio[1]);
+                double target_area = rngRef.uniform(scale[0], scale[1]) * area;
+                double aspect_ratio = rngRef.uniform(ratio[0], ratio[1]);
 
                 int w = static_cast<int>(round(sqrt(target_area * aspect_ratio)));
                 int h = static_cast<int>(round(sqrt(target_area / aspect_ratio)));
 
                 if (w > 0 && w <= width && h > 0 && h <= height) {
-                    rect.x = rng.uniform(0, width - w + 1);
-                    rect.y = rng.uniform(0, height - h + 1);
+                    rect.x = rngRef.uniform(0, width - w + 1);
+                    rect.y = rngRef.uniform(0, height - h + 1);
                     rect.width = w;
                     rect.height = h;
                     return;
@@ -217,18 +219,19 @@ namespace cv{
             Mat src = _src.getMat();
 
             double brightness_factor = 1, contrast_factor = 1, saturation_factor = 1, hue_factor = 0;
+            RNG& rngRef = getRNG();
 
             if(brightness != Vec2d())
-                brightness_factor = rng.uniform(brightness[0], brightness[1]);
+                brightness_factor = rngRef.uniform(brightness[0], brightness[1]);
             if(contrast != Vec2d())
-                contrast_factor = rng.uniform(contrast[0], contrast[1]);
+                contrast_factor = rngRef.uniform(contrast[0], contrast[1]);
             if(saturation != Vec2d())
-                saturation_factor = rng.uniform(saturation[0], saturation[1]);
+                saturation_factor = rngRef.uniform(saturation[0], saturation[1]);
             if(hue != Vec2d())
-                hue_factor = rng.uniform(hue[0], hue[1]);
+                hue_factor = rngRef.uniform(hue[0], hue[1]);
 
             int order[4] = {1,2,3,4};
-            std::random_shuffle(order, order+4);
+            shuffleIntArray(order, order + 4);
 
             for(int i : order){
                 if(i == 1 && brightness_factor != 1)
@@ -258,7 +261,7 @@ namespace cv{
         void randomRotation(InputArray _src, OutputArray _dst, const Vec2d& degrees, int interpolation, const Point2f& center, const Scalar& fill){
             Mat src = _src.getMat();
             // TODO: check the validation of degrees
-            double angle = rng.uniform(degrees[0], degrees[1]);
+            double angle = getRNG().uniform(degrees[0], degrees[1]);
 
             Point2f pt(src.cols/2., src.rows/2.);
             if(center != Point2f()) pt = center;
@@ -299,7 +302,7 @@ namespace cv{
         }
 
         void randomGrayScale(InputArray _src, OutputArray _dst, double p){
-            if(rng.uniform(0.0, 1.0) < p){
+            if(getRNG().uniform(0.0, 1.0) < p){
                 grayScale(_src, _dst, _src.channels());
                 return;
             }
@@ -317,7 +320,7 @@ namespace cv{
         void randomErasing(InputArray _src, OutputArray _dst, double p, const Vec2d& scale, const Vec2d& ratio, const Scalar& value, bool inplace){
             // TODO: check the range of input values
             Mat src = _src.getMat();
-            if(rng.uniform(0., 1.) >= p){
+            if(getRNG().uniform(0., 1.) >= p){
                 _dst.move(src);
                 return;
             }
@@ -347,17 +350,18 @@ namespace cv{
 
         static void getRandomErasingCropParams(int height, int width, const Vec2d& scale, const Vec2d& ratio, Rect& rect) {
             int area = height * width;
+            RNG& rngRef = getRNG();
 
             for (int i = 0; i < 10; i++) {
-                double target_area = rng.uniform(scale[0], scale[1]) * area;
-                double aspect_ratio = rng.uniform(ratio[0], ratio[1]);
+                double target_area = rngRef.uniform(scale[0], scale[1]) * area;
+                double aspect_ratio = rngRef.uniform(ratio[0], ratio[1]);
 
                 int w = static_cast<int>(round(sqrt(target_area * aspect_ratio)));
                 int h = static_cast<int>(round(sqrt(target_area / aspect_ratio)));
 
                 if (w > 0 && w <= width && h > 0 && h <= height) {
-                    rect.x = rng.uniform(0, width - w + 1);
-                    rect.y = rng.uniform(0, height - h + 1);
+                    rect.x = rngRef.uniform(0, width - w + 1);
+                    rect.y = rngRef.uniform(0, height - h + 1);
                     rect.width = w;
                     rect.height = h;
                     return;
@@ -420,7 +424,7 @@ namespace cv{
         }
 
         void gaussianBlur(InputArray src, OutputArray dst, const Size& kernel_size, const Vec2f& sigma){
-            float sigmaX = rng.uniform(sigma[0], sigma[1]);
+            float sigmaX = getRNG().uniform(sigma[0], sigma[1]);
             cv::GaussianBlur(src, dst, kernel_size, sigmaX);
         }
 
@@ -480,12 +484,13 @@ namespace cv{
         }
 
         static void getRandomAffineParams(const Size& size, const Vec2f& degrees, const Vec2f& translations, const Vec2f& scales, const Vec4f& shears, float* angle, float* translation_x, float* translation_y, float* scale, float* shear_x, float* shear_y){
+            RNG& rngRef = getRNG();
 
             if(degrees == Vec2f(0, 0)) {
                 *angle = 0;
             }
             else{
-                *angle = rng.uniform(degrees[0], degrees[1]);
+                *angle = rngRef.uniform(degrees[0], degrees[1]);
             }
 
             if(translations == Vec2f(0, 0)) {
@@ -493,15 +498,15 @@ namespace cv{
                 *translation_y = 0;
             }
             else{
-                *translation_x = rng.uniform(-translations[0], translations[0]) * size.width;
-                *translation_y = rng.uniform(-translations[1], translations[1]) * size.height;
+                *translation_x = rngRef.uniform(-translations[0], translations[0]) * size.width;
+                *translation_y = rngRef.uniform(-translations[1], translations[1]) * size.height;
             }
 
             if(scales == Vec2f(1, 1)) {
                 *scale = 1;
             }
             else{
-                *scale = rng.uniform(scales[0], scales[1]);
+                *scale = rngRef.uniform(scales[0], scales[1]);
             }
 
             if(shears == Vec4f(0, 0, 0, 0)) {
@@ -509,8 +514,8 @@ namespace cv{
                 *shear_y = 0;
             }
             else{
-                *shear_x = rng.uniform(shears[0], shears[1]);
-                *shear_y = rng.uniform(shears[2], shears[3]);
+                *shear_x = rngRef.uniform(shears[0], shears[1]);
+                *shear_y = rngRef.uniform(shears[2], shears[3]);
             }
 
         }
