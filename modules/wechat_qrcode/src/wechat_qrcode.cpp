@@ -19,9 +19,8 @@ class WeChatQRCode::Impl {
 public:
     Impl() {}
     ~Impl() {}
-    /**
-     * 
-     * 
+    
+    /** 
      * @brief detect QR codes from the given image
      *
      * @param img supports grayscale or color (BGR) image.
