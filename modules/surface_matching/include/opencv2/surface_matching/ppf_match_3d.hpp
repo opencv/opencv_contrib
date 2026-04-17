@@ -140,8 +140,19 @@ public:
     */
   CV_WRAP void match(const Mat& scene, CV_OUT std::vector<Pose3DPtr> &results, const double relativeSceneSampleStep=1.0/5.0, const double relativeSceneDistance=0.03);
 
-  void read(const FileNode& fn);
-  void write(FileStorage& fs) const;
+  /**
+   * \brief Save trained model to a binary file.
+   * \param filename Path to the output file.
+   * \throws cv::Exception if the model is not trained or file cannot be opened.
+   */
+  CV_WRAP void saveModel(const std::string& filename) const;
+
+  /**
+   * \brief Load a previously saved model from a binary file.
+   * \param filename Path to the input file.
+   * \throws cv::Exception if the file cannot be opened, data is invalid, or memory allocation fails.
+   */
+  CV_WRAP void loadModel(const std::string& filename);
 
 protected:
 
@@ -160,6 +171,7 @@ protected:
   void clearTrainingModels();
 
 private:
+  hashnode_i* node_pool_;
   void computePPFFeatures(const Vec3d& p1, const Vec3d& n1,
                           const Vec3d& p2, const Vec3d& n2,
                           Vec4d& f);
