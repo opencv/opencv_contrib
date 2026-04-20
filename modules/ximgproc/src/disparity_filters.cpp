@@ -295,13 +295,18 @@ void DisparityWLSFilterImpl::filter_(InputArray disparity_map_left, InputArray l
         fastGlobalSmootherFilter(src,disp,filtered_disp,lambda,sigma_color);
         filtered_disp.copyTo(dst);
     }
-    else
+else
+{
+    if (disparity_map_right.empty() ||
+        disparity_map_right.depth() != CV_32F ||
+        disparity_map_right.channels() != 1)
     {
-        CV_Assert( !disparity_map_right.empty()
-                   && (disparity_map_right.depth() == CV_32F)
-                   && (disparity_map_right.channels() == 1) );
-        CV_Assert( (disparity_map_left.cols() == disparity_map_right.cols()) );
-        CV_Assert( (disparity_map_left.rows() == disparity_map_right.rows()) );
+        CV_Error(cv::Error::StsBadArg,
+                 "disparity_map_right must be a non-empty, single-channel CV_32F matrix when confidence is enabled");
+    }
+
+    CV_Assert( (disparity_map_left.cols() == disparity_map_right.cols()) );
+    CV_Assert( (disparity_map_left.rows() == disparity_map_right.rows()) );
         computeConfidenceMap(disparity_map_left,disparity_map_right);
         Mat disp_full_size = disparity_map_left.getMat();
         Mat src_full_size = left_view.getMat();
