@@ -101,11 +101,9 @@ void NvEncoder::CreateDefaultEncoderParams(NV_ENC_INITIALIZE_PARAMS* pIntializeP
 #endif
     pIntializeParams->tuningInfo = tuningInfo;
     pIntializeParams->encodeConfig->rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
-#if ((NVENCAPI_MAJOR_VERSION == 12 && NVENCAPI_MINOR_VERSION >= 2) || NVENCAPI_MAJOR_VERSION > 12)
-    NV_ENC_PRESET_CONFIG presetConfig = { NV_ENC_PRESET_CONFIG_VER, 0, { NV_ENC_CONFIG_VER } };
-#else
-    NV_ENC_PRESET_CONFIG presetConfig = { NV_ENC_PRESET_CONFIG_VER, { NV_ENC_CONFIG_VER } };
-#endif
+    NV_ENC_PRESET_CONFIG presetConfig = {};
+    presetConfig.version = NV_ENC_PRESET_CONFIG_VER;
+    presetConfig.presetCfg.version = NV_ENC_CONFIG_VER;
     m_nvenc.nvEncGetEncodePresetConfigEx(m_hEncoder, codecGuid, presetGuid, tuningInfo, &presetConfig);
     memcpy(pIntializeParams->encodeConfig, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG));
 
@@ -205,11 +203,9 @@ void NvEncoder::CreateEncoder(const NV_ENC_INITIALIZE_PARAMS* pEncoderParams)
     }
     else
     {
-#if ((NVENCAPI_MAJOR_VERSION == 12 && NVENCAPI_MINOR_VERSION >= 2) || NVENCAPI_MAJOR_VERSION > 12)
-        NV_ENC_PRESET_CONFIG presetConfig = { NV_ENC_PRESET_CONFIG_VER, 0, { NV_ENC_CONFIG_VER } };
-#else
-        NV_ENC_PRESET_CONFIG presetConfig = { NV_ENC_PRESET_CONFIG_VER, { NV_ENC_CONFIG_VER } };
-#endif
+        NV_ENC_PRESET_CONFIG presetConfig = {};
+        presetConfig.version = NV_ENC_PRESET_CONFIG_VER;
+        presetConfig.presetCfg.version = NV_ENC_CONFIG_VER;
         m_nvenc.nvEncGetEncodePresetConfigEx(m_hEncoder, pEncoderParams->encodeGUID, pEncoderParams->presetGUID, pEncoderParams->tuningInfo, &presetConfig);
         memcpy(&m_encodeConfig, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG));
     }
@@ -570,6 +566,8 @@ void NvEncoder::WaitForCompletionEvent(int iEvent)
         NVENC_THROW_ERROR("Failed to encode frame", NV_ENC_ERR_GENERIC);
     }
 #endif
+#else
+    CV_UNUSED(iEvent);
 #endif
 }
 

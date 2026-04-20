@@ -59,6 +59,7 @@ GUID CodecGuid(const Codec codec);
 void FrameRate(const double fps, uint32_t& frameRateNum, uint32_t& frameRateDen);
 GUID EncodingProfileGuid(const EncodeProfile encodingProfile);
 GUID EncodingPresetGuid(const EncodePreset nvPreset);
+std::string GetVideoCodecString(const GUID codec);
 
 bool operator==(const EncoderParams& lhs, const EncoderParams& rhs)
 {
@@ -70,7 +71,7 @@ bool operator==(const EncoderParams& lhs, const EncoderParams& rhs)
 class FFmpegVideoWriter : public EncoderCallback
 {
 public:
-    FFmpegVideoWriter(const String& fileName, const Codec codec, const int fps, const Size sz, const int idrPeriod);
+    FFmpegVideoWriter(const String& fileName, const Codec codec, const double fps, const Size sz, const int idrPeriod);
     ~FFmpegVideoWriter();
     void onEncoded(const std::vector<std::vector<uint8_t>>& vPacket, const std::vector<uint64_t>& pts);
     void onEncodingFinished();
@@ -79,7 +80,7 @@ private:
     cv::VideoWriter writer;
 };
 
-FFmpegVideoWriter::FFmpegVideoWriter(const String& fileName, const Codec codec, const int fps, const Size sz, const int idrPeriod) {
+FFmpegVideoWriter::FFmpegVideoWriter(const String& fileName, const Codec codec, const double fps, const Size sz, const int idrPeriod) {
     if (!videoio_registry::hasBackend(CAP_FFMPEG))
         CV_Error(Error::StsNotImplemented, "FFmpeg backend not found");
     const int fourcc = codec == Codec::H264 ? cv::VideoWriter::fourcc('a', 'v', 'c', '1') : cv::VideoWriter::fourcc('h', 'v', 'c', '1');
@@ -100,7 +101,8 @@ void FFmpegVideoWriter::onEncoded(const std::vector<std::vector<uint8_t>>& vPack
     CV_Assert(vPacket.size() == pts.size());
     for (int i = 0; i < vPacket.size(); i++){
         std::vector<uint8_t> packet = vPacket.at(i);
-        Mat wrappedPacket(1, packet.size(), CV_8UC1, (void*)packet.data());
+        CV_Assert(packet.size() <= std::numeric_limits<int>::max());
+        Mat wrappedPacket(1, static_cast<int>(packet.size()), CV_8UC1, (void*)packet.data());
         const double ptsDouble = static_cast<double>(pts.at(i));
         CV_Assert(static_cast<uint64_t>(ptsDouble) == pts.at(i));
         CV_Assert(writer.set(VIDEOWRITER_PROP_PTS, ptsDouble));
@@ -213,7 +215,7 @@ VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallback>& encoderCallBack_, c
     CV_Assert(colorFormat != ColorFormat::UNDEFINED);
     surfaceFormat = EncBufferFormat(colorFormat);
     if (surfaceFormat == NV_ENC_BUFFER_FORMAT_UNDEFINED) {
-        String msg = cv::format("Unsupported input surface format: %i", colorFormat);
+        String msg = cv::format("Unsupported input surface format: %i", static_cast<int>(colorFormat));
         CV_LOG_WARNING(NULL, msg);
         CV_Error(Error::StsUnsupportedFormat, msg);
     }

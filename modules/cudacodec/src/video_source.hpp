@@ -57,7 +57,7 @@ public:
 
     virtual FormatInfo format() const = 0;
     virtual void updateFormat(const FormatInfo& videoFormat) = 0;
-    virtual bool get(const int propertyId, double& propertyVal) const { return false; }
+    virtual bool get(const int, double&) const = 0;
     virtual int getFirstFrameIdx() const { return 0; }
     virtual void start() = 0;
     virtual void stop() = 0;
