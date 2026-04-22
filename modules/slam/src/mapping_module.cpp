@@ -147,6 +147,23 @@ void mapping_module::abort_local_BA() {
     abort_local_BA_ = true;
 }
 
+void mapping_module::set_enable_local_BA(bool enable) {
+    enable_local_BA_ = enable;
+    CV_LOG_INFO(&g_log_tag, "Local BA " << (enable ? "enabled" : "disabled"));
+}
+
+bool mapping_module::is_local_BA_enabled() const {
+    return enable_local_BA_;
+}
+
+void mapping_module::set_ba_window_size(int size) {
+    ba_window_size_ = size;
+}
+
+int mapping_module::get_ba_window_size() const {
+    return ba_window_size_;
+}
+
 void mapping_module::mapping_with_new_keyframe() {
     // dequeue
     {
@@ -199,8 +216,11 @@ void mapping_module::mapping_with_new_keyframe() {
 
     // local bundle adjustment
     abort_local_BA_ = false;
-    // If the processing speed is insufficient, skip localBA.
-    if (2 < map_db_->get_num_keyframes()) {
+    // Check if local BA is disabled (for ablation experiments)
+    if (!enable_local_BA_) {
+        CV_LOG_DEBUG(&g_log_tag, "Skipped local BA (disabled for ablation)");
+    }
+    else if (2 < map_db_->get_num_keyframes()) {
         if (is_skipping_localBA()) {
             CV_LOG_DEBUG(&g_log_tag, "Skipped localBA due to insufficient performance");
         }

@@ -16,8 +16,9 @@ static cv::utils::logging::LogTag g_log_tag("cv_slam_module", cv::utils::logging
 void system::set_enable_backend(bool enable, int window_size) {
     CV_LOG_INFO(&g_log_tag, "Setting backend enabled: " << enable << " (window_size=" << window_size << ")");
     backend_enabled_ = enable;
-    
-    
+    if (mapper_) {
+        mapper_->set_enable_local_BA(enable);
+    }
 }
 
 bool system::backend_is_enabled() const {
@@ -30,6 +31,9 @@ bool system::backend_is_running() const {
 
 void system::set_ba_window_size(int size) {
     CV_LOG_INFO(&g_log_tag, "Setting BA window size to: " << size);
+    if (mapper_) {
+        mapper_->set_ba_window_size(size);
+    }
 }
 
 void system::set_enable_loop_closure(bool enable) {
@@ -56,12 +60,6 @@ bool system::loop_closure_is_running() const {
     return global_optimizer_ && !global_optimizer_->is_paused();
 }
 
-bool system::should_skip_backend() const {
-    return !backend_enabled_;
-}
 
-bool system::should_skip_loop_closure() const {
-    return !loop_closure_enabled_;
-}
 
 } // namespace cv::slam

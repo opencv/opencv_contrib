@@ -98,6 +98,17 @@ public:
     //! Abort the local BA externally
     //! (NOTE: this function does not wait for abort)
     void abort_local_BA();
+    //! Enable or disable local bundle adjustment
+    void set_enable_local_BA(bool enable);
+
+    //! Check if local BA is enabled
+    bool is_local_BA_enabled() const;
+
+    //! Set BA window size
+    void set_ba_window_size(int size);
+
+    //! Get BA window size
+    int get_ba_window_size() const;
 
 private:
     //-----------------------------------------
@@ -230,6 +241,11 @@ private:
 
     //! bridge flag to abort local BA
     bool abort_local_BA_ = false;
+    //! flag to enable/disable local BA (for ablation experiments)
+    bool enable_local_BA_ = true;
+
+    //! BA window size parameter
+    int ba_window_size_ = 10;
 
     //-----------------------------------------
     // others

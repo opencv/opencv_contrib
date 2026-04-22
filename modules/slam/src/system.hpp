@@ -194,9 +194,6 @@ public:
     //! Check if backend is actually running
     bool backend_is_running() const;
 
-    //! Check if backend should be skipped
-    bool should_skip_backend() const;
-
     //! Set BA window size
     void set_ba_window_size(int size);
 
@@ -204,9 +201,6 @@ public:
     //! Check if loop closure is actually running
     bool loop_closure_is_running() const;
 
-
-    //! Check if loop closure should be skipped
-    bool should_skip_loop_closure() const;
 
     //! Enable/disable loop closure detection
     void set_enable_loop_closure(bool enable);

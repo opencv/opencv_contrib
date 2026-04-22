@@ -115,8 +115,8 @@ private:
     std::string vocab_file_;
     
     // Backend configuration
-    bool backend_enabled_ = false;
-    bool loop_closure_enabled_ = false;
+    bool backend_enabled_ = true;
+    bool loop_closure_enabled_ = true;
     int ba_window_size_ = 10;
     
     // Feature detector and matcher
