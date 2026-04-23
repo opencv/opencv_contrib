@@ -194,7 +194,8 @@ void local_bundle_adjuster_gtsam::optimize(data::map_database* map_db,
             const auto& undist_keypt = keyfrm->frm_obs_.undist_keypts_.at(idx);
             const float x_right = keyfrm->frm_obs_.stereo_x_right_.empty() ? -1.0f : keyfrm->frm_obs_.stereo_x_right_.at(idx);
             const float sigma_sq = keyfrm->orb_params_->level_sigma_sq_.at(undist_keypt.octave);
-            // TODO: Support other models
+            // NOTE: Currently only Perspective camera model is supported for GTSAM-based local BA.
+            // Fisheye, equirectangular, and radial division models are not yet implemented.
             assert(keyfrm->camera_->model_type_ == camera::model_type_t::Perspective);
             // Create reprojection edge from keyfrm
             const auto dim = (x_right < 0.0) ? 2 : 3;
@@ -263,7 +264,10 @@ void local_bundle_adjuster_gtsam::optimize(data::map_database* map_db,
     gtsam::Values result = optimizer.optimize();
 
     // 6. Discard outliers, then perform the second optimization
-    // TODO: Implement here
+    // FIXME: Step 6 (outlier discarding + second optimization) not yet implemented.
+    // The current GTSAM local BA performs a single Levenberg-Marquardt optimization
+    // without the outlier rejection loop that the g2o-based local BA uses.
+    // Outlier counting still proceeds based on the single-optimization result.
 
     // 7. Count the outliers
 

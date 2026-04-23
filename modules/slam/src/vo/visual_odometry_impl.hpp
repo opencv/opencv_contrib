@@ -70,8 +70,10 @@ public:
     void setMode(cv::vo::SLAMMode mode) override;
     cv::vo::SLAMMode getMode() const override;
     
-    void setFeatureDetector(const cv::Ptr<cv::Feature2D>& detector);
-    void setMatcher(const cv::Ptr<cv::DescriptorMatcher>& m);
+    void setFeatureDetector(const cv::Ptr<cv::Feature2D>& detector) override;
+    void setMatcher(const cv::Ptr<cv::DescriptorMatcher>& m) override;
+    cv::Ptr<cv::Feature2D> getFeatureDetector() const override;
+    cv::Ptr<cv::DescriptorMatcher> getMatcher() const override;
     
     // ========== Backend control ==========
     
@@ -98,6 +100,9 @@ private:
     void initialize(const std::string& config_file, const std::string& vocab_file);
     
     std::shared_ptr<cv::slam::system> system_;
+    
+    // Configuration (moved from base class, which no longer has protected members)
+    VOConfig config_;
     
     // Trajectory
     std::vector<std::pair<double, cv::Matx44d>> trajectory_;

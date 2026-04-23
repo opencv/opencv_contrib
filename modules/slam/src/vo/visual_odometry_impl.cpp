@@ -376,6 +376,16 @@ void VisualOdometryImpl::setMatcher(const cv::Ptr<cv::DescriptorMatcher>& m)
     matcher_ = m;
 }
 
+cv::Ptr<cv::Feature2D> VisualOdometryImpl::getFeatureDetector() const
+{
+    return feature_detector_;
+}
+
+cv::Ptr<cv::DescriptorMatcher> VisualOdometryImpl::getMatcher() const
+{
+    return matcher_;
+}
+
 // ============================================================================
 
 // ============================================================================

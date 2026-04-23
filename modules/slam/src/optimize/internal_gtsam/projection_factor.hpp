@@ -202,8 +202,11 @@ public:
             *Dpose = jacobian;
         }
         else if (Dpoint) {
-            CV_LOG_WARNING(&g_log_tag, "Not implemented");
-            // TODO: Implement here
+            // FIXME: Dpoint (landmark Jacobian) for GTSAM projection factor not yet implemented.
+            // Only Dpose (pose Jacobian) is currently computed. Dpoint is required for
+            // joint optimization of camera poses and landmarks. Currently, GTSAM-based
+            // local BA uses pose-only optimization as a fallback.
+            CV_LOG_WARNING(&g_log_tag, "Dpoint Jacobian not implemented for GTSAM projection factor");
         }
         return proj;
     }

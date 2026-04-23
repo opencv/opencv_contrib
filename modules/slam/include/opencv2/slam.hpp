@@ -1,5 +1,9 @@
-#ifndef SLAM_HPP
-#define SLAM_HPP
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
+#ifndef OPENCV_SLAM_HPP
+#define OPENCV_SLAM_HPP
 
 #include <opencv2/core.hpp>
 #include <opencv2/features2d.hpp>
@@ -7,13 +11,8 @@
 #include <vector>
 #include <optional>
 
-namespace cv::slam {
-namespace camera {
-class base;
-}
-}
-
 namespace cv {
+
 namespace vo {
 
 /** @brief Visual odometry tracking state. */
@@ -40,7 +39,7 @@ enum class SLAMMode {
  *  settings, backend parameters, etc. are all read from the YAML file
  *  specified by camera_config_file.
  */
-struct VOConfig {
+struct CV_EXPORTS_W_SIMPLE VOConfig {
     String camera_config_file; //!< Path to camera YAML config (Camera/Feature/Mapping/System sections)
     String vocab_file;         //!< Path to FBoW vocabulary file for loop closure and global relocalization
 };
@@ -63,7 +62,8 @@ struct VOConfig {
  *  config.camera_config_file = "EuRoC.yaml";
  *  config.vocab_file = "orb_vocab.fbow";
  *
- *  auto vo = cv::vo::VisualOdometry::create(config, cv::ORB::create(), cv::BFMatcher::create(cv::NORM_HAMMING));
+ *  auto vo = cv::vo::VisualOdometry::create(config,
+ *      cv::ORB::create(), cv::BFMatcher::create(cv::NORM_HAMMING));
  *
  *  cv::Mat frame = cv::imread("frame.png", cv::IMREAD_GRAYSCALE);
  *  auto pose = vo->processFrame(frame, timestamp);
@@ -88,7 +88,7 @@ public:
         const VOConfig& config,
         const Ptr<Feature2D>& feature_detector,
         const Ptr<DescriptorMatcher>& matcher);
-    
+
     /** @brief Create a VisualOdometry instance from a YAML config file.
      *
      *  Use this convenience overload when configuration (including feature
@@ -104,11 +104,14 @@ public:
     CV_WRAP static Ptr<VisualOdometry> create(
         const String& config_file,
         const String& vocab_file = "");
-    
+
     virtual ~VisualOdometry() = default;
-    
-    
-    
+
+    /** @name Frame Processing
+     *  Process monocular image frames and estimate camera pose.
+     */
+    ///@{
+
     /** @brief Process a single monocular frame.
      *
      *  Extracts features, matches against the local map, and estimates the
@@ -126,10 +129,14 @@ public:
      *  @note Call release() when done to allow background threads to finish.
      */
     CV_WRAP virtual std::optional<Matx44d> processFrame(
-        const Mat& image, 
+        const Mat& image,
         double timestamp) = 0;
-    
-    // ========== State queries ==========
+    ///@}
+
+    /** @name State Queries
+     *  Query the current tracking state and system properties.
+     */
+    ///@{
 
     /** @brief Get the current tracking state.
      *  @return Current VOState (NotInitialized, Initializing, Tracking, or Lost).
@@ -145,87 +152,137 @@ public:
      *  @return true if the map contains no data.
      */
     CV_WRAP virtual bool isEmpty() const = 0;
-    
-    
-    
+    ///@}
+
+    /** @name Map and Trajectory Access
+     *  Access map points, keypoints, poses, and trajectory data.
+     */
+    ///@{
+
+    /** @brief Get all reconstructed 3D map points.
+     *  @return Vector of 3D points in world coordinates.
+     */
     CV_WRAP virtual std::vector<Point3d> getMapPoints() const = 0;
+
+    /** @brief Get keypoints detected in the current frame.
+     *  @return Vector of keypoints from the most recent processFrame() call.
+     */
     CV_WRAP virtual std::vector<KeyPoint> getCurrentKeypoints() const = 0;
+
+    /** @brief Get the current camera pose.
+     *  @return 4x4 camera-to-world SE(3) pose matrix.
+     */
     CV_WRAP virtual Matx44d getCurrentPose() const = 0;
-    
-    
-    
+
+    /** @brief Get the full trajectory as timestamp-pose pairs.
+     *  @return Vector of (timestamp, pose) pairs.
+     */
     CV_WRAP virtual std::vector<std::pair<double, Matx44d>> getTrajectory() const = 0;
+
+    /** @brief Save trajectory to file.
+     *  @param path   Output file path.
+     *  @param format File format (e.g., "TUM", "KITTI", "EuRoC").
+     *  @return true on success.
+     */
     CV_WRAP virtual bool saveTrajectory(const String& path, const String& format) = 0;
-    
-    // ========== 地图保存/加载 ==========
-    
-    /**
-     * @brief 保存地图到文件
-     * @param path 文件路径（.msgpack 格式）
-     * @return 成功返回 true
+    ///@}
+
+    /** @name Map Persistence
+     *  Save and load reconstructed maps for later reuse.
+     */
+    ///@{
+
+    /** @brief Save the map to a file.
+     *  @param path Output file path (.msgpack format).
+     *  @return true on success.
      */
     CV_WRAP virtual bool saveMap(const String& path) = 0;
-    
-    /**
-     * @brief 从文件加载地图
-     * @param path 文件路径（.msgpack 格式）
-     * @return 成功返回 true
+
+    /** @brief Load a map from a file.
+     *  @param path Input file path (.msgpack format).
+     *  @return true on success.
      */
     CV_WRAP virtual bool loadMap(const String& path) = 0;
-    
-    // ========== 控制接口 ==========
-    
+    ///@}
+
+    /** @name System Control
+     *  Reset, release, and control system lifecycle.
+     */
+    ///@{
+
+    /** @brief Reset the system to initial state, clearing the map. */
     CV_WRAP virtual void reset() = 0;
+
+    /** @brief Release system resources and stop background threads.
+     *  Must be called before destroying the VisualOdometry instance to
+     *  ensure clean shutdown of background threads (mapping, loop closure).
+     */
     CV_WRAP virtual void release() = 0;
-    
-    // ========== 模式控制 ==========
-    
-    /**
-     * @brief 设置 SLAM 模式
-     * @param mode SLAM 模式（SLAM 或 LOCALIZATION）
+    ///@}
+
+    /** @name Mode Control
+     *  Switch between SLAM and Localization modes.
+     */
+    ///@{
+
+    /** @brief Set the SLAM operating mode.
+     *  @param mode SLAM mode (SLAM or LOCALIZATION).
      */
     CV_WRAP virtual void setMode(SLAMMode mode) = 0;
-    
-    /**
-     * @brief 获取当前 SLAM 模式
-     * @return 当前模式
+
+    /** @brief Get the current SLAM operating mode.
+     *  @return Current mode.
      */
     CV_WRAP virtual SLAMMode getMode() const = 0;
-    
-    // ========== 后端控制 ==========
-    
-    /**
-     * @brief 启用/禁用局部 Bundle Adjustment
-     * @param enable 是否启用
-     * @param window_size 滑动窗口大小（默认 10）
+    ///@}
+
+    /** @name Backend Control
+     *  Enable/disable backend optimization components.
+     */
+    ///@{
+
+    /** @brief Enable or disable local Bundle Adjustment.
+     *  @param enable      Whether to enable backend BA.
+     *  @param window_size Sliding window size for local BA (default: 10).
      */
     CV_WRAP virtual void setBackendEnabled(bool enable, int window_size = 10) = 0;
+
+    /** @brief Check if backend BA is enabled. */
     CV_WRAP virtual bool isBackendEnabled() const = 0;
-    
-    /**
-     * @brief 启用/禁用回环检测
-     * @param enable 是否启用
+
+    /** @brief Enable or disable loop closure detection.
+     *  @param enable Whether to enable loop closure.
      */
     CV_WRAP virtual void setLoopClosureEnabled(bool enable) = 0;
+
+    /** @brief Check if loop closure detection is enabled. */
     CV_WRAP virtual bool isLoopClosureEnabled() const = 0;
-    
-    // ========== 组件访问 ==========
-    
+    ///@}
+
+    /** @name Component Access
+     *  Access or replace feature detector and matcher components.
+     */
+    ///@{
+
+    /** @brief Replace the feature detector at runtime.
+     *  @param detector New feature detector/descriptor extractor.
+     */
     CV_WRAP virtual void setFeatureDetector(const Ptr<Feature2D>& detector) = 0;
-    CV_WRAP virtual Ptr<Feature2D> getFeatureDetector() const { return feature_detector_; }
+
+    /** @brief Get the current feature detector. */
+    CV_WRAP virtual Ptr<Feature2D> getFeatureDetector() const = 0;
+
+    /** @brief Replace the descriptor matcher at runtime.
+     *  @param matcher New descriptor matcher.
+     */
     CV_WRAP virtual void setMatcher(const Ptr<DescriptorMatcher>& matcher) = 0;
-    CV_WRAP virtual Ptr<DescriptorMatcher> getMatcher() const { return matcher_; }
-    CV_WRAP virtual std::shared_ptr<slam::camera::base> getCamera() const { return camera_; }
-    
-protected:
-    VOConfig config_;
-    Ptr<Feature2D> feature_detector_;
-    Ptr<DescriptorMatcher> matcher_;
-    std::shared_ptr<slam::camera::base> camera_;
-    VOState state_ = VOState::NotInitialized;
+
+    /** @brief Get the current descriptor matcher. */
+    CV_WRAP virtual Ptr<DescriptorMatcher> getMatcher() const = 0;
+    ///@}
 };
 
 } // namespace vo
 } // namespace cv
 
-#endif // SLAM_HPP
+#endif // OPENCV_SLAM_HPP

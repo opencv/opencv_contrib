@@ -280,7 +280,9 @@ nlohmann::json keyframe::to_json() const {
         loop_edge_ids.push_back(loop_edge->id_);
     }
 
-    // TODO: msgpack format does not yet support markers save/load
+    // NOTE: msgpack format does not yet support marker save/load.
+    // Markers (aruco/arUcoNano) are skipped during serialization; reloaded maps
+    // will not contain marker observations.
 
     return {{"ts", timestamp_},
             {"cam", camera_->name_},

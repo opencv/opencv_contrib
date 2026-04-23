@@ -290,4 +290,7 @@ else()
     if(USE_OPENMP AND OpenMP_CXX_FOUND)
         ocv_target_link_libraries(${the_module} PUBLIC OpenMP::OpenMP_CXX)
     endif()
+
+    # Build accuracy tests (requires BUILD_TESTS=ON)
+    ocv_add_accuracy_tests()
 endif()
