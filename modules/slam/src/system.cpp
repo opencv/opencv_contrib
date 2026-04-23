@@ -144,13 +144,11 @@ void system::print_info() {
     std::ostringstream message_stream;
 
     message_stream << std::endl;
-    message_stream << "OpenCV SLAM Module is based on stella_vslam.";
-    message_stream << "original version of OpenVSLAM," << std::endl;
-    message_stream << "Copyright (C) 2019," << std::endl;
-    message_stream << "National Institute of Advanced Industrial Science and Technology (AIST)" << std::endl;
+    message_stream << "OpenCV SLAM module (based on OpenVSLAM and stella_vslam)," << std::endl;
+    message_stream << "Copyright (C) 2019, National Institute of Advanced Industrial Science and Technology (AIST)" << std::endl;
+    message_stream << "Copyright (C) 2022, stella-cv contributors" << std::endl;
+    message_stream << "Copyright (C) 2026, OpenCV Contrib SLAM module contributors" << std::endl;
     message_stream << "All rights reserved." << std::endl;
-    message_stream << "stella_vslam (the changes after forking from OpenVSLAM)," << std::endl;
-    message_stream << "Copyright (C) 2022, stella-cv, All rights reserved." << std::endl;
     message_stream << std::endl;
 
     // show configuration
