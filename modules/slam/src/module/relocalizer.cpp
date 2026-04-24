@@ -83,9 +83,9 @@ bool relocalizer::reloc_by_candidates(data::frame& curr_frm,
         bool ok = reloc_by_candidate(curr_frm, candidate_keyfrm, use_robust_matcher);
         if (ok) {
             CV_LOG_INFO(&g_log_tag, "relocalization succeeded (frame=" << curr_frm.id_ << ", keyframe=" << candidate_keyfrm->id_ << ")");
-            // FIXME: Should set the reference keyframe of the current frame after
-            // successful relocalization. Without this, the frame's reference keyframe
-            // remains stale, which may cause minor drift in subsequent tracking steps.
+            // Set the reference keyframe to the successful candidate, preventing stale
+            // reference keyframe from causing drift in subsequent tracking steps.
+            curr_frm.ref_keyfrm_ = candidate_keyfrm;
             return true;
         }
     }

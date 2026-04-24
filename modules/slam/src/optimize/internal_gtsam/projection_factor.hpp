@@ -10,6 +10,8 @@
 
 #include <opencv2/core/utils/logger.hpp>
 
+static cv::utils::logging::LogTag g_log_tag("cv_slam_gtsam", cv::utils::logging::LOG_LEVEL_INFO);
+
 namespace cv::slam {
 
 namespace optimize {

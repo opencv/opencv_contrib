@@ -511,7 +511,7 @@ bool loop_detector::select_loop_candidate_via_Sim3(const std::unordered_set<std:
         // Discard if the number of the observations is less than the threshold
         if (num_valid_obs1 + num_additional < min_num_valid_obs2) {
             CV_LOG_DEBUG(&g_log_tag, "3. Number of matches (" << num_valid_obs1 + num_additional << ") < threshold (" << min_num_valid_obs2 << ")");
-            return false;
+            continue;
         }
 
         // Perform optimization again
@@ -524,7 +524,7 @@ bool loop_detector::select_loop_candidate_via_Sim3(const std::unordered_set<std:
         // Discard if falling below the threshold
         if (num_valid_obs2 < min_num_valid_obs2) {
             CV_LOG_DEBUG(&g_log_tag, "3. Number of inliers (" << num_valid_obs2 << ") < threshold (" << min_num_valid_obs2 << ")");
-            return false;
+            continue;
         }
 
         // Reject outliers

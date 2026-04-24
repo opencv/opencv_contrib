@@ -163,6 +163,8 @@ void local_bundle_adjuster_gtsam::optimize(data::map_database* map_db,
     // 4. Connect the vertices of the keyframe and the landmark by using an edge of reprojection constraint
 
     const double huber_k = 1.345;
+    constexpr double chi_sq_2D = 5.99146;  // chi-square threshold, 2 dof, 95% confidence
+    constexpr double chi_sq_3D = 7.81473;  // chi-square threshold, 3 dof, 95% confidence
 
     for (const auto& id_local_lm_pair : local_lms) {
         const auto local_lm = id_local_lm_pair.second;
@@ -264,10 +266,76 @@ void local_bundle_adjuster_gtsam::optimize(data::map_database* map_db,
     gtsam::Values result = optimizer.optimize();
 
     // 6. Discard outliers, then perform the second optimization
-    // FIXME: Step 6 (outlier discarding + second optimization) not yet implemented.
-    // The current GTSAM local BA performs a single Levenberg-Marquardt optimization
-    // without the outlier rejection loop that the g2o-based local BA uses.
-    // Outlier counting still proceeds based on the single-optimization result.
+
+    bool run_robust_BA = true;
+    if (force_stop_flag && *force_stop_flag) {
+        run_robust_BA = false;
+    }
+
+    gtsam::Values final_result = result;
+
+    if (run_robust_BA) {
+        gtsam::NonlinearFactorGraph graph2;
+        gtsam::Values initial_estimate2 = result;
+
+        // Re-add fixed keyframe priors
+        for (const auto& id_fixed_keyfrm_pair : fixed_keyfrms) {
+            const auto& fixed_keyfrm = id_fixed_keyfrm_pair.second;
+            auto pose = gtsam::Pose3(fixed_keyfrm->get_pose_wc());
+            auto poseNoise = gtsam::noiseModel::Diagonal::Sigmas(
+                (gtsam::Vector(6) << gtsam::Vector3::Constant(1e-3), gtsam::Vector3::Constant(1e-2)).finished());
+            graph2.addPrior(gtsam::Symbol('x', id_fixed_keyfrm_pair.first), pose, poseNoise);
+        }
+
+        // Clone reprojection factors, replacing Huber with Gaussian for inliers
+        for (const auto& nonlinear_factor : graph) {
+            const auto& noise_model_factor = boost::dynamic_pointer_cast<gtsam::NoiseModelFactor2<gtsam::Pose3, gtsam::Point3>>(nonlinear_factor);
+            if (!noise_model_factor) {
+                continue;
+            }
+
+            gtsam::Pose3 pose = result.at<gtsam::Pose3>(noise_model_factor->key1());
+            gtsam::Point3 point = result.at<gtsam::Point3>(noise_model_factor->key2());
+            gtsam::Values values;
+            values.insert(noise_model_factor->key1(), pose);
+            values.insert(noise_model_factor->key2(), point);
+            const gtsam::Vector b = noise_model_factor->unwhitenedError(values);
+            double mahalanobis_distance = std::sqrt(noise_model_factor->noiseModel()->squaredMahalanobisDistance(b));
+
+            bool depth_is_positive = true;
+            const auto& projection_factor = boost::dynamic_pointer_cast<internal_gtsam::ProjectionFactorBase<gtsam::Pose3, gtsam::Point3>>(nonlinear_factor);
+            if (projection_factor) {
+                try {
+                    projection_factor->project(pose, point);
+                }
+                catch (gtsam::CheiralityException& e) {
+                    depth_is_positive = false;
+                }
+                catch (gtsam::StereoCheiralityException& e) {
+                    depth_is_positive = false;
+                }
+            }
+
+            const double chi_sq_threshold = chi_sq_2D;  // monocular uses 2D
+            if (chi_sq_threshold < mahalanobis_distance * mahalanobis_distance || !depth_is_positive) {
+                continue; // Discard outlier
+            }
+
+            // Replace Huber robust kernel with Gaussian noise model
+            const auto& robust_model = boost::dynamic_pointer_cast<gtsam::noiseModel::Robust>(noise_model_factor->noiseModel());
+            if (robust_model) {
+                graph2.add(noise_model_factor->cloneWithNewNoiseModel(robust_model->noise()));
+            }
+            else {
+                graph2.add(nonlinear_factor);
+            }
+        }
+
+        gtsam::LevenbergMarquardtParams lm_params2;
+        lm_params2.setMaxIterations(num_second_iter_);
+        gtsam::LevenbergMarquardtOptimizer optimizer2(graph2, initial_estimate2, lm_params2);
+        final_result = optimizer2.optimize();
+    }
 
     // 7. Count the outliers
 
@@ -310,7 +378,8 @@ void local_bundle_adjuster_gtsam::optimize(data::map_database* map_db,
 
         auto& lm = local_lms.at(gtsam::Symbol(nonlinear_factor->back()).index());
         auto& keyfrm = all_keyfrms.at(gtsam::Symbol(nonlinear_factor->front()).index());
-        if (huber_k < mahalanobis_distance || !depth_is_positive) {
+        const double chi_sq_threshold = chi_sq_2D;  // monocular uses 2D
+        if (chi_sq_threshold < mahalanobis_distance * mahalanobis_distance || !depth_is_positive) {
             outlier_observations.emplace_back(std::make_pair(keyfrm, lm));
         }
     }
@@ -325,7 +394,7 @@ void local_bundle_adjuster_gtsam::optimize(data::map_database* map_db,
             const auto& lm = outlier_obs.second;
             keyfrm->erase_landmark(lm);
             lm->erase_observation(map_db, keyfrm);
-            CV_LOG_DEBUG(&g_log_tag, "Erase invalid observation lm=" << local_lm->id_);
+            CV_LOG_DEBUG(&g_log_tag, "Erase invalid observation lm=" << lm->id_);
             if (!lm->will_be_erased()) {
                 lm->compute_descriptor();
                 lm->update_mean_normal_and_obs_scale_variance();
@@ -334,7 +403,7 @@ void local_bundle_adjuster_gtsam::optimize(data::map_database* map_db,
 
         for (const auto& id_local_keyfrm_pair : local_keyfrms) {
             const auto& local_keyfrm = id_local_keyfrm_pair.second;
-            auto pose = result.at<gtsam::Pose3>(gtsam::Symbol('x', id_local_keyfrm_pair.first));
+            auto pose = final_result.at<gtsam::Pose3>(gtsam::Symbol('x', id_local_keyfrm_pair.first));
             local_keyfrm->set_pose_cw(util::converter::inverse_pose(pose.matrix()));
         }
 
@@ -343,11 +412,11 @@ void local_bundle_adjuster_gtsam::optimize(data::map_database* map_db,
             if (local_lm->will_be_erased()) {
                 continue;
             }
-            if (!result.exists(gtsam::Symbol('l', id_local_lm_pair.first))) {
+            if (!final_result.exists(gtsam::Symbol('l', id_local_lm_pair.first))) {
                 continue;
             }
 
-            auto point = result.at<gtsam::Point3>(gtsam::Symbol('l', id_local_lm_pair.first));
+            auto point = final_result.at<gtsam::Point3>(gtsam::Symbol('l', id_local_lm_pair.first));
             local_lm->set_pos_in_world(point);
             local_lm->update_mean_normal_and_obs_scale_variance();
         }
