@@ -39,6 +39,24 @@ namespace cv {
         namespace segmentation {
             //! @addtogroup ximgproc_segmentation
             //! @{
+                    /** @brief Statistical Region Merging Based segmentation Algorithm
+                     * The following class implements the algorithm described in @cite 
+                     */
+                    class CV_EXPORTS_W srm_segment : public Algorithm{
+                        public:
+                            /**
+                             * @brief The following functions implement an algorithm based 
+                             * on statistical region merging;
+                             * @param src The input image currently must be an BGR image
+                             * or grayscale 
+                             * @param dst Output of the form CV_32F Mat 
+                             */
+                            CV_WRAP virtual void ProcessImage(InputArray src,OutputArray out)=0; 
+                            CV_WRAP virtual void set_Q(int Q)=0; 
+                            CV_WRAP virtual void set_sigma(double sigma)=0; 
+                    };
+                    CV_EXPORTS_W Ptr<srm_segment> createSRMSegmentation(); 
+                    CV_EXPORTS_W void  SRMSegmentation(InputArray src, OutputArray dst, int Q=32, double sigma=0.5);
 
                     /** @brief Graph Based Segmentation Algorithm.
                         The class implements the algorithm described in @cite PFF2004 .
