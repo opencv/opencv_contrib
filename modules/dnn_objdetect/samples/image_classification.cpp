@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     cv::String model_prototxt = argv[1];
     cv::String model_binary = argv[2];
     cv::String test_image = argv[3];
-    cv::dnn::Net net = cv::dnn::readNetFromCaffe(model_prototxt, model_binary);
+    cv::dnn::Net net = cv::dnn::readNet(model_binary, model_prototxt);
 
     if (net.empty())
     {

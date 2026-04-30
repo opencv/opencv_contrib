@@ -22,7 +22,7 @@ private:
 public:
     OCRHolisticWordRecognizerImpl(const string &archFilename, const string &weightsFilename, const string &wordsFilename)
     {
-        net = dnn::readNetFromCaffe(archFilename, weightsFilename);
+        net = dnn::readNet(weightsFilename, archFilename);
         std::ifstream in(wordsFilename.c_str());
         if (!in)
         {
