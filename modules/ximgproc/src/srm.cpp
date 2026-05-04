@@ -37,7 +37,7 @@ the use of this software, even if advised of the possibility of such damage.
 * on  Pattern Analysis and Machine Intelligence, vol. 26, no. 11,
 * pp. 1452-1458, Nov. 2004, doi: 10.1109/TPAMI.2004.110.                                                             *
 * Author: Dheer Prasad / IIT Bombay / 2026                               *
-*******************************************************************************/
+************************************************************************    *******/
 
 
 #include "precomp.hpp"
