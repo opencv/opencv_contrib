@@ -40,8 +40,12 @@ namespace cv {
             //! @addtogroup ximgproc_segmentation
             //! @{
                     /** @brief Statistical Region Merging Based segmentation Algorithm
+<<<<<<< HEAD
                      * The following class implements the algorithm described in  
                      * @cite R. Nock, F. Nielsen, "Statistical Region Merging", IEEE TPAMI, 2004.
+=======
+                     * The following class implements the algorithm described in @cite 
+>>>>>>> 25e57062f0d9b62cc05be23e85a2f81af3bb66ec
                      */
                     class CV_EXPORTS_W srm_segment : public Algorithm{
                         public:
