@@ -39,6 +39,18 @@ namespace cv {
         namespace segmentation {
             //! @addtogroup ximgproc_segmentation
             //! @{
+                    class CV_EXPORTS_W srm_segment : public Algorithm {
+                    public:
+                        // Must match every CV_OVERRIDE function in srm_segment_impl exactly
+                        CV_WRAP virtual void ProcessImage(InputArray src, OutputArray dst) = 0;
+                        CV_WRAP virtual void set_Q(int Q) = 0;
+                        CV_WRAP virtual void set_sigma(double sigma) = 0;
+
+                        virtual ~srm_segment() {}
+                    };
+
+                    CV_EXPORTS_W Ptr<srm_segment> createSRMSegmentation();
+                    CV_EXPORTS_W void SRMSegmentation(InputArray src, OutputArray dst, int Q=32, double sigma=0.5);
 
                     /** @brief Graph Based Segmentation Algorithm.
                         The class implements the algorithm described in @cite PFF2004 .
