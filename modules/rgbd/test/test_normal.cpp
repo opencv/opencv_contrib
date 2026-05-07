@@ -208,7 +208,7 @@ protected:
             break;
           default:
             method = (RgbdNormals::RGBD_NORMALS_METHOD)-1;
-            CV_Error(0, "");
+            CV_Error(Error::StsBadArg, "");
         }
 
         for (unsigned char j = 0; j < 2; ++j)
