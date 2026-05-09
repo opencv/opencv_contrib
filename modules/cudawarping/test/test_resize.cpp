@@ -261,5 +261,59 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeTextures, testing::Combine(
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC))));
 
 
+
+// Test for issue #28407: cv::cuda::resize fails with continuous GpuMat
+PARAM_TEST_CASE(ResizeContinuous, cv::cuda::DeviceInfo, cv::Size, MatType, Interpolation)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int type;
+    int interpolation;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        type = GET_PARAM(2);
+        interpolation = GET_PARAM(3);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(ResizeContinuous, Regression_Issue28407)
+{
+    // Test both regular and continuous GpuMat
+    cv::Mat src = randomMat(size, type);
+
+    // Test 1: Regular GpuMat (should work)
+    cv::cuda::GpuMat d_src_regular(src);
+    cv::cuda::GpuMat d_dst_regular;
+    EXPECT_NO_THROW(
+        cv::cuda::resize(d_src_regular, d_dst_regular, cv::Size(size.width * 2, size.height * 2), 0, 0, interpolation)
+    );
+
+    // Test 2: Continuous GpuMat (this is the bug - should work but currently fails)
+    cv::cuda::GpuMat d_src_continuous = cv::cuda::createContinuous(size.height, size.width, type);
+    d_src_continuous.upload(src);
+    cv::cuda::GpuMat d_dst_continuous;
+    EXPECT_NO_THROW(
+        cv::cuda::resize(d_src_continuous, d_dst_continuous, cv::Size(size.width * 2, size.height * 2), 0, 0, interpolation)
+    );
+
+    // Verify both produce the same result
+    cv::Mat h_dst_regular, h_dst_continuous;
+    d_dst_regular.download(h_dst_regular);
+    d_dst_continuous.download(h_dst_continuous);
+
+    EXPECT_MAT_NEAR(h_dst_regular, h_dst_continuous, 0.0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeContinuous, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(cv::Size(10, 10), cv::Size(64, 64), cv::Size(128, 128)),
+    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_32FC1)),
+    testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC))));
+
 }} // namespace
 #endif // HAVE_CUDA
