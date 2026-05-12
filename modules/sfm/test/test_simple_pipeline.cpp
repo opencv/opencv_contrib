@@ -70,8 +70,8 @@ TEST(Sfm_simple_pipeline, backyard)
                                     k1, k2, k3);
     libmv_ReconstructionOptions reconstruction_options(keyframe1, keyframe2, refine_intrinsics, select_keyframes, verbosity_level);
 
-    Ptr<SFMLibmvEuclideanReconstruction> euclidean_reconstruction =
-        SFMLibmvEuclideanReconstruction::create(camera_instrinsic_options, reconstruction_options);
+    Ptr<SFMLibmvEuclideanRecons> euclidean_reconstruction =
+        SFMLibmvEuclideanRecons::create(camera_instrinsic_options, reconstruction_options);
 
     // Run reconstruction pipeline
     euclidean_reconstruction->run(points2d);
