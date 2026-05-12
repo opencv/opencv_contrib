@@ -95,7 +95,7 @@ namespace
 void absDiffScalar(const GpuMat& src, cv::Scalar val, bool, GpuMat& dst, const GpuMat&, double, Stream& stream, int)
 {
     typedef void (*func_t)(const GpuMat& src, cv::Scalar val, GpuMat& dst, Stream& stream);
-    static const func_t funcs[7][4] =
+    static const func_t funcs[CV_DEPTH_MAX][4] =
     {
         {
             absDiffScalarImpl<uchar, float>, absDiffScalarImpl<uchar2, float>, absDiffScalarImpl<uchar3, float>, absDiffScalarImpl<uchar4, float>
