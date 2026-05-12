@@ -288,6 +288,20 @@ void add_mul(float *dst, float *src1, float *src2, int w)
             _mm_storeu_ps(dst + j, c);
         }
     }
+#elif CV_NEON
+    if (CV_CPU_HAS_SUPPORT_NEON)
+    {
+        float32x4_t a, b, c;
+        for (; j < w - 3; j += 4)
+        {
+            a = vld1q_f32(src1 + j);
+            b = vld1q_f32(src2 + j);
+            b = vmulq_f32(b, a);
+            c = vld1q_f32(dst + j);
+            c = vaddq_f32(c, b);
+            vst1q_f32(dst + j, c);
+        }
+    }
 #endif
     for (; j < w; j++)
     {
