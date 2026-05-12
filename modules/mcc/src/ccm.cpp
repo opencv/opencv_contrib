@@ -27,15 +27,28 @@
 
 #include "opencv2/mcc/ccm.hpp"
 #include "linearize.hpp"
+
 namespace cv {
 namespace ccm {
 class ColorCorrectionModel::Impl
 {
 public:
     Mat src;
+
     std::shared_ptr<Color> dst = std::make_shared<Color>();
+    // Track initialization parameters for serialization
+    Mat dst_colors;
+    COLOR_SPACE dst_cs_enum;
+    Mat dst_colored;
+    CONST_COLOR dst_constcolor;
+    bool dst_use_constcolor;
+
     Mat dist;
+
     RGBBase_& cs;
+    // Track initialization parameters for serialization
+    COLOR_SPACE cs_enum;
+
     Mat mask;
 
     // RGBl of detected data and the reference
@@ -138,6 +151,7 @@ public:
 
 ColorCorrectionModel::Impl::Impl()
     : cs(*GetCS::getInstance().get_rgb(COLOR_SPACE_sRGB))
+    , cs_enum(COLOR_SPACE_sRGB)
     , ccm_type(CCM_3x3)
     , distance(DISTANCE_CIE2000)
     , linear_type(LINEARIZATION_GAMMA)
@@ -282,6 +296,10 @@ void ColorCorrectionModel::Impl::fitting(void)
     loss = pow((res / masked_len), 0.5);
 }
 
+ColorCorrectionModel::ColorCorrectionModel()
+    : p(std::make_shared<Impl>())
+{}
+
 Mat ColorCorrectionModel::infer(const Mat& img, bool islinear)
 {
     if (!p->ccm.data)
@@ -300,14 +318,24 @@ Mat ColorCorrectionModel::infer(const Mat& img, bool islinear)
 
 void ColorCorrectionModel::Impl::getColor(CONST_COLOR constcolor)
 {
+    dst_use_constcolor = true;
+    dst_constcolor = constcolor;
     dst = (GetColor::getColor(constcolor));
 }
 void ColorCorrectionModel::Impl::getColor(Mat colors_, COLOR_SPACE ref_cs_)
 {
+    dst_use_constcolor = false;
+    dst_colors = colors_;
+    dst_cs_enum = ref_cs_;
+    dst_colored = Mat();
     dst.reset(new Color(colors_, *GetCS::getInstance().get_cs(ref_cs_)));
 }
 void ColorCorrectionModel::Impl::getColor(Mat colors_, COLOR_SPACE cs_, Mat colored_)
 {
+    dst_use_constcolor = false;
+    dst_colors = colors_;
+    dst_cs_enum = cs_;
+    dst_colored = colored_;
     dst.reset(new Color(colors_, *GetCS::getInstance().get_cs(cs_), colored_));
 }
 ColorCorrectionModel::ColorCorrectionModel(const Mat& src_, CONST_COLOR constcolor)
@@ -331,6 +359,7 @@ ColorCorrectionModel::ColorCorrectionModel(const Mat& src_, Mat colors_, COLOR_S
 
 void ColorCorrectionModel::setColorSpace(COLOR_SPACE cs_)
 {
+    p->cs_enum = cs_;
     p->cs = *GetCS::getInstance().get_rgb(cs_);
 }
 void ColorCorrectionModel::setCCM_TYPE(CCM_TYPE ccm_type_)
@@ -433,5 +462,134 @@ Mat ColorCorrectionModel::getMask() const{
 Mat ColorCorrectionModel::getWeights() const{
     return p->weights;
 }
+
+void ColorCorrectionModel::write(FileStorage& fs) const
+{
+    fs << "{"     
+       << "ccm" << p->ccm
+       << "loss" << p->loss
+       << "src" << p->src
+       << "dist" << p->dist
+       << "cs_enum" << p->cs_enum
+       << "src_rgbl" << p->src_rgbl
+       << "dst_rgbl" << p->dst_rgbl
+       << "mask" << p->mask
+       << "ccm_type" << p->ccm_type
+       << "shape" << p->shape
+       << "linear" << *p->linear
+       << "distance" << p->distance
+       << "linear_type" << p->linear_type
+       << "weights" << p->weights
+       << "weights_list" << p->weights_list
+       << "ccm0" << p->ccm0
+       << "gamma" << p->gamma
+       << "deg" << p->deg
+       << "saturated_threshold" << p->saturated_threshold
+       << "initial_method_type" << p->initial_method_type
+       << "weights_coeff" << p->weights_coeff
+       << "masked_len" << p->masked_len
+       << "max_count" << p->max_count
+       << "epsilon" << p->epsilon
+       << "dst_use_constcolor" << p->dst_use_constcolor;
+
+    if (p->dst_use_constcolor) {
+        fs << "dst_constcolor" << p->dst_constcolor;
+    } else {
+        fs << "dst_colors" << p->dst_colors
+        << "dst_cs_enum" << p->dst_cs_enum
+        << "dst_colored" << p->dst_colored;
+    }
+    fs << "}";
+}
+
+
+void ColorCorrectionModel::read(const FileNode& node)
+{
+    node["ccm"] >> p->ccm;
+    node["loss"] >> p->loss;
+    node["src"] >> p->src;
+    node["dist"] >> p->dist;
+    node["src_rgbl"] >> p->src_rgbl;
+    node["dst_rgbl"] >> p->dst_rgbl;
+    node["mask"] >> p->mask;
+    node["ccm_type"] >> p->ccm_type;
+    node["shape"] >> p->shape;
+    node["distance"] >> p->distance;
+    node["gamma"] >> p->gamma;
+    node["deg"] >> p->deg;
+    node["saturated_threshold"] >> p->saturated_threshold;
+    node["initial_method_type"] >> p->initial_method_type;
+    node["weights_coeff"] >> p->weights_coeff;
+    node["weights"] >> p->weights;
+    node["weights_list"] >> p->weights_list;
+    node["ccm0"] >> p->ccm0;
+    node["masked_len"] >> p->masked_len;
+    node["max_count"] >> p->max_count;
+    node["epsilon"] >> p->epsilon;
+
+    COLOR_SPACE cs_enum;
+    node["cs_enum"] >> cs_enum;
+    setColorSpace(cs_enum);
+
+    bool dst_use_constcolor;
+    node["dst_use_constcolor"] >> dst_use_constcolor;
+    if (dst_use_constcolor) {
+        CONST_COLOR dst_constcolor;
+        node["dst_constcolor"] >> dst_constcolor;
+        p->getColor(dst_constcolor);
+    } else {
+        Mat dst_colors;
+        node["dst_colors"] >> dst_colors;
+        COLOR_SPACE dst_cs_enum;
+        node["dst_cs_enum"] >> dst_cs_enum;
+        Mat dst_colored;
+        node["dst_colored"] >> dst_colored;
+        if (dst_colored.empty()) {
+            p->getColor(dst_colors, dst_cs_enum);
+        } else {
+            p->getColor(dst_colors, dst_cs_enum, dst_colored);
+        }
+    }
+
+    node["linear_type"] >> p->linear_type;
+    switch (p->linear_type) {
+        case cv::ccm::LINEARIZATION_GAMMA:
+            p->linear = std::shared_ptr<Linear>(new LinearGamma());
+            break;
+        case cv::ccm::LINEARIZATION_COLORPOLYFIT:
+            p->linear = std::shared_ptr<Linear>(new LinearColor<Polyfit>());
+            break;
+        case cv::ccm::LINEARIZATION_IDENTITY:
+            p->linear = std::shared_ptr<Linear>(new LinearIdentity());
+            break;
+        case cv::ccm::LINEARIZATION_COLORLOGPOLYFIT:
+            p->linear = std::shared_ptr<Linear>(new LinearColor<LogPolyfit>());
+            break;
+        case cv::ccm::LINEARIZATION_GRAYPOLYFIT:
+            p->linear = std::shared_ptr<Linear>(new LinearGray<Polyfit>());
+            break;
+        case cv::ccm::LINEARIZATION_GRAYLOGPOLYFIT:
+            p->linear = std::shared_ptr<Linear>(new LinearGray<LogPolyfit>());
+            break;
+        default:
+            CV_Error(Error::StsBadArg, "Wrong linear_type!");
+            break;
+    }
+    node["linear"] >> *p->linear;
+}
+
+void write(FileStorage& fs, const std::string&, const cv::ccm::ColorCorrectionModel& ccm)
+{
+    ccm.write(fs);
+}
+
+void read(const cv::FileNode& node, cv::ccm::ColorCorrectionModel& ccm, const cv::ccm::ColorCorrectionModel& default_value)
+{
+    if (node.empty())
+        ccm = default_value;
+    else
+        ccm.read(node);
+}
+
 }
 }  // namespace cv::ccm
