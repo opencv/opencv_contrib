@@ -48,6 +48,13 @@
 
 namespace cv
 {
+    /** following typedefs used in k3 support (github.com/opencv/opencv_contrib/issues/3952)
+      should go to opencv2/core/matx.hpp at some point */
+    typedef Matx<float,  1, 5> Matx15f;
+    typedef Matx<double, 1, 5> Matx15d;
+    typedef Matx<float,  2, 5> Matx25f;
+    typedef Matx<double, 2, 5> Matx25d;
+    typedef Vec<double,  5>    Vec5d;
 namespace omnidir
 {
     //! @addtogroup ccalib
@@ -62,7 +69,9 @@ namespace omnidir
         CALIB_FIX_P2                = 32,
         CALIB_FIX_XI                = 64,
         CALIB_FIX_GAMMA             = 128,
-        CALIB_FIX_CENTER            = 256
+        CALIB_FIX_CENTER            = 256,
+        CALIB_FIX_K3                = 512
+
     };
 
     enum{
@@ -270,10 +279,11 @@ namespace internal
     void decodeParametersStereo(InputArray parameters, OutputArray K1, OutputArray K2, OutputArray om, OutputArray T, OutputArrayOfArrays omL,
         OutputArrayOfArrays tL, OutputArray D1, OutputArray D2, double& xi1, double& xi2);
 
-    void estimateUncertainties(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints, InputArray parameters, Mat& errors, Vec2d& std_error, double& rms, int flags);
+    void estimateUncertainties(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints, InputArray parameters,
+    Mat& errors, Vec2d& std_error, double& rms, int flags);
 
-    void estimateUncertaintiesStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2, InputArray parameters, Mat& errors,
-        Vec2d& std_error, double& rms, int flags);
+    void estimateUncertaintiesStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2,
+    InputArray parameters, Mat& errors, Vec2d& std_error, double& rms, int flags);
 
     double computeMeanReproErr(InputArrayOfArrays imagePoints, InputArrayOfArrays proImagePoints);
 
