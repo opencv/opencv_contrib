@@ -176,17 +176,28 @@ namespace cv {  namespace cudev {
             texRes.res.pitch2D.height = rows;
             texRes.res.pitch2D.width = cols;
             // temporary fix for single row/columns until TexturePtr is reworked
-            if (rows == 1 || cols == 1) {
+            int currentDevice = 0;
+            CV_CUDEV_SAFE_CALL(cudaGetDevice(&currentDevice));
+
+            cudaDeviceProp prop;
+            CV_CUDEV_SAFE_CALL(cudaGetDeviceProperties(&prop, currentDevice));
+
+            if (rows == 1 || cols == 1 ||
+                (step % prop.texturePitchAlignment) != 0)
+            {
                 size_t dStep = 0;
                 CV_CUDEV_SAFE_CALL(cudaMallocPitch(&internalSrc, &dStep, cols * sizeof(T1), rows));
-                CV_CUDEV_SAFE_CALL(cudaMemcpy2D(internalSrc, dStep, data, step, cols * sizeof(T1), rows, cudaMemcpyDeviceToDevice));
+                CV_CUDEV_SAFE_CALL(cudaMemcpy2D(internalSrc, dStep, data, step,
+                                               cols * sizeof(T1), rows,
+                                               cudaMemcpyDeviceToDevice));
                 texRes.res.pitch2D.devPtr = internalSrc;
                 texRes.res.pitch2D.pitchInBytes = dStep;
+           }
+           else {
+               texRes.res.pitch2D.devPtr = data;
+               texRes.res.pitch2D.pitchInBytes = step;
             }
-            else {
-                texRes.res.pitch2D.devPtr = data;
-                texRes.res.pitch2D.pitchInBytes = step;
-            }
+
             texRes.res.pitch2D.desc = cudaCreateChannelDesc<T1>();
             createTextureObject(texRes, normalizedCoords, filterMode, addressMode, readMode);
         }
