@@ -10,6 +10,7 @@ This guide provides step-by-step instructions for installing OpenCV with the SLA
 4. [Building OpenCV with SLAM Module](#4-building-opencv-with-slam-module)
 5. [Verification](#5-verification)
 6. [Running Examples](#6-running-examples)
+7. [Troubleshooting](#7-troubleshooting)
 
 ---
 
@@ -619,35 +620,53 @@ sudo pacman -S --noconfirm base-devel cmake git pkg-config \
     eigen yaml-cpp nlohmann-json sqlite suitesparse
 
 # Note: Arch's Eigen version is 5.x, but g2o requires Eigen 3.x
-# Install Eigen 3.4 from source:
+# Install Eigen 3.4 from source (required!):
 cd /tmp
 wget https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
 tar -xzf eigen-3.4.0.tar.gz
 cd eigen-3.4.0 && mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/local
 make -j$(nproc) && make install
+# Eigen 3.4 will be installed to: $HOME/local/include/eigen3
 
-# Install g2o (specify Eigen 3.4 path):
+# Install g2o (specify Eigen 3.4 path, not system Eigen 5.x!):
 cd /tmp/g2o && mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local \
     -DEIGEN3_INCLUDE_DIR=$HOME/local/include/eigen3 \
     -DBUILD_SHARED_LIBS=ON -DBUILD_UNITTESTS=OFF -DBUILD_EXAMPLES=OFF
 make -j$(nproc) && sudo make install
 
-# Install FBoW
-cd /tmp && git clone https://github.com/rmiquelma/fbow.git
-cd fbow && mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
-make -j$(nproc) && sudo make install
+# FBoW: If GitHub clone times out, check if pre-installed:
+# ls /usr/local/include/fbow && ls /usr/local/lib/libfbow*
+# If not installed, try: git clone --depth 1 or use Gitee mirror
 
-# Build OpenCV with SLAM (same as Ubuntu)
+# Clone OpenCV and opencv_contrib:
+cd ~ && git clone https://github.com/opencv/opencv.git
+git clone https://github.com/opencv/opencv_contrib.git
+cd opencv && git checkout 4.8.0 && mkdir build && cd build
+
+# Copy SLAM module to opencv_contrib:
+cp -r /path/to/opencv_contrib_slam/modules/slam ~/opencv_contrib/modules/
+
+# Configure OpenCV with SLAM:
+cmake -D CMAKE_BUILD_TYPE=Release \
+    -D CMAKE_INSTALL_PREFIX=/usr/local \
+    -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
+    -D OPENCV_ENABLE_NONFREE=ON \
+    -D BUILD_EXAMPLES=OFF \
+    -D BUILD_TESTS=ON \
+    -D BOW_FRAMEWORK=FBoW \
+    -D BUILD_opencv_slam=ON \
+    ..
+make -j$(nproc) && sudo make install && sudo ldconfig
 ```
 
 | Issue | Solution |
 |-------|----------|
-| Eigen 5.x incompatible with g2o | Install Eigen 3.4 from source |
-| GitHub clone timeout | Configure git proxy or use mirror |
-| sudo password prompt timeout | Use `sudo -n` or run commands as root |
+| Eigen 5.x incompatible with g2o | Install Eigen 3.4 from source, specify -DEIGEN3_INCLUDE_DIR |
+| GitHub clone timeout | Use `git clone --depth 1` or configure proxy |
+| sudo password prompt timeout | Add USER to sudoers or use `sudo -n` |
+| g2o uses wrong Eigen | Always specify -DEIGEN3_INCLUDE_DIR=/path/to/eigen3 |
 
 ## Summary of Dependencies
 
