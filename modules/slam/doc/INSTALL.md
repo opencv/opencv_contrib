@@ -550,6 +550,65 @@ export PATH=/usr/local/cuda/bin:$PATH
 export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 ```
 
+### Docker Hub Timeout / Image Pull Failed
+
+If `docker pull` fails with timeout or network errors:
+
+```bash
+# Option 1: Configure Docker mirror (China mirrors)
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json <<'EOF'
+{
+  "registry-mirrors": [
+    "https://docker.mirrors.ustc.edu.cn",
+    "https://hub-mirror.c.163.com",
+    "https://mirror.baidubce.com"
+  ]
+}
+EOF
+sudo systemctl restart docker
+
+# Option 2: Use SSH proxy
+# Option 3: Manually download and import image
+# Option 4: Install directly on WSL instead of using Docker
+```
+
+### WSL-Specific Issues
+
+#### WSL2 Network Performance
+
+```bash
+# WSL2 may have slow network. Add to %WSL%/etc/wsl.conf:
+# [network]
+# generateResolvConf = false
+# Then manually set DNS in /etc/resolv.conf
+```
+
+#### Building on WSL
+
+```bash
+# WSL can build OpenCV directly without Docker
+# Install dependencies via pacman (Arch) or apt (Ubuntu WSL)
+
+# Arch Linux WSL example:
+sudo pacman -S --noconfirm cmake git pkg-config eigen yaml-cpp nlohmann-json sqlite3
+sudo pacman -S --noconfirm suitesparse cxsparse # for g2o
+
+# Ubuntu WSL example:
+sudo apt install -y build-essential cmake git pkg-config \
+    libeigen3-dev libyaml-cpp-dev nlohmann-json3-dev libsqlite3-dev \
+    libsuitesparse-dev libcxsparse-dev
+```
+
+#### WSL2 Memory Limit
+
+```bash
+# WSL2 default memory is 50% of RAM (max 8GB). Add to %USERPROFILE%\.wslconfig:
+[wsl2]
+memory=16GB
+processors=8
+```
+
 ## Summary of Dependencies
 
 | Dependency | Version | Required | Default |
