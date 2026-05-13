@@ -9,6 +9,7 @@ This guide provides step-by-step instructions for installing OpenCV with the SLA
 3. [Optional Dependencies](#3-optional-dependencies)
 4. [Building OpenCV with SLAM Module](#4-building-opencv-with-slam-module)
 5. [Verification](#5-verification)
+6. [Running Examples](#6-running-examples)
 
 ---
 
@@ -368,6 +369,148 @@ make -j$(nproc)
 
 # Run SLAM module tests
 ./bin/opencv_test_slam
+```
+
+## 6. Running Examples
+
+### 6.1 Prerequisites
+
+Before running the examples, you need:
+
+1. **Enable samples during CMake configuration:**
+   ```bash
+   cmake -D BUILD_EXAMPLES=ON -D BUILD_TESTS=ON ..
+   make -j$(nproc)
+   ```
+
+2. **Download ORB vocabulary file:**
+   ```bash
+   wget https://github.com/stella-cv/FBoW_orb_vocab/raw/main/orb_vocab.fbow
+   ```
+
+3. **Prepare image sequence:**
+   - EuRoC format with `data.csv` file, OR
+   - Folder containing sorted PNG images
+
+4. **Camera configuration file:**
+   - Use the provided test configs in `modules/slam/testdata/config/`, OR
+   - Create your own camera YAML (see example below)
+
+### 6.2 Camera Configuration File
+
+Create `camera.yaml` for your camera:
+
+```yaml
+%YAML:1.0
+Camera.name: "EuRoC monocular"
+Camera.setup: monocular
+Camera.model: perspective
+Camera.fx: 458.654
+Camera.fy: 457.296
+Camera.cx: 367.215
+Camera.cy: 248.375
+Camera.k1: -0.28340811
+Camera.k2: 0.07395907
+Camera.fps: 20.0
+Camera.width: 752
+Camera.height: 480
+```
+
+### 6.3 Example Commands
+
+#### Full SLAM Pipeline
+
+Run complete SLAM: initialization → process images → save map and trajectory.
+
+```bash
+./example_full_slam <config.yaml> <vocab.fbow> <image_dir> <output_dir>
+
+# Example with test data:
+./example_full_slam modules/slam/testdata/config/euroc_mh01.yaml \
+                   orb_vocab.fbow \
+                   /datasets/EuRoC/MH01/mav0/cam0/data \
+                   /tmp/output
+```
+
+Output:
+- `map.msgpack` - Serialized map file
+- `trajectory.txt` - Camera trajectory in TUM format
+
+#### Frontend Only (Fast Test)
+
+Run visual odometry frontend without backend optimization.
+
+```bash
+./run_frontend_mh01 <config.yaml> <vocab.fbow> <image_dir> <output_dir>
+```
+
+#### Localization Mode
+
+Load existing map and localize within it (no new mapping).
+
+```bash
+./example_localization_mode <config.yaml> <vocab.fbow> <map.msgpack> <image_dir>
+
+# Example:
+./example_localization_mode modules/slam/testdata/config/euroc_mh01.yaml \
+                             orb_vocab.fbow \
+                             /tmp/output/map.msgpack \
+                             /datasets/EuRoC/MH01/mav0/cam0/data
+```
+
+#### Map Save/Load Test
+
+Build a map and verify persistence.
+
+```bash
+./example_map_save_load <config.yaml> <vocab.fbow> <image_dir> <output_dir>
+```
+
+#### Feature Ablation Study
+
+Run frontend with different feature configurations.
+
+```bash
+./run_feature_ablation_mh01 <config.yaml> <vocab.fbow> <image_dir> <output_dir>
+```
+
+### 6.4 Sample Code Structure
+
+| File | Description |
+|------|-------------|
+| `full_slam.cpp` | Complete SLAM pipeline with map/trajectory output |
+| `localization_mode.cpp` | Relocalization in pre-built map |
+| `map_save_load.cpp` | Map persistence verification |
+| `run_frontend_mh01.cpp` | EuRoC MH01 frontend test |
+| `run_frontend_only_mh01.cpp` | Frontend-only mode |
+| `run_feature_ablation_mh01.cpp` | Feature ablation experiments |
+
+### 6.5 Expected Output
+
+```
+Loading images from: /datasets/EuRoC/MH01/mav0/cam0/data
+Found 2341 images
+
+Initializing SLAM system...
+Processing 2341 frames...
+Frame 0/2341 (tracked: 1, 45.2 ms)
+Frame 100/2341 (tracked: 98, 23.1 ms)
+Frame 200/2341 (tracked: 195, 21.8 ms)
+...
+
+=== SLAM Statistics ===
+Tracked frames: 2320/2341 (99.1%)
+Average FPS: 42.3
+Average processing time: 23.6 ms
+
+Saving map to: /tmp/output/map.msgpack
+Map saved successfully
+Saving trajectory to: /tmp/output/trajectory.txt
+Trajectory saved successfully
+Map contains 15420 3D points
+
+Shutting down SLAM system...
+Done!
 ```
 
 ## Troubleshooting
