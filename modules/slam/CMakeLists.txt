@@ -115,7 +115,13 @@ else()
         OPTIONAL opencv_objdetect opencv_aruco)
 
     find_package(Threads REQUIRED)
-    find_package(SQLite3 REQUIRED)
+    find_package(SQLite3 QUIET)
+    if(SQLite3_FOUND)
+        set(USE_SQLITE3 ON)
+    else()
+        set(USE_SQLITE3 OFF)
+        message(STATUS "opencv_slam: SQLite3 not found (map save/load via SQLite3 backend disabled, JSON backend available)")
+    endif()
 
     set(USE_GTSAM OFF CACHE BOOL "Enable gtsam")
     if(USE_GTSAM)
@@ -171,6 +177,11 @@ else()
         list(FILTER SLAM_HEADERS EXCLUDE REGEX "/internal_gtsam/")
     endif()
 
+    if(NOT USE_SQLITE3)
+        list(FILTER SLAM_SOURCES EXCLUDE REGEX ".*sqlite3\\.cpp$")
+        list(FILTER SLAM_HEADERS EXCLUDE REGEX ".*sqlite3\\.hpp$")
+    endif()
+
     ocv_set_module_sources(
         HEADERS ${SLAM_HEADERS}
         SOURCES ${SLAM_SOURCES}
@@ -194,6 +205,10 @@ else()
 
     if(USE_GTSAM)
         ocv_target_compile_definitions(${the_module} PUBLIC USE_GTSAM)
+    endif()
+
+    if(USE_SQLITE3)
+        ocv_target_compile_definitions(${the_module} PUBLIC USE_SQLITE3)
     endif()
 
     set(USE_SSE_ORB OFF CACHE BOOL "Enable SSE3 instruction for ORB extraction")
@@ -248,7 +263,7 @@ else()
         PUBLIC
         Threads::Threads
         Eigen3::Eigen
-        ${SQLite3_LIBRARIES}
+        "$<$<BOOL:${USE_SQLITE3}>:${SQLite3_LIBRARIES}>"
         g2o::core
         g2o::stuff
         g2o::types_sba

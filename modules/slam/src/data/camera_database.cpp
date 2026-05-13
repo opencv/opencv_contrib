@@ -7,7 +7,9 @@
 
 #include <opencv2/core/utils/logger.hpp>
 #include <nlohmann/json.hpp>
+#ifdef USE_SQLITE3
 #include <sqlite3.h>
+#endif
 
 namespace cv::slam {
 
@@ -138,6 +140,7 @@ nlohmann::json camera_database::to_json() const {
     return cameras;
 }
 
+#ifdef USE_SQLITE3
 bool camera_database::from_db(sqlite3* db) {
     std::lock_guard<std::mutex> lock(mtx_database_);
 
@@ -435,3 +438,5 @@ bool camera_database::to_db(sqlite3* db) const {
 
 } // namespace data
 } // namespace cv::slam
+
+#endif

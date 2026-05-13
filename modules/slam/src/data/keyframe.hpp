@@ -16,7 +16,9 @@
 #include <memory>
 
 #include <nlohmann/json_fwd.hpp>
+#ifdef USE_SQLITE3
 #include <sqlite3.h>
+#endif
 
 namespace cv::slam {
 
@@ -100,7 +102,9 @@ public:
             {"n_markers", "INTEGER"},
             {"markers", "BLOB"}};
     };
+#ifdef USE_SQLITE3
     bool bind_to_stmt(sqlite3* db, sqlite3_stmt* stmt) const;
+#endif
 
     //-----------------------------------------
     // camera pose

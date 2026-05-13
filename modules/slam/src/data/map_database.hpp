@@ -255,7 +255,9 @@ public:
     /**
      * Load keyframes and landmarks from database
      */
+#ifdef USE_SQLITE3
     bool from_db(sqlite3* db,
+#endif
                  camera_database* cam_db,
                  orb_params_database* orb_params_db,
                  bow_vocabulary* bow_vocab);
@@ -263,6 +265,7 @@ public:
     /**
      * Dump keyframes and landmarks to database
      */
+#ifdef USE_SQLITE3
     bool to_db(sqlite3* db) const;
 
     //! mutex for locking ALL access to the database
@@ -270,6 +273,7 @@ public:
     static std::mutex mtx_database_;
 
     //! next ID
+#endif
     std::atomic<unsigned int> next_keyframe_id_{0};
     std::atomic<unsigned int> next_landmark_id_{0};
 
@@ -310,17 +314,21 @@ private:
      */
     void register_association(const unsigned int keyfrm_id, const nlohmann::json& json_keyfrm);
 
+#ifdef USE_SQLITE3
     bool load_keyframes_from_db(sqlite3* db,
+#endif
                                 const std::string& table_name,
                                 camera_database* cam_db,
                                 orb_params_database* orb_params_db,
                                 bow_vocabulary* bow_vocab);
+#ifdef USE_SQLITE3
     bool load_landmarks_from_db(sqlite3* db, const std::string& table_name);
     void load_association_from_stmt(sqlite3_stmt* stmt);
     bool load_associations_from_db(sqlite3* db, const std::string& table_name);
     bool save_keyframes_to_db(sqlite3* db, const std::string& table_name) const;
     bool save_landmarks_to_db(sqlite3* db, const std::string& table_name) const;
     static std::vector<std::pair<std::string, std::string>> association_columns() {
+#endif
         return std::vector<std::pair<std::string, std::string>>{
             {"lm_ids", "BLOB"},
             {"span_parent", "INTEGER"},
@@ -329,14 +337,18 @@ private:
             {"n_loop_edges", "INTEGER"},
             {"loop_edges", "BLOB"}};
     };
+#ifdef USE_SQLITE3
     bool bind_association_to_stmt(sqlite3_stmt* stmt,
+#endif
                                   const std::shared_ptr<keyframe>& keyfrm) const;
+#ifdef USE_SQLITE3
     bool save_associations_to_db(sqlite3* db, const std::string& table_name) const;
 
     bool load_markers_from_db(sqlite3* db, const std::string& table_name);
     bool save_markers_to_db(sqlite3* db, const std::string& table_name) const;
 
     //! mutex for mutual exclusion controll between class methods
+#endif
     mutable std::mutex mtx_map_access_;
 
     //-----------------------------------------

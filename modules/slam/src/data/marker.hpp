@@ -5,7 +5,9 @@
 
 #include <mutex>
 #include <Eigen/Core>
+#ifdef USE_SQLITE3
 #include <sqlite3.h>
+#endif
 
 namespace cv::slam {
 namespace marker_model {
@@ -38,7 +40,9 @@ public:
             {"observations", "BLOB"},
             {"initialized_before", "INTEGER"}};
     };
+#ifdef USE_SQLITE3
     bool bind_to_stmt(sqlite3* db, sqlite3_stmt* stmt) const;
+#endif
 
     //! corner positions
     eigen_alloc_vector<Vec3_t> corners_pos_w_;

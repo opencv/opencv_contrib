@@ -9,11 +9,15 @@
 #include "data/map_database.hpp"
 #include "data/bow_vocabulary.hpp"
 #include "util/converter.hpp"
+#ifdef USE_SQLITE3
 #include "util/sqlite3.hpp"
+#endif
 
 #include <opencv2/core/utils/logger.hpp>
 #include <nlohmann/json.hpp>
+#ifdef USE_SQLITE3
 #include <sqlite3.h>
+#endif
 
 namespace cv::slam {
 
@@ -499,6 +503,7 @@ void map_database::to_json(nlohmann::json& json_keyfrms, nlohmann::json& json_la
     json_landmarks = landmarks;
 }
 
+#ifdef USE_SQLITE3
 bool map_database::from_db(sqlite3* db,
                            camera_database* cam_db,
                            orb_params_database* orb_params_db,
@@ -862,3 +867,5 @@ bool map_database::load_markers_from_db(sqlite3* db, const std::string& table_na
 
 } // namespace data
 } // namespace cv::slam
+
+#endif

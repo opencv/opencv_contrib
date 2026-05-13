@@ -163,6 +163,7 @@ std::shared_ptr<keyframe> keyframe::make_keyframe(
     return ptr;
 }
 
+#ifdef USE_SQLITE3
 std::shared_ptr<keyframe> keyframe::from_stmt(sqlite3_stmt* stmt,
                                               camera_database* cam_db,
                                               orb_params_database* orb_params_db,
@@ -677,3 +678,5 @@ bool keyframe::will_be_erased() {
 
 } // namespace data
 } // namespace cv::slam
+
+#endif

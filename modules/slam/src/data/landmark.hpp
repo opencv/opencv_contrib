@@ -10,7 +10,9 @@
 
 #include <opencv2/core/mat.hpp>
 #include <nlohmann/json_fwd.hpp>
+#ifdef USE_SQLITE3
 #include <sqlite3.h>
+#endif
 
 namespace cv::slam {
 namespace data {
@@ -55,7 +57,9 @@ public:
             {"n_vis", "INTEGER"},
             {"n_fnd", "INTEGER"}};
     };
+#ifdef USE_SQLITE3
     bool bind_to_stmt(sqlite3* db, sqlite3_stmt* stmt) const;
+#endif
 
     //! set world coordinates of this landmark
     void set_pos_in_world(const Vec3_t& pos_w);

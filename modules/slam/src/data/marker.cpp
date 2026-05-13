@@ -15,6 +15,7 @@ void marker::set_corner_pos(const eigen_alloc_vector<Vec3_t>& corner_pos_w) {
     corners_pos_w_ = corner_pos_w;
 }
 
+#ifdef USE_SQLITE3
 std::shared_ptr<marker> marker::from_stmt(sqlite3_stmt* stmt,
                                           std::unordered_map<unsigned int, std::shared_ptr<cv::slam::data::keyframe>>& keyframes) {
     int column_id = 0;
@@ -111,3 +112,5 @@ bool marker::bind_to_stmt(sqlite3* db, sqlite3_stmt* stmt) const {
 
 } // namespace data
 } // namespace cv::slam
+
+#endif

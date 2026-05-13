@@ -27,6 +27,7 @@ landmark::~landmark() {
     CV_LOG_DEBUG(&g_log_tag, "landmark::~landmark: " << id_);
 }
 
+#ifdef USE_SQLITE3
 std::shared_ptr<landmark> landmark::from_stmt(sqlite3_stmt* stmt,
                                               std::unordered_map<unsigned int, std::shared_ptr<cv::slam::data::keyframe>>& keyframes,
                                               unsigned int next_landmark_id,
@@ -450,3 +451,5 @@ nlohmann::json landmark::to_json() const {
 
 } // namespace data
 } // namespace cv::slam
+
+#endif
