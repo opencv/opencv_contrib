@@ -55,6 +55,8 @@ public:
     //! Set the mapping module
     void set_mapping_module(mapping_module* mapper);
     void set_allow_initialization(bool allow);
+    void set_frontend_only(bool enable);
+    bool frontend_only() const;
 
     //! Set the global optimization module
     void set_global_optimization_module(global_optimization_module* global_optimizer);
@@ -127,6 +129,9 @@ public:
 
     //! If true, tracking with only temporal keyframes will not be treated as Lost
     bool enable_temporal_keyframe_only_tracking_ = false;
+
+    //! If true, skip mapping and keyframe insertion for strict frontend-only mode
+    bool frontend_only_ = false;
 
     //! If true, use robust_matcher for relocalization request
     bool use_robust_matcher_for_relocalization_request_ = false;

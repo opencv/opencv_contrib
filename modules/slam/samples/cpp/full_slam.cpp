@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
     slam->setFeatureDetector(orb);
     slam->setMatcher(matcher);
     slam->setBackendEnabled(true, 10);
-    slam->setLoopClosureEnabled(true);
+    slam->setLoopClosureEnabled(false);
     
     
     std::cout << "Processing " << images.size() << " frames..." << std::endl;

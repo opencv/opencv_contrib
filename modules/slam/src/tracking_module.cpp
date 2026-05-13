@@ -59,6 +59,14 @@ void tracking_module::set_allow_initialization(bool allow) {
     }
 }
 
+bool tracking_module::frontend_only() const {
+    return frontend_only_;
+}
+
+void tracking_module::set_frontend_only(bool enable) {
+    frontend_only_ = enable;
+}
+
 void tracking_module::set_global_optimization_module(global_optimization_module* global_optimizer) {
     global_optimizer_ = global_optimizer;
 }
@@ -154,7 +162,7 @@ std::shared_ptr<Mat44_t> tracking_module::feed_frame(data::frame curr_frm) {
         succeeded = track(relocalization_is_needed, num_tracked_lms, num_reliable_lms, min_num_obs_thr);
 
         // check to insert the new keyframe derived from the current frame
-        if (succeeded && !is_stopped_keyframe_insertion_ && new_keyframe_is_needed(num_tracked_lms, num_reliable_lms, min_num_obs_thr)) {
+        if (!frontend_only_ && succeeded && !is_stopped_keyframe_insertion_ && new_keyframe_is_needed(num_tracked_lms, num_reliable_lms, min_num_obs_thr)) {
             keyfrm_inserter_.insert_new_keyframe(map_db_, curr_frm_);
         }
     }
@@ -238,12 +246,16 @@ bool tracking_module::track(bool relocalization_is_needed,
     unsigned int fixed_keyframe_id_threshold = map_db_->get_fixed_keyframe_id_threshold();
     unsigned int num_temporal_keyfrms = 0;
     if (succeeded) {
-        succeeded = track_local_map(num_tracked_lms, num_reliable_lms, num_temporal_keyfrms, min_num_obs_thr, fixed_keyframe_id_threshold);
+        if (!frontend_only_) {
+            succeeded = track_local_map(num_tracked_lms, num_reliable_lms, num_temporal_keyfrms, min_num_obs_thr, fixed_keyframe_id_threshold);
+        }
     }
 
     // update the local map and optimize current camera pose without temporal keyframes
     if (fixed_keyframe_id_threshold > 0 && succeeded && num_temporal_keyfrms > 0) {
-        succeeded = track_local_map_without_temporal_keyframes(num_tracked_lms, num_reliable_lms, min_num_obs_thr, fixed_keyframe_id_threshold);
+        if (!frontend_only_) {
+            succeeded = track_local_map_without_temporal_keyframes(num_tracked_lms, num_reliable_lms, min_num_obs_thr, fixed_keyframe_id_threshold);
+        }
     }
 
     // update the motion model
