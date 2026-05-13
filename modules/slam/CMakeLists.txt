@@ -293,4 +293,5 @@ else()
 
     # Build accuracy tests (requires BUILD_TESTS=ON)
     ocv_add_accuracy_tests()
+    ocv_add_samples()
 endif()

@@ -205,6 +205,10 @@ public:
     //! Enable/disable loop closure detection
     void set_enable_loop_closure(bool enable);
 
+    //! Enable frontend-only mode
+    void set_frontend_only(bool enable);
+    bool frontend_only() const;
+
     //! Check if loop closure is enabled
     bool loop_closure_is_enabled() const;
 
@@ -251,6 +255,9 @@ private:
 
     //! tracker
     tracking_module* tracker_ = nullptr;
+
+    //! frontend only flag
+    bool frontend_only_ = false;
 
     //! mapping module
     mapping_module* mapper_ = nullptr;

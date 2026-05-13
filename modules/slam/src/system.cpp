@@ -165,28 +165,43 @@ void system::startup(const bool need_initialize) {
         tracker_->tracking_state_ = tracker_state_t::Lost;
     }
 
-    mapping_thread_ = std::unique_ptr<std::thread>(new std::thread(&cv::slam::mapping_module::run, mapper_));
-    if (global_optimizer_) {
+    if (!frontend_only_) {
+        mapping_thread_ = std::unique_ptr<std::thread>(new std::thread(&cv::slam::mapping_module::run, mapper_));
+    }
+    if (global_optimizer_ && !frontend_only_) {
         global_optimization_thread_ = std::unique_ptr<std::thread>(new std::thread(&cv::slam::global_optimization_module::run, global_optimizer_));
     }
 }
 
+void system::set_frontend_only(bool enable) {
+    frontend_only_ = enable;
+    if (tracker_) {
+        tracker_->set_frontend_only(enable);
+    }
+}
+
+bool system::frontend_only() const {
+    return frontend_only_;
+}
+
 void system::shutdown() {
     // terminate the other threads
-    if (global_optimizer_) {
+    if (!frontend_only_ && global_optimizer_) {
         auto future_mapper_terminate = mapper_->async_terminate();
         auto future_global_optimizer_terminate = global_optimizer_->async_terminate();
         future_mapper_terminate.get();
         future_global_optimizer_terminate.get();
     }
-    else {
+    else if (!frontend_only_) {
         auto future_mapper_terminate = mapper_->async_terminate();
         future_mapper_terminate.get();
     }
 
     // wait until the threads stop
-    mapping_thread_->join();
-    if (global_optimization_thread_) {
+    if (mapping_thread_ && mapping_thread_->joinable()) {
+        mapping_thread_->join();
+    }
+    if (global_optimization_thread_ && global_optimization_thread_->joinable()) {
         global_optimization_thread_->join();
     }
 
@@ -569,6 +584,9 @@ void system::check_reset_request() {
 }
 
 void system::pause_other_threads() const {
+    if (frontend_only_) {
+        return;
+    }
     // pause the mapping module
     if (mapper_ && !mapper_->is_terminated()) {
         auto future_pause = mapper_->async_pause();
@@ -590,6 +608,9 @@ void system::pause_other_threads() const {
 }
 
 void system::resume_other_threads() const {
+    if (frontend_only_) {
+        return;
+    }
     // resume the global optimization module
     if (global_optimizer_) {
         global_optimizer_->resume();
