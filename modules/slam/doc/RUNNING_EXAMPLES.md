@@ -15,20 +15,17 @@ This guide explains how to compile and run the SLAM module example programs.
 
 ## 1. Prerequisites
 
-### 1.1 Installed Components
+### 1.1 Built with Samples Enabled
 
-Ensure the following are installed:
+When building OpenCV with SLAM module, ensure `BUILD_EXAMPLES=ON`:
 
 ```bash
-# Check OpenCV with SLAM module
-ls -la /usr/local/lib/libcv_slam.so
-
-# Check FBoW vocabulary
-ls -la /usr/local/share/fbow/
-
-# Check test data
-ls -la /path/to/opencv_contrib_slam/modules/slam/testdata/
+cmake -D BUILD_EXAMPLES=ON -D BUILD_TESTS=ON ...
+make -j$(nproc)
+sudo make install
 ```
+
+This will compile SLAM samples as `example_slam_*` targets.
 
 ### 1.2 Required Files
 
@@ -36,8 +33,8 @@ You need three things to run the examples:
 
 | File | Description | Location |
 |------|-------------|----------|
-| **Config YAML** | Camera parameters | `modules/slam/testdata/config/` |
-| **Vocabulary** | BoW vocabulary (ORB) | `modules/slam/testdata/vocab/orb_vocab.fbow` |
+| **Config YAML** | Camera parameters | `samples/data/config/` |
+| **Vocabulary** | BoW vocabulary (ORB) | `samples/data/vocab/orb_vocab.fbow` |
 | **Image Sequence** | EuRoC format images | Download from EuRoC dataset |
 
 ### 1.3 Download EuRoC Dataset
@@ -65,10 +62,10 @@ rsync -av --progress robot@asrl.eng.cam.ac.uk::asrl datasets/ijrr_euroc_dataset/
 
 ```bash
 # List available config files
-ls modules/slam/testdata/config/
+ls opencv_contrib_slam/modules/slam/samples/data/config/
 
 # List available vocabulary
-ls modules/slam/testdata/vocab/
+ls opencv_contrib_slam/modules/slam/samples/data/vocab/
 ```
 
 ### 2.2 Download ORB Vocabulary (if missing)
@@ -78,7 +75,7 @@ If `orb_vocab.fbow` is not present:
 ```bash
 # Download from FBoW repository
 wget https://github.com/stella-cv/FBoW_orb_vocab/raw/main/orb_vocab.fbow
-mv orb_vocab.fbow modules/slam/testdata/vocab/
+mv orb_vocab.fbow opencv_contrib_slam/modules/slam/samples/data/vocab/
 ```
 
 ### 2.3 Dataset Directory Structure
@@ -100,58 +97,31 @@ EuRoC/
 
 ## 3. Compiling Samples
 
-### 3.1 Using the Standalone CMakeLists.txt
+### 3.1 Standard OpenCV Sample Build
 
-The `samples/cpp/CMakeLists.txt` is configured for your local paths:
+When you build OpenCV with `BUILD_EXAMPLES=ON`, SLAM module samples are automatically compiled:
 
 ```bash
-cd modules/slam/samples/cpp
+cd ~/opencv/build
 
-# Edit CMakeLists.txt to update paths if needed:
-# - OPENCV_BUILD_DIR: Path to your OpenCV build directory
-# - OPENCV_CONTRIB_SLAM_DIR: Path to opencv_contrib_slam
-
-# Create build directory
-mkdir -p build
-cd build
-
-# Configure
-cmake ..
-
-# Compile
+# Build all examples (including SLAM)
 make -j$(nproc)
+
+# Or build only SLAM examples
+make example_slam_full_slam
+make example_slam_localization
+make example_slam_frontend
 ```
 
-### 3.2 Manual Compilation
+### 3.2 Build Directory Contents
 
-If CMake fails, compile manually:
-
-```bash
-cd modules/slam/samples/cpp
-
-g++ -std=c++17 \
-    -I/home/user/opencv_contrib_slam/modules/slam/include \
-    -I/home/user/opencv/modules/core/include \
-    -I/home/user/opencv/modules/imgcodecs/include \
-    -I/home/user/opencv/modules/features2d/include \
-    -I/home/user/opencv/modules/calib3d/include \
-    -I/home/user/opencv/modules/highgui/include \
-    -I/home/user/build-opencv \
-    -L/home/user/build-opencv/lib \
-    -lopencv_core -lopencv_imgcodecs -lopencv_features2d \
-    -lopencv_calib3d -lopencv_highgui -lcv_slam \
-    full_slam.cpp -o example_full_slam
-```
-
-### 3.3 Build Directory Contents
-
-After compilation, you should have:
+After compilation, SLAM examples are located in the build directory:
 
 ```
-modules/slam/samples/cpp/build/
-├── example_full_slam       # Full SLAM pipeline
-├── example_localization    # Localization mode (if exists)
-├── example_map_save_load   # Map persistence test (if exists)
+~/opencv/build/bin/
+├── example_slam_full_slam      # Full SLAM pipeline
+├── example_slam_localization   # Localization mode
+├── example_slam_frontend       # Frontend test
 └── ...
 ```
 
@@ -164,11 +134,11 @@ modules/slam/samples/cpp/build/
 Run complete SLAM on an image sequence:
 
 ```bash
-cd modules/slam/samples/cpp/build
+cd ~/opencv/build/bin
 
-./example_full_slam \
-    ../../testdata/config/euroc_mh01.yaml \
-    ../../testdata/vocab/orb_vocab.fbow \
+./example_slam_full_slam \
+    ../samples/data/config/euroc_mh01.yaml \
+    ../samples/data/vocab/orb_vocab.fbow \
     /path/to/EuRoC/MH_01_easy/mav0/cam0/data \
     /tmp/slam_output
 ```
@@ -210,17 +180,19 @@ Load existing map and localize within it:
 Build a map, save it, then load for localization:
 
 ```bash
+cd ~/opencv/build/bin
+
 # Step 1: Build and save map
-./example_full_slam \
-    ../../testdata/config/euroc_mh01.yaml \
-    ../../testdata/vocab/orb_vocab.fbow \
+./example_slam_full_slam \
+    ../samples/data/config/euroc_mh01.yaml \
+    ../samples/data/vocab/orb_vocab.fbow \
     /path/to/EuRoC/MH_01_easy/mav0/cam0/data \
     /tmp/slam_output
 
-# Step 2: Load and localize (requires localization_mode example)
-./example_localization_mode \
-    ../../testdata/config/euroc_mh01.yaml \
-    ../../testdata/vocab/orb_vocab.fbow \
+# Step 2: Load and localize
+./example_slam_localization \
+    ../samples/data/config/euroc_mh01.yaml \
+    ../samples/data/vocab/orb_vocab.fbow \
     /tmp/slam_output/map.msgpack \
     /path/to/EuRoC/MH_01_easy/mav0/cam0/data
 ```
@@ -291,7 +263,7 @@ cat /path/to/EuRoC/MH_01_easy/mav0/cam0/data.csv | head
 
 ```bash
 # Verify vocabulary exists
-ls -la modules/slam/testdata/vocab/orb_vocab.fbow
+ls -la opencv_contrib_slam/modules/slam/samples/data/vocab/orb_vocab.fbow
 
 # Or download
 wget https://github.com/stella-cv/FBoW_orb_vocab/raw/main/orb_vocab.fbow
@@ -304,7 +276,7 @@ wget https://github.com/stella-cv/FBoW_orb_vocab/raw/main/orb_vocab.fbow
 sudo ldconfig
 
 # Set library path if needed
-export LD_LIBRARY_PATH=/path/to/build-opencv/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=~/opencv/build/lib:$LD_LIBRARY_PATH
 ```
 
 ### 6.4 Low tracking rate / "tracking lost"
@@ -358,14 +330,14 @@ Camera.height: 480
 ## Quick Start Summary
 
 ```bash
-# 1. Build the example
-cd modules/slam/samples/cpp/build
-make
+# 1. Build OpenCV with SLAM examples enabled
+cmake -D BUILD_EXAMPLES=ON ... && make -j$(nproc)
 
 # 2. Run full SLAM
-./example_full_slam \
-    ../../testdata/config/euroc_mh01.yaml \
-    ../../testdata/vocab/orb_vocab.fbow \
+cd ~/opencv/build/bin
+./example_slam_full_slam \
+    ../samples/data/config/euroc_mh01.yaml \
+    ../samples/data/vocab/orb_vocab.fbow \
     ~/datasets/EuRoC/MH_01_easy/mav0/cam0/data \
     /tmp/output
 

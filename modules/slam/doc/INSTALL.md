@@ -277,7 +277,7 @@ cmake -D CMAKE_BUILD_TYPE=Release \
     -D CMAKE_INSTALL_PREFIX=/usr/local \
     -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
     -D OPENCV_ENABLE_NONFREE=ON \
-    -D BUILD_EXAMPLES=OFF \
+    -D BUILD_EXAMPLES=ON \
     -D BUILD_TESTS=ON \
     -D BUILD_PERF_TESTS=OFF \
     -D BUILD_opencv_python3=ON \
@@ -289,6 +289,8 @@ cmake -D CMAKE_BUILD_TYPE=Release \
     -D USE_ARUCO=ON \
     ..
 ```
+
+**Important:** Set `BUILD_EXAMPLES=ON` to compile SLAM module samples (see [Running Examples](#6-running-examples)).
 
 **CMake Options for SLAM Module:**
 

@@ -7,10 +7,15 @@
  * 3. Save the map and trajectory
  *
  * Usage:
- *   ./example_full_slam <config.yaml> <vocab.fbow> <image_dir> <output_dir>
+ *   ./example_slam_full_slam <config.yaml> <vocab.fbow> <image_dir> <output_dir>
  *
  * Example:
- *   ./example_full_slam EuRoC_mono.yaml orb_vocab.fbow /path/to/images /path/to/output
+ *   ./example_slam_full_slam ../samples/data/config/euroc_mh01.yaml \
+ *       ../samples/data/vocab/orb_vocab.fbow \
+ *       /path/to/EuRoC/MH01/mav0/cam0/data \
+ *       /tmp/output
+ *
+ * Note: Data paths are relative to build directory. Adjust accordingly.
  */
 
 #include <opencv2/slam.hpp>
