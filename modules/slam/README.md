@@ -40,7 +40,7 @@ for (const auto& frame : frames) {
 }
 
 // Save map
-slam->saveMap("map.msgpack");
+slam->saveMap("map.json");
 
 // Cleanup
 slam->release();

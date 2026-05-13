@@ -1,4 +1,5 @@
 #include "type.hpp"
+#include "util/yaml.hpp"
 #include "mapping_module.hpp"
 #include "tracking_module.hpp"
 #include "global_optimization_module.hpp"
@@ -19,32 +20,32 @@ namespace cv::slam {
 
 static cv::utils::logging::LogTag g_log_tag("cv_slam_module", cv::utils::logging::LOG_LEVEL_INFO);
 
-mapping_module::mapping_module(const YAML::Node& yaml_node, data::map_database* map_db, data::bow_database* bow_db, data::bow_vocabulary* bow_vocab)
+mapping_module::mapping_module(const cv::FileNode& yaml_node, data::map_database* map_db, data::bow_database* bow_db, data::bow_vocabulary* bow_vocab)
     : local_map_cleaner_(new module::local_map_cleaner(yaml_node, map_db, bow_db)),
       map_db_(map_db), bow_db_(bow_db), bow_vocab_(bow_vocab),
       local_bundle_adjuster_(optimize::local_bundle_adjuster_factory::create(yaml_node)),
-      enable_interruption_of_landmark_generation_(yaml_node["enable_interruption_of_landmark_generation"].as<bool>(true)),
-      enable_interruption_before_local_BA_(yaml_node["enable_interruption_before_local_BA"].as<bool>(true)),
-      num_covisibilities_for_landmark_generation_(yaml_node["num_covisibilities_for_landmark_generation"].as<unsigned int>(10)),
-      num_covisibilities_for_landmark_fusion_(yaml_node["num_covisibilities_for_landmark_fusion"].as<unsigned int>(10)),
-      erase_temporal_keyframes_(yaml_node["erase_temporal_keyframes"].as<bool>(false)),
-      num_temporal_keyframes_(yaml_node["num_temporal_keyframes"].as<unsigned int>(15)),
-      residual_rad_thr_(yaml_node["residual_deg_thr"].as<float>(0.2) * M_PI / 180.0) {
+      enable_interruption_of_landmark_generation_(util::yaml_get_val<bool>(yaml_node, "enable_interruption_of_landmark_generation", true)),
+      enable_interruption_before_local_BA_(util::yaml_get_val<bool>(yaml_node, "enable_interruption_before_local_BA", true)),
+      num_covisibilities_for_landmark_generation_(util::yaml_get_val<unsigned int>(yaml_node, "num_covisibilities_for_landmark_generation", 10)),
+      num_covisibilities_for_landmark_fusion_(util::yaml_get_val<unsigned int>(yaml_node, "num_covisibilities_for_landmark_fusion", 10)),
+      erase_temporal_keyframes_(util::yaml_get_val<bool>(yaml_node, "erase_temporal_keyframes", false)),
+      num_temporal_keyframes_(util::yaml_get_val<unsigned int>(yaml_node, "num_temporal_keyframes", 15)),
+      residual_rad_thr_(util::yaml_get_val<float>(yaml_node, "residual_deg_thr", 0.2) * M_PI / 180.0) {
     CV_LOG_DEBUG(&g_log_tag, "CONSTRUCT: mapping_module");
 
     CV_LOG_DEBUG(&g_log_tag, "load mapping parameters");
 
     CV_LOG_DEBUG(&g_log_tag, "load monocular mappping parameters");
-    if (yaml_node["baseline_dist_thr"]) {
-        if (yaml_node["baseline_dist_thr_ratio"]) {
+    if (!yaml_node["baseline_dist_thr"].empty()) {
+        if (!yaml_node["baseline_dist_thr_ratio"].empty()) {
             throw std::runtime_error("Do not set both baseline_dist_thr_ratio and baseline_dist_thr.");
         }
-        baseline_dist_thr_ = yaml_node["baseline_dist_thr"].as<double>(1.0);
+        baseline_dist_thr_ = util::yaml_get_val<double>(yaml_node, "baseline_dist_thr", 1.0);
         use_baseline_dist_thr_ratio_ = false;
         CV_LOG_DEBUG(&g_log_tag, "Use baseline_dist_thr: " << baseline_dist_thr_);
     }
     else {
-        baseline_dist_thr_ratio_ = yaml_node["baseline_dist_thr_ratio"].as<double>(0.02);
+        baseline_dist_thr_ratio_ = util::yaml_get_val<double>(yaml_node, "baseline_dist_thr_ratio", 0.02);
         use_baseline_dist_thr_ratio_ = true;
         CV_LOG_DEBUG(&g_log_tag, "Use baseline_dist_thr_ratio: " << baseline_dist_thr_ratio_);
     }
@@ -367,39 +368,37 @@ void mapping_module::triangulate_with_two_keyframes(const std::shared_ptr<data::
     std::lock_guard<std::mutex> lock(data::map_database::mtx_database_);
     const module::two_view_triangulator triangulator(keyfrm_1, keyfrm_2, 1.0);
 
-#ifdef USE_OPENMP
-#pragma omp parallel for
-#endif
-    for (int64_t i = 0; i < static_cast<int64_t>(matches.size()); ++i) {
-        const auto idx_1 = matches.at(i).first;
-        const auto idx_2 = matches.at(i).second;
+    std::mutex cleaner_mtx;
+    cv::parallel_for_(cv::Range(0, static_cast<int>(matches.size())), [&](const cv::Range& range) {
+        for (int i = range.start; i < range.end; ++i) {
+            const auto idx_1 = matches.at(i).first;
+            const auto idx_2 = matches.at(i).second;
 
-        // triangulate between idx_1 and idx_2
-        Vec3_t pos_w;
-        if (!triangulator.triangulate(idx_1, idx_2, pos_w)) {
-            // failed
-            continue;
+            // triangulate between idx_1 and idx_2
+            Vec3_t pos_w;
+            if (!triangulator.triangulate(idx_1, idx_2, pos_w)) {
+                // failed
+                continue;
+            }
+            // succeeded
+
+            // create a landmark object
+            auto lm = std::make_shared<data::landmark>(map_db_->next_landmark_id_++, pos_w, keyfrm_1);
+
+            lm->connect_to_keyframe(keyfrm_1, idx_1);
+            lm->connect_to_keyframe(keyfrm_2, idx_2);
+
+            lm->compute_descriptor();
+            lm->update_mean_normal_and_obs_scale_variance();
+
+            map_db_->add_landmark(lm);
+            // wait for redundancy check
+            {
+                std::lock_guard<std::mutex> cleanup_lock(cleaner_mtx);
+                local_map_cleaner_->add_fresh_landmark(lm);
+            }
         }
-        // succeeded
-
-        // create a landmark object
-        auto lm = std::make_shared<data::landmark>(map_db_->next_landmark_id_++, pos_w, keyfrm_1);
-
-        lm->connect_to_keyframe(keyfrm_1, idx_1);
-        lm->connect_to_keyframe(keyfrm_2, idx_2);
-
-        lm->compute_descriptor();
-        lm->update_mean_normal_and_obs_scale_variance();
-
-        map_db_->add_landmark(lm);
-        // wait for redundancy check
-#ifdef USE_OPENMP
-#pragma omp critical
-#endif
-        {
-            local_map_cleaner_->add_fresh_landmark(lm);
-        }
-    }
+    });
 }
 
 void mapping_module::update_new_keyframe() {

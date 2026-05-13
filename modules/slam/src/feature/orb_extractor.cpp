@@ -1,12 +1,14 @@
 #include "feature/orb_extractor.hpp"
 #include "type.hpp"
 
+#include <stdexcept>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/features2d.hpp>
 
 #include <iostream>
+#include <mutex>
 
 #include <opencv2/core/utils/logger.hpp>
 
@@ -90,45 +92,40 @@ void orb_extractor::extract(const cv::_InputArray& in_image, const cv::_InputArr
         offsets.push_back(offset);
     }
 
-#if defined(USE_OPENMP) and !defined(USE_CUDA_EFFICIENT_DESCRIPTORS)
-#pragma omp parallel for schedule(dynamic)
-#endif
-    for (unsigned int level = 0; level < orb_params_->num_levels_; ++level) {
-        auto& keypts_at_level = all_keypts.at(level);
-        const auto num_keypts_at_level = keypts_at_level.size();
+    cv::parallel_for_(cv::Range(0, static_cast<int>(orb_params_->num_levels_)), [&](const cv::Range& range) {
+        for (int level = range.start; level < range.end; ++level) {
+            auto& keypts_at_level = all_keypts.at(level);
+            const auto num_keypts_at_level = keypts_at_level.size();
 
-        if (num_keypts_at_level == 0) {
-            continue;
-        }
-
-        cv::Mat blurred_image;
-        cv::GaussianBlur(image_pyramid_.at(level), blurred_image, cv::Size(7, 7), 2, 2, cv::BORDER_REFLECT_101);
-
-        cv::Mat descriptors_at_level = descriptors.rowRange(offsets[level], offsets[level] + num_keypts_at_level);
-        descriptors_at_level = cv::Mat::zeros(num_keypts_at_level, 32, CV_8UC1);
-
-        // To enable parallelization, set the environment variable OMP_MAX_ACTIVE_LEVELS to 2.
-        if (desc_type_ == feature::descriptor_type::ORB) {
-#ifdef USE_OPENMP
-#pragma omp parallel for schedule(static)
-#endif
-            for (unsigned int i = 0; i < keypts_at_level.size(); ++i) {
-                compute_orb_descriptor(keypts_at_level[i], blurred_image, descriptors_at_level.ptr(i));
+            if (num_keypts_at_level == 0) {
+                continue;
             }
-        }
-        else if (desc_type_ == feature::descriptor_type::HASH_SIFT) {
-#ifdef USE_CUDA_EFFICIENT_DESCRIPTORS
-            hash_sift_->compute(blurred_image, keypts_at_level, descriptors_at_level);
-#else
-            throw std::runtime_error("cuda_efficient_features is not available");
-#endif
-        }
-        else {
-            throw std::runtime_error("Invalid descriptor_type");
-        }
 
-        correct_keypoint_scale(keypts_at_level, level);
-    }
+            cv::Mat blurred_image;
+            cv::GaussianBlur(image_pyramid_.at(level), blurred_image, cv::Size(7, 7), 2, 2, cv::BORDER_REFLECT_101);
+
+            cv::Mat descriptors_at_level = descriptors.rowRange(offsets[level], offsets[level] + num_keypts_at_level);
+            descriptors_at_level = cv::Mat::zeros(num_keypts_at_level, 32, CV_8UC1);
+
+            if (desc_type_ == feature::descriptor_type::ORB) {
+                for (unsigned int i = 0; i < keypts_at_level.size(); ++i) {
+                    compute_orb_descriptor(keypts_at_level[i], blurred_image, descriptors_at_level.ptr(i));
+                }
+            }
+            else if (desc_type_ == feature::descriptor_type::HASH_SIFT) {
+#ifdef USE_CUDA_EFFICIENT_DESCRIPTORS
+                hash_sift_->compute(blurred_image, keypts_at_level, descriptors_at_level);
+#else
+                throw std::runtime_error("cuda_efficient_features is not available");
+#endif
+            }
+            else {
+                throw std::runtime_error("Invalid descriptor_type");
+            }
+
+            correct_keypoint_scale(keypts_at_level, level);
+        }
+    });
 
     // Collect keypoints for every scale
     for (unsigned int level = 0; level < orb_params_->num_levels_; ++level) {
@@ -174,118 +171,113 @@ void orb_extractor::compute_fast_keypoints(std::vector<std::vector<cv::KeyPoint>
     constexpr unsigned int overlap = 6;
     constexpr unsigned int cell_size = 64;
 
-#ifdef USE_OPENMP
-#pragma omp parallel for schedule(dynamic)
-#endif
-    for (int64_t level = 0; level < orb_params_->num_levels_; ++level) {
-        const float scale_factor = orb_params_->scale_factors_.at(level);
+    static std::mutex g_fast_mtx;
+    cv::parallel_for_(cv::Range(0, static_cast<int>(orb_params_->num_levels_)), [&](const cv::Range& range) {
+        for (int lvl = range.start; lvl < range.end; ++lvl) {
+            const auto level = static_cast<int64_t>(lvl);
+            const float scale_factor = orb_params_->scale_factors_.at(level);
 
-        constexpr unsigned int min_border_x = orb_patch_radius_;
-        constexpr unsigned int min_border_y = orb_patch_radius_;
-        const unsigned int max_border_x = image_pyramid_.at(level).cols - orb_patch_radius_;
-        const unsigned int max_border_y = image_pyramid_.at(level).rows - orb_patch_radius_;
+            constexpr unsigned int min_border_x = orb_patch_radius_;
+            constexpr unsigned int min_border_y = orb_patch_radius_;
+            const unsigned int max_border_x = image_pyramid_.at(level).cols - orb_patch_radius_;
+            const unsigned int max_border_y = image_pyramid_.at(level).rows - orb_patch_radius_;
 
-        const unsigned int width = max_border_x - min_border_x;
-        const unsigned int height = max_border_y - min_border_y;
+            const unsigned int width = max_border_x - min_border_x;
+            const unsigned int height = max_border_y - min_border_y;
 
-        const unsigned int num_cols = width / cell_size + 1;
-        const unsigned int num_rows = height / cell_size + 1;
+            const unsigned int num_cols = width / cell_size + 1;
+            const unsigned int num_rows = height / cell_size + 1;
 
-        std::vector<cv::KeyPoint> keypts_to_distribute;
-        keypts_to_distribute.reserve(500);
+            std::vector<cv::KeyPoint> keypts_to_distribute;
+            keypts_to_distribute.reserve(500);
 
-        // To enable parallelization, set the environment variable OMP_MAX_ACTIVE_LEVELS to 2.
-#ifdef USE_OPENMP
-#pragma omp parallel for schedule(static)
-#endif
-        for (int64_t i = 0; i < num_rows; ++i) {
-            const unsigned int min_y = min_border_y + i * cell_size;
-            if (max_border_y - overlap <= min_y) {
-                continue;
-            }
-            unsigned int max_y = min_y + cell_size + overlap;
-            if (max_border_y < max_y) {
-                max_y = max_border_y;
-            }
-
-            for (int64_t j = 0; j < num_cols; ++j) {
-                const unsigned int min_x = min_border_x + j * cell_size;
-                if (max_border_x - overlap <= min_x) {
+            for (int64_t i = 0; i < num_rows; ++i) {
+                const unsigned int min_y = min_border_y + i * cell_size;
+                if (max_border_y - overlap <= min_y) {
                     continue;
                 }
-                unsigned int max_x = min_x + cell_size + overlap;
-                if (max_border_x < max_x) {
-                    max_x = max_border_x;
+                unsigned int max_y = min_y + cell_size + overlap;
+                if (max_border_y < max_y) {
+                    max_y = max_border_y;
                 }
 
-                // Pass FAST computation if one of the corners of a patch is in the mask
-                if (!mask.empty()) {
-                    if (is_in_mask(min_y, min_x, scale_factor) || is_in_mask(max_y, min_x, scale_factor)
-                        || is_in_mask(min_y, max_x, scale_factor) || is_in_mask(max_y, max_x, scale_factor)) {
+                for (int64_t j = 0; j < num_cols; ++j) {
+                    const unsigned int min_x = min_border_x + j * cell_size;
+                    if (max_border_x - overlap <= min_x) {
                         continue;
                     }
-                }
+                    unsigned int max_x = min_x + cell_size + overlap;
+                    if (max_border_x < max_x) {
+                        max_x = max_border_x;
+                    }
 
-                std::vector<cv::KeyPoint> keypts_in_cell;
-                cv::FAST(image_pyramid_.at(level).rowRange(min_y, max_y).colRange(min_x, max_x),
-                         keypts_in_cell, orb_params_->ini_fast_thr_, true);
-
-                // Re-compute FAST keypoint with reduced threshold if enough keypoint was not got
-                if (keypts_in_cell.empty()) {
-                    cv::FAST(image_pyramid_.at(level).rowRange(min_y, max_y).colRange(min_x, max_x),
-                             keypts_in_cell, orb_params_->min_fast_thr_, true);
-                }
-
-                if (keypts_in_cell.empty()) {
-                    continue;
-                }
-
-                for (auto& keypt : keypts_in_cell) {
-                    keypt.pt.x += j * cell_size;
-                    keypt.pt.y += i * cell_size;
-                }
-
-                if (!mask.empty()) {
-                    std::vector<cv::KeyPoint> keypts_in_cell_masked;
-                    for (auto&& keypt : keypts_in_cell) {
-                        // Check if the keypoint is in the mask
-                        if (is_in_mask(min_border_y + keypt.pt.y, min_border_x + keypt.pt.x, scale_factor)) {
+                    // Pass FAST computation if one of the corners of a patch is in the mask
+                    if (!mask.empty()) {
+                        if (is_in_mask(min_y, min_x, scale_factor) || is_in_mask(max_y, min_x, scale_factor)
+                            || is_in_mask(min_y, max_x, scale_factor) || is_in_mask(max_y, max_x, scale_factor)) {
                             continue;
                         }
-                        keypts_in_cell_masked.push_back(std::move(keypt));
                     }
-                    keypts_in_cell = std::move(keypts_in_cell_masked);
-                }
 
-#ifdef USE_OPENMP
-#pragma omp critical
-#endif
-                {
-                    keypts_to_distribute.insert(keypts_to_distribute.end(), keypts_in_cell.begin(), keypts_in_cell.end());
+                    std::vector<cv::KeyPoint> keypts_in_cell;
+                    cv::FAST(image_pyramid_.at(level).rowRange(min_y, max_y).colRange(min_x, max_x),
+                             keypts_in_cell, orb_params_->ini_fast_thr_, true);
+
+                    // Re-compute FAST keypoint with reduced threshold if enough keypoint was not got
+                    if (keypts_in_cell.empty()) {
+                        cv::FAST(image_pyramid_.at(level).rowRange(min_y, max_y).colRange(min_x, max_x),
+                                 keypts_in_cell, orb_params_->min_fast_thr_, true);
+                    }
+
+                    if (keypts_in_cell.empty()) {
+                        continue;
+                    }
+
+                    for (auto& keypt : keypts_in_cell) {
+                        keypt.pt.x += j * cell_size;
+                        keypt.pt.y += i * cell_size;
+                    }
+
+                    if (!mask.empty()) {
+                        std::vector<cv::KeyPoint> keypts_in_cell_masked;
+                        for (auto&& keypt : keypts_in_cell) {
+                            // Check if the keypoint is in the mask
+                            if (is_in_mask(min_border_y + keypt.pt.y, min_border_x + keypt.pt.x, scale_factor)) {
+                                continue;
+                            }
+                            keypts_in_cell_masked.push_back(std::move(keypt));
+                        }
+                        keypts_in_cell = std::move(keypts_in_cell_masked);
+                    }
+
+                    {
+                        std::lock_guard<std::mutex> lock(g_fast_mtx);
+                        keypts_to_distribute.insert(keypts_to_distribute.end(), keypts_in_cell.begin(), keypts_in_cell.end());
+                    }
                 }
             }
+
+            std::vector<cv::KeyPoint>& keypts_at_level = all_keypts.at(level);
+
+            // Distribute keypoints via tree
+            keypts_at_level = distribute_keypoints(keypts_to_distribute, min_border_x, max_border_x, min_border_y, max_border_y, scale_factor);
+            CV_LOG_DEBUG(&g_log_tag, "keypts_at_level " << keypts_to_distribute.size());
+
+            // Keypoint size is patch size modified by the scale factor
+            const unsigned int scaled_patch_size = orb_impl_.fast_patch_size_ * scale_factor;
+
+            for (auto& keypt : keypts_at_level) {
+                // Translation correction (scale will be corrected after ORB description)
+                keypt.pt.x += min_border_x;
+                keypt.pt.y += min_border_y;
+                // Set the other information
+                keypt.octave = level;
+                keypt.size = scaled_patch_size;
+            }
+
+            compute_orientation(image_pyramid_.at(level), all_keypts.at(level));
         }
-
-        std::vector<cv::KeyPoint>& keypts_at_level = all_keypts.at(level);
-
-        // Distribute keypoints via tree
-        keypts_at_level = distribute_keypoints(keypts_to_distribute, min_border_x, max_border_x, min_border_y, max_border_y, scale_factor);
-        CV_LOG_DEBUG(&g_log_tag, "keypts_at_level " << keypts_to_distribute.size());
-
-        // Keypoint size is patch size modified by the scale factor
-        const unsigned int scaled_patch_size = orb_impl_.fast_patch_size_ * scale_factor;
-
-        for (auto& keypt : keypts_at_level) {
-            // Translation correction (scale will be corrected after ORB description)
-            keypt.pt.x += min_border_x;
-            keypt.pt.y += min_border_y;
-            // Set the other information
-            keypt.octave = level;
-            keypt.size = scaled_patch_size;
-        }
-
-        compute_orientation(image_pyramid_.at(level), all_keypts.at(level));
-    }
+    });
 }
 
 std::vector<cv::KeyPoint> orb_extractor::distribute_keypoints(const std::vector<cv::KeyPoint>& keypts_to_distribute,

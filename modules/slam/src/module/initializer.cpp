@@ -1,4 +1,5 @@
 #include "config.hpp"
+#include "util/yaml.hpp"
 #include "data/keyframe.hpp"
 #include "data/landmark.hpp"
 #include "data/marker.hpp"
@@ -19,18 +20,18 @@ static cv::utils::logging::LogTag g_log_tag("cv_slam", cv::utils::logging::LOG_L
 namespace module {
 
 initializer::initializer(data::map_database* map_db,
-                         const YAML::Node& yaml_node)
+                         const cv::FileNode& yaml_node)
     : map_db_(map_db),
-      num_ransac_iters_(yaml_node["num_ransac_iterations"].as<unsigned int>(100)),
-      min_num_valid_pts_(yaml_node["min_num_valid_pts"].as<unsigned int>(50)),
-      min_num_triangulated_pts_(yaml_node["min_num_triangulated_pts"].as<unsigned int>(50)),
-      parallax_deg_thr_(yaml_node["parallax_deg_threshold"].as<float>(1.0)),
-      reproj_err_thr_(yaml_node["reprojection_error_threshold"].as<float>(4.0)),
-      num_ba_iters_(yaml_node["num_ba_iterations"].as<unsigned int>(100)),
-      scaling_factor_(yaml_node["scaling_factor"].as<float>(1.0)),
-      use_fixed_seed_(yaml_node["use_fixed_seed"].as<bool>(false)),
-      gain_threshold_(yaml_node["gain_threshold"].as<float>(1e-5)),
-      verbose_(yaml_node["verbose"].as<bool>(false)) {
+      num_ransac_iters_(util::yaml_get_val<unsigned int>(yaml_node, "num_ransac_iterations", 100)),
+      min_num_valid_pts_(util::yaml_get_val<unsigned int>(yaml_node, "min_num_valid_pts", 50)),
+      min_num_triangulated_pts_(util::yaml_get_val<unsigned int>(yaml_node, "min_num_triangulated_pts", 50)),
+      parallax_deg_thr_(util::yaml_get_val<float>(yaml_node, "parallax_deg_threshold", 1.0)),
+      reproj_err_thr_(util::yaml_get_val<float>(yaml_node, "reprojection_error_threshold", 4.0)),
+      num_ba_iters_(util::yaml_get_val<unsigned int>(yaml_node, "num_ba_iterations", 100)),
+      scaling_factor_(util::yaml_get_val<float>(yaml_node, "scaling_factor", 1.0)),
+      use_fixed_seed_(util::yaml_get_val<bool>(yaml_node, "use_fixed_seed", false)),
+      gain_threshold_(util::yaml_get_val<float>(yaml_node, "gain_threshold", 1e-5)),
+      verbose_(util::yaml_get_val<bool>(yaml_node, "verbose", false)) {
     CV_LOG_DEBUG(&g_log_tag, "CONSTRUCT: module::initializer");
 }
 

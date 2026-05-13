@@ -1,4 +1,5 @@
 #include "data/frame.hpp"
+#include "util/yaml.hpp"
 #include "data/keyframe.hpp"
 #include "data/landmark.hpp"
 #include "data/bow_database.hpp"
@@ -36,19 +37,19 @@ relocalizer::relocalizer(const std::shared_ptr<optimize::pose_optimizer>& pose_o
     CV_LOG_DEBUG(&g_log_tag, "CONSTRUCT: module::relocalizer");
 }
 
-relocalizer::relocalizer(const std::shared_ptr<optimize::pose_optimizer>& pose_optimizer, const YAML::Node& yaml_node)
+relocalizer::relocalizer(const std::shared_ptr<optimize::pose_optimizer>& pose_optimizer, const cv::FileNode& yaml_node)
     : relocalizer(pose_optimizer,
-                  yaml_node["bow_match_lowe_ratio"].as<double>(0.75),
-                  yaml_node["proj_match_lowe_ratio"].as<double>(0.9),
-                  yaml_node["robust_match_lowe_ratio"].as<double>(0.8),
-                  yaml_node["min_num_bow_matches"].as<unsigned int>(20),
-                  yaml_node["min_num_valid_obs"].as<unsigned int>(50),
-                  yaml_node["use_fixed_seed"].as<bool>(false),
-                  yaml_node["search_neighbor"].as<bool>(true),
-                  yaml_node["top_n_covisibilities_to_search"].as<unsigned int>(10),
-                  yaml_node["num_common_words_thr_ratio"].as<float>(0.8f),
-                  yaml_node["max_num_ransac_iter"].as<unsigned int>(30),
-                  yaml_node["max_num_local_keyfrms"].as<unsigned int>(60)) {
+                  util::yaml_get_val<double>(yaml_node, "bow_match_lowe_ratio", 0.75),
+                  util::yaml_get_val<double>(yaml_node, "proj_match_lowe_ratio", 0.9),
+                  util::yaml_get_val<double>(yaml_node, "robust_match_lowe_ratio", 0.8),
+                  util::yaml_get_val<unsigned int>(yaml_node, "min_num_bow_matches", 20),
+                  util::yaml_get_val<unsigned int>(yaml_node, "min_num_valid_obs", 50),
+                  util::yaml_get_val<bool>(yaml_node, "use_fixed_seed", false),
+                  util::yaml_get_val<bool>(yaml_node, "search_neighbor", true),
+                  util::yaml_get_val<unsigned int>(yaml_node, "top_n_covisibilities_to_search", 10),
+                  util::yaml_get_val<float>(yaml_node, "num_common_words_thr_ratio", 0.8f),
+                  util::yaml_get_val<unsigned int>(yaml_node, "max_num_ransac_iter", 30),
+                  util::yaml_get_val<unsigned int>(yaml_node, "max_num_local_keyfrms", 60)) {
 }
 
 relocalizer::~relocalizer() {

@@ -4,6 +4,7 @@
 #include "feature/orb_params.hpp"
 #include "feature/orb_impl.hpp"
 
+#include <stdexcept>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
 

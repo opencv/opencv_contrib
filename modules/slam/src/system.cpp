@@ -52,7 +52,7 @@ system::system(const std::shared_ptr<config>& cfg, const std::string& vocab_file
     // database
     cam_db_ = new data::camera_database();
     cam_db_->add_camera(camera_);
-    map_db_ = new data::map_database(system_params["min_num_shared_lms"].as<unsigned int>(15));
+    map_db_ = new data::map_database(util::yaml_get_val<unsigned int>(system_params, "min_num_shared_lms", 15));
     if (bow_vocab_) {
         bow_db_ = new data::bow_database(bow_vocab_);
     }
@@ -60,7 +60,7 @@ system::system(const std::shared_ptr<config>& cfg, const std::string& vocab_file
     orb_params_db_->add_orb_params(orb_params_);
 
     // map I/O
-    auto map_format = system_params["map_format"].as<std::string>("msgpack");
+    auto map_format = util::yaml_get_val<std::string>(system_params, "map_format", "json");
     map_database_io_ = io::map_database_io_factory::create(map_format);
 
     // tracking module
@@ -75,23 +75,23 @@ system::system(const std::shared_ptr<config>& cfg, const std::string& vocab_file
     // preprocessing modules
     const auto preprocessing_params = util::yaml_optional_ref(cfg->yaml_node_, "Preprocessing");
     if (camera_->setup_type_ == camera::setup_type_t::RGBD) {
-        depthmap_factor_ = preprocessing_params["depthmap_factor"].as<double>(depthmap_factor_);
+        depthmap_factor_ = util::yaml_get_val<double>(preprocessing_params, "depthmap_factor", depthmap_factor_);
         if (depthmap_factor_ < 0.) {
             throw std::runtime_error("depthmap_factor must be greater than 0");
         }
     }
     auto mask_rectangles = util::get_rectangles(preprocessing_params["mask_rectangles"]);
 
-    const auto min_size = preprocessing_params["min_size"].as<unsigned int>(800);
-    const auto desc_type_str = preprocessing_params["descriptor_type"].as<std::string>("ORB");
+    const auto min_size = util::yaml_get_val<unsigned int>(preprocessing_params, "min_size", 800);
+    const auto desc_type_str = util::yaml_get_val<std::string>(preprocessing_params, "descriptor_type", "ORB");
     const auto desc_type = feature::descriptor_type_from_string(desc_type_str);
     extractor_left_ = new feature::orb_extractor(orb_params_, min_size, desc_type, mask_rectangles);
     if (camera_->setup_type_ == camera::setup_type_t::Stereo) {
         extractor_right_ = new feature::orb_extractor(orb_params_, min_size, desc_type, mask_rectangles);
     }
 
-    num_grid_cols_ = preprocessing_params["num_grid_cols"].as<unsigned int>(64);
-    num_grid_rows_ = preprocessing_params["num_grid_rows"].as<unsigned int>(48);
+    num_grid_cols_ = util::yaml_get_val<unsigned int>(preprocessing_params, "num_grid_cols", 64);
+    num_grid_rows_ = util::yaml_get_val<unsigned int>(preprocessing_params, "num_grid_rows", 48);
 
     // connect modules each other
     tracker_->set_mapping_module(mapper_);

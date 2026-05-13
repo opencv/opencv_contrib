@@ -2,7 +2,7 @@
 #define SLAM_FEATURE_ORB_PARAMS_H
 
 #include <nlohmann/json_fwd.hpp>
-#include <yaml-cpp/yaml.h>
+#include <opencv2/core/persistence.hpp>
 #include <cmath>
 
 namespace cv::slam {
@@ -17,7 +17,7 @@ struct orb_params {
     orb_params(const std::string& name);
 
     //! Constructor
-    explicit orb_params(const YAML::Node& yaml_node);
+    explicit orb_params(const cv::FileNode& yaml_node);
 
     //! Destructor
     virtual ~orb_params() = default;

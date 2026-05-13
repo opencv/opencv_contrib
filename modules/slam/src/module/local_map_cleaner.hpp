@@ -20,7 +20,7 @@ public:
     /**
      * Constructor
      */
-    explicit local_map_cleaner(const YAML::Node& yaml_node, data::map_database* map_db, data::bow_database* bow_db);
+    explicit local_map_cleaner(const cv::FileNode& yaml_node, data::map_database* map_db, data::bow_database* bow_db);
 
     /**
      * Destructor

@@ -32,7 +32,7 @@ public:
                          const unsigned int max_num_ransac_iter = 30,
                          const unsigned int max_num_local_keyfrms = 60);
 
-    explicit relocalizer(const std::shared_ptr<optimize::pose_optimizer>& pose_optimizer, const YAML::Node& yaml_node);
+    explicit relocalizer(const std::shared_ptr<optimize::pose_optimizer>& pose_optimizer, const cv::FileNode& yaml_node);
 
     //! Destructor
     virtual ~relocalizer();

@@ -12,7 +12,7 @@
 #include <memory>
 #include <future>
 
-#include <yaml-cpp/yaml.h>
+#include <opencv2/core/persistence.hpp>
 
 namespace cv::slam {
 
@@ -33,7 +33,7 @@ class map_database;
 class mapping_module {
 public:
     //! Constructor
-    mapping_module(const YAML::Node& yaml_node, data::map_database* map_db, data::bow_database* bow_db, data::bow_vocabulary* bow_vocab);
+    mapping_module(const cv::FileNode& yaml_node, data::map_database* map_db, data::bow_database* bow_db, data::bow_vocabulary* bow_vocab);
 
     //! Destructor
     ~mapping_module();

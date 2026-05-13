@@ -1,4 +1,5 @@
 #include "data/keyframe.hpp"
+#include "util/yaml.hpp"
 #include "data/landmark.hpp"
 #include "data/map_database.hpp"
 #include "optimize/graph_optimizer.hpp"
@@ -19,9 +20,9 @@
 namespace cv::slam {
 namespace optimize {
 
-graph_optimizer::graph_optimizer(const YAML::Node& yaml_node, const bool fix_scale)
+graph_optimizer::graph_optimizer(const cv::FileNode& yaml_node, const bool fix_scale)
     : fix_scale_(fix_scale),
-      min_num_shared_lms_(yaml_node["min_num_shared_lms"].as<unsigned int>(100)) {}
+      min_num_shared_lms_(util::yaml_get_val<unsigned int>(yaml_node, "min_num_shared_lms", 100)) {}
 
 void graph_optimizer::optimize(const std::shared_ptr<data::keyframe>& loop_keyfrm, const std::shared_ptr<data::keyframe>& curr_keyfrm,
                                const module::keyframe_Sim3_pairs_t& non_corrected_Sim3s,

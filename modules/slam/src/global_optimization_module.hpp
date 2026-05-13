@@ -33,7 +33,7 @@ struct loop_closure_request {
 class global_optimization_module {
 public:
     //! Constructor
-    global_optimization_module(data::map_database* map_db, data::bow_database* bow_db, data::bow_vocabulary* bow_vocab, const YAML::Node& yaml_node, const bool fix_scale);
+    global_optimization_module(data::map_database* map_db, data::bow_database* bow_db, data::bow_vocabulary* bow_vocab, const cv::FileNode& yaml_node, const bool fix_scale);
 
     //! Destructor
     ~global_optimization_module();

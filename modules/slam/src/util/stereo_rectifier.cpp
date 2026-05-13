@@ -15,7 +15,7 @@ stereo_rectifier::stereo_rectifier(const std::shared_ptr<cv::slam::config>& cfg,
     : stereo_rectifier(camera,
                        cv::slam::util::yaml_optional_ref(cfg->yaml_node_, "StereoRectifier")) {}
 
-stereo_rectifier::stereo_rectifier(camera::base* camera, const YAML::Node& yaml_node)
+stereo_rectifier::stereo_rectifier(camera::base* camera, const cv::FileNode& yaml_node)
     : model_type_(load_model_type(yaml_node)) {
     CV_LOG_DEBUG(&g_log_tag, "CONSTRUCT: util::stereo_rectifier");
     if (camera->setup_type_ != camera::setup_type_t::Stereo) {
@@ -27,14 +27,14 @@ stereo_rectifier::stereo_rectifier(camera::base* camera, const YAML::Node& yaml_
     // set image size
     const cv::Size img_size(camera->cols_, camera->rows_);
     // set camera matrices
-    const auto K_l = parse_vector_as_mat(cv::Size(3, 3), yaml_node["K_left"].as<std::vector<double>>());
-    const auto K_r = parse_vector_as_mat(cv::Size(3, 3), yaml_node["K_right"].as<std::vector<double>>());
+    const auto K_l = parse_vector_as_mat(cv::Size(3, 3), util::yaml_get_vec<double>(yaml_node, "K_left"));
+    const auto K_r = parse_vector_as_mat(cv::Size(3, 3), util::yaml_get_vec<double>(yaml_node, "K_right"));
     // set rotation matrices
-    const auto R_l = parse_vector_as_mat(cv::Size(3, 3), yaml_node["R_left"].as<std::vector<double>>());
-    const auto R_r = parse_vector_as_mat(cv::Size(3, 3), yaml_node["R_right"].as<std::vector<double>>());
+    const auto R_l = parse_vector_as_mat(cv::Size(3, 3), util::yaml_get_vec<double>(yaml_node, "R_left"));
+    const auto R_r = parse_vector_as_mat(cv::Size(3, 3), util::yaml_get_vec<double>(yaml_node, "R_right"));
     // set distortion parameters depending on the camera model
-    const auto D_l_vec = yaml_node["D_left"].as<std::vector<double>>();
-    const auto D_r_vec = yaml_node["D_right"].as<std::vector<double>>();
+    const auto D_l_vec = util::yaml_get_vec<double>(yaml_node, "D_left");
+    const auto D_r_vec = util::yaml_get_vec<double>(yaml_node, "D_right");
     const auto D_l = parse_vector_as_mat(cv::Size(1, D_l_vec.size()), D_l_vec);
     const auto D_r = parse_vector_as_mat(cv::Size(1, D_r_vec.size()), D_r_vec);
     // get camera matrix after rectification
@@ -73,8 +73,8 @@ cv::Mat stereo_rectifier::parse_vector_as_mat(const cv::Size& shape, const std::
     return mat;
 }
 
-camera::model_type_t stereo_rectifier::load_model_type(const YAML::Node& yaml_node) {
-    const auto model_type_str = yaml_node["model"].as<std::string>("perspective");
+camera::model_type_t stereo_rectifier::load_model_type(const cv::FileNode& yaml_node) {
+    const auto model_type_str = util::yaml_get_val<std::string>(yaml_node, "model", "perspective");
     if (model_type_str == "perspective") {
         return camera::model_type_t::Perspective;
     }

@@ -1,4 +1,5 @@
 #include "data/bow_database.hpp"
+#include "util/yaml.hpp"
 #include "data/bow_vocabulary.hpp"
 #include "data/keyframe.hpp"
 #include "data/landmark.hpp"
@@ -18,20 +19,20 @@ namespace cv::slam {
 static cv::utils::logging::LogTag g_log_tag("cv_slam", cv::utils::logging::LOG_LEVEL_INFO);
 namespace module {
 
-loop_detector::loop_detector(data::bow_database* bow_db, data::bow_vocabulary* bow_vocab, const YAML::Node& yaml_node, const bool fix_scale_in_Sim3_estimation)
+loop_detector::loop_detector(data::bow_database* bow_db, data::bow_vocabulary* bow_vocab, const cv::FileNode& yaml_node, const bool fix_scale_in_Sim3_estimation)
     : bow_db_(bow_db), bow_vocab_(bow_vocab), transform_optimizer_(fix_scale_in_Sim3_estimation), pose_optimizer_(optimize::pose_optimizer_factory::create(yaml_node)),
-      loop_detector_is_enabled_(yaml_node["enabled"].as<bool>(true)),
+      loop_detector_is_enabled_(util::yaml_get_val<bool>(yaml_node, "enabled", true)),
       fix_scale_in_Sim3_estimation_(fix_scale_in_Sim3_estimation),
-      num_final_matches_thr_(yaml_node["num_final_matches_threshold"].as<unsigned int>(40)),
-      min_continuity_(yaml_node["min_continuity"].as<unsigned int>(3)),
-      reject_by_graph_distance_(yaml_node["reject_by_graph_distance"].as<bool>(false)),
-      min_distance_on_graph_(yaml_node["min_distance_on_graph"].as<unsigned int>(50)),
-      num_matches_thr_(yaml_node["num_matches_thr"].as<unsigned int>(20)),
-      num_matches_thr_brute_force_(yaml_node["num_matches_thr_robust_matcher"].as<unsigned int>(0)),
-      num_optimized_inliers_thr_(yaml_node["num_optimized_inliers_thr"].as<unsigned int>(20)),
-      top_n_covisibilities_to_search_(yaml_node["top_n_covisibilities_to_search"].as<unsigned int>(0)),
-      use_fixed_seed_(yaml_node["use_fixed_seed"].as<bool>(false)),
-      num_common_words_thr_ratio_(yaml_node["num_common_words_thr_ratio"].as<float>(0.8f)) {
+      num_final_matches_thr_(util::yaml_get_val<unsigned int>(yaml_node, "num_final_matches_threshold", 40)),
+      min_continuity_(util::yaml_get_val<unsigned int>(yaml_node, "min_continuity", 3)),
+      reject_by_graph_distance_(util::yaml_get_val<bool>(yaml_node, "reject_by_graph_distance", false)),
+      min_distance_on_graph_(util::yaml_get_val<unsigned int>(yaml_node, "min_distance_on_graph", 50)),
+      num_matches_thr_(util::yaml_get_val<unsigned int>(yaml_node, "num_matches_thr", 20)),
+      num_matches_thr_brute_force_(util::yaml_get_val<unsigned int>(yaml_node, "num_matches_thr_robust_matcher", 0)),
+      num_optimized_inliers_thr_(util::yaml_get_val<unsigned int>(yaml_node, "num_optimized_inliers_thr", 20)),
+      top_n_covisibilities_to_search_(util::yaml_get_val<unsigned int>(yaml_node, "top_n_covisibilities_to_search", 0)),
+      use_fixed_seed_(util::yaml_get_val<bool>(yaml_node, "use_fixed_seed", false)),
+      num_common_words_thr_ratio_(util::yaml_get_val<float>(yaml_node, "num_common_words_thr_ratio", 0.8f)) {
     CV_LOG_DEBUG(&g_log_tag, "CONSTRUCT: loop_detector");
 }
 

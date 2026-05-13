@@ -1,4 +1,5 @@
 #include "mapping_module.hpp"
+#include "util/yaml.hpp"
 #include "data/landmark.hpp"
 #include "data/marker.hpp"
 #include "data/map_database.hpp"
@@ -32,16 +33,16 @@ keyframe_inserter::keyframe_inserter(const double max_interval,
       wait_for_local_bundle_adjustment_(wait_for_local_bundle_adjustment),
       required_keyframes_for_marker_initialization_(required_keyframes_for_marker_initialization) {}
 
-keyframe_inserter::keyframe_inserter(const YAML::Node& yaml_node)
-    : keyframe_inserter(yaml_node["max_interval"].as<double>(1.0),
-                        yaml_node["min_interval"].as<double>(0.1),
-                        yaml_node["max_distance"].as<double>(-1.0),
-                        yaml_node["min_distance"].as<double>(-1.0),
-                        yaml_node["lms_ratio_thr_almost_all_lms_are_tracked"].as<double>(0.9),
-                        yaml_node["lms_ratio_thr_view_changed"].as<double>(0.5),
-                        yaml_node["enough_lms_thr"].as<unsigned int>(100),
-                        yaml_node["wait_for_local_bundle_adjustment"].as<bool>(false),
-                        yaml_node["required_keyframes_for_marker_initialization"].as<unsigned int>(3)) {}
+keyframe_inserter::keyframe_inserter(const cv::FileNode& yaml_node)
+    : keyframe_inserter(util::yaml_get_val<double>(yaml_node, "max_interval", 1.0),
+                        util::yaml_get_val<double>(yaml_node, "min_interval", 0.1),
+                        util::yaml_get_val<double>(yaml_node, "max_distance", -1.0),
+                        util::yaml_get_val<double>(yaml_node, "min_distance", -1.0),
+                        util::yaml_get_val<double>(yaml_node, "lms_ratio_thr_almost_all_lms_are_tracked", 0.9),
+                        util::yaml_get_val<double>(yaml_node, "lms_ratio_thr_view_changed", 0.5),
+                        util::yaml_get_val<unsigned int>(yaml_node, "enough_lms_thr", 100),
+                        util::yaml_get_val<bool>(yaml_node, "wait_for_local_bundle_adjustment", false),
+                        util::yaml_get_val<unsigned int>(yaml_node, "required_keyframes_for_marker_initialization", 3)) {}
 
 void keyframe_inserter::set_mapping_module(mapping_module* mapper) {
     mapper_ = mapper;

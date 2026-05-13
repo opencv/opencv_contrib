@@ -1,6 +1,7 @@
 #include "match/stereo.hpp"
 
 #include <opencv2/core.hpp>
+#include <mutex>
 
 namespace cv::slam {
 namespace match {
@@ -26,72 +27,70 @@ void stereo::compute(std::vector<float>& stereo_x_right, std::vector<float>& dep
     depths.resize(num_keypts_, -1.0f);
     std::vector<std::pair<int, int>> correlation_and_idx_left;
     correlation_and_idx_left.reserve(num_keypts_);
+    std::mutex corr_mtx;
+    cv::parallel_for_(cv::Range(0, static_cast<int>(num_keypts_)), [&](const cv::Range& range) {
+        for (int idx = range.start; idx < range.end; ++idx) {
+            const auto idx_left = static_cast<int64_t>(idx);
+            const auto& keypt_left = keypts_left_.at(idx_left);
+            const auto scale_level_left = keypt_left.octave;
+            const float y_left = keypt_left.pt.y;
+            const float x_left = keypt_left.pt.x;
 
-#ifdef USE_OPENMP
-#pragma omp parallel for
-#endif
-    for (int64_t idx_left = 0; idx_left < num_keypts_; ++idx_left) {
-        const auto& keypt_left = keypts_left_.at(idx_left);
-        const auto scale_level_left = keypt_left.octave;
-        const float y_left = keypt_left.pt.y;
-        const float x_left = keypt_left.pt.x;
+            // Acquire the index of the keypoint on the right image which is observed at the same height level of the one on the left image
+            // This is candidate matching
+            const auto& candidate_indices_right = indices_right_in_row.at(y_left);
+            if (candidate_indices_right.empty()) {
+                continue;
+            }
 
-        // Acquire the index of the keypoint on the right image which is observed at the same height level of the one on the left image
-        // This is candidate matching
-        const auto& candidate_indices_right = indices_right_in_row.at(y_left);
-        if (candidate_indices_right.empty()) {
-            continue;
-        }
+            // Compute x value range on the right image
+            const float min_x_right = x_left - max_disp_;
+            const float max_x_right = x_left - min_disp_;
+            if (max_x_right < 0) {
+                continue;
+            }
 
-        // Compute x value range on the right image
-        const float min_x_right = x_left - max_disp_;
-        const float max_x_right = x_left - min_disp_;
-        if (max_x_right < 0) {
-            continue;
-        }
+            // Search the best candidate index on the right image whose feature vector is the closest to that on the left
+            unsigned int best_idx_right = 0;
+            unsigned int best_hamm_dist = hamm_dist_thr_;
+            find_closest_keypoints_in_stereo(idx_left, scale_level_left, candidate_indices_right,
+                                             min_x_right, max_x_right, best_idx_right, best_hamm_dist);
+            // Discard if the hamming distance threshold isn't satisfied
+            if (hamm_dist_thr_ <= best_hamm_dist) {
+                continue;
+            }
+            const auto& keypt_right = keypts_right_.at(best_idx_right);
 
-        // Search the best candidate index on the right image whose feature vector is the closest to that on the left
-        unsigned int best_idx_right = 0;
-        unsigned int best_hamm_dist = hamm_dist_thr_;
-        find_closest_keypoints_in_stereo(idx_left, scale_level_left, candidate_indices_right,
-                                         min_x_right, max_x_right, best_idx_right, best_hamm_dist);
-        // Discard if the hamming distance threshold isn't satisfied
-        if (hamm_dist_thr_ <= best_hamm_dist) {
-            continue;
-        }
-        const auto& keypt_right = keypts_right_.at(best_idx_right);
+            // Compute the parallax of the subpixel order by patch correlation
+            float best_x_right = -1.0f;
+            float best_disp = -1.0f;
+            float best_correlation = std::numeric_limits<float>::max();
+            const auto is_valid = compute_subpixel_disparity(keypt_left, keypt_right, best_x_right, best_disp, best_correlation);
+            // Discard if it's not found
+            if (!is_valid) {
+                continue;
+            }
+            // Discard if the parallax lies outside the valid range
+            if (best_disp < min_disp_ || max_disp_ <= best_disp) {
+                continue;
+            }
 
-        // Compute the parallax of the subpixel order by patch correlation
-        float best_x_right = -1.0f;
-        float best_disp = -1.0f;
-        float best_correlation = std::numeric_limits<float>::max();
-        const auto is_valid = compute_subpixel_disparity(keypt_left, keypt_right, best_x_right, best_disp, best_correlation);
-        // Discard if it's not found
-        if (!is_valid) {
-            continue;
-        }
-        // Discard if the parallax lies outside the valid range
-        if (best_disp < min_disp_ || max_disp_ <= best_disp) {
-            continue;
-        }
+            // Save the information if the parallax is within the valid range
+            if (best_disp <= 0.0f) {
+                // Set a low value if the parallax is 0 (zero)
+                best_disp = 0.01f;
+                best_x_right = x_left - best_disp;
+            }
 
-        // Save the information if the parallax is within the valid range
-        if (best_disp <= 0.0f) {
-            // Set a low value if the parallax is 0 (zero)
-            best_disp = 0.01f;
-            best_x_right = x_left - best_disp;
+            // Set the results
+            depths.at(idx_left) = focal_x_baseline_ / best_disp;
+            stereo_x_right.at(idx_left) = best_x_right;
+            {
+                std::lock_guard<std::mutex> lock(corr_mtx);
+                correlation_and_idx_left.emplace_back(std::make_pair(best_correlation, idx_left));
+            }
         }
-
-        // Set the results
-        depths.at(idx_left) = focal_x_baseline_ / best_disp;
-        stereo_x_right.at(idx_left) = best_x_right;
-#ifdef USE_OPENMP
-#pragma omp critical
-#endif
-        {
-            correlation_and_idx_left.emplace_back(std::make_pair(best_correlation, idx_left));
-        }
-    }
+    });
 
     // Acquire the median of correlation
     std::sort(correlation_and_idx_left.begin(), correlation_and_idx_left.end());

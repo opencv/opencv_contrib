@@ -28,6 +28,7 @@
 #include <vector>
 #include <string>
 #include <chrono>
+#include <filesystem>
 
 /**
  * @brief Load images from a directory
@@ -190,6 +191,7 @@ int main(int argc, char** argv) {
     const std::string image_dir = argv[3];
     const std::string output_dir = argv[4];
 
+    std::filesystem::create_directories(output_dir);
 
     std::cout << "Loading images from: " << image_dir << std::endl;
     auto images = load_images(image_dir);
@@ -200,7 +202,7 @@ int main(int argc, char** argv) {
     std::cout << "Found " << images.size() << " images" << std::endl;
 
 
-    std::string map_path = output_dir + "/map.msgpack";
+    std::string map_path = output_dir + "/map.json";
     std::string traj_path = output_dir + "/trajectory.txt";
 
 

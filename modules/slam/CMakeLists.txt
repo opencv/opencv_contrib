@@ -16,12 +16,6 @@ elseif(DEFINED EIGEN_VERSION AND EIGEN_VERSION VERSION_LESS "3.3")
     set(SLAM_DISABLE_MSG "${SLAM_DISABLE_MSG} Eigen3>=3.3")
 endif()
 
-find_package(yaml-cpp 0.6 QUIET)
-if(NOT yaml-cpp_FOUND)
-    set(SLAM_DEPS_OK FALSE)
-    set(SLAM_DISABLE_MSG "${SLAM_DISABLE_MSG} yaml-cpp>=0.6")
-endif()
-
 find_package(nlohmann_json 3.2 QUIET)
 set(SLAM_NLOHMANN_JSON_LIB "")
 set(SLAM_NLOHMANN_JSON_INCLUDE_DIR "")
@@ -121,7 +115,6 @@ else()
         OPTIONAL opencv_objdetect opencv_aruco)
 
     find_package(Threads REQUIRED)
-    find_package(OpenMP QUIET)
     find_package(SQLite3 REQUIRED)
 
     set(USE_GTSAM OFF CACHE BOOL "Enable gtsam")
@@ -203,15 +196,6 @@ else()
         ocv_target_compile_definitions(${the_module} PUBLIC USE_GTSAM)
     endif()
 
-    set(USE_OPENMP OFF CACHE BOOL "Use OpenMP")
-    if(USE_OPENMP AND OpenMP_CXX_FOUND)
-        target_compile_options(${the_module} PRIVATE ${OpenMP_CXX_FLAGS})
-        ocv_target_compile_definitions(${the_module} PUBLIC USE_OPENMP)
-    elseif(USE_OPENMP)
-        message(WARNING "opencv_slam: USE_OPENMP=ON but OpenMP was not found; disabling")
-        set(USE_OPENMP OFF)
-    endif()
-
     set(USE_SSE_ORB OFF CACHE BOOL "Enable SSE3 instruction for ORB extraction")
     if(USE_SSE_ORB)
         target_compile_options(${the_module} PRIVATE $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse3>)
@@ -264,7 +248,6 @@ else()
         PUBLIC
         Threads::Threads
         Eigen3::Eigen
-        yaml-cpp
         ${SQLite3_LIBRARIES}
         g2o::core
         g2o::stuff
@@ -285,10 +268,6 @@ else()
 
     if(SLAM_NLOHMANN_JSON_LIB)
         ocv_target_link_libraries(${the_module} PUBLIC ${SLAM_NLOHMANN_JSON_LIB})
-    endif()
-
-    if(USE_OPENMP AND OpenMP_CXX_FOUND)
-        ocv_target_link_libraries(${the_module} PUBLIC OpenMP::OpenMP_CXX)
     endif()
 
     # Build accuracy tests (requires BUILD_TESTS=ON)

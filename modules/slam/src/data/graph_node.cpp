@@ -2,6 +2,8 @@
 #include "data/graph_node.hpp"
 #include "data/landmark.hpp"
 
+#include <list>
+
 namespace cv::slam {
 namespace data {
 

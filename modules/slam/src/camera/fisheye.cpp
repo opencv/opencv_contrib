@@ -1,4 +1,5 @@
 #include "camera/fisheye.hpp"
+#include "util/yaml.hpp"
 
 #include <iostream>
 
@@ -29,23 +30,23 @@ fisheye::fisheye(const std::string& name, const setup_type_t& setup_type, const 
     img_bounds_ = compute_image_bounds();
 }
 
-fisheye::fisheye(const YAML::Node& yaml_node)
-    : fisheye(yaml_node["name"].as<std::string>(),
+fisheye::fisheye(const cv::FileNode& yaml_node)
+    : fisheye(util::yaml_get_req_str(yaml_node, "name"),
               load_setup_type(yaml_node),
               load_color_order(yaml_node),
-              yaml_node["cols"].as<unsigned int>(),
-              yaml_node["rows"].as<unsigned int>(),
-              yaml_node["fps"].as<double>(),
-              yaml_node["fx"].as<double>(),
-              yaml_node["fy"].as<double>(),
-              yaml_node["cx"].as<double>(),
-              yaml_node["cy"].as<double>(),
-              yaml_node["k1"].as<double>(),
-              yaml_node["k2"].as<double>(),
-              yaml_node["k3"].as<double>(),
-              yaml_node["k4"].as<double>(),
-              yaml_node["focal_x_baseline"].as<double>(0.0),
-              yaml_node["depth_threshold"].as<double>(40.0)) {}
+              util::yaml_get_req<unsigned int>(yaml_node, "cols"),
+              util::yaml_get_req<unsigned int>(yaml_node, "rows"),
+              util::yaml_get_req<double>(yaml_node, "fps"),
+              util::yaml_get_req<double>(yaml_node, "fx"),
+              util::yaml_get_req<double>(yaml_node, "fy"),
+              util::yaml_get_req<double>(yaml_node, "cx"),
+              util::yaml_get_req<double>(yaml_node, "cy"),
+              util::yaml_get_req<double>(yaml_node, "k1"),
+              util::yaml_get_req<double>(yaml_node, "k2"),
+              util::yaml_get_req<double>(yaml_node, "k3"),
+              util::yaml_get_req<double>(yaml_node, "k4"),
+              util::yaml_get_val<double>(yaml_node, "focal_x_baseline", 0.0),
+              util::yaml_get_val<double>(yaml_node, "depth_threshold", 40.0)) {}
 
 fisheye::~fisheye() {
     CV_LOG_DEBUG(&g_log_tag, "DESTRUCT: camera::fisheye");

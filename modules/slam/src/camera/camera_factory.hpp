@@ -16,7 +16,7 @@ namespace camera {
 
 class camera_factory {
 public:
-    static camera::base* create(const YAML::Node& node) {
+    static camera::base* create(const cv::FileNode& node) {
         const auto camera_model_type = camera::base::load_model_type(node);
 
         camera::base* camera = nullptr;

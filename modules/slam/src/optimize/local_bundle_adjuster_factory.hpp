@@ -2,6 +2,7 @@
 #define SLAM_OPTIMIZE_LOCAL_BUNDLE_ADJUSTER_FACTORY_H
 
 #include "optimize/local_bundle_adjuster_g2o.hpp"
+#include "util/yaml.hpp"
 #ifdef USE_GTSAM
 #include "optimize/local_bundle_adjuster_gtsam.hpp"
 #endif // USE_GTSAM
@@ -14,8 +15,8 @@ namespace optimize {
 
 class local_bundle_adjuster_factory {
 public:
-    static std::unique_ptr<local_bundle_adjuster> create(const YAML::Node& yaml_node) {
-        const auto& backend = yaml_node["backend"].as<std::string>("g2o");
+    static std::unique_ptr<local_bundle_adjuster> create(const cv::FileNode& yaml_node) {
+        const auto& backend = util::yaml_get_val<std::string>(yaml_node, "backend", "g2o");
         if (backend == "g2o") {
             return std::unique_ptr<local_bundle_adjuster>(new local_bundle_adjuster_g2o(yaml_node));
         }

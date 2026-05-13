@@ -11,7 +11,7 @@ public:
     equirectangular(const std::string& name, const color_order_t& color_order,
                     const unsigned int cols, const unsigned int rows, const double fps);
 
-    equirectangular(const YAML::Node& yaml_node);
+    equirectangular(const cv::FileNode& yaml_node);
 
     ~equirectangular() override;
 

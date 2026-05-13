@@ -25,7 +25,7 @@ public:
         if (map_format == "sqlite3") {
             map_database_io = std::make_shared<io::map_database_io_sqlite3>();
         }
-        else if (map_format == "msgpack") {
+        else if (map_format == "json" || map_format == "msgpack") {
             map_database_io = std::make_shared<io::map_database_io_msgpack>();
         }
         else {

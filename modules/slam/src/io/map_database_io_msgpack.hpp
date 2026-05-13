@@ -29,7 +29,7 @@ public:
     virtual ~map_database_io_msgpack() = default;
 
     /**
-     * Save the map database as MessagePack
+     * Save the map database as JSON
      */
     bool save(const std::string& path,
               const data::camera_database* const cam_db,

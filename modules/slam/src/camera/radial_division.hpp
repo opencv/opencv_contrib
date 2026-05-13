@@ -23,7 +23,7 @@ public:
                     const double fx, const double fy, const double cx, const double cy,
                     const double distortion, const double focal_x_baseline = 0.0, const double depth_thr = 0.0);
 
-    radial_division(const YAML::Node& yaml_node);
+    radial_division(const cv::FileNode& yaml_node);
 
     ~radial_division() override;
 

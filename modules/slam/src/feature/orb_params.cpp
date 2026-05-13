@@ -1,4 +1,5 @@
 #include "feature/orb_params.hpp"
+#include "util/yaml.hpp"
 
 #include <nlohmann/json.hpp>
 #include <iostream>
@@ -19,12 +20,12 @@ orb_params::orb_params(const std::string& name, const float scale_factor, const 
     inv_level_sigma_sq_ = calc_inv_level_sigma_sq(num_levels_, scale_factor_);
 }
 
-orb_params::orb_params(const YAML::Node& yaml_node)
-    : orb_params(yaml_node["name"].as<std::string>("default ORB feature extraction setting"),
-                 yaml_node["scale_factor"].as<float>(1.2),
-                 yaml_node["num_levels"].as<unsigned int>(8),
-                 yaml_node["ini_fast_threshold"].as<unsigned int>(20),
-                 yaml_node["min_fast_threshold"].as<unsigned int>(7)) {}
+orb_params::orb_params(const cv::FileNode& yaml_node)
+    : orb_params(util::yaml_get_val<std::string>(yaml_node, "name", "default ORB feature extraction setting"),
+                 util::yaml_get_val<float>(yaml_node, "scale_factor", 1.2),
+                 util::yaml_get_val<unsigned int>(yaml_node, "num_levels", 8),
+                 util::yaml_get_val<unsigned int>(yaml_node, "ini_fast_threshold", 20),
+                 util::yaml_get_val<unsigned int>(yaml_node, "min_fast_threshold", 7)) {}
 
 nlohmann::json orb_params::to_json() const {
     return {{"name", name_},

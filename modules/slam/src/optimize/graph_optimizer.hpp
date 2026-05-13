@@ -23,7 +23,7 @@ public:
      * @param yaml_node
      * @param fix_scale
      */
-    explicit graph_optimizer(const YAML::Node& yaml_node, const bool fix_scale);
+    explicit graph_optimizer(const cv::FileNode& yaml_node, const bool fix_scale);
 
     /**
      * Destructor

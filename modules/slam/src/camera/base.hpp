@@ -7,7 +7,7 @@
 #include <limits>
 
 #include <opencv2/core/types.hpp>
-#include <yaml-cpp/yaml.h>
+#include <opencv2/core/persistence.hpp>
 #include <nlohmann/json_fwd.hpp>
 
 namespace cv::slam {
@@ -71,7 +71,7 @@ public:
     //! Get setup type as string
     std::string get_setup_type_string() const { return setup_type_to_string.at(static_cast<unsigned int>(setup_type_)); }
     //! Load setup type from YAML
-    static setup_type_t load_setup_type(const YAML::Node& yaml_node);
+    static setup_type_t load_setup_type(const cv::FileNode& yaml_node);
     //! Load setup type from string
     static setup_type_t load_setup_type(const std::string& setup_type_str);
 
@@ -80,7 +80,7 @@ public:
     //! Get model type as string
     std::string get_model_type_string() const { return model_type_to_string.at(static_cast<unsigned int>(model_type_)); }
     //! Load model type from YAML
-    static model_type_t load_model_type(const YAML::Node& yaml_node);
+    static model_type_t load_model_type(const cv::FileNode& yaml_node);
     //! Load model type from string
     static model_type_t load_model_type(const std::string& model_type_str);
 
@@ -89,7 +89,7 @@ public:
     //! Get color order as string
     std::string get_color_order_string() const { return color_order_to_string.at(static_cast<unsigned int>(color_order_)); }
     //! Load color order from YAML
-    static color_order_t load_color_order(const YAML::Node& yaml_node);
+    static color_order_t load_color_order(const cv::FileNode& yaml_node);
     //! Load color order from string
     static color_order_t load_color_order(const std::string& color_order_str);
 

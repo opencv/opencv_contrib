@@ -23,7 +23,7 @@ public:
                 const double k1, const double k2, const double p1, const double p2, const double k3,
                 const double focal_x_baseline = 0.0, const double depth_thr = 0.0);
 
-    perspective(const YAML::Node& yaml_node);
+    perspective(const cv::FileNode& yaml_node);
 
     ~perspective() override;
 

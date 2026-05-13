@@ -23,6 +23,7 @@
 #include <vector>
 #include <string>
 #include <chrono>
+#include <filesystem>
 
 /**
  * @brief Load image paths and timestamps from EuRoC-format data.csv
@@ -87,6 +88,7 @@ int main(int argc, char** argv) {
     const std::string image_dir = argv[3];
     const std::string output_dir = argv[4];
 
+    std::filesystem::create_directories(output_dir);
 
     std::cout << "Loading images from: " << image_dir << std::endl;
     auto images = load_image_timestamps(image_dir);
@@ -153,7 +155,7 @@ int main(int argc, char** argv) {
     std::cout << "Average processing time: " << (total_time / images.size()) << " ms" << std::endl;
 
 
-    std::string map_path = output_dir + "/map.msgpack";
+    std::string map_path = output_dir + "/map.json";
     std::cout << "\nSaving map to: " << map_path << std::endl;
     if (slam->saveMap(map_path)) {
         std::cout << "Map saved successfully" << std::endl;

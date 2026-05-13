@@ -7,7 +7,7 @@
 #include <string>
 #include <limits>
 
-#include <yaml-cpp/yaml.h>
+#include <opencv2/core/persistence.hpp>
 #include <nlohmann/json_fwd.hpp>
 
 namespace cv::slam {

@@ -1,4 +1,5 @@
 #include "camera/equirectangular.hpp"
+#include "util/yaml.hpp"
 #include "camera/perspective.hpp"
 #include "data/keyframe.hpp"
 #include "data/landmark.hpp"
@@ -25,11 +26,11 @@ namespace cv::slam {
 static cv::utils::logging::LogTag g_log_tag("cv_slam", cv::utils::logging::LOG_LEVEL_INFO);
 namespace optimize {
 
-local_bundle_adjuster_gtsam::local_bundle_adjuster_gtsam(const YAML::Node& yaml_node,
+local_bundle_adjuster_gtsam::local_bundle_adjuster_gtsam(const cv::FileNode& yaml_node,
                                                          const unsigned int num_first_iter,
                                                          const unsigned int num_second_iter)
     : num_first_iter_(num_first_iter), num_second_iter_(num_second_iter),
-      use_additional_keyframes_for_monocular_(yaml_node["use_additional_keyframes_for_monocular"].as<bool>(false)) {
+      use_additional_keyframes_for_monocular_(util::yaml_get_val<bool>(yaml_node, "use_additional_keyframes_for_monocular", false)) {
 }
 
 void local_bundle_adjuster_gtsam::optimize(data::map_database* map_db,

@@ -1,4 +1,5 @@
 #include "camera/equirectangular.hpp"
+#include "util/yaml.hpp"
 
 #include <opencv2/core/utils/logger.hpp>
 #include <nlohmann/json.hpp>
@@ -16,12 +17,12 @@ equirectangular::equirectangular(const std::string& name, const color_order_t& c
     img_bounds_ = compute_image_bounds();
 }
 
-equirectangular::equirectangular(const YAML::Node& yaml_node)
-    : equirectangular(yaml_node["name"].as<std::string>(),
+equirectangular::equirectangular(const cv::FileNode& yaml_node)
+    : equirectangular(util::yaml_get_req_str(yaml_node, "name"),
                       load_color_order(yaml_node),
-                      yaml_node["cols"].as<unsigned int>(),
-                      yaml_node["rows"].as<unsigned int>(),
-                      yaml_node["fps"].as<double>()) {}
+                      util::yaml_get_req<unsigned int>(yaml_node, "cols"),
+                      util::yaml_get_req<unsigned int>(yaml_node, "rows"),
+                      util::yaml_get_req<double>(yaml_node, "fps")) {}
 
 equirectangular::~equirectangular() {
     CV_LOG_DEBUG(&g_log_tag, "DESTRUCT: camera::equirectangular");

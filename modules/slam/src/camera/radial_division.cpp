@@ -1,6 +1,7 @@
 // Created by Steffen Urban June 2019, urbste@googlemail.com, github.com/urbste
 
 #include "camera/radial_division.hpp"
+#include "util/yaml.hpp"
 
 #include <iostream>
 
@@ -28,20 +29,20 @@ radial_division::radial_division(const std::string& name, const setup_type_t& se
     img_bounds_ = compute_image_bounds();
 }
 
-radial_division::radial_division(const YAML::Node& yaml_node)
-    : radial_division(yaml_node["name"].as<std::string>(),
+radial_division::radial_division(const cv::FileNode& yaml_node)
+    : radial_division(util::yaml_get_req_str(yaml_node, "name"),
                       load_setup_type(yaml_node),
                       load_color_order(yaml_node),
-                      yaml_node["cols"].as<unsigned int>(),
-                      yaml_node["rows"].as<unsigned int>(),
-                      yaml_node["fps"].as<double>(),
-                      yaml_node["fx"].as<double>(),
-                      yaml_node["fy"].as<double>(),
-                      yaml_node["cx"].as<double>(),
-                      yaml_node["cy"].as<double>(),
-                      yaml_node["distortion"].as<double>(),
-                      yaml_node["focal_x_baseline"].as<double>(0.0),
-                      yaml_node["depth_threshold"].as<double>(40.0)) {}
+                      util::yaml_get_req<unsigned int>(yaml_node, "cols"),
+                      util::yaml_get_req<unsigned int>(yaml_node, "rows"),
+                      util::yaml_get_req<double>(yaml_node, "fps"),
+                      util::yaml_get_req<double>(yaml_node, "fx"),
+                      util::yaml_get_req<double>(yaml_node, "fy"),
+                      util::yaml_get_req<double>(yaml_node, "cx"),
+                      util::yaml_get_req<double>(yaml_node, "cy"),
+                      util::yaml_get_req<double>(yaml_node, "distortion"),
+                      util::yaml_get_val<double>(yaml_node, "focal_x_baseline", 0.0),
+                      util::yaml_get_val<double>(yaml_node, "depth_threshold", 40.0)) {}
 
 radial_division::~radial_division() {
     CV_LOG_DEBUG(&g_log_tag, "DESTRUCT: camera::radial_division");

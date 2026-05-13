@@ -33,7 +33,7 @@ public:
 
     //! Constructor
     initializer(data::map_database* map_db,
-                const YAML::Node& yaml_node);
+                const cv::FileNode& yaml_node);
 
     //! Destructor
     ~initializer();

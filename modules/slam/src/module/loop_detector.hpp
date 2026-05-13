@@ -9,7 +9,7 @@
 #include <atomic>
 #include <memory>
 
-#include <yaml-cpp/yaml.h>
+#include <opencv2/core/persistence.hpp>
 
 namespace cv::slam {
 
@@ -27,7 +27,7 @@ public:
     /**
      * Constructor
      */
-    loop_detector(data::bow_database* bow_db, data::bow_vocabulary* bow_vocab, const YAML::Node& yaml_node, const bool fix_scale_in_Sim3_estimation);
+    loop_detector(data::bow_database* bow_db, data::bow_vocabulary* bow_vocab, const cv::FileNode& yaml_node, const bool fix_scale_in_Sim3_estimation);
 
     /**
      * Enable loop detection

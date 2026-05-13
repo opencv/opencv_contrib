@@ -1,4 +1,5 @@
 #include "camera/base.hpp"
+#include "util/yaml.hpp"
 
 #include <iostream>
 #include <opencv2/core/mat.hpp>
@@ -23,8 +24,8 @@ base::~base() {
     CV_LOG_DEBUG(&g_log_tag, "DESTRUCT: camera::base");
 }
 
-setup_type_t base::load_setup_type(const YAML::Node& yaml_node) {
-    const auto setup_type_str = yaml_node["setup"].as<std::string>();
+setup_type_t base::load_setup_type(const cv::FileNode& yaml_node) {
+    const auto setup_type_str = util::yaml_get_req_str(yaml_node, "setup");
     if (setup_type_str == "monocular") {
         return camera::setup_type_t::Monocular;
     }
@@ -46,8 +47,8 @@ setup_type_t base::load_setup_type(const std::string& setup_type_str) {
     return static_cast<setup_type_t>(std::distance(setup_type_to_string.begin(), itr));
 }
 
-model_type_t base::load_model_type(const YAML::Node& yaml_node) {
-    const auto model_type_str = yaml_node["model"].as<std::string>();
+model_type_t base::load_model_type(const cv::FileNode& yaml_node) {
+    const auto model_type_str = util::yaml_get_req_str(yaml_node, "model");
     if (model_type_str == "perspective") {
         return camera::model_type_t::Perspective;
     }
@@ -71,12 +72,12 @@ model_type_t base::load_model_type(const std::string& model_type_str) {
     return static_cast<model_type_t>(std::distance(model_type_to_string.begin(), itr));
 }
 
-color_order_t base::load_color_order(const YAML::Node& yaml_node) {
-    if (!yaml_node["color_order"]) {
+color_order_t base::load_color_order(const cv::FileNode& yaml_node) {
+    if (yaml_node["color_order"].empty()) {
         return color_order_t::Gray;
     }
 
-    const auto color_order_str = yaml_node["color_order"].as<std::string>();
+    const auto color_order_str = util::yaml_get_req_str(yaml_node, "color_order");
     if (color_order_str == "Gray") {
         return color_order_t::Gray;
     }

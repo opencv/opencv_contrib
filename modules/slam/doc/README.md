@@ -129,11 +129,11 @@ Camera.height: 480
 
 ```cpp
 // Save map after SLAM
-slam->saveMap("map.msgpack");
+slam->saveMap("map.json");
 
 // Load map for localization
 auto slam2 = cv::vo::VisualOdometry::create(config, orb, matcher);
-slam2->loadMap("map.msgpack");
+slam2->loadMap("map.json");
 ```
 
 ### Localization Mode
@@ -239,7 +239,7 @@ int main() {
     auto slam = cv::vo::VisualOdometry::create(config, orb, matcher);
 
     // 2. Load pre-built map
-    slam->loadMap("map.msgpack");
+    slam->loadMap("map.json");
 
     // 3. Switch to localization mode
     slam->setMode(cv::vo::SLAMMode::LOCALIZATION);
@@ -376,7 +376,7 @@ See `samples/cpp/full_slam.cpp`:
 See `samples/cpp/localization_mode.cpp`:
 
 ```bash
-./example_localization_mode camera.yaml orb_vocab.fbow map.msgpack /path/to/images
+./example_localization_mode camera.yaml orb_vocab.fbow map.json /path/to/images
 ```
 
 ### Map Save/Load Test

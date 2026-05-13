@@ -115,7 +115,7 @@ public:
     camera::base* camera_;
 
     //! yaml node
-    YAML::Node tracking_yaml_;
+    cv::FileNode tracking_yaml_;
 
     //! closest keyframes thresholds (by distance and angle) to relocalize with when updating by pose
     double reloc_distance_threshold_ = 0.2;

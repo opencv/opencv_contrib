@@ -15,7 +15,7 @@
  *   ./example_localization_mode <config.yaml> <vocab.fbow> <map_path> <image_dir>
  *
  * Example:
- *   ./example_localization_mode EuRoC_mono.yaml orb_vocab.fbow /tmp/map.msgpack /path/to/images
+ *   ./example_localization_mode EuRoC_mono.yaml orb_vocab.fbow /tmp/map.json /path/to/images
  */
 
 #include <opencv2/slam.hpp>
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
                   << " <config.yaml> <vocab.fbow> <map_path> <image_dir>" << std::endl;
         std::cerr << "\nExample:" << std::endl;
         std::cerr << "  " << argv[0]
-                  << " EuRoC_mono.yaml orb_vocab.fbow /tmp/map.msgpack /path/to/images" << std::endl;
+                  << " EuRoC_mono.yaml orb_vocab.fbow /tmp/map.json /path/to/images" << std::endl;
         return 1;
     }
 

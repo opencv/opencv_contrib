@@ -11,6 +11,7 @@
 #include <nlohmann/json.hpp>
 
 #include <fstream>
+#include <sstream>
 
 namespace cv::slam {
 
@@ -37,12 +38,10 @@ bool map_database_io_msgpack::save(const std::string& path,
                         {"keyframe_next_id", static_cast<unsigned int>(map_db->next_keyframe_id_)},
                         {"landmark_next_id", static_cast<unsigned int>(map_db->next_landmark_id_)}};
 
-    std::ofstream ofs(path, std::ios::out | std::ios::binary);
-
+    std::ofstream ofs(path, std::ios::out);
     if (ofs.is_open()) {
-        CV_LOG_INFO(&g_log_tag, "save the MessagePack file of database to " << path);
-        const auto msgpack = nlohmann::json::to_msgpack(json);
-        ofs.write(reinterpret_cast<const char*>(msgpack.data()), msgpack.size() * sizeof(uint8_t));
+        CV_LOG_INFO(&g_log_tag, "save the database to " << path);
+        ofs << std::setw(2) << json << std::endl;
         ofs.close();
         return true;
     }
@@ -61,29 +60,18 @@ bool map_database_io_msgpack::load(const std::string& path,
     std::lock_guard<std::mutex> lock(data::map_database::mtx_database_);
     assert(cam_db && orb_params_db && map_db && bow_db && bow_vocab);
 
-    // load binary bytes
-
-    std::ifstream ifs(path, std::ios::in | std::ios::binary);
+    std::ifstream ifs(path, std::ios::in);
     if (!ifs.is_open()) {
         CV_LOG_FATAL(&g_log_tag, "cannot load the file at " << path);
         return false;
     }
 
-    CV_LOG_INFO(&g_log_tag, "load the MessagePack file of database from " << path);
-    std::vector<uint8_t> msgpack;
-    while (true) {
-        uint8_t buffer;
-        ifs.read(reinterpret_cast<char*>(&buffer), sizeof(uint8_t));
-        if (ifs.eof()) {
-            break;
-        }
-        msgpack.push_back(buffer);
-    }
+    CV_LOG_INFO(&g_log_tag, "load the database from " << path);
+    std::stringstream buffer;
+    buffer << ifs.rdbuf();
     ifs.close();
 
-    // parse into JSON
-
-    const auto json = nlohmann::json::from_msgpack(msgpack);
+    const auto json = nlohmann::json::parse(buffer.str());
 
     // load database
     const auto json_cameras = json.at("cameras");

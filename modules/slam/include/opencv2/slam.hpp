@@ -193,13 +193,13 @@ public:
     ///@{
 
     /** @brief Save the map to a file.
-     *  @param path Output file path (.msgpack format).
+     *  @param path Output file path (.json format).
      *  @return true on success.
      */
     CV_WRAP virtual bool saveMap(const String& path) = 0;
 
     /** @brief Load a map from a file.
-     *  @param path Input file path (.msgpack format).
+     *  @param path Input file path (.json format).
      *  @return true on success.
      */
     CV_WRAP virtual bool loadMap(const String& path) = 0;

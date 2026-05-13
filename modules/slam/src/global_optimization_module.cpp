@@ -15,17 +15,17 @@ namespace cv::slam {
 static cv::utils::logging::LogTag g_log_tag("cv_slam_module", cv::utils::logging::LOG_LEVEL_INFO);
 
 global_optimization_module::global_optimization_module(data::map_database* map_db, data::bow_database* bow_db,
-                                                       data::bow_vocabulary* bow_vocab, const YAML::Node& yaml_node,
+                                                       data::bow_vocabulary* bow_vocab, const cv::FileNode& yaml_node,
                                                        const bool fix_scale)
     : loop_detector_(new module::loop_detector(bow_db, bow_vocab, util::yaml_optional_ref(yaml_node, "LoopDetector"), fix_scale)),
       loop_bundle_adjuster_(new module::loop_bundle_adjuster(
           map_db,
-          util::yaml_optional_ref(yaml_node, "GlobalOptimizer")["num_iter"].as<unsigned int>(10),
-          util::yaml_optional_ref(yaml_node, "GlobalOptimizer")["use_huber_kernel"].as<bool>(false),
-          util::yaml_optional_ref(yaml_node, "GlobalOptimizer")["verbose"].as<bool>(false))),
+          util::yaml_get_val<unsigned int>(util::yaml_optional_ref(yaml_node, "GlobalOptimizer"), "num_iter", 10),
+          util::yaml_get_val<bool>(util::yaml_optional_ref(yaml_node, "GlobalOptimizer"), "use_huber_kernel", false),
+          util::yaml_get_val<bool>(util::yaml_optional_ref(yaml_node, "GlobalOptimizer"), "verbose", false))),
       map_db_(map_db),
       graph_optimizer_(new optimize::graph_optimizer(util::yaml_optional_ref(yaml_node, "GraphOptimizer"), fix_scale)),
-      thr_neighbor_keyframes_(util::yaml_optional_ref(yaml_node, "GlobalOptimizer")["thr_neighbor_keyframes"].as<unsigned int>(15)) {
+      thr_neighbor_keyframes_(util::yaml_get_val<unsigned int>(util::yaml_optional_ref(yaml_node, "GlobalOptimizer"), "thr_neighbor_keyframes", 15)) {
     CV_LOG_DEBUG(&g_log_tag, "CONSTRUCT: global_optimization_module");
 }
 
