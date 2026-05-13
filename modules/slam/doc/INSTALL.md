@@ -372,6 +372,23 @@ make -j$(nproc)
 ./bin/opencv_test_slam
 ```
 
+### 5.5 Arch Linux Verification
+
+After installation on Arch Linux, verify the slam module:
+
+```bash
+# Check library is installed
+ls -la /usr/local/lib/libcv_slam*
+
+# Verify dependencies are linked
+ldd /usr/local/lib/libcv_slam.so | grep -E 'g2o|fbow|yaml|sqlite'
+
+# Test C++ compilation (create test.cpp):
+# #include <opencv2/slam.hpp>
+# int main() { return 0; }
+# g++ -I/usr/local/include/opencv4 test.cpp -lopencv_slam -o test
+```
+
 ## 6. Running Examples
 
 ### 6.1 Prerequisites
