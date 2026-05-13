@@ -78,15 +78,15 @@ int main() {
     // Create detector and matcher
     auto orb = cv::ORB::create(1000);
     auto matcher = cv::BFMatcher::create(cv::NORM_HAMMING);
-    
+
     // Configure
     cv::vo::VOConfig config;
     config.camera_config_file = "camera.yaml";
     config.vocab_file = "orb_vocab.fbow";
-    
+
     // Create SLAM system
     auto slam = cv::vo::VisualOdometry::create(config, orb, matcher);
-    
+
     // Process frames
     for (const auto& frame : frames) {
         auto pose = slam->processFrame(frame.image, frame.timestamp);
@@ -94,7 +94,7 @@ int main() {
             // Use pose
         }
     }
-    
+
     // Cleanup
     slam->release();
     return 0;
@@ -231,35 +231,35 @@ int main() {
     // 1. Create SLAM system
     auto orb = cv::ORB::create(1000);
     auto matcher = cv::BFMatcher::create(cv::NORM_HAMMING);
-    
+
     cv::vo::VOConfig config;
     config.camera_config_file = "camera.yaml";
     config.vocab_file = "orb_vocab.fbow";
-    
+
     auto slam = cv::vo::VisualOdometry::create(config, orb, matcher);
-    
+
     // 2. Load pre-built map
     slam->loadMap("map.msgpack");
-    
+
     // 3. Switch to localization mode
     slam->setMode(cv::vo::SLAMMode::LOCALIZATION);
-    
+
     // 4. Process first frame
     cv::Mat image = cv::imread("frame.png", cv::IMREAD_GRAYSCALE);
     auto pose = slam->processFrame(image, timestamp);
-    
+
     // 5. If tracking fails, try relocalization
     if (!pose.has_value()) {
         std::cout << "Tracking lost, attempting relocalization..." << std::endl;
-        
+
         // Option A: Wait for automatic relocalization
         // Just continue processing frames
-        
+
         // Option B: Provide manual pose estimate
         cv::Matx44d initial_pose = ...;  // From GPS/IMU/etc.
         slam->relocalize_by_pose(initial_pose);
     }
-    
+
     // 6. Continue processing
     while (processing) {
         auto pose = slam->processFrame(image, timestamp);
@@ -267,7 +267,7 @@ int main() {
             // Use pose for navigation, etc.
         }
     }
-    
+
     slam->release();
     return 0;
 }

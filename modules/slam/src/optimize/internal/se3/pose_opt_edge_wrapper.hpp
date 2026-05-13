@@ -55,7 +55,7 @@ inline pose_opt_edge_wrapper::pose_opt_edge_wrapper(const camera::base* camera, 
                                                     const unsigned int idx, const float obs_x, const float obs_y, const float obs_x_right,
                                                     const float inv_sigma_sq, const float sqrt_chi_sq)
     : camera_(camera), idx_(idx), is_monocular_(obs_x_right < 0) {
-    
+
     switch (camera_->model_type_) {
         case camera::model_type_t::Perspective: {
             const auto c = static_cast<const camera::perspective*>(camera_);
@@ -204,7 +204,7 @@ inline pose_opt_edge_wrapper::pose_opt_edge_wrapper(const camera::base* camera, 
         }
     }
 
-    
+
     auto huber_kernel = new g2o::RobustKernelHuber();
     huber_kernel->setDelta(sqrt_chi_sq);
     edge_->setRobustKernel(huber_kernel);

@@ -308,12 +308,12 @@ bool tracking_module::track_local_map_without_temporal_keyframes(unsigned int& n
 }
 
 bool tracking_module::initialize() {
-    
+
     if (!allow_initialization_) {
         CV_LOG_WARNING(&g_log_tag, "Initialization skipped: not allowed in LOCALIZATION mode");
         return false;
     }
-    
+
     {
         // LOCK the map database
         std::lock_guard<std::mutex> lock1(data::map_database::mtx_database_);

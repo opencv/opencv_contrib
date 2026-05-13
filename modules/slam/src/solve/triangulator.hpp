@@ -81,7 +81,7 @@ Vec3_t triangulator::triangulate(const Vec3_t& bearing_1, const Vec3_t& bearing_
     A.row(2) = bearing_2(0) * cam_pose_2.row(2) - bearing_2(2) * cam_pose_2.row(0);
     A.row(3) = bearing_2(1) * cam_pose_2.row(2) - bearing_2(2) * cam_pose_2.row(1);
 
-    
+
     // https://eigen.tuxfamily.org/dox/classEigen_1_1JacobiSVD.html
     Eigen::JacobiSVD<Mat44_t> svd(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
     const Vec4_t singular_vector = svd.matrixV().block<4, 1>(0, 3);

@@ -18,7 +18,7 @@ public:
                        int minFastThreshold)
         : nfeatures_(nfeatures)
     {
-        
+
         orb_ = cv::ORB::create(
             nfeatures,
             scaleFactor,
@@ -31,7 +31,7 @@ public:
             iniFastThreshold
         );
     }
-    
+
     void detectAndCompute(
         const cv::Mat& image,
         const cv::Mat& mask,
@@ -40,12 +40,12 @@ public:
     {
         orb_->detectAndCompute(image, mask, keypoints, descriptors);
     }
-    
+
     FeatureType getType() const override { return FeatureType::ORB; }
     int descriptorSize() const override { return 32; }      // 256 bits = 32 bytes
     int descriptorType() const override { return CV_8U; }
     int defaultNormType() const override { return cv::NORM_HAMMING; }
-    
+
 private:
     cv::Ptr<cv::ORB> orb_;
     int nfeatures_;
@@ -62,7 +62,7 @@ std::shared_ptr<FeatureDetectorWrapper> FeatureDetectorWrapper::create(
     if (type == "ORB") {
         return createORB(nfeatures);
     }
-    
+
     // else if (type == "ALIKED") {
     //     return createALIKED(model_path, nfeatures);
     // }

@@ -147,7 +147,7 @@ public:
 
     //! The tracking module is paused or not
     bool tracker_is_paused() const;
-    
+
     //! Set whether initialization is allowed (false for LOCALIZATION mode)
     void set_allow_initialization(bool allow);
 

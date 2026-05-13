@@ -39,8 +39,8 @@ void system::set_ba_window_size(int size) {
 void system::set_enable_loop_closure(bool enable) {
     CV_LOG_INFO(&g_log_tag, "Setting loop closure enabled: " << enable);
     loop_closure_enabled_ = enable;
-    
-    
+
+
     if (global_optimizer_) {
         if (enable) {
             CV_LOG_INFO(&g_log_tag, "Enabling loop detector");

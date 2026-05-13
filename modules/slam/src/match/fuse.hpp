@@ -23,7 +23,7 @@ public:
 
     virtual ~fuse() = default;
 
-    
+
     template<typename T>
     unsigned int detect_duplication(const std::shared_ptr<data::keyframe>& keyfrm,
                                     const Mat33_t& rot_cw,

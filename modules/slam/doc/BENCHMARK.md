@@ -1,8 +1,8 @@
 # Feature2D + DescriptorMatcher Benchmark Report
 
-**Date:** 2026-03-28  
-**Dataset:** EuRoC MH01 (3682 frames)  
-**Test Platform:** OpenCV Contrib SLAM Module - VisualOdometryCV  
+**Date:** 2026-03-28
+**Dataset:** EuRoC MH01 (3682 frames)
+**Test Platform:** OpenCV Contrib SLAM Module - VisualOdometryCV
 
 ---
 

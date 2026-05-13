@@ -101,18 +101,18 @@ inline shot_vertex* shot_vertex_container::create_vertex(const std::shared_ptr<d
 }
 
 inline shot_vertex* shot_vertex_container::create_vertex(const unsigned int id, const Mat44_t& pose_cw, const bool is_constant) {
-    
+
     const auto vtx_id = *offset_;
     (*offset_)++;
     auto vtx = new shot_vertex();
     vtx->setId(vtx_id);
     vtx->setEstimate(util::converter::to_g2o_SE3(pose_cw));
     vtx->setFixed(is_constant);
-    
+
     id_container_[vtx_id] = id;
     vtx_id_container_[id] = vtx_id;
     vtx_container_[id] = vtx;
-    
+
     return vtx;
 }
 

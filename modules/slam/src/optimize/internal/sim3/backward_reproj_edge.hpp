@@ -59,19 +59,19 @@ inline bool base_backward_reproj_edge::write(std::ostream& os) const {
 }
 
 inline void base_backward_reproj_edge::computeError() {
-    
+
     const auto v1 = static_cast<const transform_vertex*>(_vertices.at(0));
     const g2o::Sim3& Sim3_12 = v1->estimate();
     const g2o::Sim3 Sim3_21 = Sim3_12.inverse();
-    
+
     const Mat33_t& rot_1w = v1->rot_1w_;
     const Vec3_t& trans_1w = v1->trans_1w_;
 
-    
+
     const Vec3_t pos_1 = rot_1w * pos_w_ + trans_1w;
-    
+
     const Vec3_t pos_2 = Sim3_21.map(pos_1);
-    
+
     const Vec2_t obs(_measurement);
     _error = obs - cam_project(pos_2);
 }

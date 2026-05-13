@@ -59,18 +59,18 @@ inline bool base_forward_reproj_edge::write(std::ostream& os) const {
 }
 
 inline void base_forward_reproj_edge::computeError() {
-    
+
     const auto v1 = static_cast<const transform_vertex*>(_vertices.at(0));
     const g2o::Sim3& Sim3_12 = v1->estimate();
-    
+
     const Mat33_t& rot_2w = v1->rot_2w_;
     const Vec3_t& trans_2w = v1->trans_2w_;
 
-    
+
     const Vec3_t pos_2 = rot_2w * pos_w_ + trans_2w;
-    
+
     const Vec3_t pos_1 = Sim3_12.map(pos_2);
-    
+
     const Vec2_t obs(_measurement);
     _error = obs - cam_project(pos_1);
 }

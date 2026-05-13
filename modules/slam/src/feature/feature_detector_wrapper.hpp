@@ -24,15 +24,15 @@ enum class FeatureType {
 
 /**
  * @brief Base class for feature detector wrappers
- * 
+ *
  * Provides a unified feature extraction interface with pluggable detectors.
  */
 class FeatureDetectorWrapper {
 public:
     virtual ~FeatureDetectorWrapper() = default;
-    
+
     // ========== Core interface ==========
-    
+
     /**
      * @brief Detect keypoints and compute descriptors
      * @param image Input image
@@ -45,16 +45,16 @@ public:
         const cv::Mat& mask,
         std::vector<cv::KeyPoint>& keypoints,
         cv::Mat& descriptors) = 0;
-    
+
     // ========== Query information ==========
-    
+
     virtual FeatureType getType() const = 0;
-    virtual int descriptorSize() const = 0;     
+    virtual int descriptorSize() const = 0;
     virtual int descriptorType() const = 0;     // CV_8U for ORB, CV_32F for ALIKED
     virtual int defaultNormType() const = 0;    // NORM_HAMMING or NORM_L2
-    
+
     // ========== Factory methods ==========
-    
+
     /**
      * @brief Create a suitable wrapper by type
      * @param type Feature type string ("ORB", "ALIKED", "SuperPoint")
@@ -64,7 +64,7 @@ public:
     static std::shared_ptr<FeatureDetectorWrapper> create(
         const std::string& type,
         int nfeatures = 1000);
-    
+
     /**
      * @brief Create an ORB feature detector
      * @param nfeatures Maximum number of keypoints

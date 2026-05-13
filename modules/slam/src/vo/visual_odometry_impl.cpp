@@ -37,7 +37,7 @@ cv::Ptr<VisualOdometry> VisualOdometry::create(
 // ============================================================================
 
 VisualOdometryImpl::VisualOdometryImpl(
-    const std::string& config_file, 
+    const std::string& config_file,
     const std::string& vocab_file)
 {
     initialize(config_file, vocab_file);
@@ -47,8 +47,8 @@ VisualOdometryImpl::VisualOdometryImpl(const VOConfig& config)
 {
     config_ = config;
     std::string config_file = config.camera_config_file;
-    std::string vocab_file = config.vocab_file;  
-    
+    std::string vocab_file = config.vocab_file;
+
     initialize(config_file, vocab_file);
 }
 
@@ -64,28 +64,28 @@ VisualOdometryImpl::~VisualOdometryImpl()
 // ============================================================================
 
 void VisualOdometryImpl::initialize(
-    const std::string& config_file, 
+    const std::string& config_file,
     const std::string& vocab_file)
 {
     if (initialized_) {
         return;
     }
-    
+
     try {
         vocab_file_ = vocab_file;
-        
-        
+
+
         auto cfg = std::make_shared<cv::slam::config>(config_file);
-        
-        
+
+
         system_ = std::make_shared<cv::slam::system>(cfg, vocab_file);
-        
-        
+
+
         system_->startup();
-        
+
         initialized_ = true;
         state_ = VOState::NotInitialized;
-        
+
         CV_LOG_INFO(&g_log_tag, "VisualOdometry initialized successfully");
     }
     catch (const std::exception& e) {
@@ -99,43 +99,43 @@ void VisualOdometryImpl::initialize(
 // ============================================================================
 
 std::optional<cv::Matx44d> VisualOdometryImpl::processFrame(
-    const cv::Mat& image, 
+    const cv::Mat& image,
     double timestamp)
 {
     if (!initialized_ || shutdown_) {
         return std::nullopt;
     }
-    
+
     try {
-        
+
         auto pose_ptr = system_->feed_monocular_frame(image, timestamp, cv::Mat());
-        
+
         if (pose_ptr) {
-            
+
             cv::Matx44d pose_cv;
             for (int i = 0; i < 4; ++i) {
                 for (int j = 0; j < 4; ++j) {
                     pose_cv(i, j) = (*pose_ptr)(i, j);
                 }
             }
-            
-            
+
+
             {
                 std::lock_guard<std::mutex> lock(trajectory_mutex_);
                 trajectory_.emplace_back(timestamp, pose_cv);
             }
-            
-            
+
+
             if (system_->tracker_is_paused()) {
                 state_ = VOState::Initializing;
             }
             else {
                 state_ = VOState::Tracking;
             }
-            
+
             return pose_cv;
         }
-        
+
         return std::nullopt;
     }
     catch (const std::exception& e) {
@@ -169,14 +169,14 @@ bool VisualOdometryImpl::isEmpty() const
 
 std::vector<cv::Point3d> VisualOdometryImpl::getMapPoints() const
 {
-    
-    
+
+
     return {};
 }
 
 std::vector<cv::KeyPoint> VisualOdometryImpl::getCurrentKeypoints() const
 {
-    
+
     return {};
 }
 
@@ -202,42 +202,42 @@ std::vector<std::pair<double, cv::Matx44d>> VisualOdometryImpl::getTrajectory() 
 bool VisualOdometryImpl::saveTrajectory(const std::string& path, const std::string& format)
 {
     std::lock_guard<std::mutex> lock(trajectory_mutex_);
-    
+
     std::ofstream ofs(path);
     if (!ofs.is_open()) {
         CV_LOG_ERROR(&g_log_tag, "Cannot open file: " << path);
         return false;
     }
-    
+
     if (format == "TUM") {
-        
+
         for (const auto& [timestamp, pose] : trajectory_) {
-            
+
             double tx = pose(0, 3);
             double ty = pose(1, 3);
             double tz = pose(2, 3);
-            
-            
+
+
             cv::Matx33d R;
             for (int i = 0; i < 3; ++i) {
                 for (int j = 0; j < 3; ++j) {
                     R(i, j) = pose(i, j);
                 }
             }
-            
-            
+
+
             double w = std::sqrt(1.0 + R(0, 0) + R(1, 1) + R(2, 2)) / 2.0;
             double x = (R(2, 1) - R(1, 2)) / (4.0 * w);
             double y = (R(0, 2) - R(2, 0)) / (4.0 * w);
             double z = (R(1, 0) - R(0, 1)) / (4.0 * w);
-            
+
             ofs << std::fixed << timestamp << " "
                 << tx << " " << ty << " " << tz << " "
                 << x << " " << y << " " << z << " " << w << std::endl;
         }
     }
     else {
-        
+
         for (const auto& [timestamp, pose] : trajectory_) {
             ofs << std::fixed << timestamp;
             for (int i = 0; i < 4; ++i) {
@@ -248,7 +248,7 @@ bool VisualOdometryImpl::saveTrajectory(const std::string& path, const std::stri
             ofs << std::endl;
         }
     }
-    
+
     CV_LOG_INFO(&g_log_tag, "Trajectory saved to: " << path);
     return true;
 }
@@ -259,13 +259,13 @@ bool VisualOdometryImpl::saveTrajectory(const std::string& path, const std::stri
 
 void VisualOdometryImpl::reset()
 {
-    
-    
+
+
     {
         std::lock_guard<std::mutex> lock(trajectory_mutex_);
         trajectory_.clear();
     }
-    
+
     state_ = VOState::NotInitialized;
 }
 
@@ -292,14 +292,14 @@ void VisualOdometryImpl::release()
     if (shutdown_) {
         return;
     }
-    
+
     shutdown_ = true;
-    
+
     if (system_) {
         system_->shutdown();
         system_.reset();
     }
-    
+
     CV_LOG_INFO(&g_log_tag, "VisualOdometry released");
 }
 
@@ -310,17 +310,17 @@ void VisualOdometryImpl::release()
 void VisualOdometryImpl::setMode(cv::vo::SLAMMode mode)
 {
     mode_ = mode;
-    
+
     CV_LOG_INFO(&g_log_tag, "SLAM mode changed to: " << (mode == static_cast<cv::vo::SLAMMode>(0) ? "SLAM" : "LOCALIZATION"));
-    
+
     if (system_) {
         if (mode == static_cast<cv::vo::SLAMMode>(1)) {
-            
+
             system_->disable_mapping_module();
             system_->set_allow_initialization(false);
             CV_LOG_INFO(&g_log_tag, "Mapping module disabled (LOCALIZATION mode)");
         } else {
-            
+
             system_->enable_mapping_module();
             system_->set_allow_initialization(true);
             CV_LOG_INFO(&g_log_tag, "Mapping module enabled (SLAM mode)");
@@ -341,7 +341,7 @@ void VisualOdometryImpl::setBackendEnabled(bool enable, int window_size)
 {
     backend_enabled_ = enable;
     ba_window_size_ = window_size;
-    
+
     if (system_) {
         system_->set_enable_backend(enable, window_size);
     }
@@ -355,7 +355,7 @@ bool VisualOdometryImpl::isBackendEnabled() const
 void VisualOdometryImpl::setLoopClosureEnabled(bool enable)
 {
     loop_closure_enabled_ = enable;
-    
+
     if (system_) {
         system_->set_enable_loop_closure(enable);
     }
@@ -395,7 +395,7 @@ void VisualOdometryImpl::enableMappingModule(bool enable)
     if (!system_) {
         return;
     }
-    
+
     if (enable) {
         system_->enable_mapping_module();
             system_->set_allow_initialization(true);
@@ -415,7 +415,7 @@ void VisualOdometryImpl::enableLoopDetector(bool enable)
     if (!system_) {
         return;
     }
-    
+
     if (enable) {
         system_->enable_loop_detector();
     } else {

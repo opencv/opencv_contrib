@@ -11,7 +11,7 @@ namespace cv::vo {
 
 /**
  * @brief VisualOdometry implementation class
- * 
+ *
  * Implemented on top of cv::slam::system and provides a modular interface.
  */
 class VisualOdometryImpl : public VisualOdometry {
@@ -21,109 +21,109 @@ public:
      * @param config_file Config file path
      * @param vocab_file Vocabulary file path
      */
-    VisualOdometryImpl(const std::string& config_file, 
+    VisualOdometryImpl(const std::string& config_file,
                        const std::string& vocab_file);
-    
+
     /**
      * @brief Constructor - create from VOConfig
      * @param config VO configuration
      */
     explicit VisualOdometryImpl(const VOConfig& config);
-    
+
     ~VisualOdometryImpl() override;
-    
+
     // ========== Core interface ==========
-    
+
     std::optional<cv::Matx44d> processFrame(
-        const cv::Mat& image, 
+        const cv::Mat& image,
         double timestamp) override;
-    
+
     // ========== State query ==========
-    
+
     VOState getState() const override;
     bool isInitialized() const override;
     bool isEmpty() const override;
-    
+
     // ========== Map access ==========
-    
+
     std::vector<cv::Point3d> getMapPoints() const override;
     std::vector<cv::KeyPoint> getCurrentKeypoints() const override;
     cv::Matx44d getCurrentPose() const override;
-    
+
     // ========== Trajectory access ==========
-    
+
     std::vector<std::pair<double, cv::Matx44d>> getTrajectory() const override;
     bool saveTrajectory(const std::string& path, const std::string& format) override;
-    
+
     // ========== Map save/load ==========
-    
+
     bool saveMap(const std::string& path) override;
     bool loadMap(const std::string& path) override;
-    
+
     // ========== Control interface ==========
-    
+
     void reset() override;
     void release() override;
-    
+
     // ========== Mode control ==========
-    
+
     void setMode(cv::vo::SLAMMode mode) override;
     cv::vo::SLAMMode getMode() const override;
-    
+
     void setFeatureDetector(const cv::Ptr<cv::Feature2D>& detector) override;
     void setMatcher(const cv::Ptr<cv::DescriptorMatcher>& m) override;
     cv::Ptr<cv::Feature2D> getFeatureDetector() const override;
     cv::Ptr<cv::DescriptorMatcher> getMatcher() const override;
-    
+
     // ========== Backend control ==========
-    
+
     void setBackendEnabled(bool enable, int window_size = 10) override;
     bool isBackendEnabled() const override;
-    
+
     void setLoopClosureEnabled(bool enable) override;
     bool isLoopClosureEnabled() const override;
-    
+
     // ========== Extension interface ==========
-    
+
     void enableMappingModule(bool enable);
     bool isMappingModuleEnabled() const;
-    
+
     void enableLoopDetector(bool enable);
     bool isLoopDetectorEnabled() const;
-    
+
     std::shared_ptr<cv::slam::system> getSystem() const { return system_; }
-    
+
 private:
     /**
     * @brief Initialize the system
      */
     void initialize(const std::string& config_file, const std::string& vocab_file);
-    
+
     std::shared_ptr<cv::slam::system> system_;
-    
+
     // Configuration (moved from base class, which no longer has protected members)
     VOConfig config_;
-    
+
     // Trajectory
     std::vector<std::pair<double, cv::Matx44d>> trajectory_;
     mutable std::mutex trajectory_mutex_;
-    
+
     // State
     bool initialized_ = false;
     bool shutdown_ = false;
     VOState state_ = VOState::NotInitialized;
-    
+
     // SLAM mode
     cv::vo::SLAMMode mode_ = static_cast<cv::vo::SLAMMode>(0);
-    
+
     // Vocabulary path
     std::string vocab_file_;
-    
+
     // Backend configuration
     bool backend_enabled_ = true;
     bool loop_closure_enabled_ = true;
     int ba_window_size_ = 10;
-    
+
     // Feature detector and matcher
     cv::Ptr<cv::Feature2D> feature_detector_;
     cv::Ptr<cv::DescriptorMatcher> matcher_;

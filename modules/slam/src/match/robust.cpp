@@ -253,7 +253,7 @@ unsigned int robust::brute_force_match(const data::frame_observation& frm_obs,
     std::unordered_set<int> already_matched_indices_1;
 
     for (unsigned int idx_2 = 0; idx_2 < num_keypts_2; ++idx_2) {
-        
+
         const auto& lm_2 = lms_2.at(idx_2);
         if (!lm_2) {
             continue;

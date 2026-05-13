@@ -82,21 +82,21 @@ inline void equirectangular_reproj_edge::linearizeOplus() {
     const auto pcz = pos_c(2);
     const auto L = pos_c.norm();
 
-    
+
     const Vec3_t d_pc_d_rx(0, -pcz, pcy);
     const Vec3_t d_pc_d_ry(pcz, 0, -pcx);
     const Vec3_t d_pc_d_rz(-pcy, pcx, 0);
-    
+
     const Vec3_t d_pc_d_tx(1, 0, 0);
     const Vec3_t d_pc_d_ty(0, 1, 0);
     const Vec3_t d_pc_d_tz(0, 0, 1);
-    
+
     const Vec3_t d_pc_d_pwx = rot_cw.block<3, 1>(0, 0);
     const Vec3_t d_pc_d_pwy = rot_cw.block<3, 1>(0, 1);
     const Vec3_t d_pc_d_pwz = rot_cw.block<3, 1>(0, 2);
 
-    
-    
+
+
     VecR_t<9> d_pcx_d_x;
     d_pcx_d_x << d_pc_d_rx(0), d_pc_d_ry(0), d_pc_d_rz(0),
         d_pc_d_tx(0), d_pc_d_ty(0), d_pc_d_tz(0),
@@ -110,20 +110,20 @@ inline void equirectangular_reproj_edge::linearizeOplus() {
         d_pc_d_tx(2), d_pc_d_ty(2), d_pc_d_tz(2),
         d_pc_d_pwx(2), d_pc_d_pwy(2), d_pc_d_pwz(2);
 
-    
+
     const VecR_t<9> d_L_d_x = (1.0 / L) * (pcx * d_pcx_d_x + pcy * d_pcy_d_x + pcz * d_pcz_d_x);
 
-    
+
     MatRC_t<2, 9> jacobian = MatRC_t<2, 9>::Zero();
     jacobian.block<1, 9>(0, 0) = -(cols_ / (2 * M_PI)) * (1.0 / (pcx * pcx + pcz * pcz))
                                  * (pcz * d_pcx_d_x - pcx * d_pcz_d_x);
     jacobian.block<1, 9>(1, 0) = -(rows_ / M_PI) * (1.0 / (L * std::sqrt(pcx * pcx + pcz * pcz)))
                                  * (L * d_pcy_d_x - pcy * d_L_d_x);
 
-    
-    
+
+
     _jacobianOplusXi = jacobian.block<2, 3>(0, 6);
-    
+
     _jacobianOplusXj = jacobian.block<2, 6>(0, 0);
 }
 

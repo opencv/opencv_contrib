@@ -11,26 +11,26 @@ namespace cv::slam::match {
 
 class BFMatcherWrapper : public MatcherWrapper {
 public:
-    
+
     BFMatcherWrapper(const std::string& feature_type)
     {
         if (feature_type == "ORB") {
             normType_ = cv::NORM_HAMMING;
         }
         else {
-            
+
             normType_ = cv::NORM_L2;
         }
         matcher_ = cv::BFMatcher::create(normType_);
     }
-    
-    
+
+
     BFMatcherWrapper(int normType)
         : normType_(normType)
     {
         matcher_ = cv::BFMatcher::create(normType_);
     }
-    
+
     void match(
         const cv::Mat& descriptors1,
         const cv::Mat& descriptors2,
@@ -38,7 +38,7 @@ public:
     {
         matcher_->match(descriptors1, descriptors2, matches);
     }
-    
+
     void knnMatch(
         const cv::Mat& descriptors1,
         const cv::Mat& descriptors2,
@@ -47,10 +47,10 @@ public:
     {
         matcher_->knnMatch(descriptors1, descriptors2, matches, k);
     }
-    
+
     MatcherType getType() const override { return MatcherType::BF; }
     int getNormType() const override { return normType_; }
-    
+
 private:
     cv::Ptr<cv::BFMatcher> matcher_;
     int normType_;

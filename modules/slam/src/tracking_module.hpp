@@ -287,8 +287,8 @@ protected:
 
     //! Mutex for update pose request into given position
     mutable std::mutex mtx_relocalize_by_pose_request_;
-    
-    
+
+
     bool allow_initialization_ = true;
     //! Update into a given position is requested or not
     bool relocalize_by_pose_is_requested();

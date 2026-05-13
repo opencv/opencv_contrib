@@ -40,11 +40,11 @@ public:
 
     void set_as_outlier() const;
 
-    
-    
+
+
     base_forward_reproj_edge* edge_12_;
-    
-    
+
+
     base_backward_reproj_edge* edge_21_;
 
     std::shared_ptr<T> shot1_, shot2_;
@@ -57,7 +57,7 @@ inline mutual_reproj_edge_wapper<T>::mutual_reproj_edge_wapper(const std::shared
                                                                const std::shared_ptr<T>& shot2, unsigned int idx2, const std::shared_ptr<data::landmark>& lm2,
                                                                internal::sim3::transform_vertex* Sim3_12_vtx, const float sqrt_chi_sq)
     : shot1_(shot1), shot2_(shot2), idx1_(idx1), idx2_(idx2), lm1_(lm1), lm2_(lm2) {
-    
+
     {
         camera::base* camera1 = shot1->camera_;
 
@@ -65,17 +65,17 @@ inline mutual_reproj_edge_wapper<T>::mutual_reproj_edge_wapper(const std::shared
             case camera::model_type_t::Perspective: {
                 auto c = static_cast<camera::perspective*>(camera1);
 
-                
+
                 auto edge_12 = new internal::sim3::perspective_forward_reproj_edge();
-                
+
                 const auto& undist_keypt_1 = shot1->frm_obs_.undist_keypts_.at(idx1);
                 const Vec2_t obs_1{undist_keypt_1.pt.x, undist_keypt_1.pt.y};
                 const float inv_sigma_sq_1 = shot1->orb_params_->inv_level_sigma_sq_.at(undist_keypt_1.octave);
                 edge_12->setMeasurement(obs_1);
                 edge_12->setInformation(Mat22_t::Identity() * inv_sigma_sq_1);
-                
+
                 edge_12->pos_w_ = lm2->get_pos_in_world();
-                
+
                 edge_12->fx_ = c->fx_;
                 edge_12->fy_ = c->fy_;
                 edge_12->cx_ = c->cx_;
@@ -89,17 +89,17 @@ inline mutual_reproj_edge_wapper<T>::mutual_reproj_edge_wapper(const std::shared
             case camera::model_type_t::Fisheye: {
                 auto c = static_cast<camera::fisheye*>(camera1);
 
-                
+
                 auto edge_12 = new internal::sim3::perspective_forward_reproj_edge();
-                
+
                 const auto& undist_keypt_1 = shot1->frm_obs_.undist_keypts_.at(idx1);
                 const Vec2_t obs_1{undist_keypt_1.pt.x, undist_keypt_1.pt.y};
                 const float inv_sigma_sq_1 = shot1->orb_params_->inv_level_sigma_sq_.at(undist_keypt_1.octave);
                 edge_12->setMeasurement(obs_1);
                 edge_12->setInformation(Mat22_t::Identity() * inv_sigma_sq_1);
-                
+
                 edge_12->pos_w_ = lm2->get_pos_in_world();
-                
+
                 edge_12->fx_ = c->fx_;
                 edge_12->fy_ = c->fy_;
                 edge_12->cx_ = c->cx_;
@@ -113,17 +113,17 @@ inline mutual_reproj_edge_wapper<T>::mutual_reproj_edge_wapper(const std::shared
             case camera::model_type_t::Equirectangular: {
                 auto c = static_cast<camera::equirectangular*>(camera1);
 
-                
+
                 auto edge_12 = new internal::sim3::equirectangular_forward_reproj_edge();
-                
+
                 const auto& undist_keypt_1 = shot1->frm_obs_.undist_keypts_.at(idx1);
                 const Vec2_t obs_1{undist_keypt_1.pt.x, undist_keypt_1.pt.y};
                 const float inv_sigma_sq_1 = shot1->orb_params_->inv_level_sigma_sq_.at(undist_keypt_1.octave);
                 edge_12->setMeasurement(obs_1);
                 edge_12->setInformation(Mat22_t::Identity() * inv_sigma_sq_1);
-                
+
                 edge_12->pos_w_ = lm2->get_pos_in_world();
-                
+
                 edge_12->cols_ = c->cols_;
                 edge_12->rows_ = c->rows_;
 
@@ -135,17 +135,17 @@ inline mutual_reproj_edge_wapper<T>::mutual_reproj_edge_wapper(const std::shared
             case camera::model_type_t::RadialDivision: {
                 auto c = static_cast<camera::radial_division*>(camera1);
 
-                
+
                 auto edge_12 = new internal::sim3::perspective_forward_reproj_edge();
-                
+
                 const auto& undist_keypt_1 = shot1->frm_obs_.undist_keypts_.at(idx1);
                 const Vec2_t obs_1{undist_keypt_1.pt.x, undist_keypt_1.pt.y};
                 const float inv_sigma_sq_1 = shot1->orb_params_->inv_level_sigma_sq_.at(undist_keypt_1.octave);
                 edge_12->setMeasurement(obs_1);
                 edge_12->setInformation(Mat22_t::Identity() * inv_sigma_sq_1);
-                
+
                 edge_12->pos_w_ = lm2->get_pos_in_world();
-                
+
                 edge_12->fx_ = c->fx_;
                 edge_12->fy_ = c->fy_;
                 edge_12->cx_ = c->cx_;
@@ -158,13 +158,13 @@ inline mutual_reproj_edge_wapper<T>::mutual_reproj_edge_wapper(const std::shared
             }
         }
 
-        
+
         auto huber_kernel_12 = new g2o::RobustKernelHuber();
         huber_kernel_12->setDelta(sqrt_chi_sq);
         edge_12_->setRobustKernel(huber_kernel_12);
     }
 
-    
+
     {
         camera::base* camera2 = shot2->camera_;
 
@@ -172,17 +172,17 @@ inline mutual_reproj_edge_wapper<T>::mutual_reproj_edge_wapper(const std::shared
             case camera::model_type_t::Perspective: {
                 auto c = static_cast<camera::perspective*>(camera2);
 
-                
+
                 auto edge_21 = new internal::sim3::perspective_backward_reproj_edge();
-                
+
                 const auto& undist_keypt_2 = shot2->frm_obs_.undist_keypts_.at(idx2);
                 const Vec2_t obs_2{undist_keypt_2.pt.x, undist_keypt_2.pt.y};
                 const float inv_sigma_sq_2 = shot2->orb_params_->inv_level_sigma_sq_.at(undist_keypt_2.octave);
                 edge_21->setMeasurement(obs_2);
                 edge_21->setInformation(Mat22_t::Identity() * inv_sigma_sq_2);
-                
+
                 edge_21->pos_w_ = lm1->get_pos_in_world();
-                
+
                 edge_21->fx_ = c->fx_;
                 edge_21->fy_ = c->fy_;
                 edge_21->cx_ = c->cx_;
@@ -196,17 +196,17 @@ inline mutual_reproj_edge_wapper<T>::mutual_reproj_edge_wapper(const std::shared
             case camera::model_type_t::Fisheye: {
                 auto c = static_cast<camera::fisheye*>(camera2);
 
-                
+
                 auto edge_21 = new internal::sim3::perspective_backward_reproj_edge();
-                
+
                 const auto& undist_keypt_2 = shot2->frm_obs_.undist_keypts_.at(idx2);
                 const Vec2_t obs_2{undist_keypt_2.pt.x, undist_keypt_2.pt.y};
                 const float inv_sigma_sq_2 = shot2->orb_params_->inv_level_sigma_sq_.at(undist_keypt_2.octave);
                 edge_21->setMeasurement(obs_2);
                 edge_21->setInformation(Mat22_t::Identity() * inv_sigma_sq_2);
-                
+
                 edge_21->pos_w_ = lm1->get_pos_in_world();
-                
+
                 edge_21->fx_ = c->fx_;
                 edge_21->fy_ = c->fy_;
                 edge_21->cx_ = c->cx_;
@@ -220,17 +220,17 @@ inline mutual_reproj_edge_wapper<T>::mutual_reproj_edge_wapper(const std::shared
             case camera::model_type_t::Equirectangular: {
                 auto c = static_cast<camera::equirectangular*>(camera2);
 
-                
+
                 auto edge_21 = new internal::sim3::equirectangular_backward_reproj_edge();
-                
+
                 const auto& undist_keypt_2 = shot2->frm_obs_.undist_keypts_.at(idx2);
                 const Vec2_t obs_2{undist_keypt_2.pt.x, undist_keypt_2.pt.y};
                 const float inv_sigma_sq_2 = shot2->orb_params_->inv_level_sigma_sq_.at(undist_keypt_2.octave);
                 edge_21->setMeasurement(obs_2);
                 edge_21->setInformation(Mat22_t::Identity() * inv_sigma_sq_2);
-                
+
                 edge_21->pos_w_ = lm1->get_pos_in_world();
-                
+
                 edge_21->cols_ = c->cols_;
                 edge_21->rows_ = c->rows_;
 
@@ -242,17 +242,17 @@ inline mutual_reproj_edge_wapper<T>::mutual_reproj_edge_wapper(const std::shared
             case camera::model_type_t::RadialDivision: {
                 auto c = static_cast<camera::radial_division*>(camera2);
 
-                
+
                 auto edge_21 = new internal::sim3::perspective_backward_reproj_edge();
-                
+
                 const auto& undist_keypt_2 = shot2->frm_obs_.undist_keypts_.at(idx2);
                 const Vec2_t obs_2{undist_keypt_2.pt.x, undist_keypt_2.pt.y};
                 const float inv_sigma_sq_2 = shot2->orb_params_->inv_level_sigma_sq_.at(undist_keypt_2.octave);
                 edge_21->setMeasurement(obs_2);
                 edge_21->setInformation(Mat22_t::Identity() * inv_sigma_sq_2);
-                
+
                 edge_21->pos_w_ = lm1->get_pos_in_world();
-                
+
                 edge_21->fx_ = c->fx_;
                 edge_21->fy_ = c->fy_;
                 edge_21->cx_ = c->cx_;
@@ -265,7 +265,7 @@ inline mutual_reproj_edge_wapper<T>::mutual_reproj_edge_wapper(const std::shared
             }
         }
 
-        
+
         auto huber_kernel_21 = new g2o::RobustKernelHuber();
         huber_kernel_21->setDelta(sqrt_chi_sq);
         edge_21_->setRobustKernel(huber_kernel_21);

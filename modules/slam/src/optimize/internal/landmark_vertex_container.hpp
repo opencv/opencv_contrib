@@ -86,7 +86,7 @@ inline landmark_vertex* landmark_vertex_container::create_vertex(const std::shar
 }
 
 inline landmark_vertex* landmark_vertex_container::create_vertex(const unsigned int id, const Vec3_t& pos_w, const bool is_constant) {
-    
+
     const auto vtx_id = *offset_;
     (*offset_)++;
     auto vtx = new landmark_vertex();
@@ -94,11 +94,11 @@ inline landmark_vertex* landmark_vertex_container::create_vertex(const unsigned 
     vtx->setEstimate(pos_w);
     vtx->setFixed(is_constant);
     vtx->setMarginalized(true);
-    
+
     id_container_[vtx_id] = id;
     vtx_id_container_[id] = vtx_id;
     vtx_container_[id] = vtx;
-    
+
     return vtx;
 }
 
