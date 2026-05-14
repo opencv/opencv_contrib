@@ -45,13 +45,13 @@ int main(int argc, char** argv) {
 
     std::cout << "Creating SLAM system...\n";
     auto slam = cv::vo::VisualOdometry::create(config_file, vocab_file);
-    
+
     std::cout << "Enabling backend with local BA...\n";
     slam->setBackendEnabled(true, 10);
-    
+
     std::cout << "Enabling loop closure...\n";
     slam->setLoopClosureEnabled(true);
-    
+
     std::cout << "Setting SLAM mode...\n";
     slam->setMode(cv::vo::SLAMMode::SLAM);
 
@@ -62,10 +62,10 @@ int main(int argc, char** argv) {
         const auto timestamp = item.second;
         cv::Mat img = cv::imread(img_path, cv::IMREAD_GRAYSCALE);
         if (img.empty()) continue;
-        
+
         auto pose = slam->processFrame(img, timestamp);
         processed++;
-        
+
         if (processed % 100 == 0) {
             std::cout << "Processed " << processed << "/" << images.size() << " frames\n";
         }
@@ -73,13 +73,13 @@ int main(int argc, char** argv) {
 
     std::cout << "Saving trajectory to: " << output_dir << "/trajectory.txt\n";
     slam->saveTrajectory(output_dir + "/trajectory.txt", "TUM");
-    
+
     std::cout << "Saving map to: " << output_dir << "/map.msgpack\n";
     slam->saveMap(output_dir + "/map.msgpack");
-    
+
     std::cout << "Releasing SLAM system...\n";
     slam->release();
-    
+
     std::cout << "Done! Processed " << processed << " frames.\n";
     return 0;
 }
