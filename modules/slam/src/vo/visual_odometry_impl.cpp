@@ -144,6 +144,22 @@ std::optional<cv::Matx44d> VisualOdometryImpl::processFrame(
     }
 }
 
+void VisualOdometryImpl::setupViewer() {
+    if (system_) system_->setup_viewer();
+}
+
+void VisualOdometryImpl::drawViewer() {
+    if (system_) system_->draw_viewer();
+}
+
+void VisualOdometryImpl::loadGroundTruth(const std::string& tum_path) {
+    if (system_) system_->load_ground_truth(tum_path);
+}
+
+bool VisualOdometryImpl::viewerRequestedQuit() const {
+    return system_ ? system_->viewer_requested_quit() : false;
+}
+
 // ============================================================================
 
 // ============================================================================

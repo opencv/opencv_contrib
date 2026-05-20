@@ -93,6 +93,11 @@ public:
 
     std::shared_ptr<cv::slam::system> getSystem() const { return system_; }
 
+    void setupViewer() override;
+    void drawViewer() override;
+    void loadGroundTruth(const std::string& tum_path) override;
+    bool viewerRequestedQuit() const override;
+
 private:
     /**
     * @brief Initialize the system

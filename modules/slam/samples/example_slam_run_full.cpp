@@ -56,6 +56,10 @@ int main(int argc, char** argv) {
     slam->setMode(cv::vo::SLAMMode::SLAM);
 
     std::cout << "Processing " << images.size() << " images...\n";
+
+    slam->setupViewer();
+    slam->loadGroundTruth(image_dir + "/../../state_groundtruth_estimate0/data.tum");
+
     int processed = 0;
     for (const auto& item : images) {
         const auto& img_path = item.first;
@@ -65,6 +69,10 @@ int main(int argc, char** argv) {
 
         auto pose = slam->processFrame(img, timestamp);
         processed++;
+
+        slam->drawViewer();
+
+        if (slam->viewerRequestedQuit()) break;
 
         if (processed % 100 == 0) {
             std::cout << "Processed " << processed << "/" << images.size() << " frames\n";

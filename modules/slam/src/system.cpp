@@ -11,6 +11,7 @@
 #include "data/map_database.hpp"
 #include "data/bow_database.hpp"
 #include "data/bow_vocabulary.hpp"
+#include "data/landmark.hpp"
 #include "data/marker2d.hpp"
 #include "data/marker.hpp"
 #include "match/stereo.hpp"
@@ -21,6 +22,9 @@
 #include "util/image_converter.hpp"
 #include "util/yaml.hpp"
 
+#include <cmath>
+#include <fstream>
+#include <sstream>
 #include <thread>
 
 #include <opencv2/core/utils/logger.hpp>
@@ -511,13 +515,42 @@ std::shared_ptr<Mat44_t> system::feed_RGBD_frame(const cv::Mat& rgb_img, const c
     return feed_frame(frm, rgb_img, extraction_time_elapsed_ms);
 }
 
-std::shared_ptr<Mat44_t> system::feed_frame(const data::frame& frm, const cv::Mat& img, const double extraction_time_elapsed_ms) {
+std::shared_ptr<Mat44_t> system::feed_frame(const data::frame& frm, const cv::Mat& img, const double /*extraction_time_elapsed_ms*/) {
     const auto start = std::chrono::system_clock::now();
 
     const auto cam_pose_wc = tracker_->feed_frame(frm);
 
     const auto end = std::chrono::system_clock::now();
-    double tracking_time_elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    (void)start; (void)end;
+
+    // Push data to viewer
+    if (viewer_ && cam_pose_wc && !img.empty()) {
+        static auto last_time = std::chrono::steady_clock::now();
+        auto now = std::chrono::steady_clock::now();
+        double dt = std::chrono::duration<double>(now - last_time).count();
+        last_time = now;
+        double fps = dt > 0 ? 1.0 / dt : 0;
+
+        estimated_trajectory_xy_.push_back({frm.timestamp_,
+                                            {(*cam_pose_wc)(0, 3), (*cam_pose_wc)(1, 3)},
+                                            Eigen::Vector3d((*cam_pose_wc)(0, 3), (*cam_pose_wc)(1, 3), (*cam_pose_wc)(2, 3))});
+        std::vector<Eigen::Vector3d> map_points_xyz;
+        const auto landmarks = map_db_->get_all_landmarks();
+        map_points_xyz.reserve(landmarks.size());
+        for (const auto& lm : landmarks) {
+            if (!lm || lm->will_be_erased()) {
+                continue;
+            }
+            const Vec3_t pos_w = lm->get_pos_in_world();
+            if (!std::isfinite(pos_w(0)) || !std::isfinite(pos_w(1)) || !std::isfinite(pos_w(2))) {
+                continue;
+            }
+            map_points_xyz.emplace_back(pos_w(0), pos_w(1), pos_w(2));
+        }
+
+        frame_count_++;
+        viewer_->update(img, keypts_, *cam_pose_wc, estimated_trajectory_xy_, map_points_xyz, fps, frame_count_);
+    }
 
     return cam_pose_wc;
 }
@@ -642,6 +675,55 @@ void system::set_feature_detector(const cv::Ptr<cv::Feature2D>& detector) {
 
 cv::Ptr<cv::Feature2D> system::get_feature_detector() const {
     return external_feature_detector_;
+}
+
+void system::setup_viewer() {
+    viewer_ = std::unique_ptr<viewer::cv_viewer>(new viewer::cv_viewer());
+    if (!ground_truth_xy_.empty()) {
+        viewer_->set_ground_truth(ground_truth_xy_);
+    }
+}
+
+void system::draw_viewer() {
+    if (viewer_) viewer_->render();
+}
+
+void system::load_ground_truth(const std::string& tum_path) {
+    std::ifstream ifs(tum_path);
+    if (!ifs.is_open()) {
+        CV_LOG_WARNING(&g_log_tag, "Cannot open ground-truth trajectory: " << tum_path);
+        return;
+    }
+
+    std::vector<viewer::trajectory_sample> points;
+    std::string line;
+    while (std::getline(ifs, line)) {
+        if (line.empty() || line[0] == '#') {
+            continue;
+        }
+
+        std::istringstream iss(line);
+        double timestamp = 0.0, x = 0.0, y = 0.0, z = 0.0;
+        double qx = 0.0, qy = 0.0, qz = 0.0, qw = 0.0;
+        if (!(iss >> timestamp >> x >> y >> z >> qx >> qy >> qz >> qw)) {
+            continue;
+        }
+        points.push_back({timestamp, {x, y}, Eigen::Vector3d(x, y, z)});
+    }
+
+    ground_truth_xy_ = std::move(points);
+    if (viewer_) {
+        viewer_->set_ground_truth(ground_truth_xy_);
+    }
+    CV_LOG_INFO(&g_log_tag, "Loaded ground-truth x-y-z trajectory points: " << ground_truth_xy_.size());
+}
+
+bool system::viewer_requested_quit() const {
+    return viewer_ ? viewer_->should_quit() : false;
+}
+
+void system::request_viewer_quit() {
+    if (viewer_) viewer_->request_quit();
 }
 
 }

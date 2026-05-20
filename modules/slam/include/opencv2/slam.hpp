@@ -280,6 +280,24 @@ public:
     /** @brief Get the current descriptor matcher. */
     CV_WRAP virtual Ptr<DescriptorMatcher> getMatcher() const = 0;
     ///@}
+
+    /** @name Viewer
+     *  Real-time 2D visualization using OpenCV highgui.
+     */
+    ///@{
+
+    /** @brief Open the viewer window. */
+    CV_WRAP virtual void setupViewer() = 0;
+
+    /** @brief Render current state. Call after each processFrame(). */
+    CV_WRAP virtual void drawViewer() = 0;
+
+    /** @brief Load ground truth TUM file for trajectory comparison. */
+    CV_WRAP virtual void loadGroundTruth(const String& tum_path) = 0;
+
+    /** @brief Check if viewer window was closed. */
+    CV_WRAP virtual bool viewerRequestedQuit() const = 0;
+    ///@}
 };
 
 } // namespace vo

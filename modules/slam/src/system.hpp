@@ -8,6 +8,9 @@
 #include <thread>
 #include <memory>
 #include <mutex>
+#include <vector>
+
+#include "viewer/cv_viewer.hpp"
 #include <atomic>
 #include <memory>
 
@@ -137,6 +140,14 @@ public:
     //! Request to update the pose to a given one.
     //! Return failure in case if previous request was not finished.
     bool relocalize_by_pose(const Mat44_t& cam_pose_wc);
+
+    // viewer
+    void setup_viewer();
+    void draw_viewer();
+    void load_ground_truth(const std::string& tum_path);
+    bool viewer_requested_quit() const;
+    void request_viewer_quit();
+
     bool relocalize_by_pose_2d(const Mat44_t& cam_pose_wc, const Vec3_t& normal_vector);
 
     //-----------------------------------------
@@ -309,6 +320,13 @@ private:
 
     //! Temporary variables for visualization
     std::vector<cv::KeyPoint> keypts_;
+
+    //! OpenCV viewer
+    std::unique_ptr<viewer::cv_viewer> viewer_ = nullptr;
+    std::vector<viewer::trajectory_sample> estimated_trajectory_xy_;
+    std::vector<viewer::trajectory_sample> ground_truth_xy_;
+
+    int frame_count_ = 0;
 
     // Phase 2: External feature detector support
     //! External feature detector (if set, used instead of internal orb_extractor)
