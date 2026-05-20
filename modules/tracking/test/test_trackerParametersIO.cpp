@@ -80,7 +80,7 @@ TEST(KCF_Parameters, IO)
     parameters.compressed_size=3;
     parameters.pca_learning_rate=0.2f;
 
-    FileStorage fsWriter("parameters.xml", FileStorage::WRITE + FileStorage::MEMORY);
+    FileStorage fsWriter("parameters.yaml", FileStorage::WRITE + FileStorage::MEMORY);
     parameters.write(fsWriter);
 
     String serializedParameters = fsWriter.releaseAndGetString();
