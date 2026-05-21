@@ -95,7 +95,7 @@ public class BRIEFDescriptorExtractorTest extends OpenCVTestCase {
 
         extractor.write(filename);
 
-        String truth = "%YAML:1.0\n---\nname: \"Feature2D.BRIEF\"\ndescriptorSize: 32\nuse_orientation: 0\n";
+        String truth = "%YAML 1.2\n---\nname: \"Feature2D.BRIEF\"\ndescriptorSize: 32\nuse_orientation: false\n";
         assertEquals(truth, readFile(filename));
     }
 

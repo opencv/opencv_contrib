@@ -55,7 +55,7 @@ public class LATCHDescriptorExtractorTest extends OpenCVTestCase {
 
         extractor.write(filename);
 
-        String truth = "%YAML:1.0\n---\nname: \"Feature2D.LATCH\"\ndescriptorSize: 32\nrotationInvariance: 1\nhalf_ssd_size: 3\nsigma: 2.\n";
+        String truth = "%YAML 1.2\n---\nname: \"Feature2D.LATCH\"\ndescriptorSize: 32\nrotationInvariance: true\nhalf_ssd_size: 3\nsigma: 2.\n";
         String actual = readFile(filename);
         actual = actual.replaceAll("e([+-])0(\\d\\d)", "e$1$2"); // NOTE: workaround for different platforms double representation
         assertEquals(truth, actual);
