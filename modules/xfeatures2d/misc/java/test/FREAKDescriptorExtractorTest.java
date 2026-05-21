@@ -55,7 +55,7 @@ public class FREAKDescriptorExtractorTest extends OpenCVTestCase {
 
         extractor.write(filename);
 
-        String truth = "%YAML:1.0\n---\nname: \"Feature2D.FREAK\"\norientationNormalized: 1\nscaleNormalized: 1\npatternScale: 22.\nnOctaves: 4\n";
+        String truth = "%YAML 1.2\n---\nname: \"Feature2D.FREAK\"\norientationNormalized: true\nscaleNormalized: true\npatternScale: 22.\nnOctaves: 4\n";
         String actual = readFile(filename);
         actual = actual.replaceAll("e([+-])0(\\d\\d)", "e$1$2"); // NOTE: workaround for different platforms double representation
         assertEquals(truth, actual);

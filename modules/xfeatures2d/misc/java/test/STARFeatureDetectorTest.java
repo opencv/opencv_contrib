@@ -121,7 +121,7 @@ public class STARFeatureDetectorTest extends OpenCVTestCase {
 
         detector.write(filename);
 
-        String truth = "%YAML:1.0\n---\nname: \"Feature2D.STAR\"\nmaxSize: 45\nresponseThreshold: 30\nlineThresholdProjected: 10\nlineThresholdBinarized: 8\nsuppressNonmaxSize: 5\n";
+        String truth = "%YAML 1.2\n---\nname: \"Feature2D.STAR\"\nmaxSize: 45\nresponseThreshold: 30\nlineThresholdProjected: 10\nlineThresholdBinarized: 8\nsuppressNonmaxSize: 5\n";
         assertEquals(truth, readFile(filename));
     }
 

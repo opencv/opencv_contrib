@@ -58,7 +58,7 @@ public class DAISYDescriptorExtractorTest extends OpenCVTestCase {
 
         extractor.write(filename);
 
-        String truth = "%YAML:1.0\n---\nname: \"Feature2D.DAISY\"\nradius: 15.\nq_radius: 3\nq_theta: 8\nq_hist: 8\nnorm_type: 100\nenable_interpolation: 1\nuse_orientation: 0\n";
+        String truth = "%YAML 1.2\n---\nname: \"Feature2D.DAISY\"\nradius: 15.\nq_radius: 3\nq_theta: 8\nq_hist: 8\nnorm_type: 100\nenable_interpolation: true\nuse_orientation: false\n";
         String actual = readFile(filename);
         actual = actual.replaceAll("e([+-])0(\\d\\d)", "e$1$2"); // NOTE: workaround for different platforms double representation
         assertEquals(truth, actual);

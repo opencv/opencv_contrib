@@ -106,7 +106,7 @@ public class SURFDescriptorExtractorTest extends OpenCVTestCase {
 
         extractor.write(filename);
 
-        String truth = "%YAML:1.0\n---\nname: \"Feature2D.SURF\"\nhessianThreshold: 100.\nextended: 1\nupright: 0\nnOctaves: 2\nnOctaveLayers: 4\n";
+        String truth = "%YAML 1.2\n---\nname: \"Feature2D.SURF\"\nhessianThreshold: 100.\nextended: true\nupright: false\nnOctaves: 2\nnOctaveLayers: 4\n";
         String actual = readFile(filename);
         actual = actual.replaceAll("e([+-])0(\\d\\d)", "e$1$2"); // NOTE: workaround for different platforms double representation
         assertEquals(truth, actual);

@@ -60,7 +60,7 @@ public class MSDFeatureDetectorTest extends OpenCVTestCase {
 
         detector.write(filename);
 
-        String truth = "%YAML:1.0\n---\nname: \"Feature2D.MSD\"\npatch_radius: 3\nsearch_area_radius: 5\nnms_radius: 5\nnms_scale_radius: 0\nth_saliency: 250.\nkNN: 4\nscale_factor: 1.25\nn_scales: -1\ncompute_orientation: 0\n";
+        String truth = "%YAML 1.2\n---\nname: \"Feature2D.MSD\"\npatch_radius: 3\nsearch_area_radius: 5\nnms_radius: 5\nnms_scale_radius: 0\nth_saliency: 250.\nkNN: 4\nscale_factor: 1.25\nn_scales: -1\ncompute_orientation: false\n";
         String actual = readFile(filename);
         actual = actual.replaceAll("e([+-])0(\\d\\d)", "e$1$2"); // NOTE: workaround for different platforms double representation
         assertEquals(truth, actual);

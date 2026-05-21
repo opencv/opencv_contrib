@@ -259,8 +259,7 @@ ML_SL_Params_t ML_SL_Params_List[] = {
 
 typedef testing::TestWithParam<ML_SL_Params_t> ML_SL_Params;
 
-//BUG: https://github.com/opencv/opencv/issues/29085
-TEST_P(ML_SL_Params, DISABLED_save_load)
+TEST_P(ML_SL_Params, save_load)
 {
     const ML_SL_Params_t & param = GetParam();
 
