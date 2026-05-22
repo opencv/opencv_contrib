@@ -49,6 +49,10 @@ This module provides storage routines for Hierarchical Data Format objects.
 
     In order to use it, the hdf5 library has to be installed, which
     means cmake should find it using `find_package(HDF5)`.
+
+    You can use parallel hdf5 library with `-DHDF5_PREFER_PARELLEL=ON` cmake option.
+    Depended MPI library(e.g. Open MPI or MPICH) is detected in `find_package(MPI)`.
+    To set prefer MPI library, `update-alternatives` command is helpful for your Ubuntu.
 @}
 */
 
