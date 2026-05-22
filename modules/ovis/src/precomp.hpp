@@ -18,7 +18,7 @@ struct Application;
 extern Ptr<Application> _app;
 
 extern const char* RESOURCEGROUP_NAME;
-void _createTexture(const String& name, Mat image);
+void _createTexture(const String& name, Mat image, int mipmaps = Ogre::MIP_DEFAULT);
 }
 }
 
