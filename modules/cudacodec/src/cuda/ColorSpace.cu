@@ -8,6 +8,11 @@
 
 namespace cv { namespace cuda { namespace device {
 
+void Y8ToGray8(uint8_t* dpY8, int nY8Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+void Y8ToGray16(uint8_t* dpY8, int nY8Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+void Y16ToGray8(uint8_t* dpY16, int nY16Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+void Y16ToGray16(uint8_t* dpY16, int nY16Pitch, uint8_t* dpGray, int nGrayPitch, int nWidth, int nHeight, ColorMatrix matYuv2Color, bool videoFullRangeFlag, const cudaStream_t stream);
+
 template<class T>
 __device__ static T Clamp(T x, T lower, T upper) {
     return x < lower ? lower : (x > upper ? upper : x);

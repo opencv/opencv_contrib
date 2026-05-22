@@ -263,7 +263,10 @@ protected:
     /**
     * @brief This function returns the completion event.
     */
-    void* GetCompletionEvent(uint32_t eventIdx) { return (m_vpCompletionEvent.size() == m_nEncoderBuffer) ? m_vpCompletionEvent[eventIdx] : nullptr; }
+    void* GetCompletionEvent(uint32_t eventIdx) {
+        CV_Assert(m_nEncoderBuffer >= 0);
+        return (m_vpCompletionEvent.size() == static_cast<size_t>(m_nEncoderBuffer)) ? m_vpCompletionEvent[eventIdx] : nullptr;
+    }
 
     /**
     * @brief This function returns the current pixel format.
