@@ -4481,7 +4481,7 @@ void EdgeDrawingImpl::addCircle(Circle* circles, int& noCircles, double xc, doub
     circles[noCircles].yc = yc;
     circles[noCircles].r = r;
     circles[noCircles].circleFitError = circleFitError;
-    circles[noCircles].coverRatio = noPixels / CV_2PI * r;
+    circles[noCircles].coverRatio = noPixels / (CV_2PI * r);
 
     circles[noCircles].x = x;
     circles[noCircles].y = y;
