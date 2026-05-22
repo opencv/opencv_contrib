@@ -63,6 +63,7 @@
 #include "ximgproc/color_match.hpp"
 #include "ximgproc/radon_transform.hpp"
 #include "ximgproc/find_ellipses.hpp"
+#include "ximgproc/sparse_table_morphology.hpp"
 
 
 /**
