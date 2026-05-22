@@ -46,6 +46,9 @@
 #include "opencv2/structured_light/structured_light.hpp"
 #include "opencv2/structured_light/graycodepattern.hpp"
 #include "opencv2/structured_light/sinusoidalpattern.hpp"
+#include "opencv2/structured_light/slmono_calibration.hpp"
+#include "opencv2/structured_light/slmono_utils.hpp"
+#include "opencv2/structured_light/slmono.hpp"
 
 /** @defgroup structured_light Structured Light API
 
