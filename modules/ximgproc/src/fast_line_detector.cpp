@@ -5,6 +5,7 @@
 #include "precomp.hpp"
 #include <vector>
 #include <iostream>
+#include "opencv2/3d.hpp"
 
 struct SEGMENT
 {

@@ -35,6 +35,7 @@ Mentor: Delia Passalacqua
 */
 
 #include "precomp.hpp"
+#include "opencv2/3d.hpp"
 #include "opencv2/face.hpp"
 namespace cv {
 namespace face {
