@@ -48,6 +48,7 @@
 #include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/3d.hpp>
+#include <opencv2/objdetect.hpp>
 #include <opencv2/calib.hpp>
 
 using namespace std;
