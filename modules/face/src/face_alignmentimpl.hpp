@@ -20,11 +20,11 @@ namespace face{
 */
 struct splitr{
         //!index1 Index of the first coordinates among the test coordinates for deciding split.
-        uint64_t index1;
+        uint64_t index1=0;
         //! index2 index of the second coordinate among the test coordinates for deciding split.
-        uint64_t index2;
+        uint64_t index2=0;
         //! thresh threshold for deciding the split.
-        float thresh;
+        float thresh=0;
 };
 /** @brief represents a node of the regression tree*/
 struct node_info{
