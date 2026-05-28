@@ -4,6 +4,7 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/xobjdetect.hpp"
 #include "opencv2/photo.hpp" // seamlessClone()
+#include "opencv2/3d.hpp" // Subdiv2D()
 #include <iostream>
 using namespace cv;
 using namespace cv::face;

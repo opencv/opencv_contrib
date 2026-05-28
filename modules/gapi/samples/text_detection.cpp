@@ -16,6 +16,7 @@
 #include <opencv2/gapi/streaming/cap.hpp>
 
 #include <opencv2/highgui.hpp>
+#include <opencv2/3d.hpp>
 #include <opencv2/core/utility.hpp>
 
 const std::string about =

@@ -4,6 +4,7 @@
 
 #include "precomp.hpp"
 #include <opencv2/core.hpp>
+#include <opencv2/3d.hpp>
 #include <unordered_map>
 #include <numeric>
 
