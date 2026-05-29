@@ -5,7 +5,7 @@
  */
 
 #include <opencv2/viz.hpp>
-#include <opencv2/3d.hpp>
+#include <opencv2/geometry.hpp>
 #include <iostream>
 
 using namespace cv;

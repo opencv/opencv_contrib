@@ -3,7 +3,7 @@ set(the_description "Contributed/Experimental Algorithms for Salient 2D Features
 if(HAVE_CUDA)
   ocv_warnings_disable(CMAKE_CXX_FLAGS -Wundef)
 endif()
-ocv_define_module(xfeatures2d opencv_core opencv_imgproc opencv_features opencv_3d OPTIONAL opencv_shape opencv_ml opencv_cudaarithm WRAP python java objc)
+ocv_define_module(xfeatures2d opencv_core opencv_imgproc opencv_features opencv_geometry OPTIONAL opencv_shape opencv_ml opencv_cudaarithm WRAP python java objc)
 
 ocv_install_3rdparty_licenses(xfeatures2d "${CMAKE_CURRENT_SOURCE_DIR}/src/kaze/LICENSE.KAZE" "${CMAKE_CURRENT_SOURCE_DIR}/src/kaze/LICENSE.AKAZE")
 

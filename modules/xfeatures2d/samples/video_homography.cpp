@@ -10,7 +10,7 @@
 
 #ifdef HAVE_OPENCV_3D
 
-#include "opencv2/3d.hpp"
+#include "opencv2/geometry.hpp"
 #include "opencv2/videoio.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"

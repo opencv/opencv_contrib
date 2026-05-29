@@ -46,7 +46,7 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/structured_light/structured_light.hpp"
 #include <opencv2/phase_unwrapping.hpp>
-#include <opencv2/3d.hpp>
+#include <opencv2/geometry.hpp>
 
 namespace cv {
 namespace structured_light {

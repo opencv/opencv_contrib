@@ -46,7 +46,7 @@
 #include "opencv2/ts/cuda_test.hpp"
 
 #include "opencv2/cudastereo.hpp"
-#include "opencv2/3d.hpp"
+#include "opencv2/geometry.hpp"
 #include "opencv2/stereo.hpp"
 
 #include "cvconfig.h"

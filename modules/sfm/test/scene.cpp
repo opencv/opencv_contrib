@@ -33,7 +33,7 @@
  *
  */
 
-#include <opencv2/3d.hpp>
+#include <opencv2/geometry.hpp>
 #include <opencv2/core.hpp>
 
 #include "test_precomp.hpp"

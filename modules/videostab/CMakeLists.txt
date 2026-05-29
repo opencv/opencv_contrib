@@ -8,7 +8,7 @@ if(DEFINED WINRT AND NOT DEFINED ENABLE_WINRT_MODE_NATIVE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /ZW")
 endif()
 
-ocv_define_module(videostab opencv_imgproc opencv_features opencv_video opencv_photo opencv_3d
+ocv_define_module(videostab opencv_imgproc opencv_features opencv_video opencv_photo opencv_geometry
 OPTIONAL opencv_cudafeatures2d opencv_cudawarping opencv_cudaoptflow opencv_videoio WRAP python)
 
 if(HAVE_CUDA AND ENABLE_CUDA_FIRST_CLASS_LANGUAGE AND ((HAVE_opencv_cudaimgproc AND HAVE_opencv_cudaoptflow) OR HAVE_opencv_cudawarping))

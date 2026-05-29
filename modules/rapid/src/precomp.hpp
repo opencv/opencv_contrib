@@ -6,7 +6,7 @@
 
 #include "opencv2/rapid.hpp"
 #include <vector>
-#include <opencv2/3d.hpp>
+#include <opencv2/geometry.hpp>
 
 namespace cv
 {

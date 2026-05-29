@@ -40,7 +40,7 @@
  //M*/
 
 #include "precomp.hpp"
-#include "opencv2/3d.hpp"
+#include "opencv2/geometry.hpp"
 
 //using namespace cv;
 namespace cv
