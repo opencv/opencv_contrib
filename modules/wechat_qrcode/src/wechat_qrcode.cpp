@@ -47,34 +47,25 @@ public:
     float scaleFactor = -1.f;
 };
 
-WeChatQRCode::WeChatQRCode(const String& detector_prototxt_path,
-                           const String& detector_caffe_model_path,
-                           const String& super_resolution_prototxt_path,
-                           const String& super_resolution_caffe_model_path) {
+WeChatQRCode::WeChatQRCode(const String& detector_model_path,
+                           const String& super_resolution_model_path) {
     p = makePtr<WeChatQRCode::Impl>();
-    if (!detector_caffe_model_path.empty() && !detector_prototxt_path.empty()) {
-        // initialize detector model (caffe)
+    if (!detector_model_path.empty()) {
         p->use_nn_detector_ = true;
-        CV_Assert(utils::fs::exists(detector_prototxt_path));
-        CV_Assert(utils::fs::exists(detector_caffe_model_path));
+        CV_Assert(utils::fs::exists(detector_model_path));
         p->detector_ = make_shared<SSDDetector>();
-        auto ret = p->detector_->init(detector_prototxt_path, detector_caffe_model_path);
+        auto ret = p->detector_->init(detector_model_path);
         CV_Assert(ret == 0);
     } else {
         p->use_nn_detector_ = false;
         p->detector_ = NULL;
     }
-    // initialize super_resolution_model
-    // it could also support non model weights by cubic resizing
-    // so, we initialize it first.
+    // super resolution supports fallback to cubic resize when no model is given
     p->super_resolution_model_ = make_shared<SuperScale>();
-    if (!super_resolution_prototxt_path.empty() && !super_resolution_caffe_model_path.empty()) {
+    if (!super_resolution_model_path.empty()) {
         p->use_nn_sr_ = true;
-        // initialize dnn model (caffe format)
-        CV_Assert(utils::fs::exists(super_resolution_prototxt_path));
-        CV_Assert(utils::fs::exists(super_resolution_caffe_model_path));
-        auto ret = p->super_resolution_model_->init(super_resolution_prototxt_path,
-                                                    super_resolution_caffe_model_path);
+        CV_Assert(utils::fs::exists(super_resolution_model_path));
+        auto ret = p->super_resolution_model_->init(super_resolution_model_path);
         CV_Assert(ret == 0);
     } else {
         p->use_nn_sr_ = false;

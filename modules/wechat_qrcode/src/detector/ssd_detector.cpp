@@ -9,8 +9,8 @@
 #define CLIP(x, x1, x2) max(x1, min(x, x2))
 namespace cv {
 namespace wechat_qrcode {
-int SSDDetector::init(const string& proto_path, const string& model_path) {
-    net_ = dnn::readNetFromCaffe(proto_path, model_path);
+int SSDDetector::init(const string& onnx_path) {
+    net_ = dnn::readNetFromONNX(onnx_path);
     return 0;
 }
 
@@ -22,7 +22,7 @@ vector<Mat> SSDDetector::forward(Mat img, const int target_width, const int targ
 
     dnn::blobFromImage(input, input, 1.0 / 255, Size(input.cols, input.rows), {0.0f, 0.0f, 0.0f},
                        false, false);
-    net_.setInput(input, "data");
+    net_.setInput(input);
 
     auto prob = net_.forward();
     vector<Mat> point_list;
