@@ -50,7 +50,7 @@
 */
 
 #include "precomp.hpp"
-#include <opencv2/3d.hpp>
+#include <opencv2/geometry.hpp>
 #include <iostream>
 #include "opencv2/core/cvdef.h"
 #include "opencv2/core/utils/logger.hpp"

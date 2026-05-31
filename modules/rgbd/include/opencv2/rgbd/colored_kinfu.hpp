@@ -9,7 +9,7 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/affine.hpp"
-#include <opencv2/3d.hpp>
+#include <opencv2/geometry.hpp>
 
 namespace cv {
 namespace colored_kinfu {

@@ -44,7 +44,7 @@
 
 #ifdef HAVE_OPENCV_3D
 
-#include "opencv2/3d.hpp"
+#include "opencv2/geometry.hpp"
 
 namespace opencv_test { namespace {
 

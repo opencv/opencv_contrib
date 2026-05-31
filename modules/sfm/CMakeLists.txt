@@ -110,7 +110,7 @@ endif()
 
 ocv_add_module(sfm
   opencv_core
-  opencv_3d
+  opencv_geometry
   opencv_features
   opencv_xfeatures2d
   opencv_imgcodecs
