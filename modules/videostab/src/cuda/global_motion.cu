@@ -45,6 +45,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/remove.h>
 #include <thrust/functional.h>
+#include <thrust/tuple.h>
 #include "opencv2/core/cuda/common.hpp"
 
 namespace cv { namespace cuda { namespace device { namespace globmotion {
