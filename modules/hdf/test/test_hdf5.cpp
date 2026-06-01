@@ -371,4 +371,68 @@ TEST_F(HDF5_Test, test_attribute_InutArray_OutputArray_2d)
     m_hdf_io->close();
 }
 
+// ── NEW TEST: CV_16F IEEE 754 special values round-trip ──────────────────────
+// Verifies that half-precision float special bit patterns (positive infinity,
+// negative infinity, NaN, and negative zero) survive an HDF5 write→read
+// round-trip without corruption or silent promotion to float32.
+// Guarded by HAVE_HDF5_F16 so this compiles cleanly on HDF5 < 1.14.4.
+#ifdef HAVE_HDF5_F16
+TEST_F(HDF5_Test, cv16f_special_values_roundtrip)
+{
+    reset();
+
+    const String dataset_name = "/fp16_special";
+
+    // Build a 1x4 single-channel CV_16F mat using raw IEEE 754 bit patterns.
+    // CV_16F stores each element as a 16-bit value; we write the bits directly
+    // using uint16_t to avoid any FP runtime interpretation.
+    //
+    //   0x7C00  =  positive infinity  (+Inf)
+    //   0xFC00  =  negative infinity  (-Inf)
+    //   0x7E00  =  quiet NaN          (one common encoding)
+    //   0x8000  =  negative zero      (-0.0)
+    Mat src(1, 4, CV_16F);
+    uint16_t* p = src.ptr<uint16_t>(0);
+    p[0] = 0x7C00U;  // +Inf
+    p[1] = 0xFC00U;  // -Inf
+    p[2] = 0x7E00U;  // NaN
+    p[3] = 0x8000U;  // -0.0
+
+    // Write then read back
+    m_hdf_io = hdf::open(m_filename);
+    m_hdf_io->dswrite(src, dataset_name);
+    EXPECT_EQ(m_hdf_io->hlexists(dataset_name), true);
+
+    Mat dst;
+    m_hdf_io->dsread(dst, dataset_name);
+    m_hdf_io->close();
+
+    // Type and shape must be preserved exactly
+    ASSERT_EQ(dst.type(), CV_16F)
+        << "Read-back type is not CV_16F — possible float32 promotion";
+    ASSERT_EQ(dst.size(), src.size());
+
+    const uint16_t* q = dst.ptr<uint16_t>(0);
+
+    // +Inf: exact bit pattern must survive
+    EXPECT_EQ(q[0], (uint16_t)0x7C00U)
+        << "Positive infinity not preserved (got 0x" << std::hex << q[0] << ")";
+
+    // -Inf: exact bit pattern must survive
+    EXPECT_EQ(q[1], (uint16_t)0xFC00U)
+        << "Negative infinity not preserved (got 0x" << std::hex << q[1] << ")";
+
+    // NaN: any NaN bit pattern is acceptable (exponent all-ones, mantissa != 0)
+    bool is_nan = ((q[2] & 0x7C00U) == 0x7C00U) && ((q[2] & 0x03FFU) != 0);
+    EXPECT_TRUE(is_nan)
+        << "NaN not preserved — result 0x" << std::hex << q[2]
+        << " is not a valid float16 NaN";
+
+    // -0.0: exact bit pattern must survive
+    EXPECT_EQ(q[3], (uint16_t)0x8000U)
+        << "Negative zero not preserved (got 0x" << std::hex << q[3] << ")";
+}
+#endif  // HAVE_HDF5_F16
+// ── end CV_16F special values test ───────────────────────────────────────────
+
 }} // namespace
