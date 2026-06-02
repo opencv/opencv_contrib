@@ -5,6 +5,7 @@
 
 #include <opencv2/ts.hpp>
 #include <opencv2/core/affine.hpp>
+#include <opencv2/geometry.hpp>
 #include <opencv2/features.hpp>
 #include <opencv2/video.hpp>
 
