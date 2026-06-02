@@ -292,7 +292,6 @@ cv.dnn.Net.getFLOPS
 cv.dnn.Net.getMemoryConsumption
 cv.dnn.Net.enableFusion
 cv.dnn.Net.getPerfProfile
-cv.dnn.readNetFromCaffe
 cv.dnn.readNetFromTensorflow
 cv.dnn.readNetFromTorch
 cv.dnn.readNet
