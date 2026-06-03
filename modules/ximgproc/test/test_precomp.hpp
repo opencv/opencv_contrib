@@ -8,6 +8,7 @@
 #include "opencv2/ts.hpp"
 #include <opencv2/ts/ts_perf.hpp>
 #include <opencv2/core/utility.hpp>
+#include <opencv2/geometry.hpp>
 
 namespace opencv_test {
 using namespace cv::ximgproc;

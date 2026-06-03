@@ -42,6 +42,7 @@
 
 #include "precomp.hpp"
 #include "opencv2/imgproc.hpp"
+#include "opencv2/geometry.hpp"
 #include "opencv2/ml.hpp"
 
 #include <iostream>
