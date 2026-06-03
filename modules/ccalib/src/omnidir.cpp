@@ -851,8 +851,8 @@ void cv::omnidir::internal::initializeStereoCalibration(InputArrayOfArrays objec
 void cv::omnidir::internal::computeJacobian(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints,
     InputArray parameters, Mat& JTJ_inv, Mat& JTE, int flags, double epsilon)
 {
-    CV_Assert(!objectPoints.empty() && objectPoints.type() == CV_64FC3);
-    CV_Assert(!imagePoints.empty() && imagePoints.type() == CV_64FC2);
+    CV_Assert(!objectPoints.empty() && objectPoints.getMat(0).type() == CV_64FC3);
+    CV_Assert(!imagePoints.empty() && imagePoints.getMat(0).type() == CV_64FC2);
 
     int n = (int)objectPoints.total();
 
@@ -937,9 +937,9 @@ void cv::omnidir::internal::computeJacobian(InputArrayOfArrays objectPoints, Inp
 void cv::omnidir::internal::computeJacobianStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2,
     InputArray parameters, Mat& JTJ_inv, Mat& JTE, int flags, double epsilon)
 {
-    CV_Assert(!objectPoints.empty() && objectPoints.type() == CV_64FC3);
-    CV_Assert(!imagePoints1.empty() && imagePoints1.type() == CV_64FC2);
-    CV_Assert(!imagePoints2.empty() && imagePoints2.type() == CV_64FC2);
+    CV_Assert(!objectPoints.empty() && objectPoints.getMat(0).type() == CV_64FC3);
+    CV_Assert(!imagePoints1.empty() && imagePoints1.getMat(0).type() == CV_64FC2);
+    CV_Assert(!imagePoints2.empty() && imagePoints2.getMat(0).type() == CV_64FC2);
     CV_Assert((imagePoints1.total() == imagePoints2.total()) && (imagePoints1.total() == objectPoints.total()));
 
     // compute Jacobian matrix by naive way
@@ -1069,15 +1069,15 @@ double cv::omnidir::calibrate(InputArrayOfArrays patternPoints, InputArrayOfArra
     int flags, TermCriteria criteria, OutputArray idx)
 {
     CV_Assert(!patternPoints.empty() && !imagePoints.empty() && patternPoints.total() == imagePoints.total());
-    CV_Assert((patternPoints.type() == CV_64FC3 && imagePoints.type() == CV_64FC2) ||
-        (patternPoints.type() == CV_32FC3 && imagePoints.type() == CV_32FC2));
+    CV_Assert((patternPoints.getMat(0).type() == CV_64FC3 && imagePoints.getMat(0).type() == CV_64FC2) ||
+        (patternPoints.getMat(0).type() == CV_32FC3 && imagePoints.getMat(0).type() == CV_32FC2));
     CV_Assert(patternPoints.getMat(0).channels() == 3 && imagePoints.getMat(0).channels() == 2);
     CV_Assert((!K.empty() && K.size() == Size(3,3)) || K.empty());
     CV_Assert((!D.empty() && D.total() == 4) || D.empty());
     CV_Assert((!xi.empty() && xi.total() == 1) || xi.empty());
-    CV_Assert((!omAll.empty() && omAll.depth() == patternPoints.depth()) || omAll.empty());
-    CV_Assert((!tAll.empty() && tAll.depth() == patternPoints.depth()) || tAll.empty());
-    int depth = patternPoints.depth();
+    CV_Assert((!omAll.empty() && omAll.getMat(0).depth() == patternPoints.getMat(0).depth()) || omAll.empty());
+    CV_Assert((!tAll.empty() && tAll.getMat(0).depth() == patternPoints.getMat(0).depth()) || tAll.empty());
+    int depth = patternPoints.getMat(0).depth();
 
     std::vector<Mat> _patternPoints, _imagePoints;
 
@@ -1214,13 +1214,13 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
     const Size& imageSize1, const Size& imageSize2, InputOutputArray K1, InputOutputArray xi1, InputOutputArray D1, InputOutputArray K2, InputOutputArray xi2,
     InputOutputArray D2, OutputArray om, OutputArray T, OutputArrayOfArrays omL, OutputArrayOfArrays tL, int flags, TermCriteria criteria, OutputArray idx)
 {
-    CV_Assert(!objectPoints.empty() && (objectPoints.type() == CV_64FC3 || objectPoints.type() == CV_32FC3));
-    CV_Assert(!imagePoints1.empty() && (imagePoints1.type() == CV_64FC2 || imagePoints1.type() == CV_32FC2));
-    CV_Assert(!imagePoints2.empty() && (imagePoints2.type() == CV_64FC2 || imagePoints2.type() == CV_32FC2));
+    CV_Assert(!objectPoints.empty() && (objectPoints.getMat(0).type() == CV_64FC3 || objectPoints.getMat(0).type() == CV_32FC3));
+    CV_Assert(!imagePoints1.empty() && (imagePoints1.getMat(0).type() == CV_64FC2 || imagePoints1.getMat(0).type() == CV_32FC2));
+    CV_Assert(!imagePoints2.empty() && (imagePoints2.getMat(0).type() == CV_64FC2 || imagePoints2.getMat(0).type() == CV_32FC2));
 
     CV_Assert(((flags & CALIB_USE_GUESS) && !K1.empty() && !D1.empty() && !K2.empty() && !D2.empty()) || !(flags & CALIB_USE_GUESS));
 
-    int depth = objectPoints.depth();
+    int depth = objectPoints.getMat(0).depth();
 
     std::vector<Mat> _objectPoints, _imagePoints1, _imagePoints2,
 					_objectPointsFilt, _imagePoints1Filt, _imagePoints2Filt;
