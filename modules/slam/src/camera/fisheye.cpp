@@ -1,0 +1,315 @@
+#include "camera/fisheye.hpp"
+#include "util/yaml.hpp"
+
+#include <iostream>
+
+#include <opencv2/core/utils/logger.hpp>
+#include <nlohmann/json.hpp>
+
+namespace cv::slam {
+
+static cv::utils::logging::LogTag g_log_tag("cv_slam", cv::utils::logging::LOG_LEVEL_INFO);
+namespace camera {
+
+fisheye::fisheye(const std::string& name, const setup_type_t& setup_type, const color_order_t& color_order,
+                 const unsigned int cols, const unsigned int rows, const double fps,
+                 const double fx, const double fy, const double cx, const double cy,
+                 const double k1, const double k2, const double k3, const double k4,
+                 const double focal_x_baseline, const double depth_thr)
+    : base(name, setup_type, model_type_t::Fisheye, color_order, cols, rows, fps, focal_x_baseline, focal_x_baseline / fx, depth_thr),
+      fx_(fx), fy_(fy), cx_(cx), cy_(cy), fx_inv_(1.0 / fx), fy_inv_(1.0 / fy),
+      k1_(k1), k2_(k2), k3_(k3), k4_(k4) {
+    CV_LOG_DEBUG(&g_log_tag, "CONSTRUCT: camera::fisheye");
+
+    cv_cam_matrix_ = (cv::Mat_<float>(3, 3) << fx_, 0, cx_, 0, fy_, cy_, 0, 0, 1);
+    cv_dist_params_ = (cv::Mat_<float>(4, 1) << k1_, k2_, k3_, k4_);
+
+    eigen_cam_matrix_ << fx_, 0, cx_, 0, fy_, cy_, 0, 0, 1;
+    eigen_dist_params_ << k1_, k2_, k3_, k4_;
+
+    img_bounds_ = compute_image_bounds();
+}
+
+fisheye::fisheye(const cv::FileNode& yaml_node)
+    : fisheye(util::yaml_get_req_str(yaml_node, "name"),
+              load_setup_type(yaml_node),
+              load_color_order(yaml_node),
+              util::yaml_get_req<unsigned int>(yaml_node, "cols"),
+              util::yaml_get_req<unsigned int>(yaml_node, "rows"),
+              util::yaml_get_req<double>(yaml_node, "fps"),
+              util::yaml_get_req<double>(yaml_node, "fx"),
+              util::yaml_get_req<double>(yaml_node, "fy"),
+              util::yaml_get_req<double>(yaml_node, "cx"),
+              util::yaml_get_req<double>(yaml_node, "cy"),
+              util::yaml_get_req<double>(yaml_node, "k1"),
+              util::yaml_get_req<double>(yaml_node, "k2"),
+              util::yaml_get_req<double>(yaml_node, "k3"),
+              util::yaml_get_req<double>(yaml_node, "k4"),
+              util::yaml_get_val<double>(yaml_node, "focal_x_baseline", 0.0),
+              util::yaml_get_val<double>(yaml_node, "depth_threshold", 40.0)) {}
+
+fisheye::~fisheye() {
+    CV_LOG_DEBUG(&g_log_tag, "DESTRUCT: camera::fisheye");
+}
+
+void fisheye::show_parameters() const {
+    show_common_parameters();
+    std::cout << "  - fx: " << fx_ << std::endl;
+    std::cout << "  - fy: " << fy_ << std::endl;
+    std::cout << "  - cx: " << cx_ << std::endl;
+    std::cout << "  - cy: " << cy_ << std::endl;
+    std::cout << "  - k1: " << k1_ << std::endl;
+    std::cout << "  - k2: " << k2_ << std::endl;
+    std::cout << "  - k3: " << k3_ << std::endl;
+    std::cout << "  - k4: " << k4_ << std::endl;
+    std::cout << "  - min x: " << img_bounds_.min_x_ << std::endl;
+    std::cout << "  - max x: " << img_bounds_.max_x_ << std::endl;
+    std::cout << "  - min y: " << img_bounds_.min_y_ << std::endl;
+    std::cout << "  - max y: " << img_bounds_.max_y_ << std::endl;
+}
+
+image_bounds fisheye::compute_image_bounds() const {
+    CV_LOG_DEBUG(&g_log_tag, "compute image bounds");
+
+    if (k1_ == 0 && k2_ == 0 && k3_ == 0 && k4_ == 0) {
+        // any distortion does not exist
+
+        return image_bounds{0.0, cols_, 0.0, rows_};
+    }
+    else {
+        // distortion exists
+
+        // fix for issue #83
+        // check if fov is super wide (four corners are out of view) based on upper-left corner
+        const double pwx = (0.0 - cx_) / fx_;
+        const double pwy = (0.0 - cy_) / fy_;
+        const double theta_d = sqrt(pwx * pwx + pwy * pwy);
+
+        if (theta_d > M_PI / 2) {
+            // fov is super wide (four corners are out of view)
+
+            // corner coordinates: (x, y) = (col, row)
+            const std::vector<cv::KeyPoint> corners{cv::KeyPoint(cx_, 0.0, 1.0),    // top: min_y
+                                                    cv::KeyPoint(cols_, cy_, 1.0),  // right: max_x
+                                                    cv::KeyPoint(0.0, cy_, 1.0),    // left: min_x
+                                                    cv::KeyPoint(cx_, rows_, 1.0)}; // down: max_y
+
+            std::vector<cv::KeyPoint> undist_corners;
+            undistort_keypoints(corners, undist_corners);
+
+            // 1. limit image_bounds by incident angle
+            //    when deg_thr = 5, only incident angle < 85 deg is accepted
+            // 2. deal with over 180 deg fov
+            //    some points over 180 deg are projected on the opposite side (plus or minus are different)
+            constexpr float deg_thr = 5.0;
+            const float dist_thr_x = fx_ / std::tan(deg_thr * M_PI / 180.0);
+            const float dist_thr_y = fy_ / std::tan(deg_thr * M_PI / 180.0);
+            const float min_x_thr = -dist_thr_x + cx_;
+            const float max_x_thr = dist_thr_x + cx_;
+            const float min_y_thr = -dist_thr_y + cy_;
+            const float max_y_thr = dist_thr_y + cy_;
+            const float undist_min_x = undist_corners.at(2).pt.x;
+            const float undist_max_x = undist_corners.at(1).pt.x;
+            const float undist_min_y = undist_corners.at(0).pt.y;
+            const float undist_max_y = undist_corners.at(3).pt.y;
+            return image_bounds{(undist_min_x < min_x_thr || undist_min_x > cx_) ? min_x_thr : undist_min_x,
+                                (undist_max_x > max_x_thr || undist_max_x < cx_) ? max_x_thr : undist_max_x,
+                                (undist_min_y < min_y_thr || undist_min_y > cy_) ? min_y_thr : undist_min_y,
+                                (undist_max_y > max_y_thr || undist_max_y < cy_) ? max_y_thr : undist_max_y};
+        }
+        else {
+            // fov is normal (four corners are inside of view)
+
+            // corner coordinates: (x, y) = (col, row)
+            const std::vector<cv::KeyPoint> corners{cv::KeyPoint(0.0, 0.0, 1.0),      // left top
+                                                    cv::KeyPoint(cols_, 0.0, 1.0),    // right top
+                                                    cv::KeyPoint(0.0, rows_, 1.0),    // left bottom
+                                                    cv::KeyPoint(cols_, rows_, 1.0)}; // right bottom
+
+            std::vector<cv::KeyPoint> undist_corners;
+            undistort_keypoints(corners, undist_corners);
+
+            return image_bounds{std::min(undist_corners.at(0).pt.x, undist_corners.at(2).pt.x),
+                                std::max(undist_corners.at(1).pt.x, undist_corners.at(3).pt.x),
+                                std::min(undist_corners.at(0).pt.y, undist_corners.at(1).pt.y),
+                                std::max(undist_corners.at(2).pt.y, undist_corners.at(3).pt.y)};
+        }
+    }
+}
+
+cv::Point2f fisheye::undistort_point(const cv::Point2f& dist_pt) const {
+    // fill cv::Mat with distorted point
+    cv::Mat mat(1, 2, CV_32F);
+    mat.at<float>(0, 0) = dist_pt.x;
+    mat.at<float>(0, 1) = dist_pt.y;
+
+    // undistort
+    mat = mat.reshape(2);
+    cv::fisheye::undistortPoints(mat, mat, cv_cam_matrix_, cv_dist_params_, cv::Mat(), cv_cam_matrix_);
+    mat = mat.reshape(1);
+
+    // convert to cv::Mat
+    cv::Point2f undist_pt;
+    undist_pt.x = mat.at<float>(0, 0);
+    undist_pt.y = mat.at<float>(0, 1);
+
+    return undist_pt;
+}
+
+Vec3_t fisheye::convert_point_to_bearing(const cv::Point2f& undist_pt) const {
+    const auto x_normalized = (undist_pt.x - cx_) / fx_;
+    const auto y_normalized = (undist_pt.y - cy_) / fy_;
+    const auto l2_norm = std::sqrt(x_normalized * x_normalized + y_normalized * y_normalized + 1.0);
+    return Vec3_t{x_normalized / l2_norm, y_normalized / l2_norm, 1.0 / l2_norm};
+}
+
+cv::Point2f fisheye::convert_bearing_to_point(const Vec3_t& bearing) const {
+    const auto x_normalized = bearing(0) / bearing(2);
+    const auto y_normalized = bearing(1) / bearing(2);
+    return cv::Point2f(fx_ * x_normalized + cx_, fy_ * y_normalized + cy_);
+}
+
+bool fisheye::reproject_to_image(const Mat33_t& rot_cw, const Vec3_t& trans_cw, const Vec3_t& pos_w, Vec2_t& reproj, float& x_right) const {
+    // convert to camera-coordinates
+    const Vec3_t pos_c = rot_cw * pos_w + trans_cw;
+
+    // check if the point is visible
+    if (pos_c(2) <= 0.0) {
+        return false;
+    }
+
+    // reproject onto the image
+    const auto z_inv = 1.0 / pos_c(2);
+    reproj(0) = fx_ * pos_c(0) * z_inv + cx_;
+    reproj(1) = fy_ * pos_c(1) * z_inv + cy_;
+    x_right = reproj(0) - focal_x_baseline_ * z_inv;
+
+    // check if the point is visible
+    return (img_bounds_.min_x_ < reproj(0) && reproj(0) < img_bounds_.max_x_
+            && img_bounds_.min_y_ < reproj(1) && reproj(1) < img_bounds_.max_y_);
+}
+
+bool fisheye::reproject_to_bearing(const Mat33_t& rot_cw, const Vec3_t& trans_cw, const Vec3_t& pos_w, Vec3_t& reproj) const {
+    // convert to camera-coordinates
+    reproj = rot_cw * pos_w + trans_cw;
+
+    // check if the point is visible
+    if (reproj(2) <= 0.0) {
+        return false;
+    }
+
+    // reproject onto the image
+    const auto z_inv = 1.0 / reproj(2);
+    const auto x = fx_ * reproj(0) * z_inv + cx_;
+    const auto y = fy_ * reproj(1) * z_inv + cy_;
+
+    // convert to a bearing
+    reproj.normalize();
+
+    // check if the point is visible
+    return (img_bounds_.min_x_ < x && x < img_bounds_.max_x_
+            && img_bounds_.min_y_ < y && y < img_bounds_.max_y_);
+}
+
+nlohmann::json fisheye::to_json() const {
+    return {{"model_type", get_model_type_string()},
+            {"setup_type", get_setup_type_string()},
+            {"color_order", get_color_order_string()},
+            {"cols", cols_},
+            {"rows", rows_},
+            {"fps", fps_},
+            {"focal_x_baseline", focal_x_baseline_},
+            {"fx", fx_},
+            {"fy", fy_},
+            {"cx", cx_},
+            {"cy", cy_},
+            {"k1", k1_},
+            {"k2", k2_},
+            {"k3", k3_},
+            {"k4", k4_}};
+}
+
+std::ostream& operator<<(std::ostream& os, const fisheye& params) {
+    os << "- name: " << params.name_ << std::endl;
+    os << "- setup: " << params.get_setup_type_string() << std::endl;
+    os << "- fps: " << params.fps_ << std::endl;
+    os << "- cols: " << params.cols_ << std::endl;
+    os << "- rows: " << params.rows_ << std::endl;
+    os << "- color: " << params.get_color_order_string() << std::endl;
+    os << "- model: " << params.get_model_type_string() << std::endl;
+    os << "  - fx: " << params.fx_ << std::endl;
+    os << "  - fy: " << params.fy_ << std::endl;
+    os << "  - cx: " << params.cx_ << std::endl;
+    os << "  - cy: " << params.cy_ << std::endl;
+    os << "  - k1: " << params.k1_ << std::endl;
+    os << "  - k2: " << params.k2_ << std::endl;
+    os << "  - k3: " << params.k3_ << std::endl;
+    os << "  - k4: " << params.k4_ << std::endl;
+    os << "  - min x: " << params.img_bounds_.min_x_ << std::endl;
+    os << "  - max x: " << params.img_bounds_.max_x_ << std::endl;
+    os << "  - min y: " << params.img_bounds_.min_y_ << std::endl;
+    os << "  - max y: " << params.img_bounds_.max_y_ << std::endl;
+    return os;
+}
+
+//! Override for optimization
+
+void fisheye::undistort_points(const std::vector<cv::Point2f>& dist_pts, std::vector<cv::Point2f>& undist_pts) const {
+    // cv::fisheye::undistortPoints does not accept an empty input
+    if (dist_pts.empty()) {
+        undist_pts.clear();
+        return;
+    }
+
+    // fill cv::Mat with distorted points
+    cv::Mat mat(dist_pts.size(), 2, CV_32F);
+    for (unsigned long idx = 0; idx < dist_pts.size(); ++idx) {
+        mat.at<float>(idx, 0) = dist_pts.at(idx).x;
+        mat.at<float>(idx, 1) = dist_pts.at(idx).y;
+    }
+
+    // undistort
+    mat = mat.reshape(2);
+    cv::fisheye::undistortPoints(mat, mat, cv_cam_matrix_, cv_dist_params_, cv::Mat(), cv_cam_matrix_);
+    mat = mat.reshape(1);
+
+    // convert to cv::Mat
+    undist_pts.resize(dist_pts.size());
+    for (unsigned long idx = 0; idx < undist_pts.size(); ++idx) {
+        undist_pts.at(idx).x = mat.at<float>(idx, 0);
+        undist_pts.at(idx).y = mat.at<float>(idx, 1);
+    }
+}
+
+void fisheye::undistort_keypoints(const std::vector<cv::KeyPoint>& dist_keypt, std::vector<cv::KeyPoint>& undist_keypt) const {
+    // cv::fisheye::undistortPoints does not accept an empty input
+    if (dist_keypt.empty()) {
+        undist_keypt.clear();
+        return;
+    }
+
+    // fill cv::Mat with distorted keypoints
+    cv::Mat mat(dist_keypt.size(), 2, CV_32F);
+    for (unsigned long idx = 0; idx < dist_keypt.size(); ++idx) {
+        mat.at<float>(idx, 0) = dist_keypt.at(idx).pt.x;
+        mat.at<float>(idx, 1) = dist_keypt.at(idx).pt.y;
+    }
+
+    // undistort
+    mat = mat.reshape(2);
+    cv::fisheye::undistortPoints(mat, mat, cv_cam_matrix_, cv_dist_params_, cv::Mat(), cv_cam_matrix_);
+    mat = mat.reshape(1);
+
+    // convert to cv::Mat
+    undist_keypt.resize(dist_keypt.size());
+    for (unsigned long idx = 0; idx < undist_keypt.size(); ++idx) {
+        undist_keypt.at(idx).pt.x = mat.at<float>(idx, 0);
+        undist_keypt.at(idx).pt.y = mat.at<float>(idx, 1);
+        undist_keypt.at(idx).angle = dist_keypt.at(idx).angle;
+        undist_keypt.at(idx).size = dist_keypt.at(idx).size;
+        undist_keypt.at(idx).octave = dist_keypt.at(idx).octave;
+    }
+}
+
+} // namespace camera
+} // namespace cv::slam
