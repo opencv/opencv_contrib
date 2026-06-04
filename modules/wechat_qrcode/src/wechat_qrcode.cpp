@@ -19,7 +19,8 @@ class WeChatQRCode::Impl {
 public:
     Impl() {}
     ~Impl() {}
-    /**
+    
+    /** 
      * @brief detect QR codes from the given image
      *
      * @param img supports grayscale or color (BGR) image.
@@ -96,9 +97,20 @@ vector<string> WeChatQRCode::detectAndDecode(InputArray img, OutputArrayOfArrays
     } else {
         input_img = img.getMat();
     }
-    auto candidate_points = p->detect(input_img);
-    auto res_points = vector<Mat>();
-    auto ret = p->decode(input_img, candidate_points, res_points);
+   auto candidate_points = p->detect(input_img);
+
+// No QR candidates detected (can happen for scaled images, e.g. scale=2).
+// Avoid calling decode() with empty input which may lead to out-of-bounds.
+if (candidate_points.empty())
+{
+    if (points.needed())
+        points.release();
+    return vector<string>();
+}
+
+   auto res_points = vector<Mat>();
+   auto ret = p->decode(input_img, candidate_points, res_points);
+   
     // opencv type convert
     vector<Mat> tmp_points;
     if (points.needed()) {
