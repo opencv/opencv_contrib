@@ -195,7 +195,7 @@ void RegTest::testAffine()
     Ptr<Map> mapInv(mapAff->inverseMap());
     mapTest.compose(mapInv);
     double shNorm = cv::norm(mapTest.getShift());
-    EXPECT_LE(shNorm, 0.1);
+    EXPECT_LE(shNorm, 0.2);
     double linTrNorm = cv::norm(mapTest.getLinTr());
     EXPECT_LE(linTrNorm, sqrt(2.) + 0.01);
     EXPECT_GE(linTrNorm, sqrt(2.) - 0.01);

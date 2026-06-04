@@ -204,7 +204,7 @@ TEST(SparseOpticalFlow, ReferenceAccuracy)
     param->solverType = ST_STANDART;
     algo->setRLOFOpticalFlowParameter(param);
     algo->calc(frame1, frame2, prevPts, currPts, status, err);
-    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.4f);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.34f);
 
     param->useIlluminationModel = false;
     param->solverType = ST_BILINEAR;
