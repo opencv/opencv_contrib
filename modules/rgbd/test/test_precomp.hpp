@@ -12,6 +12,7 @@
 #include <opencv2/ts.hpp>
 #include <opencv2/rgbd.hpp>
 #include <opencv2/geometry.hpp>
+#include <opencv2/ptcloud.hpp>
 
 #ifdef HAVE_OPENCL
 #include <opencv2/core/ocl.hpp>
