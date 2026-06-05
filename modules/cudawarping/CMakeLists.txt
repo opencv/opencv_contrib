@@ -11,7 +11,7 @@ if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
   list(APPEND build_libs CUDA::cudart${CUDA_LIB_EXT} CUDA::nppial${CUDA_LIB_EXT} CUDA::nppig${CUDA_LIB_EXT})
 endif()
 
-ocv_add_module(cudawarping opencv_core opencv_imgproc OPTIONAL opencv_cudev WRAP python)
+ocv_add_module(cudawarping opencv_core opencv_imgproc opencv_geometry OPTIONAL opencv_cudev WRAP python)
 
 ocv_module_include_directories()
 ocv_glob_module_sources()

@@ -6,7 +6,7 @@ set(the_description "CUDA-accelerated Computer Vision (legacy)")
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4127 /wd4130 /wd4324 /wd4512 /wd4310 -Wundef -Wmissing-declarations -Wuninitialized -Wshadow -Wdeprecated-declarations -Wstrict-aliasing -Wtautological-compare)
 
-ocv_add_module(cudalegacy opencv_core opencv_video OPTIONAL opencv_objdetect opencv_xobjdetect opencv_imgproc opencv_geometry opencv_stereo opencv_calib opencv_cudaarithm opencv_cudafilters opencv_cudaimgproc)
+ocv_add_module(cudalegacy opencv_core opencv_geometry opencv_video OPTIONAL opencv_objdetect opencv_xobjdetect opencv_imgproc opencv_geometry opencv_stereo opencv_calib opencv_cudaarithm opencv_cudafilters opencv_cudaimgproc)
 
 ocv_module_include_directories()
 ocv_glob_module_sources()
