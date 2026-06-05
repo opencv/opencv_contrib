@@ -44,8 +44,8 @@
 
 #include "opencv2/ts.hpp"
 #include "opencv2/ts/cuda_test.hpp"
-
 #include "opencv2/cudaimgproc.hpp"
+#include "opencv2/geometry.hpp"
 
 #include "cvconfig.h"
 

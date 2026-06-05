@@ -54,6 +54,7 @@
 #pragma GCC diagnostic ignored "-Wsuggest-override"
 #endif
 
+#include "opencv2/geometry.hpp"
 #include "opencv2/cudalegacy.hpp"
 #include "opencv2/core/utility.hpp"
 
