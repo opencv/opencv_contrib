@@ -152,7 +152,7 @@ void cv::cudacodec::detail::FFmpegVideoSource::updateFormat(const FormatInfo& vi
 bool cv::cudacodec::detail::FFmpegVideoSource::get(const int propertyId, double& propertyVal) const
 {
     propertyVal = cap.get(propertyId);
-    if (propertyVal != 0.)
+    if (propertyVal != CAP_PROP_UNKNOWN)
         return true;
 
     CV_Assert(videoCaptureParams.size() % 2 == 0);
