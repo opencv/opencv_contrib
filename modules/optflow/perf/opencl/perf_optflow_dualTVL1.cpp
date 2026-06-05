@@ -52,6 +52,112 @@
 namespace opencv_test {
 namespace ocl {
 
+#undef VISUALIZE_FLOW
+//#define VISUALIZE_FLOW 1
+
+#ifdef VISUALIZE_FLOW
+// [TODO] move it to opencv_video/tracking.hpp
+// Standard visualization of the optical flow, according to Scharstein/Middlebury (ICCV 2007).
+// flow — input flow of CV_32FC2 type (field of motion vectors)
+// dst  — output visual optical flow representation of CV_8UC3 type
+// maxFlow — max flow magnitude or (if <=0, it's computed automatically; use with care,
+//                                  because it 'boosts' flow when there is almost no one).
+//           pixels where the motion vector magnitude is equal or exceeds maxFlow will be
+//           painted with maximum saturation.
+// eps — maxFlow threshold for 'no motion/still scene' cases
+// computedMaxFlow — the optional output value to hold the computed maxFlow, to let user
+//                   gradually calibrate maxFlow parameter.
+static void tsVisualizeFlow(InputArray flowarr, OutputArray dstarr,
+                            float maxFlow0 = -1.f, float eps = 1e-3f,
+                            float* computedMaxFlow=nullptr)
+{
+    Mat flow = flowarr.getMat();
+    CV_Assert(flow.type() == CV_32FC2);
+
+    // --- color ring (55 colors, RGB) ---
+    // sectors: RY=15, YG=6, GC=4, CB=11, BM=13, MR=6
+    constexpr int RY=15, YG=6, GC=4, CB=11, BM=13, MR=6;
+    constexpr int NCOLS = RY+YG+GC+CB+BM+MR; // 55
+
+    std::array<Vec3b, NCOLS+1> cwheel_; // RGB
+    int k = 0;
+    for (int i=0;i<RY;i++,k++) cwheel_[k]=Vec3b(0, uint8_t(255*i/RY), 255);
+    for (int i=0;i<YG;i++,k++) cwheel_[k]=Vec3b(0, 255, uint8_t(255-255*i/YG));
+    for (int i=0;i<GC;i++,k++) cwheel_[k]=Vec3b(uint8_t(255*i/GC), 255, 0);
+    for (int i=0;i<CB;i++,k++) cwheel_[k]=Vec3b(255, uint8_t(255-255*i/CB), 0);
+    for (int i=0;i<BM;i++,k++) cwheel_[k]=Vec3b(255, 0, uint8_t(255*i/BM));
+    for (int i=0;i<MR;i++,k++) cwheel_[k]=Vec3b(uint8_t(255-255*i/MR), 0, 255);
+    cwheel_[NCOLS] = cwheel_[0];
+
+    std::vector<float> maxvals(flow.rows);
+
+    // --- compute max flow automatically ---
+    if (maxFlow0 <= 0.0f) {
+        parallel_for_(cv::Range(0, flow.rows), [&](const cv::Range& range) {
+            for (int y = range.start; y < range.end; y++) {
+                float maxval = 0.f;
+                const cv::Vec2f* row = flow.ptr<cv::Vec2f>(y);
+                for (int x = 0; x < flow.cols; x++) {
+                    float dx = row[x][0], dy = row[x][1];
+                    float mag = std::hypot(dx, dy);
+                    maxval = std::max(maxval, mag);
+                }
+                maxvals[y] = maxval;
+            }
+        });
+        maxFlow0 = 0.f;
+        for (int y = 0; y < flow.rows; y++)
+            maxFlow0 = std::max(maxFlow0, maxvals[y]);
+    }
+
+    maxFlow0 = maxFlow0 > eps ? maxFlow0 : 1.f;
+    dstarr.create(flow.size(), CV_8UC3);
+    Mat dst = dstarr.getMat();
+
+    // paint the optical flow map
+    parallel_for_(cv::Range(0, flow.rows), [&](const cv::Range& range) {
+        const Vec3b* cwheel = cwheel_.data();
+        float maxval = 0.f, maxflow = maxFlow0;
+        for (int y = range.start; y < range.end; y++) {
+            const cv::Vec2f* src = flow.ptr<cv::Vec2f>(y);
+            cv::Vec3b*       out = dst.ptr<cv::Vec3b>(y);
+
+            for (int x = 0; x < flow.cols; x++) {
+                float dx = src[x][0];
+                float dy = src[x][1];
+                float mag = std::hypot(dx, dy);
+                maxval = std::max(maxval, mag);
+                mag = std::min(mag / maxflow, 1.f);
+
+                // compute the color from angle
+                float a  = std::atan2(-dy, -dx) / static_cast<float>(M_PI);
+                float f = (a + 1.0f) * 0.5f * (NCOLS - 1);
+                int idx = (int)f;
+                f -= idx;
+
+                // 'white' means no motion,
+                // the stronger the motion the more saturated the corresponding pixel is.
+                Vec3b clr;
+                for (int c = 0; c < 3; c++) {
+                    float chval = cwheel[idx][c] * (1.f - f) + cwheel[idx + 1][c] * f;
+                    chval = 255.f - mag * (255.f - chval);
+                    clr[c] = saturate_cast<uint8_t>(chval);
+                }
+                out[x] = clr;
+            }
+            maxvals[y] = maxval;
+        }
+    });
+
+    if (computedMaxFlow) {
+        maxFlow0 = 0.f;
+        for (int y = 0; y < flow.rows; y++)
+            maxFlow0 = std::max(maxFlow0, maxvals[y]);
+        *computedMaxFlow = maxFlow0;
+    }
+}
+#endif
+
 ///////////// OpticalFlow Dual TVL1 ////////////////////////
 typedef tuple< tuple<int, double>, bool> OpticalFlowDualTVL1Params;
 typedef TestBaseWithParam<OpticalFlowDualTVL1Params> OpticalFlowDualTVL1Fixture;
@@ -101,6 +207,18 @@ OCL_PERF_TEST_P(OpticalFlowDualTVL1Fixture, OpticalFlowDualTVL1,
         alg->setUseInitialFlow(useInitFlow);
         OCL_TEST_CYCLE()
             alg->calc(uFrame0, uFrame1, uFlow);
+
+    #ifdef VISUALIZE_FLOW
+        imshow("frame0", uFrame0);
+        UMat framediff;
+        absdiff(uFrame0, uFrame1, framediff);
+        imshow("framediff", framediff);
+
+        Mat flow8u;
+        tsVisualizeFlow(uFlow, flow8u);
+        imshow("uFlow", flow8u);
+        waitKey();
+    #endif
 
         SANITY_CHECK(uFlow, eps, ERROR_RELATIVE);
     }
