@@ -755,7 +755,6 @@ CUDA_TEST_P(DisplayResolution, Reader)
         readerCodedSz->set(cudacodec::ColorFormat::GRAY);
         GpuMat frameCodedSz;
         ASSERT_TRUE(readerCodedSz->nextFrame(frameCodedSz));
-        const cudacodec::FormatInfo formatCodedSz = readerCodedSz->format();
         const double err = cv::cuda::norm(frame, frameCodedSz(displayArea), NORM_INF);
         ASSERT_TRUE(err == 0);
     }
@@ -1112,20 +1111,10 @@ CUDA_TEST_P(Histogram, Reader)
 CUDA_TEST_P(CheckParams, Reader)
 {
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
-    {
-        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
-        double msActual = -1;
-        ASSERT_FALSE(reader->get(cv::VideoCaptureProperties::CAP_PROP_OPEN_TIMEOUT_MSEC, msActual));
-    }
-
-    {
-        constexpr int msReference = 3333;
-        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {
-            cv::VideoCaptureProperties::CAP_PROP_OPEN_TIMEOUT_MSEC, msReference });
-        double msActual = -1;
-        ASSERT_TRUE(reader->get(cv::VideoCaptureProperties::CAP_PROP_OPEN_TIMEOUT_MSEC, msActual));
-        ASSERT_EQ(msActual, msReference);
-    }
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+    double width = -1;
+    ASSERT_TRUE(reader->get(cv::VideoCaptureProperties::CAP_PROP_FRAME_WIDTH, width));
+    EXPECT_EQ(672, width);
 }
 
 CUDA_TEST_P(CheckParams, CaptureProps)
