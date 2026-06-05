@@ -13,6 +13,7 @@
 #include <time.h>
 
 #include <opencv2/ts.hpp>
+#include <opencv2/geometry.hpp>
 #include <opencv2/gapi.hpp>
 #include <opencv2/gapi/util/util.hpp>
 

@@ -1,6 +1,6 @@
 set(the_description "Machine Learning")
 
-ocv_add_module(ml opencv_core WRAP java objc python)
+ocv_add_module(ml opencv_core opencv_geometry WRAP java objc python)
 ocv_glob_module_sources()
 ocv_module_include_directories()
 ocv_create_module()
