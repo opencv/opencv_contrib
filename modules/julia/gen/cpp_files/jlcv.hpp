@@ -74,11 +74,16 @@ typedef flann::SearchParams flann_SearchParams;
 typedef cv::dnn::DictValue LayerId;
 typedef cv::dnn::Backend dnn_Backend;
 typedef cv::dnn::Target dnn_Target;
+#if CV_VERSION_MAJOR > 4 || (CV_VERSION_MAJOR == 4 && CV_VERSION_MINOR >= 11)
+typedef cv::dnn::DataLayout dnn_DataLayout;
+typedef cv::dnn::ImagePaddingMode dnn_ImagePaddingMode;
+#endif
 #endif
 
 #ifdef HAVE_OPENCV_CALIB3D
 
 #include <opencv2/calib3d.hpp>
+typedef CirclesGridFinderParameters::GridType GridType;
 #endif
 
 template <typename C>
@@ -115,6 +120,7 @@ struct force_enum_int{
 
 typedef vector<Mat> vector_Mat;
 typedef vector<UMat> vector_UMat;
+typedef vector<int> vector_int;
 
 typedef char* c_string;
 
