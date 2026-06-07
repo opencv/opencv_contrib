@@ -226,8 +226,8 @@ class FuncVariant(FuncVariant):
 
 
 
-def gen(srcfiles):
-    namespaces, default_values = gen_tree(srcfiles)
+def gen(srcfiles, preprocessor_definitions=None):
+    namespaces, default_values = gen_tree(srcfiles, preprocessor_definitions)
     cpp_code = StringIO()
     include_code = StringIO()
     nsi = sorted(namespaces.items(), key =lambda x: x[0])
@@ -324,9 +324,5 @@ struct SuperType<%s>
 
 
 
-srcfiles = hdr_parser.opencv_hdr_list
-if len(sys.argv) > 1:
-    srcfiles = [l.strip() for l in sys.argv[1].split(';')]
-
-
-gen(srcfiles)
+srcfiles, preprocessor_definitions = parse_generator_args(sys.argv[1:])
+gen(srcfiles, preprocessor_definitions)

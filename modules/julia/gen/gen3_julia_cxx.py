@@ -167,8 +167,8 @@ class FuncVariant(FuncVariant):
 
 
 
-def gen(srcfiles):
-    namespaces, _ = gen_tree(srcfiles)
+def gen(srcfiles, preprocessor_definitions=None):
+    namespaces, _ = gen_tree(srcfiles, preprocessor_definitions)
 
     jl_code = StringIO()
     for name, ns in namespaces.items():
@@ -237,8 +237,5 @@ def gen(srcfiles):
 
 
 
-srcfiles = hdr_parser.opencv_hdr_list
-if len(sys.argv) > 1:
-    srcfiles = [l.strip() for l in sys.argv[1].split(';')]
-
-gen(srcfiles)
+srcfiles, preprocessor_definitions = parse_generator_args(sys.argv[1:])
+gen(srcfiles, preprocessor_definitions)
