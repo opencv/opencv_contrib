@@ -50,6 +50,8 @@ def gen(srcfiles, preprocessor_definitions=None):
         if name != 'cv':
             for cname, cl in ns.classes.items():
                 cl.__class__ = ClassInfo
+                if is_manual_mapped_type(cl.name):
+                    continue
                 for mname, fs in cl.methods.items():
                     for f in fs:
                         f.__class__ = FuncVariant
