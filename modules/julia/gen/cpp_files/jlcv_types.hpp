@@ -64,6 +64,25 @@ struct CxxComplex
 
 namespace jlcxx
 {
+  namespace opencv_julia_detail
+  {
+    template<typename T>
+    inline jl_value_t* julia_base_type_value()
+    {
+#if (JLCXX_VERSION_MAJOR > 0) || (JLCXX_VERSION_MAJOR == 0 && JLCXX_VERSION_MINOR >= 14)
+      return static_cast<jl_value_t*>(julia_base_type<T>());
+#else
+      return reinterpret_cast<jl_value_t*>(julia_base_type<T>());
+#endif
+    }
+
+    template<typename T>
+    inline jl_svec_t* julia_base_type_tuple()
+    {
+      return jl_svec1(julia_base_type_value<T>());
+    }
+  }
+
   template <> struct IsMirroredType<cv::Range> : std::true_type {};
   template <> struct IsMirroredType<cv::RotatedRect> : std::true_type {};
   template <> struct IsMirroredType<cv::TermCriteria> : std::true_type {};
@@ -77,7 +96,7 @@ namespace jlcxx
   {
     static inline jl_datatype_t* julia_type()
     {
-      return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Point"), jl_svec1(julia_base_type<T>()));
+      return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Point"), opencv_julia_detail::julia_base_type_tuple<T>());
     }
   };
 
@@ -109,7 +128,7 @@ namespace jlcxx
   {
     static inline jl_datatype_t* julia_type()
     {
-      return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Size"), jl_svec1(julia_base_type<T>()));
+      return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Size"), opencv_julia_detail::julia_base_type_tuple<T>());
     }
   };
 
@@ -142,7 +161,7 @@ namespace jlcxx
   {
     static inline jl_datatype_t* julia_type()
     {
-      return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Point3"), jl_svec1(julia_base_type<T>()));
+      return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Point3"), opencv_julia_detail::julia_base_type_tuple<T>());
     }
   };
 
@@ -172,7 +191,7 @@ namespace jlcxx
   {
     static inline jl_datatype_t* julia_type()
     {
-      return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Rect"), jl_svec1(julia_base_type<T>()));
+      return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Rect"), opencv_julia_detail::julia_base_type_tuple<T>());
     }
   };
 
@@ -203,7 +222,7 @@ namespace jlcxx
   {
     static inline jl_datatype_t* julia_type()
     {
-      return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("cvComplex"), jl_svec1(julia_base_type<T>()));
+      return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("cvComplex"), opencv_julia_detail::julia_base_type_tuple<T>());
     }
   };
 

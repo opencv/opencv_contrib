@@ -72,6 +72,8 @@ class ClassInfo(ClassInfo):
 
     def get_jl_code(self):
 
+        if is_manual_mapped_type(self.name):
+            return ''
         if self.ismap:
             return ''
         return self.overload_get()+self.overload_set()
@@ -167,8 +169,8 @@ class FuncVariant(FuncVariant):
 
 
 
-def gen(srcfiles):
-    namespaces, _ = gen_tree(srcfiles)
+def gen(srcfiles, preprocessor_definitions=None):
+    namespaces, _ = gen_tree(srcfiles, preprocessor_definitions)
 
     jl_code = StringIO()
     for name, ns in namespaces.items():
@@ -183,6 +185,8 @@ def gen(srcfiles):
         function_signatures = []
         for cname, cl in ns.classes.items():
             cl.__class__ = ClassInfo
+            if is_manual_mapped_type(cl.name):
+                continue
             jl_code.write(cl.get_jl_code())
             for mname, fs in cl.methods.items():
                 for f in fs:
@@ -237,8 +241,5 @@ def gen(srcfiles):
 
 
 
-srcfiles = hdr_parser.opencv_hdr_list
-if len(sys.argv) > 1:
-    srcfiles = [l.strip() for l in sys.argv[1].split(';')]
-
-gen(srcfiles)
+srcfiles, preprocessor_definitions = parse_generator_args(sys.argv[1:])
+gen(srcfiles, preprocessor_definitions)
