@@ -105,6 +105,12 @@ functions = {}
 registered_types = ["int", "Size.*", "Rect.*", "Scalar", "RotatedRect", "Point.*", "explicit", "string", "bool", "uchar",
                     "Vec.*", "float", "double", "char", "Mat", "size_t", "RNG", "DescriptorExtractor", "FeatureDetector", "TermCriteria"]
 
+manual_mapped_types = set(["cv::Range", "cv::RotatedRect", "cv::TermCriteria"])
+
+def is_manual_mapped_type(name):
+    normalized = normalize_name(name)
+    return normalized in manual_mapped_types or ("cv::" + normalized) in manual_mapped_types
+
 def read_preprocessor_definitions(config_path):
     if not config_path:
         return None
