@@ -1043,5 +1043,57 @@ protected:
 
 TEST(CudaStereo_StereoSGM, regression) { CV_Cuda_StereoSGMTest test; test.safe_run(); }
 
+
+struct StereoSGM : testing::TestWithParam<cv::cuda::DeviceInfo>
+{
+    cv::cuda::DeviceInfo devInfo;
+
+    virtual void SetUp()
+    {
+        devInfo = GetParam();
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(StereoSGM, StreamForkJoinSynchronization)
+{
+    // Tests that calling cv::cuda::StereoSGM::compute with a
+    // cv::cuda::Stream does not block the CPU.
+
+    cv::cuda::Stream main_stream;
+    cv::cuda::Event done_adding_to_stream;
+    cv::Mat left_image  = readImage("stereobm/aloe-L.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat right_image = readImage("stereobm/aloe-R.png", cv::IMREAD_GRAYSCALE);
+
+    ASSERT_FALSE(left_image.empty());
+    ASSERT_FALSE(right_image.empty());
+
+    Ptr<cv::cuda::StereoSGM> sgm = cv::cuda::createStereoSGM(0, 128, 10, 120, 5, cv::cuda::StereoSGM::MODE_HH);
+
+    cv::cuda::GpuMat d_leftImg, d_rightImg, d_disp;
+    d_leftImg.upload(left_image, main_stream);
+    d_rightImg.upload(right_image, main_stream);
+
+    // Enqueue some work so we can detect any hidden stream synchronization inside compute().
+    cv::cuda::GpuMat busy(4096, 4096, CV_8UC1);
+    for (int i = 0; i < 32; ++i)
+        busy.setTo(cv::Scalar::all(i), main_stream);
+
+    cv::cuda::Event busy_done;
+    busy_done.record(main_stream);
+    ASSERT_FALSE(busy_done.queryIfComplete());
+
+    sgm->compute(d_leftImg, d_rightImg, d_disp, main_stream);
+
+    // compute() should not synchronize the provided stream.
+    EXPECT_FALSE(busy_done.queryIfComplete());
+    cv::Mat disp_result;
+    d_disp.download(disp_result, main_stream);
+
+    main_stream.waitForCompletion();
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Stereo, StereoSGM, ALL_DEVICES);
+
 }} // namespace
 #endif // HAVE_CUDA

@@ -87,7 +87,9 @@ StereoSGMImpl::StereoSGMImpl(int minDisparity, int numDisparities, int P1, int P
 
 void StereoSGMImpl::compute(InputArray left, InputArray right, OutputArray disparity)
 {
-    compute(left, right, disparity, Stream::Null());
+    Stream& s = Stream::Null();
+    compute(left, right, disparity, s);
+    s.waitForCompletion();
 }
 
 void StereoSGMImpl::compute(InputArray _left, InputArray _right, OutputArray _disparity, Stream& _stream)
