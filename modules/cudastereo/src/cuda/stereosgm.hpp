@@ -28,6 +28,7 @@ private:
     std::array<Stream, MAX_NUM_PATHS> streams;
     std::array<Event, MAX_NUM_PATHS> events;
     std::array<GpuMat, MAX_NUM_PATHS> subs;
+    Event fork;
 public:
     template <size_t MAX_DISPARITY>
     void operator() (const GpuMat& left, const GpuMat& right, GpuMat& dest, int mode, int p1, int p2, int min_disp, Stream& stream);
