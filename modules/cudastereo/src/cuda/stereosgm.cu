@@ -1338,7 +1338,11 @@ void PathAggregation::operator() (const GpuMat& left, const GpuMat& right, GpuMa
 
     const int num_paths = mode == StereoSGBM::MODE_HH4 ? 4 : 8;
 
-    stream.waitForCompletion();
+    fork.record(stream);
+    for (int i = 0; i < num_paths; ++i)
+    {
+        streams[i].waitEvent(fork);
+    }
 
     const Size size = left.size();
     const int buffer_step = size.width * size.height * static_cast<int>(MAX_DISPARITY);
@@ -1367,7 +1371,6 @@ void PathAggregation::operator() (const GpuMat& left, const GpuMat& right, GpuMa
     {
         events[i].record(streams[i]);
         stream.waitEvent(events[i]);
-        streams[i].waitForCompletion();
     }
 }
 
