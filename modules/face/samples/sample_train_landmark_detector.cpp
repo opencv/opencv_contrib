@@ -89,15 +89,19 @@ int main(int argc,char** argv){
     face_cascade.load(cascade_name);
     FacemarkKazemi::Params params;
     params.configfile = configfile_name;
+    params.faceCascadefile = cascade_name;
+    params.modelfile = modelfile_name;
+    params.scale = scale;
     Ptr<FacemarkKazemi> facemark = FacemarkKazemi::create(params);
+    // std::vector<float> scale(2, 460);
+    // facemark->setParams(cascade_name,modelfile_name,configfile_name,scale);
     facemark->setFaceDetector((FN_FaceDetector)myDetector, &face_cascade);
     //create a vector to store image names
     vector<String> imagenames;
     //create object to get landmarks
-    vector< vector<Point2f> > trainlandmarks,Trainlandmarks;
+    vector< vector<Point2f> > trainlandmarks;
     //gets landmarks and corresponding image names in both the vectors
     //vector to store images
-    vector<Mat> trainimages;
     loadTrainingData(filenames,trainlandmarks,imagenames);
     for(unsigned long i=0;i<300;i++){
         string imgname = imagenames[i].substr(0, imagenames[i].size()-1);
@@ -107,11 +111,10 @@ int main(int argc,char** argv){
             cerr<<string("Image "+img+" not found\n.")<<endl;
             continue;
         }
-        trainimages.push_back(src);
-        Trainlandmarks.push_back(trainlandmarks[i]);
+        facemark->addTrainingSample(src, trainlandmarks[i]);
     }
     cout<<"Got data"<<endl;
-    facemark->training(trainimages,Trainlandmarks,configfile_name,scale,modelfile_name);
+    facemark->training();
     cout<<"Training complete"<<endl;
     return 0;
 }
