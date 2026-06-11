@@ -52,7 +52,7 @@ using namespace cv::cudacodec;
 #define OPENCV_CUDACODEC_NO_DECODER CV_Error(Error::StsNotImplemented, \
     "cudacodec::VideoReader requires the AMD rocDecode library and a GPU with a " \
     "video-decode (VCN) engine. Rebuild with WITH_ROCDECODE=ON and rocDecode " \
-    "installed; note that the MI200-series (gfx90a) compute GPUs have no VCN engine.")
+    "installed.")
 #else
 #define OPENCV_CUDACODEC_NO_DECODER throw_no_cuda()
 #endif
@@ -434,12 +434,12 @@ namespace
         // When a target rectangle smaller than the output surface is requested, the
         // NVCUVID decoder zeroes the surface area outside it during post-processing,
         // so the converter renders a black border. rocDecode places the scaled image
-        // at the target rectangle but does not zero the surrounding decode surface,
-        // and the ROCm device allocator does not hand back zeroed pages, so the
+        // at the target rectangle but does not zero the surrounding decode surface.
+        // CUDA's device allocator happens to hand back zeroed pages so this is latent
+        // there, but the ROCm allocator may return reused (non-zero) memory, so the
         // converter would render that uninitialised border as garbage colour. Re-zero
-        // the border (everything outside the target ROI) after conversion -- the
-        // allocator-does-not-zero fault class. A no-op when the image fills the
-        // surface. Guarded to ROCm so the CUDA path is byte-identical.
+        // the border (everything outside the target ROI) after conversion. A no-op when
+        // the image fills the surface. Guarded to ROCm so the CUDA path is byte-identical.
         const cudacodec::FormatInfo fmt = videoDecoder_->format();
         if (!fmt.targetRoi.empty() && fmt.targetRoi.size() != outFrame.size()) {
             GpuMat zeroed(outFrame.size(), outFrame.type());
