@@ -6,7 +6,12 @@
 
 #ifdef HAVE_CUDA
 
+#if defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__)
+#include <hip/hip_runtime.h>
+#include "opencv2/core/cuda/cuda_to_hip.h"
+#else
 #include <cuda_runtime.h>
+#endif
 
 #include "opencv2/core/cuda.hpp"
 #include "opencv2/core/cuda_stream_accessor.hpp"

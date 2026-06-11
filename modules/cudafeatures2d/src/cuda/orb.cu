@@ -44,7 +44,13 @@
 
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
+#ifdef __HIP_PLATFORM_AMD__
+#include <thrust/system/hip/execution_policy.h>
+#define OPENCV_THRUST_PAR thrust::hip::par
+#else
 #include <thrust/system/cuda/execution_policy.h>
+#define OPENCV_THRUST_PAR thrust::cuda::par
+#endif
 #include <thrust/version.h>
 
 
@@ -67,16 +73,16 @@ namespace cv { namespace cuda { namespace device
 #if THRUST_VERSION >= 100802
             if (stream)
             {
-                thrust::sort_by_key(thrust::cuda::par(ThrustAllocator::getAllocator()).on(stream), response_ptr, response_ptr + size, loc_ptr, thrust::greater<float>());
+                thrust::sort_by_key(OPENCV_THRUST_PAR(ThrustAllocator::getAllocator()).on(stream), response_ptr, response_ptr + size, loc_ptr, thrust::greater<float>());
             }
             else
             {
-                thrust::sort_by_key(thrust::cuda::par(ThrustAllocator::getAllocator()), response_ptr, response_ptr + size, loc_ptr, thrust::greater<float>());
+                thrust::sort_by_key(OPENCV_THRUST_PAR(ThrustAllocator::getAllocator()), response_ptr, response_ptr + size, loc_ptr, thrust::greater<float>());
             }
 #else
             if(stream)
             {
-                thrust::sort_by_key(thrust::cuda::par.on(stream), response_ptr, response_ptr + size, loc_ptr, thrust::greater<float>());
+                thrust::sort_by_key(OPENCV_THRUST_PAR.on(stream), response_ptr, response_ptr + size, loc_ptr, thrust::greater<float>());
             }else
             {
                 thrust::sort_by_key(response_ptr, response_ptr + size, loc_ptr, thrust::greater<float>());

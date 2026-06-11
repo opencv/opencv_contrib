@@ -72,8 +72,24 @@ Ptr<Filter> cv::cuda::createColumnSumFilter(int, int, int, int, int, Scalar) { t
 Ptr<Filter> cv::cuda::createMedianFilter(int srcType, int _windowSize, int _partitions){ throw_no_cuda(); return Ptr<Filter>();}
 
 #else
+#ifndef __HIP_PLATFORM_AMD__
 #include <cuda.h>
 #include <cuda_runtime_api.h>
+#endif
+
+#ifdef __HIP_PLATFORM_AMD__
+namespace cv { namespace cuda { namespace device { namespace filter_hip
+{
+    void morph8u(const PtrStepSzb src, PtrStepSzb dst, int cn, const uchar* se, int seW, int seH,
+                 int anchorX, int anchorY, bool isMax, hipStream_t stream);
+    void morph32f(const PtrStepSzf src, PtrStepSzf dst, int cn, const uchar* se, int seW, int seH,
+                  int anchorX, int anchorY, bool isMax, hipStream_t stream);
+    void rank8u(const PtrStepSzb src, PtrStepSzb dst, int cn, int kW, int kH,
+                int anchorX, int anchorY, bool isMax, hipStream_t stream);
+    void rowSum8u32f(const PtrStepSzb src, PtrStepSzf dst, int ksize, int anchor, hipStream_t stream);
+    void columnSum8u32f(const PtrStepSzb src, PtrStepSzf dst, int ksize, int anchor, hipStream_t stream);
+}}}}
+#endif
 
 namespace
 {
@@ -95,6 +111,7 @@ namespace
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Box Filter
 
+#ifndef __HIP_PLATFORM_AMD__
 namespace
 {
     class NPPBoxFilter : public Filter
@@ -209,6 +226,7 @@ namespace
             cudaSafeCall( cudaDeviceSynchronize() );
     }
 }
+#endif // !__HIP_PLATFORM_AMD__
 
 Ptr<Filter> cv::cuda::createBoxFilter(int srcType, int dstType, Size ksize, Point anchor, int borderMode, Scalar borderVal)
 {
@@ -217,7 +235,17 @@ Ptr<Filter> cv::cuda::createBoxFilter(int srcType, int dstType, Size ksize, Poin
 
     dstType = CV_MAKE_TYPE(CV_MAT_DEPTH(dstType), CV_MAT_CN(srcType));
 
+#ifdef __HIP_PLATFORM_AMD__
+    // NPP has no ROCm analogue; cv::blur is a normalised box, i.e. a separable
+    // averaging filter. Route to the existing custom separable kernels with
+    // 1/ksize averaging rows and columns (same depths and channels NPP covered).
+    CV_Assert( srcType == CV_8UC1 || srcType == CV_8UC4 || srcType == CV_32FC1 );
+    Mat rowKernel(1, ksize.width, CV_32FC1, Scalar(1.0 / ksize.width));
+    Mat colKernel(1, ksize.height, CV_32FC1, Scalar(1.0 / ksize.height));
+    return cuda::createSeparableLinearFilter(srcType, dstType, rowKernel, colKernel, anchor, borderMode, borderMode);
+#else
     return makePtr<NPPBoxFilter>(srcType, dstType, ksize, anchor, borderMode, borderVal);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -593,7 +621,10 @@ namespace
         void apply(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
 
     private:
-#if USE_NPP_STREAM_CTX
+#ifdef __HIP_PLATFORM_AMD__
+        typedef void* nppMorfFilter8u_t;
+        typedef void* nppMorfFilter32f_t;
+#elif USE_NPP_STREAM_CTX
         typedef NppStatus (*nppMorfFilter8u_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep, NppiSize oSizeROI,
                                                const Npp8u* pMask, NppiSize oMaskSize, NppiPoint oAnchor, NppStreamContext streamCtx);
         typedef NppStatus (*nppMorfFilter32f_t)(const Npp32f* pSrc, Npp32s nSrcStep, Npp32f* pDst, Npp32s nDstStep, NppiSize oSizeROI,
@@ -606,6 +637,7 @@ namespace
 
 #endif
 
+        int op_;
         int type_;
         GpuMat kernel_;
         Point anchor_;
@@ -618,8 +650,9 @@ namespace
     };
 
     MorphologyFilter::MorphologyFilter(int op, int srcType, InputArray _kernel, Point anchor, int iterations) :
-        type_(srcType), anchor_(anchor), iters_(iterations)
+        op_(op), type_(srcType), anchor_(anchor), iters_(iterations)
     {
+#ifndef __HIP_PLATFORM_AMD__
 #if USE_NPP_STREAM_CTX
         static const nppMorfFilter8u_t funcs8u[2][5] =
         {
@@ -643,6 +676,7 @@ namespace
             {0, nppiDilate_32f_C1R, 0, 0, nppiDilate_32f_C4R }
         };
 #endif
+#endif // !__HIP_PLATFORM_AMD__
 
         CV_Assert( op == MORPH_ERODE || op == MORPH_DILATE );
         CV_Assert( srcType == CV_8UC1 || srcType == CV_8UC4 || srcType == CV_32FC1 || srcType == CV_32FC4 );
@@ -676,6 +710,7 @@ namespace
         kernel_ = cuda::createContinuous(kernel.size(), CV_8UC1);
         kernel_.upload(kernel8U);
 
+#ifndef __HIP_PLATFORM_AMD__
         if(srcType == CV_8UC1 || srcType == CV_8UC4)
         {
             func8u_ = funcs8u[op][CV_MAT_CN(srcType)];
@@ -684,6 +719,7 @@ namespace
         {
             func32f_ = funcs32f[op][CV_MAT_CN(srcType)];
         }
+#endif
     }
 
     void MorphologyFilter::apply(InputArray _src, OutputArray _dst, Stream& _stream)
@@ -708,6 +744,36 @@ namespace
         GpuMat dst = _dst.getGpuMat();
 
         cudaStream_t stream = StreamAccessor::getStream(_stream);
+#ifdef __HIP_PLATFORM_AMD__
+        using namespace cv::cuda::device;
+        const bool isMax = (op_ == MORPH_DILATE);
+        const int cn = CV_MAT_CN(type_);
+        if (type_ == CV_8UC1 || type_ == CV_8UC4)
+        {
+            filter_hip::morph8u(srcRoi, dst, cn, kernel_.ptr<uchar>(), ksize.width, ksize.height,
+                                anchor_.x, anchor_.y, isMax, stream);
+            for (int i = 1; i < iters_; ++i)
+            {
+                dst.copyTo(bufRoi, _stream);
+                filter_hip::morph8u(bufRoi, dst, cn, kernel_.ptr<uchar>(), ksize.width, ksize.height,
+                                    anchor_.x, anchor_.y, isMax, stream);
+            }
+        }
+        else if (type_ == CV_32FC1 || type_ == CV_32FC4)
+        {
+            filter_hip::morph32f(srcRoi, dst, cn, kernel_.ptr<uchar>(), ksize.width, ksize.height,
+                                 anchor_.x, anchor_.y, isMax, stream);
+            for (int i = 1; i < iters_; ++i)
+            {
+                dst.copyTo(bufRoi, _stream);
+                filter_hip::morph32f(bufRoi, dst, cn, kernel_.ptr<uchar>(), ksize.width, ksize.height,
+                                     anchor_.x, anchor_.y, isMax, stream);
+            }
+        }
+        if (stream == 0)
+            cudaSafeCall( cudaDeviceSynchronize() );
+        return;
+#else
         NppStreamHandler h(stream);
 
         NppiSize oSizeROI;
@@ -769,6 +835,7 @@ namespace
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
+#endif // __HIP_PLATFORM_AMD__
     }
 }
 
@@ -953,7 +1020,9 @@ namespace
         void apply(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
 
     private:
-#if USE_NPP_STREAM_CTX
+#ifdef __HIP_PLATFORM_AMD__
+        typedef void* nppFilterRank_t;
+#elif USE_NPP_STREAM_CTX
         typedef NppStatus (*nppFilterRank_t)(const Npp8u* pSrc, Npp32s nSrcStep, Npp8u* pDst, Npp32s nDstStep, NppiSize oSizeROI,
                                              NppiSize oMaskSize, NppiPoint oAnchor, NppStreamContext);
 #else
@@ -961,6 +1030,7 @@ namespace
             NppiSize oMaskSize, NppiPoint oAnchor);
 #endif
 
+        int op_;
         int type_;
         Size ksize_;
         Point anchor_;
@@ -972,8 +1042,9 @@ namespace
     };
 
     NPPRankFilter::NPPRankFilter(int op, int srcType, Size ksize, Point anchor, int borderMode, Scalar borderVal) :
-        type_(srcType), ksize_(ksize), anchor_(anchor), borderMode_(borderMode), borderVal_(borderVal)
+        op_(op), type_(srcType), ksize_(ksize), anchor_(anchor), borderMode_(borderMode), borderVal_(borderVal)
     {
+#ifndef __HIP_PLATFORM_AMD__
 #if USE_NPP_STREAM_CTX
         static const nppFilterRank_t maxFuncs[] = {0, nppiFilterMax_8u_C1R_Ctx, 0, 0, nppiFilterMax_8u_C4R_Ctx};
         static const nppFilterRank_t minFuncs[] = { 0, nppiFilterMin_8u_C1R_Ctx, 0, 0, nppiFilterMin_8u_C4R_Ctx };
@@ -981,15 +1052,18 @@ namespace
         static const nppFilterRank_t maxFuncs[] = { 0, nppiFilterMax_8u_C1R, 0, 0, nppiFilterMax_8u_C4R };
         static const nppFilterRank_t minFuncs[] = {0, nppiFilterMin_8u_C1R, 0, 0, nppiFilterMin_8u_C4R};
 #endif
+#endif // !__HIP_PLATFORM_AMD__
 
         CV_Assert( srcType == CV_8UC1 || srcType == CV_8UC4 );
 
         normalizeAnchor(anchor_, ksize_);
 
+#ifndef __HIP_PLATFORM_AMD__
         if (op == RANK_MAX)
             func_ = maxFuncs[CV_MAT_CN(srcType)];
         else
             func_ = minFuncs[CV_MAT_CN(srcType)];
+#endif
     }
 
     void NPPRankFilter::apply(InputArray _src, OutputArray _dst, Stream& _stream)
@@ -1005,6 +1079,12 @@ namespace
         GpuMat srcRoi = srcBorder_(Rect(ksize_.width, ksize_.height, src.cols, src.rows));
 
         cudaStream_t stream = StreamAccessor::getStream(_stream);
+#ifdef __HIP_PLATFORM_AMD__
+        cv::cuda::device::filter_hip::rank8u(srcRoi, dst, CV_MAT_CN(type_), ksize_.width, ksize_.height,
+                                             anchor_.x, anchor_.y, op_ == RANK_MAX, stream);
+        if (stream == 0)
+            cudaSafeCall( cudaDeviceSynchronize() );
+#else
         NppStreamHandler h(stream);
 
         NppiSize oSizeROI;
@@ -1029,6 +1109,7 @@ namespace
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
+#endif // __HIP_PLATFORM_AMD__
     }
 }
 
@@ -1086,6 +1167,11 @@ namespace
         GpuMat srcRoi = srcBorder_(Rect(ksize_, 0, src.cols, src.rows));
 
         cudaStream_t stream = StreamAccessor::getStream(_stream);
+#ifdef __HIP_PLATFORM_AMD__
+        cv::cuda::device::filter_hip::rowSum8u32f(srcRoi, dst, ksize_, anchor_, stream);
+        if (stream == 0)
+            cudaSafeCall( cudaDeviceSynchronize() );
+#else
         NppStreamHandler h(stream);
 
         NppiSize oSizeROI;
@@ -1104,6 +1190,7 @@ namespace
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
+#endif // __HIP_PLATFORM_AMD__
     }
 }
 
@@ -1153,6 +1240,11 @@ namespace
         GpuMat srcRoi = srcBorder_(Rect(0, ksize_, src.cols, src.rows));
 
         cudaStream_t stream = StreamAccessor::getStream(_stream);
+#ifdef __HIP_PLATFORM_AMD__
+        cv::cuda::device::filter_hip::columnSum8u32f(srcRoi, dst, ksize_, anchor_, stream);
+        if (stream == 0)
+            cudaSafeCall( cudaDeviceSynchronize() );
+#else
         NppStreamHandler h(stream);
 
         NppiSize oSizeROI;
@@ -1171,6 +1263,7 @@ namespace
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
+#endif // __HIP_PLATFORM_AMD__
     }
 }
 
@@ -1196,6 +1289,12 @@ namespace cv { namespace cuda { namespace device
     template<typename T>
     void medianFiltering_wavelet_matrix_gpu(const PtrStepSz<T> src, PtrStepSz<T> dst, int radius, const int num_channels, cudaStream_t stream);
 #endif
+#ifdef __HIP_PLATFORM_AMD__
+    namespace median_hip {
+        template<typename T>
+        void medianFiltering_hip(const PtrStepSz<T> src, PtrStepSz<T> dst, int radius, int cn, hipStream_t stream);
+    }
+#endif
 }}}
 
 namespace
@@ -1217,7 +1316,7 @@ namespace
     MedianFilter::MedianFilter(int srcType, int _windowSize, int _partitions) :
         windowSize(_windowSize),partitions(_partitions)
     {
-#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+#if defined(__OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__) || defined(__HIP_PLATFORM_AMD__)
         CV_Assert(srcType == CV_8UC1  || srcType == CV_8UC3  || srcType == CV_8UC4
                || srcType == CV_16UC1 || srcType == CV_16UC3 || srcType == CV_16UC4
                || srcType == CV_32FC1 || srcType == CV_32FC3 || srcType == CV_32FC4);
@@ -1245,7 +1344,20 @@ namespace
         // Kernel needs to be half window size
         int kernel=windowSize/2;
 
-#ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
+#ifdef __HIP_PLATFORM_AMD__
+        const int depth = src.depth();
+        const int cn = src.channels();
+        hipStream_t stream = StreamAccessor::getStream(_stream);
+        if (depth == CV_8U) {
+            median_hip::medianFiltering_hip<uint8_t>(src, dst, kernel, cn, stream);
+        } else if (depth == CV_16U) {
+            median_hip::medianFiltering_hip<uint16_t>(src, dst, kernel, cn, stream);
+        } else if (depth == CV_32F) {
+            median_hip::medianFiltering_hip<float>(src, dst, kernel, cn, stream);
+        } else {
+            CV_Assert(depth == CV_8U || depth == CV_16U || depth == CV_32F);
+        }
+#elif defined(__OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__)
         const int depth = src.depth();
         if (depth == CV_8U) {
             medianFiltering_wavelet_matrix_gpu<uint8_t>(src, dst, kernel, src.channels(), StreamAccessor::getStream(_stream));

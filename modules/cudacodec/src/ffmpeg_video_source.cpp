@@ -43,7 +43,7 @@
 
 #include "precomp.hpp"
 
-#ifdef HAVE_NVCUVID
+#ifdef HAVE_CUDACODEC_DECODER
 using namespace cv;
 using namespace cv::cudacodec;
 using namespace cv::cudacodec::detail;
@@ -197,4 +197,4 @@ bool cv::cudacodec::detail::FFmpegVideoSource::lastPacketContainsKeyFrame() cons
     return cap.get(CAP_PROP_LRF_HAS_KEY_FRAME);
 }
 
-#endif // HAVE_CUDA
+#endif // HAVE_CUDACODEC_DECODER

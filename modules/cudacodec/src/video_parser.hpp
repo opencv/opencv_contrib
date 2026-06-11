@@ -13,6 +13,9 @@
 // Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
 // Copyright (C) 2009, Willow Garage Inc., all rights reserved.
 // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+// Copyright (c) 2026 Advanced Micro Devices, Inc. All rights reserved.
+//
+// \author Jeff Daily <jeff.daily@amd.com>
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -46,6 +49,59 @@
 
 #include "frame_queue.hpp"
 #include "video_decoder.hpp"
+
+#if defined(HAVE_ROCDECODE)
+
+namespace cv { namespace cudacodec { namespace detail {
+
+// rocDecode back end. Structurally identical to the NVCUVID VideoParser below:
+// it owns a rocDecode video parser, feeds it elementary-stream packets from the
+// (FFmpeg) demuxer, and routes the parser's sequence / decode / display callbacks
+// to the decoder and the frame queue. The callback signatures and packet flags
+// are the rocDecode equivalents of the cuvid ones.
+class VideoParser
+{
+public:
+    VideoParser(VideoDecoder* videoDecoder, FrameQueue* frameQueue, const bool allowFrameDrop = false, const bool udpSource = false);
+
+    ~VideoParser()
+    {
+        if (parser_)
+            rocDecDestroyVideoParser(parser_);
+    }
+
+    bool parseVideoData(const unsigned char* data, size_t size, const bool rawMode, const bool containsKeyFrame, bool endOfStream);
+
+    bool hasError() const { return hasError_; }
+
+    bool udpSource() const { return maxUnparsedPackets_ == 0; }
+
+    bool allowFrameDrops() const { return allowFrameDrop_; }
+
+private:
+    VideoDecoder* videoDecoder_ = 0;
+    FrameQueue* frameQueue_ = 0;
+    RocdecVideoParser parser_ = nullptr;
+    int unparsedPackets_ = 0;
+    int maxUnparsedPackets_ = 20;
+    std::vector<RawPacket> currentFramePackets;
+    volatile bool hasError_ = false;
+    bool allowFrameDrop_ = false;
+
+    // C trampolines registered with rocDecCreateVideoParser; they forward to the
+    // instance methods via the user_data pointer.
+    static int ROCDECAPI HandleVideoSequenceProc(void* pUserData, RocdecVideoFormat* pFormat) { return static_cast<VideoParser*>(pUserData)->HandleVideoSequence(pFormat); }
+    static int ROCDECAPI HandlePictureDecodeProc(void* pUserData, RocdecPicParams* pPicParams) { return static_cast<VideoParser*>(pUserData)->HandlePictureDecode(pPicParams); }
+    static int ROCDECAPI HandlePictureDisplayProc(void* pUserData, RocdecParserDispInfo* pDispInfo) { return static_cast<VideoParser*>(pUserData)->HandlePictureDisplay(pDispInfo); }
+
+    int HandleVideoSequence(RocdecVideoFormat* pFormat);
+    int HandlePictureDecode(RocdecPicParams* pPicParams);
+    int HandlePictureDisplay(RocdecParserDispInfo* pDispInfo);
+};
+
+}}}
+
+#else // HAVE_NVCUVID
 
 namespace cv { namespace cudacodec { namespace detail {
 
@@ -91,5 +147,7 @@ private:
 };
 
 }}}
+
+#endif // HAVE_ROCDECODE
 
 #endif // __VIDEO_PARSER_HPP__

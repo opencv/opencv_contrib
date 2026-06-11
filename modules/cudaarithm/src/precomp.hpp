@@ -52,12 +52,17 @@
 
 #include "opencv2/core/private.cuda.hpp"
 
-#ifdef HAVE_CUBLAS
-#  include <cublas.h>
-#endif
-
-#ifdef HAVE_CUFFT
-#  include <cufft.h>
+#if defined(HAVE_CUDA) && (defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__))
+// hipBLAS/hipFFT serve gemm and dft on the AMD ROCm path; the shim aliases the
+// cuBLAS/cuFFT spellings arithm.cpp uses to their hip* equivalents.
+#  include "opencv2/core/cuda/cublas_cufft_to_hip.h"
+#else
+#  ifdef HAVE_CUBLAS
+#    include <cublas.h>
+#  endif
+#  ifdef HAVE_CUFFT
+#    include <cufft.h>
+#  endif
 #endif
 
 #endif /* __OPENCV_PRECOMP_H__ */

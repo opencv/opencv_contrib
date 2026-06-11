@@ -7,7 +7,11 @@
 
 #include "opencv2/cudaarithm.hpp"
 
+#if defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__)
+#include <hip/hip_runtime.h>
+#else
 #include <cuda_runtime.h>
+#endif
 
 namespace cv { namespace cuda {
 

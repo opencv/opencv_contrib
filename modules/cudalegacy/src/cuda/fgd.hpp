@@ -50,7 +50,7 @@ namespace fgd
     struct BGPixelStat
     {
     public:
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
         __device__ float& Pbc(int i, int j);
         __device__ float& Pbcc(int i, int j);
 
@@ -103,7 +103,7 @@ namespace fgd
         size_t cctable_v2_step_;
     };
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
     __device__ __forceinline__ float& BGPixelStat::Pbc(int i, int j)
     {
         return *((float*)(Pbc_data_ + i * Pbc_step_) + j);
