@@ -7,7 +7,23 @@ set(the_description "CUDA-accelerated Operations on Matrices")
 ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4127 /wd4324 /wd4512 -Wundef -Wmissing-declarations -Wshadow)
 
 set(extra_dependencies "")
-if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
+if(HAVE_HIP)
+  # gemm -> hipBLAS, dft/convolve -> hipFFT (the cuBLAS/cuFFT analogues). The
+  # HAVE_CUBLAS/HAVE_CUFFT switches keep the host source's library-gated code
+  # active; the cublas_cufft_to_hip.h shim maps the API spellings. NPP has no
+  # ROCm analog, so the NPP families are reimplemented as HIP kernels and no
+  # NPP library is linked.
+  find_package(hipblas QUIET)
+  find_package(hipfft QUIET)
+  if(hipblas_FOUND)
+    set(HAVE_CUBLAS 1)
+    list(APPEND extra_dependencies roc::hipblas)
+  endif()
+  if(hipfft_FOUND)
+    set(HAVE_CUFFT 1)
+    list(APPEND extra_dependencies hip::hipfft)
+  endif()
+elseif(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
 	if(UNIX AND NOT BUILD_SHARED_LIBS AND CUDA_VERSION_STRING VERSION_GREATER_EQUAL 9.2 AND CUDA_VERSION_STRING VERSION_LESS 13.0 AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.23)
     set(CUDA_FFT_LIB_EXT "_static_nocallback")
   endif()

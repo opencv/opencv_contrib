@@ -48,6 +48,12 @@
 #include "opencv2/core/cuda/utility.hpp"
 #include <opencv2/cudev/ptr2d/texture.hpp>
 #include <thrust/execution_policy.h>
+#ifdef __HIP_PLATFORM_AMD__
+#include <thrust/system/hip/execution_policy.h>
+#define OPENCV_THRUST_PAR thrust::hip::par
+#else
+#define OPENCV_THRUST_PAR thrust::cuda::par
+#endif
 namespace cv { namespace cuda { namespace device
 {
     namespace gfft
@@ -127,9 +133,9 @@ namespace cv { namespace cuda { namespace device
             thrust::device_ptr<float2> ptr(corners);
 #if THRUST_VERSION >= 100802
             if (stream)
-                thrust::sort(thrust::cuda::par(ThrustAllocator::getAllocator()).on(stream), ptr, ptr + count, EigGreater(tex));
+                thrust::sort(OPENCV_THRUST_PAR(ThrustAllocator::getAllocator()).on(stream), ptr, ptr + count, EigGreater(tex));
             else
-                thrust::sort(thrust::cuda::par(ThrustAllocator::getAllocator()), ptr, ptr + count, EigGreater(tex));
+                thrust::sort(OPENCV_THRUST_PAR(ThrustAllocator::getAllocator()), ptr, ptr + count, EigGreater(tex));
 #else
             thrust::sort(ptr, ptr + count, EigGreater(tex));
 #endif
