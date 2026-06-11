@@ -46,13 +46,22 @@ using namespace cv;
 using namespace cv::cuda;
 using namespace cv::cudacodec;
 
-#ifndef HAVE_NVCUVID
+#ifndef HAVE_CUDACODEC_DECODER
 
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const String&, const std::vector<int>&, const VideoReaderInitParams) { throw_no_cuda(); return Ptr<VideoReader>(); }
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&, const VideoReaderInitParams) { throw_no_cuda(); return Ptr<VideoReader>(); }
-void cv::cudacodec::MapHist(const GpuMat&, Mat&) { throw_no_cuda(); }
+#ifdef __HIP_PLATFORM_AMD__
+#define OPENCV_CUDACODEC_NO_DECODER CV_Error(Error::StsNotImplemented, \
+    "cudacodec::VideoReader requires the AMD rocDecode library and a GPU with a " \
+    "video-decode (VCN) engine. Rebuild with WITH_ROCDECODE=ON and rocDecode " \
+    "installed; note that the MI200-series (gfx90a) compute GPUs have no VCN engine.")
+#else
+#define OPENCV_CUDACODEC_NO_DECODER throw_no_cuda()
+#endif
 
-#else // HAVE_NVCUVID
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const String&, const std::vector<int>&, const VideoReaderInitParams) { OPENCV_CUDACODEC_NO_DECODER; return Ptr<VideoReader>(); }
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&, const VideoReaderInitParams) { OPENCV_CUDACODEC_NO_DECODER; return Ptr<VideoReader>(); }
+void cv::cudacodec::MapHist(const GpuMat&, Mat&) { OPENCV_CUDACODEC_NO_DECODER; }
+
+#else // HAVE_CUDACODEC_DECODER
 
 void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const bool videoFullRangeFlag, cudaStream_t stream);
 
@@ -421,6 +430,24 @@ namespace
             return;
         }
         yuvConverter->convert(decodedFrame, outFrame, surfaceFormat, colorFormat, bitDepth, planar, stream);
+#ifdef HAVE_ROCDECODE
+        // When a target rectangle smaller than the output surface is requested, the
+        // NVCUVID decoder zeroes the surface area outside it during post-processing,
+        // so the converter renders a black border. rocDecode places the scaled image
+        // at the target rectangle but does not zero the surrounding decode surface,
+        // and the ROCm device allocator does not hand back zeroed pages, so the
+        // converter would render that uninitialised border as garbage colour. Re-zero
+        // the border (everything outside the target ROI) after conversion -- the
+        // allocator-does-not-zero fault class. A no-op when the image fills the
+        // surface. Guarded to ROCm so the CUDA path is byte-identical.
+        const cudacodec::FormatInfo fmt = videoDecoder_->format();
+        if (!fmt.targetRoi.empty() && fmt.targetRoi.size() != outFrame.size()) {
+            GpuMat zeroed(outFrame.size(), outFrame.type());
+            zeroed.setTo(Scalar::all(0), stream);
+            outFrame(fmt.targetRoi).copyTo(zeroed(fmt.targetRoi), stream);
+            outFrame = zeroed;
+        }
+#endif
     }
 }
 
@@ -438,7 +465,14 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const 
     catch (...)
     {
         if (sourceParams.size()) throw;
+#ifdef HAVE_NVCUVID
+        // The cuvid built-in demuxer is the NVCUVID fallback when FFmpeg is
+        // unavailable. rocDecode has no equivalent built-in demuxer (the FFmpeg
+        // videoio backend is the only container demuxer on ROCm), so re-raise.
         videoSource.reset(new CuvidVideoSource(filename));
+#else
+        throw;
+#endif
     }
     return makePtr<VideoReaderImpl>(videoSource, params.minNumDecodeSurfaces, params.allowFrameDrop, params.udpSource, params.targetSz,
         params.srcRoi, params.targetRoi, params.enableHistogram, params.firstFrameIdx);
@@ -463,4 +497,4 @@ void cv::cudacodec::MapHist(const GpuMat& hist, Mat& histFull) {
     }
 }
 
-#endif // HAVE_NVCUVID
+#endif // HAVE_CUDACODEC_DECODER

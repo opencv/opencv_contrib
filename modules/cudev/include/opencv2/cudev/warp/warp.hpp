@@ -53,6 +53,13 @@ namespace cv { namespace cudev {
 //! @addtogroup cudev
 //! @{
 
+// The cudev warp cooperative primitives (warpScan, warpReduce, and the block
+// reduce/scan that partition a block into GenericOptimized32 groups) are built
+// around a 32 lane logical warp and width 32 shuffles. A width 32 shuffle stays
+// within a 32 lane subgroup of the physical wavefront, so it is correct on both
+// a 32 wide (RDNA) and a 64 wide (CDNA, gfx90a) wavefront. Keep WARP_SIZE the
+// logical 32 on every target and derive laneId from the thread index so the
+// 32 lane partitioning is consistent regardless of the physical wavefront width.
 enum
 {
     LOG_WARP_SIZE = 5,
@@ -63,9 +70,14 @@ struct Warp
 {
     __device__ __forceinline__ static uint laneId()
     {
+#if defined(__HIP_DEVICE_COMPILE__)
+        const uint tid = (threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x;
+        return tid & (WARP_SIZE - 1);
+#else
         uint ret;
         asm("mov.u32 %0, %%laneid;" : "=r"(ret));
         return ret;
+#endif
     }
 
     __device__ __forceinline__ static uint warpId()

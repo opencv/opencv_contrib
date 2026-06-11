@@ -44,7 +44,13 @@
 
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
+#ifdef __HIP_PLATFORM_AMD__
+#include <thrust/system/hip/execution_policy.h>
+#define OPENCV_THRUST_PAR thrust::hip::par
+#else
 #include <thrust/system/cuda/execution_policy.h>
+#define OPENCV_THRUST_PAR thrust::cuda::par
+#endif
 
 #include "opencv2/core/cuda/common.hpp"
 #include "opencv2/core/cuda/emulation.hpp"
@@ -195,7 +201,7 @@ namespace cv { namespace cuda { namespace device
             {
                 thrust::device_ptr<float2> outPtr(out);
                 thrust::device_ptr<int> votesPtr(votes);
-                thrust::sort_by_key(thrust::cuda::par.on(stream), votesPtr, votesPtr + totalCount, outPtr, thrust::greater<int>());
+                thrust::sort_by_key(OPENCV_THRUST_PAR.on(stream), votesPtr, votesPtr + totalCount, outPtr, thrust::greater<int>());
             }
 
             return totalCount;

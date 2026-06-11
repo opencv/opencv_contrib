@@ -42,8 +42,9 @@
 
 #include "precomp.hpp"
 
-// GraphCut has been removed in NPP 8.0
-#if !defined (HAVE_CUDA) || defined (CUDA_DISABLER) || (CUDART_VERSION >= 8000)
+// GraphCut has been removed in NPP 8.0, and there is no NPP graphcut analog in
+// ROCm; HIP takes the same stub path a modern (CUDART >= 8000) CUDA build does.
+#if !defined (HAVE_CUDA) || defined (CUDA_DISABLER) || (CUDART_VERSION >= 8000) || defined (__HIP_PLATFORM_AMD__)
 
 void cv::cuda::graphcut(GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, Stream&) { throw_no_cuda(); }
 void cv::cuda::graphcut(GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, Stream&) { throw_no_cuda(); }

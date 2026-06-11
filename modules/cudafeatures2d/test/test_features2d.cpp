@@ -44,7 +44,11 @@
 
 #ifdef HAVE_CUDA
 
+#ifdef __HIP_PLATFORM_AMD__
+#include <hip/hip_runtime_api.h>
+#else
 #include <cuda_runtime_api.h>
+#endif
 
 namespace opencv_test { namespace {
 
@@ -138,7 +142,11 @@ CUDA_TEST_P(FAST, Async)
 
         cv::parallel_for_(cv::Range(0, 2), FastAsyncParallelLoopBody(image, d_keypoints, d_fast));
 
+#ifdef __HIP_PLATFORM_AMD__
+        hipDeviceSynchronize();
+#else
         cudaDeviceSynchronize();
+#endif
 
         std::vector<cv::KeyPoint> keypoints[2];
         d_fast[0]->convert(d_keypoints[0], keypoints[0]);

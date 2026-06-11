@@ -42,7 +42,18 @@
 
 #include "test_precomp.hpp"
 #include "opencv2/core/matx.hpp"
+#if defined(__HIP_PLATFORM_AMD__)
+// NPP is not part of the AMD ROCm/HIP path; this test only uses these constants
+// as random map-coordinate bounds. Define them directly.
+#  ifndef NPP_MAX_32S
+#    define NPP_MAX_32S ( 2147483647 )
+#  endif
+#  ifndef NPP_MAXABS_32F
+#    define NPP_MAXABS_32F ( 3.402823466e+38f )
+#  endif
+#else
 #include "nppdefs.h"
+#endif
 
 #ifdef HAVE_CUDA
 

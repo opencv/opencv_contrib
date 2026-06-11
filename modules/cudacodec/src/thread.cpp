@@ -43,7 +43,7 @@
 
 #include "precomp.hpp"
 
-#ifdef HAVE_NVCUVID
+#ifdef HAVE_CUDACODEC_DECODER
 
 using namespace cv::cudacodec::detail;
 
@@ -167,4 +167,4 @@ void cv::cudacodec::detail::Thread::sleep(int ms)
 #endif
 }
 
-#endif // HAVE_NVCUVID
+#endif // HAVE_CUDACODEC_DECODER

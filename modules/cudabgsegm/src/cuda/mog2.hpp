@@ -7,8 +7,10 @@
 
 #include "opencv2/core/cuda.hpp"
 
+#if !defined(__HIP_PLATFORM_AMD__) && !defined(HAVE_HIP)
 struct CUstream_st;
 typedef struct CUstream_st *cudaStream_t;
+#endif
 
 namespace cv { namespace cuda {
 

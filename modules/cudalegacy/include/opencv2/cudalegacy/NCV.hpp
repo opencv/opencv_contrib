@@ -49,7 +49,15 @@
     #define WIN32_LEAN_AND_MEAN
 #endif
 
+#if defined(__HIP_PLATFORM_AMD__) || defined(HAVE_HIP)
+#include <hip/hip_runtime.h>
+// NCV's public headers spell the runtime types in CUDA terms (cudaStream_t,
+// cudaDeviceProp, ...); pull in the compat shim so they resolve to the hip*
+// types in host translation units that do not force-include it.
+#include "opencv2/core/cuda/cuda_to_hip.h"
+#else
 #include <cuda_runtime.h>
+#endif
 #include "opencv2/core/cvstd.hpp"
 #include "opencv2/core/utility.hpp"
 

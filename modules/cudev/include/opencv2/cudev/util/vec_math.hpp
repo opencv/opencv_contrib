@@ -207,6 +207,16 @@ namespace vec_math_detail
         return (schar) ::abs((int) val);
     }
 
+#if defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__)
+    // On HIP `char` is a distinct type from `signed char`; charN::x is plain
+    // char, so without this overload abs_(a.x) is ambiguous between the schar
+    // and short overloads. CUDA's charN::x is signed char and needs no overload.
+    __device__ __forceinline__ char abs_(char val)
+    {
+        return (char) ::abs((int) val);
+    }
+#endif
+
     __device__ __forceinline__ short abs_(short val)
     {
         return (short) ::abs((int) val);

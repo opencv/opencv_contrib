@@ -43,7 +43,7 @@
 
 #include "precomp.hpp"
 
-#ifdef HAVE_NVCUVID
+#ifdef HAVE_CUDACODEC_DECODER
 
 using namespace cv;
 using namespace cv::cudacodec;
@@ -145,4 +145,4 @@ void cv::cudacodec::detail::RawVideoSourceWrapper::readLoop(void* userData)
         thiz->parseVideoData(0, 0, false, false, true);
 }
 
-#endif // HAVE_NVCUVID
+#endif // HAVE_CUDACODEC_DECODER
