@@ -23,6 +23,9 @@
 #include "precomp.hpp"
 #include "opencv2/core/utils/buffer_area.private.hpp"
 
+#include <cmath>
+#include <cstring>
+
 using namespace cv;
 
 namespace {
@@ -31,7 +34,7 @@ namespace {
 //==============================================================================
 // Distance functions
 
-typedef float (*DistFunc)(const float* a, const float* b, int dims);
+using DistFunc = float (*)(const float* a, const float* b, int dims);
 
 static float distL1(const float* x, const float* y, int dims)
 {
@@ -39,9 +42,9 @@ static float distL1(const float* x, const float* y, int dims)
     for (int i = 0; i < dims; i++)
     {
         const double t = x[i] - y[i];
-        s += fabs(t);
+        s += std::abs(t);
     }
-    return (float)s;
+    return static_cast<float>(s);
 }
 
 static float distL2(const float* x, const float* y, int dims)
@@ -52,7 +55,7 @@ static float distL2(const float* x, const float* y, int dims)
         const double t = x[i] - y[i];
         s += t * t;
     }
-    return sqrt((float)s);
+    return std::sqrt(static_cast<float>(s));
 }
 
 static float distC(const float* x, const float* y, int dims)
@@ -60,11 +63,11 @@ static float distC(const float* x, const float* y, int dims)
     double s = 0;
     for (int i = 0; i < dims; i++)
     {
-        const double t = fabs(x[i] - y[i]);
+        const double t = std::abs(x[i] - y[i]);
         if (s < t)
             s = t;
     }
-    return (float)s;
+    return static_cast<float>(s);
 }
 
 
@@ -96,33 +99,33 @@ struct EMDSolver
     static constexpr float CV_EMD_INF = 1e20f;
     static constexpr float CV_EMD_EPS = 1e-5f;
 
-    int ssize, dsize;
+    int ssize = 0, dsize = 0;
 
-    float* cost_buf;
+    float* cost_buf = nullptr;
     AutoBuffer<Node2D, 0> data_x;
-    Node2D* end_x;
-    Node2D* enter_x;
-    char* is_x;
+    Node2D* end_x = nullptr;
+    Node2D* enter_x = nullptr;
+    char* is_x = nullptr;
 
-    Node2D** rows_x;
-    Node2D** cols_x;
+    Node2D** rows_x = nullptr;
+    Node2D** cols_x = nullptr;
 
-    Node1D* u;
-    Node1D* v;
+    Node1D* u = nullptr;
+    Node1D* v = nullptr;
 
-    int* idx1;
-    int* idx2;
+    int* idx1 = nullptr;
+    int* idx2 = nullptr;
 
     /* find_loop buffers */
-    Node2D** loop;
-    char* is_used;
+    Node2D** loop = nullptr;
+    char* is_used = nullptr;
 
     /* russel buffers */
-    float* s;
-    float* d;
-    float* delta;
+    float* s = nullptr;
+    float* d = nullptr;
+    float* delta = nullptr;
 
-    float weight, max_cost;
+    float weight = 0.f, max_cost = 0.f;
 
     utils::BufferArea area, area2;
 
@@ -149,12 +152,7 @@ public:
         return *(this->is_x + i * dsize + j);
     }
 
-    EMDSolver() :
-        ssize(0), dsize(0), cost_buf(0), end_x(0), enter_x(0), is_x(0), rows_x(0),
-        cols_x(0), u(0), v(0), idx1(0), idx2(0), loop(0), is_used(0), s(0), d(0), delta(0),
-        weight(0), max_cost(0)
-    {
-    }
+    EMDSolver() = default;
 
 public:
     bool init(const Mat& sign1,
@@ -242,7 +240,7 @@ bool EMDSolver::checkLowerBound(const Mat& sign1,
 {
     AutoBuffer<float> buf;
     buf.allocate(dims * 2);
-    memset(buf.data(), 0, dims * 2 * sizeof(float));
+    std::memset(buf.data(), 0, dims * 2 * sizeof(float));
 
     float* xs = buf.data();
     float* xd = buf.data() + dims;
@@ -274,7 +272,7 @@ bool EMDSolver::calcSums(const Mat& sign1, const Mat& sign2)
     bool result = true;
     /* sum up the supply and demand */
     int ssize_ = 0, dsize_ = 0;
-    float s_sum = 0, d_sum = 0, diff;
+    float s_sum = 0, d_sum = 0;
     for (int i = 0; i < sign1.size().height; i++)
     {
         const float weight_ = sign1.at<float>(i, 0);
@@ -309,8 +307,8 @@ bool EMDSolver::calcSums(const Mat& sign1, const Mat& sign2)
         CV_Error(cv::Error::StsBadArg, "sign2 must contain at least one non-zero value");
 
     /* if supply different than the demand, add a zero-cost dummy cluster */
-    diff = s_sum - d_sum;
-    if (fabs(diff) >= CV_EMD_EPS * s_sum)
+    const float diff = s_sum - d_sum;
+    if (std::abs(diff) >= CV_EMD_EPS * s_sum)
     {
         result = false;
         if (diff < 0)
@@ -415,8 +413,7 @@ void EMDSolver::solve()
 double EMDSolver::calcFlow(Mat* flow_) const
 {
     double result = 0.;
-    const Node2D* xp = 0;
-    for (xp = data_x.data(); xp < end_x; xp++)
+    for (const Node2D* xp = data_x.data(); xp < end_x; xp++)
     {
         float val = xp->val;
         const int i = xp->i;
@@ -430,7 +427,7 @@ double EMDSolver::calcFlow(Mat* flow_) const
 
         if (ci >= 0 && cj >= 0)
         {
-            result += (double)val * getCost(i, j);
+            result += static_cast<double>(val) * getCost(i, j);
             if (flow_)
             {
                 flow_->at<float>(ci, cj) = val;
@@ -449,7 +446,7 @@ int EMDSolver::findBasicVars() const
     Node1D v0_head, v1_head, *cur_v, *prev_v;
     bool found;
 
-    CV_Assert(u != 0 && v != 0);
+    CV_Assert(u != nullptr && v != nullptr);
 
     /* initialize the rows list (u) and the columns list (v) */
     u0_head.next = u;
@@ -457,22 +454,22 @@ int EMDSolver::findBasicVars() const
     {
         u[i].next = u + i + 1;
     }
-    u[ssize - 1].next = 0;
-    u1_head.next = 0;
+    u[ssize - 1].next = nullptr;
+    u1_head.next = nullptr;
 
-    v0_head.next = ssize > 1 ? v + 1 : 0;
+    v0_head.next = ssize > 1 ? v + 1 : nullptr;
     for (i = 1; i < dsize; i++)
     {
         v[i].next = v + i + 1;
     }
-    v[dsize - 1].next = 0;
-    v1_head.next = 0;
+    v[dsize - 1].next = nullptr;
+    v1_head.next = nullptr;
 
     /* there are ssize+dsize variables but only ssize+dsize-1 independent equations,
        so set v[0]=0 */
     v[0].val = 0;
     v1_head.next = v;
-    v1_head.next->next = 0;
+    v1_head.next->next = nullptr;
 
     /* loop until all variables are found */
     u_cfound = v_cfound = 0;
@@ -484,17 +481,17 @@ int EMDSolver::findBasicVars() const
             /* loop over all marked columns */
             prev_v = &v1_head;
             cur_v = v1_head.next;
-            found = found || (cur_v != 0);
-            for (; cur_v != 0; cur_v = cur_v->next)
+            found = found || (cur_v != nullptr);
+            for (; cur_v != nullptr; cur_v = cur_v->next)
             {
                 float cur_v_val = cur_v->val;
 
-                j = (int)(cur_v - v);
+                j = static_cast<int>(cur_v - v);
                 /* find the variables in column j */
                 prev_u = &u0_head;
-                for (cur_u = u0_head.next; cur_u != 0;)
+                for (cur_u = u0_head.next; cur_u != nullptr;)
                 {
-                    i = (int)(cur_u - u);
+                    i = static_cast<int>(cur_u - u);
                     if (getIsX(i, j))
                     {
                         /* compute u[i] */
@@ -521,16 +518,16 @@ int EMDSolver::findBasicVars() const
             /* loop over all marked rows */
             prev_u = &u1_head;
             cur_u = u1_head.next;
-            found = found || (cur_u != 0);
-            for (; cur_u != 0; cur_u = cur_u->next)
+            found = found || (cur_u != nullptr);
+            for (; cur_u != nullptr; cur_u = cur_u->next)
             {
                 float cur_u_val = cur_u->val;
-                i = (int)(cur_u - u);
+                i = static_cast<int>(cur_u - u);
                 /* find the variables in rows i */
                 prev_v = &v0_head;
-                for (cur_v = v0_head.next; cur_v != 0;)
+                for (cur_v = v0_head.next; cur_v != nullptr;)
                 {
-                    j = (int)(cur_v - v);
+                    j = static_cast<int>(cur_v - v);
                     if (getIsX(i, j))
                     {
                         /* compute v[j] */
@@ -594,7 +591,7 @@ bool EMDSolver::checkNewSolution()
     int i, j;
     float min_val = CV_EMD_INF;
     int steps;
-    Node2D head {0, 0, 0, {0, 0}}, *cur_x, *next_x, *leave_x = 0;
+    Node2D head{}, *cur_x, *next_x, *leave_x = nullptr;
     Node2D* enter_x_ = this->enter_x;
     Node2D** loop_ = this->loop;
 
@@ -637,7 +634,7 @@ bool EMDSolver::checkNewSolution()
     }
 
     /* remove the leaving basic variable */
-    CV_Assert(leave_x != NULL);
+    CV_Assert(leave_x != nullptr);
     i = leave_x->i;
     j = leave_x->j;
     getIsX(i, j) = 0;
@@ -670,9 +667,7 @@ bool EMDSolver::checkNewSolution()
 
 int EMDSolver::findLoop() const
 {
-    int i;
-
-    memset(is_used, 0, this->ssize + this->dsize);
+    std::memset(is_used, 0, this->ssize + this->dsize);
 
     Node2D* new_x = loop[0] = enter_x;
     is_used[enter_x - data_x.data()] = 1;
@@ -684,20 +679,20 @@ int EMDSolver::findLoop() const
         {
             /* find an unused x in the row */
             new_x = this->rows_x[new_x->i];
-            while (new_x != 0 && is_used[new_x - data_x.data()])
+            while (new_x != nullptr && is_used[new_x - data_x.data()])
                 new_x = new_x->next[0];
         }
         else
         {
             /* find an unused x in the column, or the entering x */
             new_x = this->cols_x[new_x->j];
-            while (new_x != 0 && is_used[new_x - data_x.data()] && new_x != enter_x)
+            while (new_x != nullptr && is_used[new_x - data_x.data()] && new_x != enter_x)
                 new_x = new_x->next[1];
             if (new_x == enter_x)
                 break;
         }
 
-        if (new_x != 0) /* found the next x */
+        if (new_x != nullptr) /* found the next x */
         {
             /* add x to the loop */
             loop[steps++] = new_x;
@@ -708,20 +703,20 @@ int EMDSolver::findLoop() const
             /* backtrack */
             do
             {
-                i = steps & 1;
+                const int i = steps & 1;
                 new_x = loop[steps - 1];
                 do
                 {
                     new_x = new_x->next[i];
                 }
-                while (new_x != 0 && is_used[new_x - data_x.data()]);
+                while (new_x != nullptr && is_used[new_x - data_x.data()]);
 
-                if (new_x == 0)
+                if (new_x == nullptr)
                 {
                     is_used[loop[--steps] - data_x.data()] = 0;
                 }
             }
-            while (new_x == 0 && steps > 0);
+            while (new_x == nullptr && steps > 0);
 
             is_used[loop[steps - 1] - data_x.data()] = 0;
             loop[steps - 1] = new_x;
@@ -736,11 +731,11 @@ int EMDSolver::findLoop() const
 void EMDSolver::callRussel()
 {
     int i, j, min_i = -1, min_j = -1;
-    float min_delta, diff;
+    float min_delta;
     Node1D u_head, *cur_u, *prev_u;
     Node1D v_head, *cur_v, *prev_v;
-    Node1D *prev_u_min_i = 0, *prev_v_min_j = 0, *remember;
-    float eps = CV_EMD_EPS * this->max_cost;
+    Node1D *prev_u_min_i = nullptr, *prev_v_min_j = nullptr, *remember;
+    const float eps = CV_EMD_EPS * this->max_cost;
 
     /* initialize the rows list (ur), and the columns list (vr) */
     u_head.next = u;
@@ -748,7 +743,7 @@ void EMDSolver::callRussel()
     {
         u[i].next = u + i + 1;
     }
-    u[ssize - 1].next = 0;
+    u[ssize - 1].next = nullptr;
 
     v_head.next = v;
     for (i = 0; i < dsize; i++)
@@ -756,7 +751,7 @@ void EMDSolver::callRussel()
         v[i].val = -CV_EMD_INF;
         v[i].next = v + i + 1;
     }
-    v[dsize - 1].next = 0;
+    v[dsize - 1].next = nullptr;
 
     /* find the maximum row and column values (ur[i] and vr[j]) */
     for (i = 0; i < ssize; i++)
@@ -792,15 +787,15 @@ void EMDSolver::callRussel()
         min_i = -1;
         min_delta = CV_EMD_INF;
         prev_u = &u_head;
-        for (cur_u = u_head.next; cur_u != 0; cur_u = cur_u->next)
+        for (cur_u = u_head.next; cur_u != nullptr; cur_u = cur_u->next)
         {
-            i = (int)(cur_u - u);
+            i = static_cast<int>(cur_u - u);
             float* delta_row = delta + i * dsize;
 
             prev_v = &v_head;
-            for (cur_v = v_head.next; cur_v != 0; cur_v = cur_v->next)
+            for (cur_v = v_head.next; cur_v != nullptr; cur_v = cur_v->next)
             {
-                j = (int)(cur_v - v);
+                j = static_cast<int>(cur_v - v);
                 if (min_delta > delta_row[j])
                 {
                     min_delta = delta_row[j];
@@ -824,28 +819,28 @@ void EMDSolver::callRussel()
         /* update the necessary delta[][] */
         if (remember == prev_u_min_i->next) /* line min_i was deleted */
         {
-            for (cur_v = v_head.next; cur_v != 0; cur_v = cur_v->next)
+            for (cur_v = v_head.next; cur_v != nullptr; cur_v = cur_v->next)
             {
-                j = (int)(cur_v - v);
+                j = static_cast<int>(cur_v - v);
                 if (cur_v->val == getCost(min_i, j)) /* column j needs updating */
                 {
                     float max_val = -CV_EMD_INF;
 
                     /* find the new maximum value in the column */
-                    for (cur_u = u_head.next; cur_u != 0; cur_u = cur_u->next)
+                    for (cur_u = u_head.next; cur_u != nullptr; cur_u = cur_u->next)
                     {
-                        float temp = getCost((int)(cur_u - u), j);
+                        float temp = getCost(static_cast<int>(cur_u - u), j);
 
                         if (max_val < temp)
                             max_val = temp;
                     }
 
                     /* if needed, adjust the relevant delta[*][j] */
-                    diff = max_val - cur_v->val;
+                    const float diff = max_val - cur_v->val;
                     cur_v->val = max_val;
-                    if (fabs(diff) < eps)
+                    if (std::abs(diff) < eps)
                     {
-                        for (cur_u = u_head.next; cur_u != 0; cur_u = cur_u->next)
+                        for (cur_u = u_head.next; cur_u != nullptr; cur_u = cur_u->next)
                             *(delta + (cur_u - u) * dsize + j) += diff;
                     }
                 }
@@ -853,36 +848,36 @@ void EMDSolver::callRussel()
         }
         else /* column min_j was deleted */
         {
-            for (cur_u = u_head.next; cur_u != 0; cur_u = cur_u->next)
+            for (cur_u = u_head.next; cur_u != nullptr; cur_u = cur_u->next)
             {
-                i = (int)(cur_u - u);
+                i = static_cast<int>(cur_u - u);
                 if (cur_u->val == getCost(i, min_j)) /* row i needs updating */
                 {
                     float max_val = -CV_EMD_INF;
 
                     /* find the new maximum value in the row */
-                    for (cur_v = v_head.next; cur_v != 0; cur_v = cur_v->next)
+                    for (cur_v = v_head.next; cur_v != nullptr; cur_v = cur_v->next)
                     {
-                        float temp = getCost(i, (int)(cur_v - v));
+                        float temp = getCost(i, static_cast<int>(cur_v - v));
 
                         if (max_val < temp)
                             max_val = temp;
                     }
 
                     /* if needed, adjust the relevant delta[i][*] */
-                    diff = max_val - cur_u->val;
+                    const float diff = max_val - cur_u->val;
                     cur_u->val = max_val;
 
-                    if (fabs(diff) < eps)
+                    if (std::abs(diff) < eps)
                     {
-                        for (cur_v = v_head.next; cur_v != 0; cur_v = cur_v->next)
+                        for (cur_v = v_head.next; cur_v != nullptr; cur_v = cur_v->next)
                             *(delta + i * dsize + (cur_v - v)) += diff;
                     }
                 }
             }
         }
     }
-    while (u_head.next != 0 || v_head.next != 0);
+    while (u_head.next != nullptr || v_head.next != nullptr);
 }
 
 void EMDSolver::addBasicVar(int min_i,
@@ -919,7 +914,7 @@ void EMDSolver::addBasicVar(int min_i,
     this->end_x = end_x + 1;
 
     /* delete supply row only if the empty, and if not last row */
-    if (this->s[min_i] == 0 && u_head->next->next != 0)
+    if (this->s[min_i] == 0 && u_head->next->next != nullptr)
         prev_u_min_i->next = prev_u_min_i->next->next; /* remove row from list */
     else
         prev_v_min_j->next = prev_v_min_j->next->next; /* remove column from list */
@@ -963,7 +958,7 @@ float cv::ximgproc::EMD(InputArray _sign1,
                      "Flow matrix size does not match signatures");
     }
 
-    DistFunc dfunc = 0;
+    DistFunc dfunc = nullptr;
     if (distType == DIST_USER)
     {
         if (!cost.empty())
@@ -971,12 +966,12 @@ float cv::ximgproc::EMD(InputArray _sign1,
             CV_CheckEQ(cost.type(), CV_32FC1, "Cost matrix must have type 32FC1");
             CV_CheckTrue(cost.rows == size1 && cost.cols == size2,
                          "Cost matrix size does not match signatures");
-            CV_CheckTrue(lowerBound == NULL,
+            CV_CheckTrue(lowerBound == nullptr,
                          "Lower boundary can not be calculated if the cost matrix is used");
         }
         else
         {
-            CV_CheckTrue(dfunc == NULL, "Dist function must be set if cost matrix is empty");
+            CV_CheckTrue(dfunc == nullptr, "Dist function must be set if cost matrix is empty");
         }
     }
     else
@@ -998,7 +993,7 @@ float cv::ximgproc::EMD(InputArray _sign1,
         return *lowerBound;
     }
     state.solve();
-    return (float)(state.calcFlow(_flow.needed() ? &flow : 0) / state.getWeight());
+    return static_cast<float>(state.calcFlow(_flow.needed() ? &flow : nullptr) / state.getWeight());
 }
 
 float cv::ximgproc::wrapperEMD(InputArray _sign1,

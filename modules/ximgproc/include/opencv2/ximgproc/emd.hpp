@@ -49,7 +49,7 @@ a flow from \f$i\f$ -th point of signature1 to \f$j\f$ -th point of signature2 .
  */
 CV_EXPORTS float EMD( InputArray signature1, InputArray signature2,
                       int distType, InputArray cost=noArray(),
-                      float* lowerBound = 0, OutputArray flow = noArray() );
+                      float* lowerBound = nullptr, OutputArray flow = noArray() );
 
 CV_EXPORTS_AS(EMD) float wrapperEMD( InputArray signature1, InputArray signature2,
                       int distType, InputArray cost=noArray(),
