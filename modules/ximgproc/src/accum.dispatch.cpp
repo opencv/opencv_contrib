@@ -17,4 +17,4 @@ DEF_ACC_FLT_FUNCS(32f, float, float)
 DEF_ACC_FLT_FUNCS(32f64f, float, double)
 DEF_ACC_FLT_FUNCS(64f, double, double)
 
-} //cv::hal
+} // namespace cv

@@ -51,40 +51,40 @@
 namespace cv
 {
 
-typedef void(*AccFunc)(const uchar*, uchar*, const uchar*, int, int);
-typedef void(*AccProdFunc)(const uchar*, const uchar*, uchar*, const uchar*, int, int);
-typedef void(*AccWFunc)(const uchar*, uchar*, const uchar*, int, int, double);
+using AccFunc = void(*)(const uchar*, uchar*, const uchar*, int, int);
+using AccProdFunc = void(*)(const uchar*, const uchar*, uchar*, const uchar*, int, int);
+using AccWFunc = void(*)(const uchar*, uchar*, const uchar*, int, int, double);
 
 static AccFunc accTab[CV_DEPTH_MAX] =
 {
-    (AccFunc)acc_8u32f, (AccFunc)acc_8u64f,
-    (AccFunc)acc_16u32f, (AccFunc)acc_16u64f,
-    (AccFunc)acc_32f, (AccFunc)acc_32f64f,
-    (AccFunc)acc_64f
+    reinterpret_cast<AccFunc>(acc_8u32f), reinterpret_cast<AccFunc>(acc_8u64f),
+    reinterpret_cast<AccFunc>(acc_16u32f), reinterpret_cast<AccFunc>(acc_16u64f),
+    reinterpret_cast<AccFunc>(acc_32f), reinterpret_cast<AccFunc>(acc_32f64f),
+    reinterpret_cast<AccFunc>(acc_64f)
 };
 
 static AccFunc accSqrTab[CV_DEPTH_MAX] =
 {
-    (AccFunc)accSqr_8u32f, (AccFunc)accSqr_8u64f,
-    (AccFunc)accSqr_16u32f, (AccFunc)accSqr_16u64f,
-    (AccFunc)accSqr_32f, (AccFunc)accSqr_32f64f,
-    (AccFunc)accSqr_64f
+    reinterpret_cast<AccFunc>(accSqr_8u32f), reinterpret_cast<AccFunc>(accSqr_8u64f),
+    reinterpret_cast<AccFunc>(accSqr_16u32f), reinterpret_cast<AccFunc>(accSqr_16u64f),
+    reinterpret_cast<AccFunc>(accSqr_32f), reinterpret_cast<AccFunc>(accSqr_32f64f),
+    reinterpret_cast<AccFunc>(accSqr_64f)
 };
 
 static AccProdFunc accProdTab[CV_DEPTH_MAX] =
 {
-    (AccProdFunc)accProd_8u32f, (AccProdFunc)accProd_8u64f,
-    (AccProdFunc)accProd_16u32f, (AccProdFunc)accProd_16u64f,
-    (AccProdFunc)accProd_32f, (AccProdFunc)accProd_32f64f,
-    (AccProdFunc)accProd_64f
+    reinterpret_cast<AccProdFunc>(accProd_8u32f), reinterpret_cast<AccProdFunc>(accProd_8u64f),
+    reinterpret_cast<AccProdFunc>(accProd_16u32f), reinterpret_cast<AccProdFunc>(accProd_16u64f),
+    reinterpret_cast<AccProdFunc>(accProd_32f), reinterpret_cast<AccProdFunc>(accProd_32f64f),
+    reinterpret_cast<AccProdFunc>(accProd_64f)
 };
 
 static AccWFunc accWTab[CV_DEPTH_MAX] =
 {
-    (AccWFunc)accW_8u32f, (AccWFunc)accW_8u64f,
-    (AccWFunc)accW_16u32f, (AccWFunc)accW_16u64f,
-    (AccWFunc)accW_32f, (AccWFunc)accW_32f64f,
-    (AccWFunc)accW_64f
+    reinterpret_cast<AccWFunc>(accW_8u32f), reinterpret_cast<AccWFunc>(accW_8u64f),
+    reinterpret_cast<AccWFunc>(accW_16u32f), reinterpret_cast<AccWFunc>(accW_16u64f),
+    reinterpret_cast<AccWFunc>(accW_32f), reinterpret_cast<AccWFunc>(accW_32f64f),
+    reinterpret_cast<AccWFunc>(accW_64f)
 };
 
 inline int getAccTabIdx(int sdepth, int ddepth)
@@ -157,7 +157,7 @@ static bool ocl_accumulate( InputArray _src, InputArray _src2, InputOutputArray 
         k.set(argidx, maskarg);
 
     size_t globalsize[2] = { (size_t)src.cols * cn / kercn, ((size_t)src.rows + rowsPerWI - 1) / rowsPerWI };
-    return k.run(2, globalsize, NULL, false);
+    return k.run(2, globalsize, nullptr, false);
 }
 
 #endif
@@ -250,8 +250,8 @@ void cv::ximgproc::accumulate( InputArray _src, InputOutputArray _dst, InputArra
 
 
     int fidx = getAccTabIdx(sdepth, ddepth);
-    AccFunc func = fidx >= 0 ? accTab[fidx] : 0;
-    CV_Assert( func != 0 );
+    AccFunc func = fidx >= 0 ? accTab[fidx] : nullptr;
+    CV_Assert( func != nullptr );
 
     const Mat* arrays[] = {&src, &dst, &mask, 0};
     uchar* ptrs[3] = {};
@@ -345,8 +345,8 @@ void cv::ximgproc::accumulateSquare( InputArray _src, InputOutputArray _dst, Inp
     Mat src = _src.getMat(), dst = _dst.getMat(), mask = _mask.getMat();
 
     int fidx = getAccTabIdx(sdepth, ddepth);
-    AccFunc func = fidx >= 0 ? accSqrTab[fidx] : 0;
-    CV_Assert( func != 0 );
+    AccFunc func = fidx >= 0 ? accSqrTab[fidx] : nullptr;
+    CV_Assert( func != nullptr );
 
     const Mat* arrays[] = {&src, &dst, &mask, 0};
     uchar* ptrs[3] = {};
@@ -448,8 +448,8 @@ void cv::ximgproc::accumulateProduct( InputArray _src1, InputArray _src2,
     Mat src1 = _src1.getMat(), src2 = _src2.getMat(), dst = _dst.getMat(), mask = _mask.getMat();
 
     int fidx = getAccTabIdx(sdepth, ddepth);
-    AccProdFunc func = fidx >= 0 ? accProdTab[fidx] : 0;
-    CV_Assert( func != 0 );
+    AccProdFunc func = fidx >= 0 ? accProdTab[fidx] : nullptr;
+    CV_Assert( func != nullptr );
 
     const Mat* arrays[] = {&src1, &src2, &dst, &mask, 0};
     uchar* ptrs[4] = {};
@@ -547,8 +547,8 @@ void cv::ximgproc::accumulateWeighted( InputArray _src, InputOutputArray _dst,
 
 
     int fidx = getAccTabIdx(sdepth, ddepth);
-    AccWFunc func = fidx >= 0 ? accWTab[fidx] : 0;
-    CV_Assert( func != 0 );
+    AccWFunc func = fidx >= 0 ? accWTab[fidx] : nullptr;
+    CV_Assert( func != nullptr );
 
     const Mat* arrays[] = {&src, &dst, &mask, 0};
     uchar* ptrs[3] = {};
