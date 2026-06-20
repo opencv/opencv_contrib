@@ -43,6 +43,20 @@ namespace cv {
                     /** @brief Graph Based Segmentation Algorithm.
                         The class implements the algorithm described in @cite PFF2004 .
                      */
+                    class CV_EXPORTS_W ChanVese : public Algorithm
+                    {
+                    public:
+                        CV_WRAP virtual void ProcessImage(InputArray src, OutputArray dst) = 0;
+                        CV_WRAP virtual void set_Lambda(float _lambda) = 0;
+                        CV_WRAP virtual void set_mu(float _mu) = 0;
+                        CV_WRAP virtual void set_v(float _v) = 0;
+                        CV_WRAP virtual void set_iterations(int iter) = 0;
+                        CV_WRAP virtual void set_dt(float _dt) = 0;
+                        virtual ~ChanVese() {}
+                    };
+                    CV_EXPORTS_W Ptr<ChanVese> createChanVese();
+                    CV_EXPORTS_W void ChanVeseInit(InputArray src, OutputArray dst, float Lambda=1.0f, float v=0.0f, float mu=0.3f, int iter=100, float dt=0.5f);
+
                     class CV_EXPORTS_W GraphSegmentation : public Algorithm {
                         public:
                             /** @brief Segment an image and store output in dst
