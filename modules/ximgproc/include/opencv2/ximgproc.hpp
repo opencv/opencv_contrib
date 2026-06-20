@@ -53,6 +53,7 @@
 #include "ximgproc/lsc.hpp"
 #include "ximgproc/paillou_filter.hpp"
 #include "ximgproc/fast_line_detector.hpp"
+#include "ximgproc/lsd.hpp"
 #include "ximgproc/deriche_filter.hpp"
 #include "ximgproc/peilin.hpp"
 #include "ximgproc/fourier_descriptors.hpp"
