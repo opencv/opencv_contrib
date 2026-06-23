@@ -74,10 +74,8 @@ typedef flann::SearchParams flann_SearchParams;
 typedef cv::dnn::DictValue LayerId;
 typedef cv::dnn::Backend dnn_Backend;
 typedef cv::dnn::Target dnn_Target;
-#if CV_VERSION_MAJOR > 4 || (CV_VERSION_MAJOR == 4 && CV_VERSION_MINOR >= 11)
 typedef cv::dnn::DataLayout dnn_DataLayout;
 typedef cv::dnn::ImagePaddingMode dnn_ImagePaddingMode;
-#endif
 #endif
 
 #ifdef HAVE_OPENCV_CALIB3D
