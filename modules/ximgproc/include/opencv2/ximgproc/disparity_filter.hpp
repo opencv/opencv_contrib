@@ -62,11 +62,14 @@ public:
     @param left_view left view of the original stereo-pair to guide the filtering process, 8-bit single-channel
     or three-channel image.
 
-    @param filtered_disparity_map output disparity map.
+    @param filtered_disparity_map output disparity map, single-channel CV_16S type,
+    with disparity values scaled by 16.
+
 
     @param disparity_map_right optional argument, some implementations might also use the disparity map
-    of the right view to compute confidence maps. If provided, it must be a single-channel CV_32F matrix,
-    otherwise a runtime assertion will fail.
+    of the right view to compute confidence maps. If provided, it must be a single-channel CV_16S matrix.
+    Disparity values are expected to be scaled by 16 (one-pixel disparity corresponds to the value of 16).  
+
 
     @param ROI region of the disparity map to filter. Optional, usually it should be set automatically.
 

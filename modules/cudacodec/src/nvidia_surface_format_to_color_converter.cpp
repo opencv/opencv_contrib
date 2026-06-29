@@ -126,7 +126,9 @@ void GetConstants(int iMatrix, float& wr, float& wb, int& black, int& white, int
     case cv::cudacodec::ColorSpaceStandard::BT2020C:
         wr = 0.2627f; wb = 0.0593f;
         // 10-bit only
-        black = 64 << 6; white = 940 << 6;
+        black <<= 8;
+        white <<= 8;
+        uvWhite <<= 8;
         max = (1 << 16) - 1;
         break;
     }
