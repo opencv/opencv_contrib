@@ -251,7 +251,7 @@ __device__ inline void store_uint8_vector<2u>(uint8_t *dest, const uint32_t *ptr
 {
     uchar2 uint8x2;
     uint8x2.x = static_cast<uint8_t>(ptr[0]);
-    uint8x2.y = static_cast<uint8_t>(ptr[0]);
+    uint8x2.y = static_cast<uint8_t>(ptr[1]);
     store_as<uchar2>(dest, uint8x2);
 }
 
@@ -1968,6 +1968,9 @@ __global__ void check_consistency_kernel(PtrStep<DST_T> d_leftDisp, const PtrSte
     const int j = blockIdx.x * blockDim.x + threadIdx.x;
     const int i = blockIdx.y * blockDim.y + threadIdx.y;
 
+    if (j >= width || i >= height)
+        return;
+
     // left-right consistency check, only on leftDisp, but could be done for rightDisp too
 
     SRC_T mask = d_left(i, j);
@@ -1988,7 +1991,7 @@ __global__ void check_consistency_kernel(PtrStep<DST_T> d_leftDisp, const PtrSte
 template <typename disp_type, typename image_type>
 void check_consistency(PtrStep<disp_type> d_left_disp, const PtrStep<disp_type> d_right_disp, const PtrStep<image_type> d_src_left, int width, int height, bool subpixel, Stream& _stream)
 {
-    const dim3 blocks(width / 16, height / 16);
+    const dim3 blocks(cudev::divUp(width, 16), cudev::divUp(height, 16));
     const dim3 threads(16, 16);
     cudaStream_t stream = cv::cuda::StreamAccessor::getStream(_stream);
 
