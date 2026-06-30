@@ -1043,5 +1043,97 @@ protected:
 
 TEST(CudaStereo_StereoSGM, regression) { CV_Cuda_StereoSGMTest test; test.safe_run(); }
 
+// Regression for the check_consistency launch-bounds fix.
+// Pre-fix, check_consistency launched dim3(width/16, height/16); integer
+// division floored away a right/bottom strip up to 15 px wide whenever the
+// image dimensions were not multiples of 16, leaving those pixels never
+// visited by check_consistency_kernel. This test feeds unrelated random
+// images of non-multiple-of-16 size into StereoSGM and verifies that the
+// previously-uncovered strip ends up with consistency-invalidated pixels
+// at a rate comparable to the main region. Pre-fix the strip rate is
+// near zero; with the fix it tracks the main region.
+PARAM_TEST_CASE(StereoSGM_NonAligned, cv::cuda::DeviceInfo, cv::Size, int)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int mode;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size    = GET_PARAM(1);
+        mode    = GET_PARAM(2);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(StereoSGM_NonAligned, ConsistencyCheckCoversWholeImage)
+{
+    ASSERT_TRUE(size.width % 16 != 0 || size.height % 16 != 0)
+        << "test setup error: chose an aligned size";
+
+    cv::Mat left_cpu(size, CV_8UC1);
+    cv::Mat right_cpu(size, CV_8UC1);
+    cv::RNG rng(0xC0FFEE);
+    rng.fill(left_cpu,  cv::RNG::UNIFORM, 0, 256);
+    rng.fill(right_cpu, cv::RNG::UNIFORM, 0, 256);
+
+    cv::cuda::GpuMat d_left, d_right, d_disp;
+    d_left.upload(left_cpu);
+    d_right.upload(right_cpu);
+
+    const int min_disp = 0;
+    const int ndisp    = 64;
+    cv::Ptr<cv::StereoMatcher> sgm = cv::cuda::createStereoSGM(min_disp, ndisp, 10, 120, 5, mode);
+    sgm->compute(d_left, d_right, d_disp);
+
+    ASSERT_EQ(d_disp.size(), size);
+    ASSERT_EQ(d_disp.type(), CV_16SC1);
+
+    cv::Mat disp;
+    d_disp.download(disp);
+
+    // Sentinel emitted by correctDisparityRange for INVALID_DISP pixels
+    // (subpixel = true is hard-wired in stereosgm.cpp):
+    //     invalid_disp_scaled = (min_disp - 1) * DISP_SCALE
+    const int16_t invalid_sentinel = static_cast<int16_t>(
+        (min_disp - 1) * cv::StereoMatcher::DISP_SCALE);
+
+    const int row_cutoff = (size.height / 16) * 16;
+    const int col_cutoff = (size.width  / 16) * 16;
+    int main_invalid = 0, main_total = 0;
+    int strip_invalid = 0, strip_total = 0;
+    for (int y = 0; y < size.height; ++y)
+    {
+        for (int x = 0; x < size.width; ++x)
+        {
+            const bool in_strip = (y >= row_cutoff) || (x >= col_cutoff);
+            const bool is_invalid = (disp.at<int16_t>(y, x) == invalid_sentinel);
+            if (in_strip) { ++strip_total; strip_invalid += is_invalid; }
+            else          { ++main_total;  main_invalid  += is_invalid; }
+        }
+    }
+
+    ASSERT_GT(strip_total, 0);
+
+    const double main_rate  = double(main_invalid)  / main_total;
+    const double strip_rate = double(strip_invalid) / strip_total;
+
+    EXPECT_GT(main_rate, 0.1)
+        << "random inputs failed to trigger consistency invalidations in main region";
+    EXPECT_GT(strip_rate, main_rate * 0.5)
+        << "strip invalidation rate (" << strip_rate
+        << ") much lower than main region rate (" << main_rate
+        << "); check_consistency likely failed to cover the right/bottom strip "
+        << "(rows >= " << row_cutoff << " or cols >= " << col_cutoff
+        << " for image " << size.width << "x" << size.height << ")";
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Stereo, StereoSGM_NonAligned, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(cv::Size(648, 488), cv::Size(320, 248)),
+    testing::Values(cv::cuda::StereoSGM::MODE_HH4, cv::cuda::StereoSGM::MODE_HH)));
+
 }} // namespace
 #endif // HAVE_CUDA
