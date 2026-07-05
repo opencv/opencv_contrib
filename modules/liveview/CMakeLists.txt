@@ -10,12 +10,24 @@ set(LIVEVIEW_VIDEO_ENCODER "AUTO" CACHE STRING "Video encoder backend (AUTO, OFF
 set_property(CACHE LIVEVIEW_VIDEO_ENCODER PROPERTY STRINGS AUTO OFF FFMPEG)
 string(TOUPPER "${LIVEVIEW_VIDEO_ENCODER}" LIVEVIEW_VIDEO_ENCODER)
 
+set(LIVEVIEW_WEBRTC "AUTO" CACHE STRING "WebRTC transport backend (AUTO, OFF, ON)")
+set_property(CACHE LIVEVIEW_WEBRTC PROPERTY STRINGS AUTO OFF ON)
+string(TOUPPER "${LIVEVIEW_WEBRTC}" LIVEVIEW_WEBRTC)
+
 set(LIVEVIEW_CIVETWEB_DIR "" CACHE PATH "CivetWeb prefix")
 set(LIVEVIEW_BOOST_DIR "" CACHE PATH "Boost prefix")
 
 find_package(PkgConfig QUIET)
 find_package(Threads QUIET)
 ocv_check_modules(FFMPEG libavcodec libavformat libavutil libswscale QUIET)
+if(PKG_CONFIG_FOUND)
+    pkg_check_modules(PC_GSTREAMER_WEBRTC QUIET IMPORTED_TARGET
+        gstreamer-webrtc-1.0
+        gstreamer-sdp-1.0
+        gstreamer-app-1.0
+        gstreamer-video-1.0
+    )
+endif()
 
 set(CIVETWEB_FOUND FALSE)
 if(PKG_CONFIG_FOUND)
@@ -82,6 +94,24 @@ elseif(NOT LIVEVIEW_VIDEO_ENCODER STREQUAL "OFF")
     message(FATAL_ERROR "LiveView: unknown LIVEVIEW_VIDEO_ENCODER='${LIVEVIEW_VIDEO_ENCODER}'")
 endif()
 
+set(LIVEVIEW_WEBRTC_ENABLED FALSE)
+if(LIVEVIEW_WEBRTC STREQUAL "ON")
+    if(NOT LIVEVIEW_VIDEO_ENCODER_ENABLED)
+        message(FATAL_ERROR "LiveView: LIVEVIEW_WEBRTC=ON requires an enabled video encoder backend.")
+    endif()
+    if(PC_GSTREAMER_WEBRTC_FOUND)
+        set(LIVEVIEW_WEBRTC_ENABLED TRUE)
+    else()
+        message(FATAL_ERROR "LiveView: LIVEVIEW_WEBRTC=ON requires GStreamer WebRTC development packages.")
+    endif()
+elseif(LIVEVIEW_WEBRTC STREQUAL "AUTO")
+    if(LIVEVIEW_VIDEO_ENCODER_ENABLED AND PC_GSTREAMER_WEBRTC_FOUND)
+        set(LIVEVIEW_WEBRTC_ENABLED TRUE)
+    endif()
+elseif(NOT LIVEVIEW_WEBRTC STREQUAL "OFF")
+    message(FATAL_ERROR "LiveView: unknown LIVEVIEW_WEBRTC='${LIVEVIEW_WEBRTC}'")
+endif()
+
 set(LIVEVIEW_HTTP_INCLUDES "")
 set(LIVEVIEW_HTTP_LIBS "")
 set(LIVEVIEW_HTTP_SOURCES "")
@@ -121,6 +151,9 @@ endif()
 if(LIVEVIEW_VIDEO_ENCODER_ENABLED)
     list(APPEND LIVEVIEW_DEFINES "HAVE_LIVEVIEW_VIDEO_ENCODER_FFMPEG")
 endif()
+if(LIVEVIEW_WEBRTC_ENABLED)
+    list(APPEND LIVEVIEW_DEFINES "HAVE_LIVEVIEW_WEBRTC_GSTREAMER")
+endif()
 
 if(LIVEVIEW_SELECTED_HTTP_BACKEND STREQUAL "MONGOOSE")
     target_sources(${the_module} PRIVATE ${LIVEVIEW_HTTP_SOURCES})
@@ -137,6 +170,9 @@ if(LIVEVIEW_VIDEO_ENCODER_ENABLED)
     target_compile_options(${the_module} PRIVATE ${FFMPEG_CFLAGS_OTHER})
     target_link_libraries(${the_module} PRIVATE ${FFMPEG_LIBRARIES})
 endif()
+if(LIVEVIEW_WEBRTC_ENABLED)
+    target_link_libraries(${the_module} PRIVATE PkgConfig::PC_GSTREAMER_WEBRTC)
+endif()
 target_compile_definitions(${the_module} PRIVATE ${LIVEVIEW_DEFINES})
 
 if(TARGET opencv_test_liveview)
@@ -148,6 +184,9 @@ if(TARGET opencv_test_liveview)
         "${CMAKE_CURRENT_SOURCE_DIR}/src/video_channel_encoder.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/video_encoder.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/video_encoder_ffmpeg.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc_manager.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc_session.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc_session_gstreamer.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/web_backend.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/web_backend_boost.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/web_backend_civetweb.cpp"
@@ -167,6 +206,9 @@ if(TARGET opencv_test_liveview)
         target_compile_options(opencv_test_liveview PRIVATE ${FFMPEG_CFLAGS_OTHER})
         target_link_libraries(opencv_test_liveview PRIVATE ${FFMPEG_LIBRARIES})
     endif()
+    if(LIVEVIEW_WEBRTC_ENABLED)
+        target_link_libraries(opencv_test_liveview PRIVATE PkgConfig::PC_GSTREAMER_WEBRTC)
+    endif()
     target_compile_definitions(opencv_test_liveview PRIVATE ${LIVEVIEW_DEFINES})
 endif()
 
@@ -180,13 +222,21 @@ if(BOOST_FOUND)
 endif()
 set(_yn_ffmpeg "NO")
 set(_yn_video "NO")
+set(_yn_gst_webrtc "NO")
+set(_yn_webrtc "NO")
 if(FFMPEG_FOUND)
     set(_yn_ffmpeg "YES")
 endif()
 if(LIVEVIEW_VIDEO_ENCODER_ENABLED)
     set(_yn_video "YES")
 endif()
-message(STATUS "\nLiveView configuration summary:\n  HTTP backend preference  : ${LIVEVIEW_HTTP_BACKEND}\n  HTTP backend selected    : ${LIVEVIEW_SELECTED_HTTP_BACKEND}\n  CivetWeb found           : ${_yn_civet}\n  Boost (Beast) found      : ${_yn_boost}\n  Video encoder preference : ${LIVEVIEW_VIDEO_ENCODER}\n  FFmpeg found             : ${_yn_ffmpeg}\n  Video encoder enabled    : ${_yn_video}\n")
+if(PC_GSTREAMER_WEBRTC_FOUND)
+    set(_yn_gst_webrtc "YES")
+endif()
+if(LIVEVIEW_WEBRTC_ENABLED)
+    set(_yn_webrtc "YES")
+endif()
+message(STATUS "\nLiveView configuration summary:\n  HTTP backend preference  : ${LIVEVIEW_HTTP_BACKEND}\n  HTTP backend selected    : ${LIVEVIEW_SELECTED_HTTP_BACKEND}\n  CivetWeb found           : ${_yn_civet}\n  Boost (Beast) found      : ${_yn_boost}\n  Video encoder preference : ${LIVEVIEW_VIDEO_ENCODER}\n  FFmpeg found             : ${_yn_ffmpeg}\n  Video encoder enabled    : ${_yn_video}\n  WebRTC preference        : ${LIVEVIEW_WEBRTC}\n  GStreamer WebRTC found   : ${_yn_gst_webrtc}\n  WebRTC enabled           : ${_yn_webrtc}\n")
 if(DEFINED _liveview_backend_warn)
     message(WARNING "${_liveview_backend_warn}")
 endif()

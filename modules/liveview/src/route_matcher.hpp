@@ -13,6 +13,9 @@ enum class RouteKind
     ChannelsJson,
     Snapshot,
     Mjpeg,
+    WebRtcViewer,
+    WebRtcOffer,
+    WebRtcCandidate,
     Unknown
 };
 

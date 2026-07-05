@@ -97,6 +97,21 @@ private:
         request.path = info && info->request_uri ? info->request_uri : "";
         if (info && info->query_string)
             request.path += "?" + String(info->query_string);
+        if (info && info->content_length > 0)
+        {
+            std::string body;
+            body.resize(static_cast<size_t>(info->content_length));
+            size_t offset = 0;
+            while (offset < body.size())
+            {
+                const int n = mg_read(conn, &body[0] + offset, body.size() - offset);
+                if (n <= 0)
+                    break;
+                offset += static_cast<size_t>(n);
+            }
+            body.resize(offset);
+            request.body = body.c_str();
+        }
         CivetResponse response(conn);
         if (self->handler_)
             self->handler_(request, response);

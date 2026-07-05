@@ -9,6 +9,8 @@
 #include "../src/video_channel_encoder.hpp"
 #include "../src/video_encoder.hpp"
 #include "../src/web_backend.hpp"
+#include "../src/webrtc_manager.hpp"
+#include "../src/webrtc_session.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -102,7 +104,8 @@ static cv::liveview::VideoEncoderParams testVideoParams(cv::liveview::VideoCodec
 
 #ifndef _WIN32
 static std::string httpRequest(int port, const std::string& method, const std::string& path,
-                               size_t maxBytes = 1024 * 1024, int timeoutMs = 2000)
+                               size_t maxBytes = 1024 * 1024, int timeoutMs = 2000,
+                               const std::string& body = std::string())
 {
     const int fd = ::socket(AF_INET, SOCK_STREAM, 0);
     CV_Assert(fd >= 0);
@@ -123,8 +126,12 @@ static std::string httpRequest(int port, const std::string& method, const std::s
                           "Host: 127.0.0.1\r\n"
                           "Connection: close\r\n";
     if (method != "GET")
-        request += "Content-Length: 0\r\n";
+    {
+        request += "Content-Type: application/json\r\n";
+        request += "Content-Length: " + std::to_string(body.size()) + "\r\n";
+    }
     request += "\r\n";
+    request += body;
     const char* out = request.data();
     size_t remaining = request.size();
     while (remaining > 0)
@@ -288,6 +295,17 @@ TEST(LiveView, VideoEncoderBuildFlagBehavior)
 #endif
 }
 
+TEST(LiveView, WebRtcBuildFlagBehavior)
+{
+#if defined(HAVE_LIVEVIEW_WEBRTC_GSTREAMER)
+    EXPECT_TRUE(cv::liveview::haveWebRtcBackend());
+    EXPECT_FALSE(cv::liveview::createWebRtcSession().empty());
+#else
+    EXPECT_FALSE(cv::liveview::haveWebRtcBackend());
+    EXPECT_THROW(cv::liveview::createWebRtcSession(), cv::Exception);
+#endif
+}
+
 TEST(LiveView, FfmpegVideoEncoderProducesAnnexBH264AccessUnits)
 {
 #if !defined(HAVE_LIVEVIEW_VIDEO_ENCODER_FFMPEG)
@@ -426,6 +444,18 @@ TEST(LiveView, RouteMatcherAndWritersAreDeterministic)
     route = cv::liveview::matchRoute("GET", "/stream/camera.mjpeg");
     EXPECT_EQ(cv::liveview::RouteKind::Mjpeg, route.kind);
 
+    route = cv::liveview::matchRoute("GET", "/webrtc/camera");
+    EXPECT_EQ(cv::liveview::RouteKind::WebRtcViewer, route.kind);
+    EXPECT_EQ("camera", route.channel);
+
+    route = cv::liveview::matchRoute("POST", "/webrtc/camera/offer");
+    EXPECT_EQ(cv::liveview::RouteKind::WebRtcOffer, route.kind);
+    EXPECT_EQ("camera", route.channel);
+
+    route = cv::liveview::matchRoute("POST", "/webrtc/session/s1/candidate");
+    EXPECT_EQ(cv::liveview::RouteKind::WebRtcCandidate, route.kind);
+    EXPECT_EQ("s1", route.channel);
+
     EXPECT_EQ(cv::liveview::RouteKind::Unknown, cv::liveview::matchRoute("POST", "/channels.json").kind);
     EXPECT_EQ(cv::liveview::RouteKind::Unknown, cv::liveview::matchRoute("GET", "/frame/../x.jpg").kind);
 
@@ -455,6 +485,13 @@ TEST(LiveView, WebBackendConformance)
             response.writeString("backend-ok\n");
             return;
         }
+        if (request.path == "/echo")
+        {
+            response.setStatus(200);
+            response.setHeader("Content-Type", "application/json");
+            response.writeString(request.body);
+            return;
+        }
         response.setStatus(404);
         response.setHeader("Content-Type", "text/plain");
         response.writeString("missing\n");
@@ -469,6 +506,10 @@ TEST(LiveView, WebBackendConformance)
 
     HttpResponse missing = makeResponse(httpRequest(backend->port(), "GET", "/missing"));
     EXPECT_EQ(404, missing.status);
+
+    HttpResponse echo = makeResponse(httpRequest(backend->port(), "POST", "/echo", 1024, 2000, "{\"x\":1}"));
+    EXPECT_EQ(200, echo.status);
+    EXPECT_EQ("{\"x\":1}", echo.body);
 
     backend->stop();
     EXPECT_FALSE(backend->isRunning());
@@ -493,7 +534,69 @@ TEST(LiveView, PublicServerLifecycleAndUrls)
     EXPECT_TRUE(server->url().empty());
 
     cv::Ptr<cv::liveview::Server> webrtcServer = cv::liveview::createServer("127.0.0.1", 0, true);
+#if defined(HAVE_LIVEVIEW_WEBRTC_GSTREAMER)
+    if (!cv::liveview::haveWebRtcBackend())
+        EXPECT_THROW(webrtcServer->start(), cv::Exception);
+    else
+    {
+        webrtcServer->start();
+        EXPECT_TRUE(webrtcServer->isRunning());
+        EXPECT_NE(cv::String::npos, webrtcServer->channelUrl("camera", cv::liveview::Transport::WebRTC).find("/webrtc/camera"));
+        EXPECT_NE(cv::String::npos, webrtcServer->channelUrl("camera", cv::liveview::Transport::Auto).find("/webrtc/camera"));
+        webrtcServer->stop();
+    }
+#else
     EXPECT_THROW(webrtcServer->start(), cv::Exception);
+#endif
+#endif
+}
+
+TEST(LiveView, WebRtcRoutesAndSignalingValidation)
+{
+#ifdef _WIN32
+    throw SkipTestException("LiveView WebRTC route tests use localhost sockets");
+#else
+#if !defined(HAVE_LIVEVIEW_WEBRTC_GSTREAMER)
+    throw SkipTestException("LiveView WebRTC support is disabled");
+#else
+    if (!cv::liveview::haveWebRtcBackend())
+        throw SkipTestException("LiveView WebRTC runtime elements are unavailable");
+
+    cv::Ptr<cv::liveview::Server> server = cv::liveview::createServer("127.0.0.1", 0, true);
+    server->start();
+    const int port = parsePort(server->url());
+
+    server->publish("camera", cv::Mat(120, 160, CV_8UC3, cv::Scalar(10, 120, 240)));
+
+    HttpResponse index = makeResponse(httpRequest(port, "GET", "/"));
+    EXPECT_EQ(200, index.status);
+    EXPECT_NE(std::string::npos, index.body.find("/webrtc/camera"));
+
+    HttpResponse viewer = makeResponse(httpRequest(port, "GET", "/webrtc/camera"));
+    EXPECT_EQ(200, viewer.status);
+    EXPECT_NE(std::string::npos, viewer.body.find("RTCPeerConnection"));
+    EXPECT_NE(std::string::npos, viewer.body.find("/webrtc/'+channel+'/offer"));
+
+    HttpResponse missing = makeResponse(httpRequest(port, "POST", "/webrtc/missing/offer", 4096, 2000,
+                                                    "{\"type\":\"offer\",\"sdp\":\"v=0\\r\\n\"}"));
+    EXPECT_EQ(404, missing.status);
+
+    HttpResponse bad = makeResponse(httpRequest(port, "POST", "/webrtc/camera/offer", 4096, 2000,
+                                                "{\"type\":\"answer\",\"sdp\":\"\"}"));
+    EXPECT_EQ(400, bad.status);
+    EXPECT_NE(std::string::npos, bad.body.find("expected JSON offer"));
+
+    HttpResponse badSdp = makeResponse(httpRequest(port, "POST", "/webrtc/camera/offer", 4096, 2000,
+                                                   "{\"type\":\"offer\",\"sdp\":\"v=0\\r\\n\"}"));
+    EXPECT_EQ(400, badSdp.status);
+    EXPECT_NE(std::string::npos, badSdp.body.find("video media section"));
+
+    HttpResponse candidate = makeResponse(httpRequest(port, "POST", "/webrtc/session/missing/candidate", 4096, 2000,
+                                                      "{\"candidate\":\"\",\"sdpMLineIndex\":0}"));
+    EXPECT_EQ(404, candidate.status);
+
+    server->stop();
+#endif
 #endif
 }
 

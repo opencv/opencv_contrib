@@ -4,6 +4,7 @@
 #include "mjpeg_writer.hpp"
 #include "route_matcher.hpp"
 #include "web_backend.hpp"
+#include "webrtc_manager.hpp"
 
 #include <sstream>
 
@@ -13,7 +14,8 @@ namespace liveview {
 struct Server::Impl
 {
     Impl()
-        : host("127.0.0.1"), port(0), enableWebRTC(false), store(80), backend(createWebBackend())
+        : host("127.0.0.1"), port(0), enableWebRTC(false), store(80),
+          backend(createWebBackend()), webrtc(store)
     {
     }
 
@@ -22,11 +24,12 @@ struct Server::Impl
     bool enableWebRTC;
     ChannelStore store;
     Ptr<WebBackend> backend;
+    WebRtcManager webrtc;
 
     void start()
     {
-        if (enableWebRTC)
-            CV_Error(Error::StsNotImplemented, "LiveView WebRTC transport is not implemented in Step 1");
+        if (enableWebRTC && !webrtc.isAvailable())
+            CV_Error(Error::StsNotImplemented, "LiveView WebRTC transport is not available in this build/runtime");
         backend->start(host, port, [this](const WebRequest& request, WebResponse& response) {
             handle(request, response);
         });
@@ -34,6 +37,7 @@ struct Server::Impl
 
     void stop()
     {
+        webrtc.stop();
         backend->stop();
     }
 
@@ -53,12 +57,19 @@ struct Server::Impl
     {
         if (!isValidChannelName(name))
             CV_Error(Error::StsBadArg, "Invalid LiveView channel name");
-        const Transport resolved = (transport == Transport::Auto) ? Transport::Mjpeg : transport;
+        const Transport resolved = (transport == Transport::Auto) ?
+            (enableWebRTC ? Transport::WebRTC : Transport::Mjpeg) : transport;
         if (resolved == Transport::Snapshot)
             return baseUrl() + "/frame/" + name + ".jpg";
         if (resolved == Transport::Mjpeg)
             return baseUrl() + "/stream/" + name + ".mjpeg";
-        CV_Error(Error::StsNotImplemented, "Requested LiveView transport is not implemented in Step 1");
+        if (resolved == Transport::WebRTC)
+        {
+            if (!enableWebRTC || !webrtc.isAvailable())
+                CV_Error(Error::StsNotImplemented, "Requested LiveView WebRTC transport is not available");
+            return baseUrl() + "/webrtc/" + name;
+        }
+        CV_Error(Error::StsBadArg, "Unknown LiveView transport");
     }
 
     String channelsJson() const
@@ -104,7 +115,10 @@ struct Server::Impl
                 os << infos[i].width << "x" << infos[i].height << " ";
                 os << htmlEscape(typeToString(infos[i].type)) << " ";
                 os << "<a href='/frame/" << n << ".jpg'>snapshot</a> ";
-                os << "<a href='/stream/" << n << ".mjpeg'>stream</a></li>";
+                os << "<a href='/stream/" << n << ".mjpeg'>stream</a> ";
+                if (enableWebRTC && webrtc.isAvailable())
+                    os << "<a href='/webrtc/" << n << "'>webrtc</a>";
+                os << "</li>";
             }
             os << "</ul>";
         }
@@ -123,7 +137,7 @@ struct Server::Impl
     void handle(const WebRequest& request, WebResponse& response)
     {
         const RouteMatch route = matchRoute(request.method, request.path);
-        if (request.method != "GET")
+        if (request.method != "GET" && route.kind != RouteKind::WebRtcOffer && route.kind != RouteKind::WebRtcCandidate)
         {
             sendBody(response, 405, "405 Method Not Allowed\n", "text/plain; charset=utf-8");
             return;
@@ -142,6 +156,38 @@ struct Server::Impl
         if (route.kind == RouteKind::Health)
         {
             sendBody(response, 200, "ok\n", "text/plain; charset=utf-8");
+            return;
+        }
+        if (route.kind == RouteKind::WebRtcViewer)
+        {
+            if (!enableWebRTC || !webrtc.isAvailable())
+            {
+                sendBody(response, 404, "404 Not Found\n", "text/plain; charset=utf-8");
+                return;
+            }
+            sendBody(response, 200, webrtc.viewerHtml(baseUrl(), route.channel), "text/html; charset=utf-8");
+            return;
+        }
+        if (route.kind == RouteKind::WebRtcOffer)
+        {
+            if (!enableWebRTC || !webrtc.isAvailable())
+            {
+                sendBody(response, 404, "404 Not Found\n", "text/plain; charset=utf-8");
+                return;
+            }
+            WebRtcSignalResult result = webrtc.createOfferAnswer(route.channel, request.body);
+            sendWebRtcSignal(response, result);
+            return;
+        }
+        if (route.kind == RouteKind::WebRtcCandidate)
+        {
+            if (!enableWebRTC || !webrtc.isAvailable())
+            {
+                sendBody(response, 404, "404 Not Found\n", "text/plain; charset=utf-8");
+                return;
+            }
+            WebRtcSignalResult result = webrtc.addCandidate(route.channel, request.body);
+            sendWebRtcSignal(response, result);
             return;
         }
         if (route.kind == RouteKind::Snapshot)
@@ -180,6 +226,20 @@ struct Server::Impl
         }
 
         sendBody(response, 404, "404 Not Found\n", "text/plain; charset=utf-8");
+    }
+
+    void sendWebRtcSignal(WebResponse& response, const WebRtcSignalResult& result) const
+    {
+        int status = 500;
+        if (result.status == WebRtcSignalStatus::Ok)
+            status = 200;
+        else if (result.status == WebRtcSignalStatus::BadRequest)
+            status = 400;
+        else if (result.status == WebRtcSignalStatus::NotFound)
+            status = 404;
+        else if (result.status == WebRtcSignalStatus::NotSupported)
+            status = 501;
+        sendBody(response, status, result.body + "\n", "application/json; charset=utf-8");
     }
 };
 

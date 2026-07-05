@@ -37,24 +37,39 @@ static bool extractChannel(const String& path, const String& prefix, const Strin
     return isValidChannelName(name);
 }
 
+static bool extractMiddle(const String& path, const String& prefix, const String& suffix, String& name)
+{
+    return extractChannel(path, prefix, suffix, name);
+}
+
 RouteMatch matchRoute(const String& method, const String& path)
 {
     RouteMatch out;
     out.kind = RouteKind::Unknown;
-    if (method != "GET")
-        return out;
     const size_t query = path.find('?');
     const String cleanPath = query == String::npos ? path : path.substr(0, query);
-    if (cleanPath == "/")
-        out.kind = RouteKind::Index;
-    else if (cleanPath == "/healthz")
-        out.kind = RouteKind::Health;
-    else if (cleanPath == "/channels.json")
-        out.kind = RouteKind::ChannelsJson;
-    else if (extractChannel(cleanPath, "/frame/", ".jpg", out.channel))
-        out.kind = RouteKind::Snapshot;
-    else if (extractChannel(cleanPath, "/stream/", ".mjpeg", out.channel))
-        out.kind = RouteKind::Mjpeg;
+    if (method == "GET")
+    {
+        if (cleanPath == "/")
+            out.kind = RouteKind::Index;
+        else if (cleanPath == "/healthz")
+            out.kind = RouteKind::Health;
+        else if (cleanPath == "/channels.json")
+            out.kind = RouteKind::ChannelsJson;
+        else if (extractChannel(cleanPath, "/frame/", ".jpg", out.channel))
+            out.kind = RouteKind::Snapshot;
+        else if (extractChannel(cleanPath, "/stream/", ".mjpeg", out.channel))
+            out.kind = RouteKind::Mjpeg;
+        else if (extractMiddle(cleanPath, "/webrtc/", "", out.channel))
+            out.kind = RouteKind::WebRtcViewer;
+    }
+    else if (method == "POST")
+    {
+        if (extractMiddle(cleanPath, "/webrtc/", "/offer", out.channel))
+            out.kind = RouteKind::WebRtcOffer;
+        else if (extractMiddle(cleanPath, "/webrtc/session/", "/candidate", out.channel))
+            out.kind = RouteKind::WebRtcCandidate;
+    }
     return out;
 }
 

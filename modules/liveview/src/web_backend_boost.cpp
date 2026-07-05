@@ -121,6 +121,7 @@ private:
         WebRequest request;
         request.method = req.method_string().to_string().c_str();
         request.path = req.target().to_string().c_str();
+        request.body = req.body().c_str();
         BeastResponse response(socket);
         if (handler_)
             handler_(request, response);

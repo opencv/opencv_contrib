@@ -14,6 +14,7 @@ struct WebRequest
 {
     String method;
     String path;
+    String body;
 };
 
 class WebResponse

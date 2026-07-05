@@ -117,6 +117,7 @@ private:
         request.path = mgToString(hm->uri);
         if (hm->query.len)
             request.path += "?" + mgToString(hm->query);
+        request.body = mgToString(hm->body);
         MongooseResponse response(c);
         if (self->handler_)
             self->handler_(request, response);
