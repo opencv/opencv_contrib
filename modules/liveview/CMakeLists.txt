@@ -65,7 +65,8 @@ if(NOT LIVEVIEW_HTTP_BACKEND STREQUAL "AUTO")
     elseif(LIVEVIEW_HTTP_BACKEND STREQUAL "MONGOOSE")
         set(LIVEVIEW_SELECTED_HTTP_BACKEND "MONGOOSE")
     else()
-        set(_liveview_backend_warn "LiveView: requested HTTP backend '${LIVEVIEW_HTTP_BACKEND}' is not available; falling back to AUTO.")
+        set(_liveview_backend_warn
+            "LiveView: requested HTTP backend '${LIVEVIEW_HTTP_BACKEND}' is not available; falling back to AUTO.")
     endif()
 endif()
 
@@ -84,7 +85,8 @@ if(LIVEVIEW_VIDEO_ENCODER STREQUAL "FFMPEG")
     if(FFMPEG_FOUND)
         set(LIVEVIEW_VIDEO_ENCODER_ENABLED TRUE)
     else()
-        message(FATAL_ERROR "LiveView: LIVEVIEW_VIDEO_ENCODER=FFMPEG requires libavcodec, libavformat, libavutil, and libswscale.")
+        message(FATAL_ERROR
+            "LiveView: LIVEVIEW_VIDEO_ENCODER=FFMPEG requires libavcodec, libavformat, libavutil, and libswscale.")
     endif()
 elseif(LIVEVIEW_VIDEO_ENCODER STREQUAL "AUTO")
     if(FFMPEG_FOUND)
@@ -236,7 +238,17 @@ endif()
 if(LIVEVIEW_WEBRTC_ENABLED)
     set(_yn_webrtc "YES")
 endif()
-message(STATUS "\nLiveView configuration summary:\n  HTTP backend preference  : ${LIVEVIEW_HTTP_BACKEND}\n  HTTP backend selected    : ${LIVEVIEW_SELECTED_HTTP_BACKEND}\n  CivetWeb found           : ${_yn_civet}\n  Boost (Beast) found      : ${_yn_boost}\n  Video encoder preference : ${LIVEVIEW_VIDEO_ENCODER}\n  FFmpeg found             : ${_yn_ffmpeg}\n  Video encoder enabled    : ${_yn_video}\n  WebRTC preference        : ${LIVEVIEW_WEBRTC}\n  GStreamer WebRTC found   : ${_yn_gst_webrtc}\n  WebRTC enabled           : ${_yn_webrtc}\n")
+message(STATUS "\nLiveView configuration summary:"
+               "\n  HTTP backend preference  : ${LIVEVIEW_HTTP_BACKEND}"
+               "\n  HTTP backend selected    : ${LIVEVIEW_SELECTED_HTTP_BACKEND}"
+               "\n  CivetWeb found           : ${_yn_civet}"
+               "\n  Boost (Beast) found      : ${_yn_boost}"
+               "\n  Video encoder preference : ${LIVEVIEW_VIDEO_ENCODER}"
+               "\n  FFmpeg found             : ${_yn_ffmpeg}"
+               "\n  Video encoder enabled    : ${_yn_video}"
+               "\n  WebRTC preference        : ${LIVEVIEW_WEBRTC}"
+               "\n  GStreamer WebRTC found   : ${_yn_gst_webrtc}"
+               "\n  WebRTC enabled           : ${_yn_webrtc}\n")
 if(DEFINED _liveview_backend_warn)
     message(WARNING "${_liveview_backend_warn}")
 endif()

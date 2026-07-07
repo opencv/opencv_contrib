@@ -1,16 +1,16 @@
 # LiveView
 
-The `liveview` module is a planned OpenCV contrib module for publishing named
-live visual outputs from running OpenCV applications.
+The `liveview` module publishes named live visual outputs from running OpenCV
+applications.
 
-The intended direction is a small public API centered on:
+The public API is centered on:
 
 ```cpp
-cv::liveview::Server view;
+cv::liveview::Server view("127.0.0.1", 0);
+view.start();
 view.publish("camera", frame);
 view.publish("edges", edges);
 ```
 
-This skeleton intentionally contains no transport implementation yet. The first
-development target is the core channel model, followed by HTTP snapshot/MJPEG
-viewing and an optional WebRTC transport for robotics and ROS2 demos.
+The module provides HTTP snapshot and MJPEG routes. WebRTC is available when the
+optional WebRTC build dependencies are enabled.

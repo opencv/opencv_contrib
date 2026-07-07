@@ -31,15 +31,10 @@ static bool extractChannel(const String& path, const String& prefix, const Strin
         return false;
     if (path.size() <= prefix.size() + suffix.size())
         return false;
-    if (path.rfind(suffix) != path.size() - suffix.size())
+    if (!suffix.empty() && path.rfind(suffix) != path.size() - suffix.size())
         return false;
     name = path.substr(prefix.size(), path.size() - prefix.size() - suffix.size());
     return isValidChannelName(name);
-}
-
-static bool extractMiddle(const String& path, const String& prefix, const String& suffix, String& name)
-{
-    return extractChannel(path, prefix, suffix, name);
 }
 
 RouteMatch matchRoute(const String& method, const String& path)
@@ -60,14 +55,14 @@ RouteMatch matchRoute(const String& method, const String& path)
             out.kind = RouteKind::Snapshot;
         else if (extractChannel(cleanPath, "/stream/", ".mjpeg", out.channel))
             out.kind = RouteKind::Mjpeg;
-        else if (extractMiddle(cleanPath, "/webrtc/", "", out.channel))
+        else if (extractChannel(cleanPath, "/webrtc/", "", out.channel))
             out.kind = RouteKind::WebRtcViewer;
     }
     else if (method == "POST")
     {
-        if (extractMiddle(cleanPath, "/webrtc/", "/offer", out.channel))
+        if (extractChannel(cleanPath, "/webrtc/", "/offer", out.channel))
             out.kind = RouteKind::WebRtcOffer;
-        else if (extractMiddle(cleanPath, "/webrtc/session/", "/candidate", out.channel))
+        else if (extractChannel(cleanPath, "/webrtc/session/", "/candidate", out.channel))
             out.kind = RouteKind::WebRtcCandidate;
     }
     return out;

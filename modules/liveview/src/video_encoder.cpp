@@ -23,7 +23,7 @@ void validateVideoEncoderParams(const VideoEncoderParams& params)
     if (params.gop <= 0)
         CV_Error(Error::StsBadArg, "LiveView video encoder GOP must be positive");
     if (params.preferredCodec != VideoCodec::H264 && params.preferredCodec != VideoCodec::VP8)
-        CV_Error(Error::StsBadArg, "LiveView video encoder supports H.264 and VP8 in Step 2");
+        CV_Error(Error::StsBadArg, "LiveView video encoder supports H.264 and VP8");
 }
 
 #if !defined(HAVE_LIVEVIEW_VIDEO_ENCODER_FFMPEG)

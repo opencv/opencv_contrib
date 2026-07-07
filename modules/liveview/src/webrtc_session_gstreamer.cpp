@@ -5,6 +5,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <thread>
 
@@ -113,13 +114,27 @@ static GstCaps* rtpCaps(VideoCodec codec)
     return NULL;
 }
 
+struct AnswerState
+{
+    ~AnswerState()
+    {
+        if (description)
+            gst_webrtc_session_description_free(description);
+    }
+
+    std::mutex mutex;
+    std::condition_variable updated;
+    bool ready = false;
+    GstWebRTCSessionDescription* description = NULL;
+};
+
 class GStreamerWebRtcSession CV_FINAL : public WebRtcSession
 {
 public:
     GStreamerWebRtcSession()
         : context_(NULL), loop_(NULL), pipeline_(NULL), appsrc_(NULL), parser_(NULL),
           pay_(NULL), webrtc_(NULL), codec_(VideoCodec::Unknown), fps_(30),
-          opened_(false), ptsNs_(0), answerReady_(false), answerOk_(false)
+          opened_(false), stopRequested_(false), ptsNs_(0)
     {
         static std::once_flag once;
         std::call_once(once, []() { gst_init(NULL, NULL); });
@@ -206,8 +221,12 @@ public:
         g_signal_connect(webrtc_, "on-ice-candidate",
                          G_CALLBACK(+[](GstElement*, guint, gchar*, gpointer) {}), this);
 
-        loopThread_ = std::thread(&GStreamerWebRtcSession::runLoop, this);
         opened_ = true;
+        {
+            std::lock_guard<std::mutex> lock(loopMutex_);
+            stopRequested_ = false;
+        }
+        loopThread_ = std::thread(&GStreamerWebRtcSession::runLoop, this);
         return true;
     }
 
@@ -237,49 +256,50 @@ public:
         gst_promise_unref(setPromise);
         gst_webrtc_session_description_free(desc);
 
-        answerReady_ = false;
-        answerOk_ = false;
-        answerSdp_.clear();
+        std::shared_ptr<AnswerState> state = std::make_shared<AnswerState>();
+        std::shared_ptr<AnswerState>* callbackState = new std::shared_ptr<AnswerState>(state);
         GstPromise* promise = gst_promise_new_with_change_func(
             +[](GstPromise* p, gpointer user) {
-                GStreamerWebRtcSession* self = static_cast<GStreamerWebRtcSession*>(user);
+                std::shared_ptr<AnswerState> callbackAnswerState =
+                    *static_cast<std::shared_ptr<AnswerState>*>(user);
+                delete static_cast<std::shared_ptr<AnswerState>*>(user);
                 const GstStructure* reply = gst_promise_get_reply(p);
                 GstWebRTCSessionDescription* local = NULL;
                 if (reply)
                     gst_structure_get(reply, "answer", GST_TYPE_WEBRTC_SESSION_DESCRIPTION, &local, NULL);
-                if (local)
                 {
-                    GstPromise* localPromise = gst_promise_new();
-                    g_signal_emit_by_name(self->webrtc_, "set-local-description", local, localPromise);
-                    gst_promise_wait(localPromise);
-                    gst_promise_unref(localPromise);
-                    gchar* sdpText = gst_sdp_message_as_text(local->sdp);
-                    {
-                        std::lock_guard<std::mutex> lock(self->answerMutex_);
-                        self->answerSdp_ = sdpText ? sdpText : "";
-                        self->answerOk_ = !self->answerSdp_.empty();
-                        self->answerReady_ = true;
-                    }
-                    g_free(sdpText);
-                    gst_webrtc_session_description_free(local);
+                    std::lock_guard<std::mutex> lock(callbackAnswerState->mutex);
+                    callbackAnswerState->description = local;
+                    callbackAnswerState->ready = true;
                 }
-                else
-                {
-                    std::lock_guard<std::mutex> lock(self->answerMutex_);
-                    self->answerOk_ = false;
-                    self->answerReady_ = true;
-                }
-                self->answerUpdated_.notify_all();
+                callbackAnswerState->updated.notify_all();
                 gst_promise_unref(p);
-            }, this, NULL);
+            }, callbackState, NULL);
         g_signal_emit_by_name(webrtc_, "create-answer", NULL, promise);
 
-        std::unique_lock<std::mutex> lock(answerMutex_);
-        answerUpdated_.wait_for(lock, std::chrono::seconds(2), [this]() { return answerReady_; });
-        if (!answerReady_ || !answerOk_)
+        GstWebRTCSessionDescription* local = NULL;
+        {
+            std::unique_lock<std::mutex> lock(state->mutex);
+            state->updated.wait_for(lock, std::chrono::seconds(2), [&state]() { return state->ready; });
+            if (!state->ready || !state->description)
+                return false;
+            local = state->description;
+            state->description = NULL;
+        }
+
+        GstPromise* localPromise = gst_promise_new();
+        g_signal_emit_by_name(webrtc_, "set-local-description", local, localPromise);
+        gst_promise_wait(localPromise);
+        gst_promise_unref(localPromise);
+
+        gchar* sdpText = gst_sdp_message_as_text(local->sdp);
+        String sdpAnswer = sdpText ? sdpText : "";
+        g_free(sdpText);
+        gst_webrtc_session_description_free(local);
+        if (sdpAnswer.empty())
             return false;
         answer.type = "answer";
-        answer.sdp = answerSdp_;
+        answer.sdp = sdpAnswer;
         return true;
     }
 
@@ -288,9 +308,11 @@ public:
         if (!opened_ || !webrtc_)
             return false;
         if (candidate.candidate.empty())
-            g_signal_emit_by_name(webrtc_, "add-ice-candidate", candidate.sdpMLineIndex, static_cast<const gchar*>(NULL));
+            g_signal_emit_by_name(webrtc_, "add-ice-candidate",
+                                  candidate.sdpMLineIndex, static_cast<const gchar*>(NULL));
         else
-            g_signal_emit_by_name(webrtc_, "add-ice-candidate", candidate.sdpMLineIndex, candidate.candidate.c_str());
+            g_signal_emit_by_name(webrtc_, "add-ice-candidate",
+                                  candidate.sdpMLineIndex, candidate.candidate.c_str());
         return true;
     }
 
@@ -326,8 +348,14 @@ public:
         opened_ = false;
         if (appsrc_)
             gst_app_src_end_of_stream(GST_APP_SRC(appsrc_));
-        if (loop_)
-            g_main_loop_quit(loop_);
+        {
+            std::unique_lock<std::mutex> lock(loopMutex_);
+            stopRequested_ = true;
+            if (loopThread_.joinable() && !loop_)
+                loopUpdated_.wait_for(lock, std::chrono::seconds(1), [this]() { return loop_ != NULL; });
+            if (loop_)
+                g_main_loop_quit(loop_);
+        }
         if (loopThread_.joinable())
             loopThread_.join();
         if (pipeline_)
@@ -342,7 +370,10 @@ public:
         if (context_)
             g_main_context_unref(context_);
         context_ = NULL;
-        loop_ = NULL;
+        {
+            std::lock_guard<std::mutex> lock(loopMutex_);
+            loop_ = NULL;
+        }
         ptsNs_ = 0;
     }
 
@@ -350,12 +381,24 @@ private:
     void runLoop()
     {
         g_main_context_push_thread_default(context_);
-        loop_ = g_main_loop_new(context_, FALSE);
+        GMainLoop* loop = g_main_loop_new(context_, FALSE);
+        bool stopRequested = false;
+        {
+            std::lock_guard<std::mutex> lock(loopMutex_);
+            loop_ = loop;
+            stopRequested = stopRequested_;
+        }
+        loopUpdated_.notify_all();
         gst_element_set_state(pipeline_, GST_STATE_PLAYING);
-        g_main_loop_run(loop_);
-        if (loop_)
-            g_main_loop_unref(loop_);
-        loop_ = NULL;
+        if (!stopRequested)
+            g_main_loop_run(loop);
+        {
+            std::lock_guard<std::mutex> lock(loopMutex_);
+            if (loop_ == loop)
+                loop_ = NULL;
+        }
+        loopUpdated_.notify_all();
+        g_main_loop_unref(loop);
         g_main_context_pop_thread_default(context_);
     }
 
@@ -369,13 +412,11 @@ private:
     VideoCodec codec_;
     int fps_;
     bool opened_;
+    bool stopRequested_;
     guint64 ptsNs_;
     std::thread loopThread_;
-    std::mutex answerMutex_;
-    std::condition_variable answerUpdated_;
-    bool answerReady_;
-    bool answerOk_;
-    String answerSdp_;
+    std::mutex loopMutex_;
+    std::condition_variable loopUpdated_;
 };
 
 } // namespace

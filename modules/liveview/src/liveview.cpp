@@ -99,7 +99,8 @@ struct Server::Impl
         std::ostringstream os;
         os << "<!doctype html><html><head><meta charset='utf-8'>";
         os << "<title>OpenCV LiveView</title>";
-        os << "<style>body{font-family:sans-serif;margin:24px}li{margin:8px 0}code{background:#eee;padding:2px 4px}</style>";
+        os << "<style>body{font-family:sans-serif;margin:24px}li{margin:8px 0}";
+        os << "code{background:#eee;padding:2px 4px}</style>";
         os << "</head><body><h1>OpenCV LiveView</h1>";
         if (infos.empty())
         {

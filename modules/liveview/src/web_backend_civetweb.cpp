@@ -2,6 +2,8 @@
 
 #include "web_backend.hpp"
 
+#include "mjpeg_writer.hpp"
+
 #include <civetweb.h>
 
 #include <cstdlib>
@@ -28,8 +30,8 @@ public:
     }
     void send()
     {
-        mg_printf(conn_, "HTTP/1.1 %d OK\r\n%sContent-Length: %zu\r\nConnection: close\r\n\r\n",
-                  status_, headers_.c_str(), body_.size());
+        mg_printf(conn_, "HTTP/1.1 %d %s\r\n%sContent-Length: %zu\r\nConnection: close\r\n\r\n",
+                  status_, httpStatusText(status_).c_str(), headers_.c_str(), body_.size());
         if (!body_.empty())
             mg_write(conn_, body_.data(), body_.size());
         mg_close_connection(conn_);

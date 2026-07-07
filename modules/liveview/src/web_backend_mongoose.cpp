@@ -2,6 +2,8 @@
 
 #include "web_backend.hpp"
 
+#include "mjpeg_writer.hpp"
+
 #include "mongoose.h"
 
 #include <atomic>
@@ -45,8 +47,7 @@ public:
         if (sent_)
             return;
         mg_printf(conn_, "HTTP/1.1 %d %s\r\n%sContent-Length: %zu\r\nConnection: close\r\n\r\n",
-                  status_, status_ == 200 ? "OK" : status_ == 404 ? "Not Found" : "Error",
-                  headers_.c_str(), body_.size());
+                  status_, httpStatusText(status_).c_str(), headers_.c_str(), body_.size());
         if (!body_.empty())
             mg_send(conn_, &body_[0], body_.size());
         conn_->is_draining = 1;

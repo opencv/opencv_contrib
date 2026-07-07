@@ -308,7 +308,9 @@ TEST(LiveView, WebRtcBuildFlagBehavior)
 
 TEST(LiveView, WebRtcJsonHelpers)
 {
-    const cv::String json = "{\"type\":\"offer\",\"sdp\":\"v=0\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96\\r\\n\",\"sdpMLineIndex\":2}";
+    const cv::String json =
+        "{\"type\":\"offer\",\"sdp\":\"v=0\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96\\r\\n\","
+        "\"sdpMLineIndex\":2}";
     EXPECT_EQ("offer", cv::liveview::extractJsonStringField(json, "type"));
     EXPECT_EQ("v=0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\n", cv::liveview::extractJsonStringField(json, "sdp"));
     EXPECT_TRUE(cv::liveview::extractJsonStringField(json, "missing").empty());
@@ -352,8 +354,10 @@ TEST(LiveView, FfmpegVideoEncoderProducesAnnexBH264AccessUnits)
     }
     EXPECT_TRUE(produced);
     EXPECT_TRUE(keyframe);
-    EXPECT_THROW(encoder->encode(cv::Mat(params.height, params.width, CV_32FC1, cv::Scalar(1)), 11, 11 * 33333), cv::Exception);
-    EXPECT_THROW(encoder->encode(cv::Mat(params.height + 2, params.width, CV_8UC3, cv::Scalar(1, 2, 3)), 12, 12 * 33333), cv::Exception);
+    EXPECT_THROW(encoder->encode(cv::Mat(params.height, params.width, CV_32FC1, cv::Scalar(1)),
+                                 11, 11 * 33333), cv::Exception);
+    EXPECT_THROW(encoder->encode(cv::Mat(params.height + 2, params.width, CV_8UC3,
+                                         cv::Scalar(1, 2, 3)), 12, 12 * 33333), cv::Exception);
     encoder->close();
     EXPECT_FALSE(encoder->isOpened());
     EXPECT_NO_THROW(encoder->open(params));
@@ -473,6 +477,7 @@ TEST(LiveView, RouteMatcherAndWritersAreDeterministic)
     EXPECT_EQ(cv::liveview::RouteKind::Unknown, cv::liveview::matchRoute("GET", "/frame/../x.jpg").kind);
 
     EXPECT_EQ("Not Found", cv::liveview::httpStatusText(404));
+    EXPECT_EQ("Not Implemented", cv::liveview::httpStatusText(501));
     const cv::String mjpeg = cv::liveview::mjpegPartHeader("boundary", 123);
     EXPECT_NE(cv::String::npos, mjpeg.find("--boundary\r\n"));
     EXPECT_NE(cv::String::npos, mjpeg.find("Content-Type: image/jpeg\r\n"));
@@ -548,7 +553,8 @@ TEST(LiveView, ServerRestartKeepsRoutesUsable)
     HttpResponse json = makeResponse(httpRequest(secondPort, "GET", "/channels.json"));
     EXPECT_EQ(200, json.status);
     EXPECT_NE(std::string::npos, json.body.find("\"name\":\"camera\""));
-    EXPECT_EQ("/stream/camera.mjpeg", server->channelUrl("camera", cv::liveview::Transport::Auto).substr(server->url().size() - 1));
+    EXPECT_EQ("/stream/camera.mjpeg",
+              server->channelUrl("camera", cv::liveview::Transport::Auto).substr(server->url().size() - 1));
     (void)firstPort;
     server->stop();
 #endif
@@ -557,14 +563,16 @@ TEST(LiveView, ServerRestartKeepsRoutesUsable)
 TEST(LiveView, PublicServerLifecycleAndUrls)
 {
 #ifdef _WIN32
-    throw SkipTestException("LiveView Step 1 HTTP server is not implemented on Windows");
+    throw SkipTestException("LiveView HTTP server tests use localhost sockets");
 #else
     cv::Ptr<cv::liveview::Server> server = cv::liveview::createServer("127.0.0.1", 0);
     server->start();
     EXPECT_TRUE(server->isRunning());
     EXPECT_NE(cv::String::npos, server->url().find("http://127.0.0.1:"));
-    EXPECT_EQ("/frame/camera.jpg", server->channelUrl("camera", cv::liveview::Transport::Snapshot).substr(server->url().size() - 1));
-    EXPECT_EQ("/stream/camera.mjpeg", server->channelUrl("camera", cv::liveview::Transport::Mjpeg).substr(server->url().size() - 1));
+    EXPECT_EQ("/frame/camera.jpg",
+              server->channelUrl("camera", cv::liveview::Transport::Snapshot).substr(server->url().size() - 1));
+    EXPECT_EQ("/stream/camera.mjpeg",
+              server->channelUrl("camera", cv::liveview::Transport::Mjpeg).substr(server->url().size() - 1));
     EXPECT_THROW(server->channelUrl("camera", cv::liveview::Transport::WebRTC), cv::Exception);
     EXPECT_THROW(server->channelUrl("bad/name", cv::liveview::Transport::Snapshot), cv::Exception);
     server->stop();
@@ -579,8 +587,10 @@ TEST(LiveView, PublicServerLifecycleAndUrls)
     {
         webrtcServer->start();
         EXPECT_TRUE(webrtcServer->isRunning());
-        EXPECT_NE(cv::String::npos, webrtcServer->channelUrl("camera", cv::liveview::Transport::WebRTC).find("/webrtc/camera"));
-        EXPECT_NE(cv::String::npos, webrtcServer->channelUrl("camera", cv::liveview::Transport::Auto).find("/webrtc/camera"));
+        EXPECT_NE(cv::String::npos,
+                  webrtcServer->channelUrl("camera", cv::liveview::Transport::WebRTC).find("/webrtc/camera"));
+        EXPECT_NE(cv::String::npos,
+                  webrtcServer->channelUrl("camera", cv::liveview::Transport::Auto).find("/webrtc/camera"));
         webrtcServer->stop();
     }
 #else
@@ -600,10 +610,12 @@ TEST(LiveView, WebRtcRoutesStayDisabledOnMjpegServer)
     server->publish("camera", cv::Mat(24, 32, CV_8UC3, cv::Scalar(10, 20, 30)));
 
     EXPECT_EQ(404, makeResponse(httpRequest(port, "GET", "/webrtc/camera")).status);
-    EXPECT_EQ(404, makeResponse(httpRequest(port, "POST", "/webrtc/camera/offer", 4096, 2000,
-                                            "{\"type\":\"offer\",\"sdp\":\"v=0\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96\\r\\n\"}")).status);
-    EXPECT_EQ(404, makeResponse(httpRequest(port, "POST", "/webrtc/session/s1/candidate", 4096, 2000,
-                                            "{\"candidate\":\"\",\"sdpMLineIndex\":0}")).status);
+    EXPECT_EQ(404,
+              makeResponse(httpRequest(port, "POST", "/webrtc/camera/offer", 4096, 2000,
+                  "{\"type\":\"offer\",\"sdp\":\"v=0\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96\\r\\n\"}")).status);
+    EXPECT_EQ(404,
+              makeResponse(httpRequest(port, "POST", "/webrtc/session/s1/candidate", 4096, 2000,
+                  "{\"candidate\":\"\",\"sdpMLineIndex\":0}")).status);
     EXPECT_EQ(405, makeResponse(httpRequest(port, "POST", "/frame/camera.jpg")).status);
 
     server->stop();
@@ -665,7 +677,7 @@ TEST(LiveView, WebRtcRoutesAndSignalingValidation)
 TEST(LiveView, HttpRoutesExposePublishedChannels)
 {
 #ifdef _WIN32
-    throw SkipTestException("LiveView Step 1 HTTP server is not implemented on Windows");
+    throw SkipTestException("LiveView HTTP route tests use localhost sockets");
 #else
     cv::Ptr<cv::liveview::Server> server = cv::liveview::createServer("127.0.0.1", 0);
     server->start();
@@ -709,7 +721,7 @@ TEST(LiveView, HttpRoutesExposePublishedChannels)
 TEST(LiveView, MjpegRouteStreamsMultipartFrames)
 {
 #ifdef _WIN32
-    throw SkipTestException("LiveView Step 1 HTTP server is not implemented on Windows");
+    throw SkipTestException("LiveView MJPEG route tests use localhost sockets");
 #else
     cv::Ptr<cv::liveview::Server> server = cv::liveview::createServer("127.0.0.1", 0);
     server->start();

@@ -8,7 +8,9 @@
 
 #include <atomic>
 #include <chrono>
+#include <mutex>
 #include <thread>
+#include <vector>
 
 namespace cv {
 namespace liveview {
@@ -83,6 +85,7 @@ public:
         io_.stop();
         if (thread_.joinable())
             thread_.join();
+        joinClientThreads();
         boundPort_ = 0;
     }
 
@@ -101,7 +104,8 @@ private:
             acceptor_.accept(socket, ec);
             if (!ec)
             {
-                std::thread(&BoostWebBackend::handleClient, this, std::move(socket)).detach();
+                std::lock_guard<std::mutex> lock(clientsMutex_);
+                clientThreads_.push_back(std::thread(&BoostWebBackend::handleClient, this, std::move(socket)));
             }
             else if (ec == asio::error::would_block || ec == asio::error::try_again)
             {
@@ -129,6 +133,20 @@ private:
         socket.shutdown(tcp::socket::shutdown_both, ec);
     }
 
+    void joinClientThreads()
+    {
+        std::vector<std::thread> threads;
+        {
+            std::lock_guard<std::mutex> lock(clientsMutex_);
+            threads.swap(clientThreads_);
+        }
+        for (size_t i = 0; i < threads.size(); ++i)
+        {
+            if (threads[i].joinable())
+                threads[i].join();
+        }
+    }
+
     String host_;
     asio::io_context io_;
     tcp::acceptor acceptor_;
@@ -136,6 +154,8 @@ private:
     std::atomic<bool> running_;
     int boundPort_;
     std::thread thread_;
+    std::mutex clientsMutex_;
+    std::vector<std::thread> clientThreads_;
 };
 
 } // namespace

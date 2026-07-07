@@ -23,7 +23,7 @@ void FrameEncoder::validate(InputArray frame) const
     if (type != CV_8UC1 && type != CV_8UC3 && type != CV_8UC4)
     {
         CV_Error(Error::StsUnsupportedFormat,
-                 "LiveView Step 1 supports only CV_8UC1, CV_8UC3, and CV_8UC4 frames");
+                 "LiveView supports only CV_8UC1, CV_8UC3, and CV_8UC4 frames");
     }
 }
 

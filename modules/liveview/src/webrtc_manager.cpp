@@ -166,9 +166,11 @@ String WebRtcManager::viewerHtml(const String& baseUrl, const String& channel) c
     os << "pc.ontrack=e=>{document.getElementById('v').srcObject=e.streams[0];status.textContent='connected';};";
     os << "pc.onconnectionstatechange=()=>{status.textContent=pc.connectionState;};";
     os << "async function waitIce(){if(pc.iceGatheringState==='complete')return;";
-    os << "await new Promise(r=>{pc.onicegatheringstatechange=()=>{if(pc.iceGatheringState==='complete')r();};setTimeout(r,1500);});}";
+    os << "await new Promise(r=>{pc.onicegatheringstatechange=()=>{";
+    os << "if(pc.iceGatheringState==='complete')r();};setTimeout(r,1500);});}";
     os << "(async()=>{const offer=await pc.createOffer();await pc.setLocalDescription(offer);await waitIce();";
-    os << "const res=await fetch('/webrtc/'+channel+'/offer',{method:'POST',headers:{'Content-Type':'application/json'},";
+    os << "const res=await fetch('/webrtc/'+channel+'/offer',{method:'POST',";
+    os << "headers:{'Content-Type':'application/json'},";
     os << "body:JSON.stringify({type:pc.localDescription.type,sdp:pc.localDescription.sdp})});";
     os << "if(!res.ok){status.textContent='signaling failed';return;}";
     os << "const ans=await res.json();await pc.setRemoteDescription({type:ans.type,sdp:ans.sdp});})();";
@@ -177,7 +179,8 @@ String WebRtcManager::viewerHtml(const String& baseUrl, const String& channel) c
     return os.str();
 }
 
-std::shared_ptr<WebRtcManager::ChannelRuntime> WebRtcManager::getOrCreateChannelLocked(const String& channel, const ChannelInfo& info)
+std::shared_ptr<WebRtcManager::ChannelRuntime>
+WebRtcManager::getOrCreateChannelLocked(const String& channel, const ChannelInfo& info)
 {
     std::map<String, std::shared_ptr<ChannelRuntime> >::iterator it = channels_.find(channel);
     if (it != channels_.end())
