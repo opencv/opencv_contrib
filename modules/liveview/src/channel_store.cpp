@@ -150,6 +150,7 @@ bool ChannelStore::getSnapshot(const String& name, ChannelSnapshot& out) const
 
     std::lock_guard<std::mutex> lock(state->mutex);
     out.info = state->info;
+    out.encodedSequence = state->encodedSequence;
     out.jpeg = state->jpeg;
     return !out.jpeg.empty();
 }
@@ -170,6 +171,7 @@ bool ChannelStore::waitForJpeg(const String& name, int64 afterSequence, int time
         return false;
 
     out.info = state->info;
+    out.encodedSequence = state->encodedSequence;
     out.jpeg = state->jpeg;
     return true;
 }

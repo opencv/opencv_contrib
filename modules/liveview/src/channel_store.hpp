@@ -15,6 +15,7 @@ namespace liveview {
 struct ChannelSnapshot
 {
     ChannelInfo info;
+    int64 encodedSequence = 0;
     std::vector<uchar> jpeg;
 };
 

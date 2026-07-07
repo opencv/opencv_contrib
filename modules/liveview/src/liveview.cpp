@@ -219,10 +219,24 @@ struct Server::Impl
             response.setStatus(200);
             response.setHeader("Content-Type", "multipart/x-mixed-replace; boundary=" + boundary);
             response.setHeader("Cache-Control", "no-store");
-            const String part = mjpegPartHeader(boundary, snapshot.jpeg.size());
-            response.writeString(part);
-            response.write(&snapshot.jpeg[0], snapshot.jpeg.size());
-            response.writeString("\r\n");
+            if (!response.startStream())
+                return;
+            int64 lastSequence = 0;
+            for (;;)
+            {
+                const String part = mjpegPartHeader(boundary, snapshot.jpeg.size());
+                if (!response.writeString(part) ||
+                    !response.write(&snapshot.jpeg[0], snapshot.jpeg.size()) ||
+                    !response.writeString("\r\n"))
+                    return;
+                lastSequence = snapshot.encodedSequence;
+                if (!store.waitForJpeg(route.channel, lastSequence, 1000, snapshot))
+                {
+                    if (!store.getSnapshot(route.channel, snapshot) ||
+                        snapshot.encodedSequence <= lastSequence)
+                        continue;
+                }
+            }
             return;
         }
 

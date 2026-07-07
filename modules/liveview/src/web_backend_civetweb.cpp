@@ -23,15 +23,29 @@ public:
     {
         headers_ += key + ": " + value + "\r\n";
     }
+    bool startStream() CV_OVERRIDE
+    {
+        if (sent_)
+            return true;
+        mg_printf(conn_, "HTTP/1.1 %d %s\r\n%sConnection: close\r\n\r\n",
+                  status_, httpStatusText(status_).c_str(), headers_.c_str());
+        sent_ = true;
+        return true;
+    }
     bool write(const void* data, size_t size) CV_OVERRIDE
     {
+        if (sent_)
+            return mg_write(conn_, data, size) == static_cast<int>(size);
         body_.append(static_cast<const char*>(data), size);
         return true;
     }
     void send()
     {
-        mg_printf(conn_, "HTTP/1.1 %d %s\r\n%sContent-Length: %zu\r\nConnection: close\r\n\r\n",
-                  status_, httpStatusText(status_).c_str(), headers_.c_str(), body_.size());
+        if (sent_)
+            return;
+        mg_printf(conn_, "HTTP/1.1 %d %s\r\n%sContent-Length: %lu\r\nConnection: close\r\n\r\n",
+                  status_, httpStatusText(status_).c_str(), headers_.c_str(),
+                  static_cast<unsigned long>(body_.size()));
         if (!body_.empty())
             mg_write(conn_, body_.data(), body_.size());
         mg_close_connection(conn_);
@@ -42,6 +56,7 @@ private:
     int status_ = 200;
     String headers_;
     std::string body_;
+    bool sent_ = false;
 };
 
 class CivetWebBackend : public WebBackend

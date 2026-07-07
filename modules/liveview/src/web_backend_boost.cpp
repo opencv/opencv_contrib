@@ -2,6 +2,8 @@
 
 #include "web_backend.hpp"
 
+#include "mjpeg_writer.hpp"
+
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -9,6 +11,7 @@
 #include <atomic>
 #include <chrono>
 #include <mutex>
+#include <sstream>
 #include <thread>
 #include <vector>
 
@@ -29,13 +32,36 @@ public:
     {
         headers_.push_back(std::make_pair(key, value));
     }
+    bool startStream() CV_OVERRIDE
+    {
+        if (sent_)
+            return true;
+        std::ostringstream os;
+        os << "HTTP/1.1 " << status_ << " " << httpStatusText(status_) << "\r\n";
+        for (size_t i = 0; i < headers_.size(); ++i)
+            os << headers_[i].first << ": " << headers_[i].second << "\r\n";
+        os << "Connection: close\r\n\r\n";
+        const std::string header = os.str();
+        boost::system::error_code ec;
+        asio::write(socket_, asio::buffer(header.data(), header.size()), ec);
+        sent_ = !ec;
+        return sent_;
+    }
     bool write(const void* data, size_t size) CV_OVERRIDE
     {
+        if (sent_)
+        {
+            boost::system::error_code ec;
+            asio::write(socket_, asio::buffer(data, size), ec);
+            return !ec;
+        }
         body_.append(static_cast<const char*>(data), size);
         return true;
     }
     void send()
     {
+        if (sent_)
+            return;
         http::response<http::string_body> res(static_cast<http::status>(status_), 11);
         for (size_t i = 0; i < headers_.size(); ++i)
             res.set(headers_[i].first.c_str(), headers_[i].second.c_str());
@@ -50,6 +76,7 @@ private:
     int status_ = 200;
     std::vector<std::pair<String, String> > headers_;
     std::string body_;
+    bool sent_ = false;
 };
 
 class BoostWebBackend : public WebBackend

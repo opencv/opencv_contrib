@@ -32,13 +32,22 @@ public:
     {
         headers_ += key + ": " + value + "\r\n";
     }
+    bool startStream() CV_OVERRIDE
+    {
+        if (sent_)
+            return true;
+        std::ostringstream os;
+        os << "HTTP/1.1 " << status_ << " " << httpStatusText(status_) << "\r\n";
+        os << headers_;
+        os << "Connection: close\r\n\r\n";
+        const String header = os.str();
+        sent_ = rawSend(header.data(), header.size());
+        return true;
+    }
     bool write(const void* data, size_t size) CV_OVERRIDE
     {
         if (sent_)
-        {
-            mg_send(conn_, data, size);
-            return true;
-        }
+            return rawSend(data, size);
         body_.insert(body_.end(), static_cast<const char*>(data), static_cast<const char*>(data) + size);
         return true;
     }
@@ -46,8 +55,9 @@ public:
     {
         if (sent_)
             return;
-        mg_printf(conn_, "HTTP/1.1 %d %s\r\n%sContent-Length: %zu\r\nConnection: close\r\n\r\n",
-                  status_, httpStatusText(status_).c_str(), headers_.c_str(), body_.size());
+        mg_printf(conn_, "HTTP/1.1 %d %s\r\n%sContent-Length: %lu\r\nConnection: close\r\n\r\n",
+                  status_, httpStatusText(status_).c_str(), headers_.c_str(),
+                  static_cast<unsigned long>(body_.size()));
         if (!body_.empty())
             mg_send(conn_, &body_[0], body_.size());
         conn_->is_draining = 1;
@@ -55,6 +65,20 @@ public:
     }
 
 private:
+    bool rawSend(const void* data, size_t size)
+    {
+        const char* ptr = static_cast<const char*>(data);
+        size_t sent = 0;
+        while (sent < size)
+        {
+            const long n = mg_io_send(conn_, ptr + sent, size - sent);
+            if (n <= 0)
+                return false;
+            sent += static_cast<size_t>(n);
+        }
+        return true;
+    }
+
     mg_connection* conn_;
     int status_ = 200;
     String headers_;

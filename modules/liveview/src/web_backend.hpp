@@ -23,6 +23,7 @@ public:
     virtual ~WebResponse() {}
     virtual void setStatus(int status) = 0;
     virtual void setHeader(const String& key, const String& value) = 0;
+    virtual bool startStream() = 0;
     virtual bool write(const void* data, size_t size) = 0;
     bool writeString(const String& text) { return write(text.data(), text.size()); }
 };

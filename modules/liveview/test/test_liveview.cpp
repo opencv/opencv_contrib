@@ -728,11 +728,24 @@ TEST(LiveView, MjpegRouteStreamsMultipartFrames)
     const int port = parsePort(server->url());
     server->publish("camera", cv::Mat(12, 16, CV_8UC3, cv::Scalar(20, 30, 40)));
 
+    std::thread publisher([&server]() {
+        for (int i = 0; i < 8; ++i)
+        {
+            server->publish("camera", cv::Mat(12, 16, CV_8UC3, cv::Scalar(20 + i, 30, 40)));
+            std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        }
+    });
     const std::string raw = httpRequest(port, "GET", "/stream/camera.mjpeg", 8192, 2000);
+    publisher.join();
     EXPECT_NE(std::string::npos, raw.find("HTTP/1.1 200 OK\r\n"));
     EXPECT_NE(std::string::npos, raw.find("multipart/x-mixed-replace; boundary=opencv-liveview-frame"));
     EXPECT_NE(std::string::npos, raw.find("--opencv-liveview-frame\r\n"));
     EXPECT_NE(std::string::npos, raw.find("Content-Type: image/jpeg\r\n"));
+    const std::string boundary = "--opencv-liveview-frame\r\n";
+    size_t count = 0;
+    for (size_t pos = raw.find(boundary); pos != std::string::npos; pos = raw.find(boundary, pos + 1))
+        ++count;
+    EXPECT_GE(count, 2u);
 
     EXPECT_EQ(404, makeResponse(httpRequest(port, "GET", "/stream/missing.mjpeg")).status);
 
