@@ -306,6 +306,19 @@ TEST(LiveView, WebRtcBuildFlagBehavior)
 #endif
 }
 
+TEST(LiveView, WebRtcJsonHelpers)
+{
+    const cv::String json = "{\"type\":\"offer\",\"sdp\":\"v=0\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96\\r\\n\",\"sdpMLineIndex\":2}";
+    EXPECT_EQ("offer", cv::liveview::extractJsonStringField(json, "type"));
+    EXPECT_EQ("v=0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\n", cv::liveview::extractJsonStringField(json, "sdp"));
+    EXPECT_TRUE(cv::liveview::extractJsonStringField(json, "missing").empty());
+
+    int value = -1;
+    EXPECT_TRUE(cv::liveview::extractJsonIntField(json, "sdpMLineIndex", value));
+    EXPECT_EQ(2, value);
+    EXPECT_FALSE(cv::liveview::extractJsonIntField(json, "missing", value));
+}
+
 TEST(LiveView, FfmpegVideoEncoderProducesAnnexBH264AccessUnits)
 {
 #if !defined(HAVE_LIVEVIEW_VIDEO_ENCODER_FFMPEG)
@@ -516,6 +529,31 @@ TEST(LiveView, WebBackendConformance)
 #endif
 }
 
+TEST(LiveView, ServerRestartKeepsRoutesUsable)
+{
+#ifdef _WIN32
+    throw SkipTestException("LiveView server restart tests use localhost sockets");
+#else
+    cv::Ptr<cv::liveview::Server> server = cv::liveview::createServer("127.0.0.1", 0);
+    server->start();
+    int firstPort = parsePort(server->url());
+    server->publish("camera", cv::Mat(12, 16, CV_8UC3, cv::Scalar(1, 2, 3)));
+    EXPECT_EQ(200, makeResponse(httpRequest(firstPort, "GET", "/healthz")).status);
+    server->stop();
+    EXPECT_FALSE(server->isRunning());
+
+    server->start();
+    const int secondPort = parsePort(server->url());
+    EXPECT_EQ(200, makeResponse(httpRequest(secondPort, "GET", "/healthz")).status);
+    HttpResponse json = makeResponse(httpRequest(secondPort, "GET", "/channels.json"));
+    EXPECT_EQ(200, json.status);
+    EXPECT_NE(std::string::npos, json.body.find("\"name\":\"camera\""));
+    EXPECT_EQ("/stream/camera.mjpeg", server->channelUrl("camera", cv::liveview::Transport::Auto).substr(server->url().size() - 1));
+    (void)firstPort;
+    server->stop();
+#endif
+}
+
 TEST(LiveView, PublicServerLifecycleAndUrls)
 {
 #ifdef _WIN32
@@ -548,6 +586,27 @@ TEST(LiveView, PublicServerLifecycleAndUrls)
 #else
     EXPECT_THROW(webrtcServer->start(), cv::Exception);
 #endif
+#endif
+}
+
+TEST(LiveView, WebRtcRoutesStayDisabledOnMjpegServer)
+{
+#ifdef _WIN32
+    throw SkipTestException("LiveView WebRTC disabled route tests use localhost sockets");
+#else
+    cv::Ptr<cv::liveview::Server> server = cv::liveview::createServer("127.0.0.1", 0, false);
+    server->start();
+    const int port = parsePort(server->url());
+    server->publish("camera", cv::Mat(24, 32, CV_8UC3, cv::Scalar(10, 20, 30)));
+
+    EXPECT_EQ(404, makeResponse(httpRequest(port, "GET", "/webrtc/camera")).status);
+    EXPECT_EQ(404, makeResponse(httpRequest(port, "POST", "/webrtc/camera/offer", 4096, 2000,
+                                            "{\"type\":\"offer\",\"sdp\":\"v=0\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96\\r\\n\"}")).status);
+    EXPECT_EQ(404, makeResponse(httpRequest(port, "POST", "/webrtc/session/s1/candidate", 4096, 2000,
+                                            "{\"candidate\":\"\",\"sdpMLineIndex\":0}")).status);
+    EXPECT_EQ(405, makeResponse(httpRequest(port, "POST", "/frame/camera.jpg")).status);
+
+    server->stop();
 #endif
 }
 
@@ -595,6 +654,9 @@ TEST(LiveView, WebRtcRoutesAndSignalingValidation)
                                                       "{\"candidate\":\"\",\"sdpMLineIndex\":0}"));
     EXPECT_EQ(404, candidate.status);
 
+    server->stop();
+    server->start();
+    EXPECT_EQ(200, makeResponse(httpRequest(parsePort(server->url()), "GET", "/healthz")).status);
     server->stop();
 #endif
 #endif
