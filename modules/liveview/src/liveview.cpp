@@ -30,6 +30,7 @@ struct Server::Impl
     {
         if (enableWebRTC && !webrtc.isAvailable())
             CV_Error(Error::StsNotImplemented, "LiveView WebRTC transport is not available in this build/runtime");
+        store.start();
         backend->start(host, port, [this](const WebRequest& request, WebResponse& response) {
             handle(request, response);
         });
@@ -38,6 +39,7 @@ struct Server::Impl
     void stop()
     {
         webrtc.stop();
+        store.stop();
         backend->stop();
     }
 
@@ -224,6 +226,8 @@ struct Server::Impl
             int64 lastSequence = 0;
             for (;;)
             {
+                if (store.isStopping())
+                    return;
                 const String part = mjpegPartHeader(boundary, snapshot.jpeg.size());
                 if (!response.writeString(part) ||
                     !response.write(&snapshot.jpeg[0], snapshot.jpeg.size()) ||
@@ -232,6 +236,8 @@ struct Server::Impl
                 lastSequence = snapshot.encodedSequence;
                 if (!store.waitForJpeg(route.channel, lastSequence, 1000, snapshot))
                 {
+                    if (store.isStopping())
+                        return;
                     if (!store.getSnapshot(route.channel, snapshot) ||
                         snapshot.encodedSequence <= lastSequence)
                         continue;

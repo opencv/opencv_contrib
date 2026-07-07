@@ -3,6 +3,7 @@
 
 #include "opencv2/liveview.hpp"
 
+#include <atomic>
 #include <condition_variable>
 #include <map>
 #include <memory>
@@ -31,6 +32,9 @@ public:
     explicit ChannelStore(int jpegQuality = 80);
     ~ChannelStore();
 
+    void start();
+    void stop();
+    bool isStopping() const;
     void publish(const String& name, InputArray frame);
     std::vector<ChannelInfo> channels() const;
     bool getRawFrame(const String& name, RawFrameSnapshot& out) const;
@@ -47,7 +51,7 @@ private:
     std::shared_ptr<ChannelState> nextDirty();
 
     int jpegQuality_;
-    bool stopping_;
+    std::atomic<bool> stopping_;
     std::condition_variable dirty_;
     std::thread encoderThread_;
     mutable std::mutex mutex_;

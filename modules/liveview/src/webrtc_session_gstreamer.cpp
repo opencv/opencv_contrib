@@ -5,6 +5,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -227,6 +228,10 @@ public:
             stopRequested_ = false;
         }
         loopThread_ = std::thread(&GStreamerWebRtcSession::runLoop, this);
+        {
+            std::unique_lock<std::mutex> lock(loopMutex_);
+            loopUpdated_.wait_for(lock, std::chrono::seconds(1), [this]() { return loop_ != NULL; });
+        }
         return true;
     }
 
@@ -250,11 +255,17 @@ public:
         }
 
         GstWebRTCSessionDescription* desc = gst_webrtc_session_description_new(toGstSdpType(offer.type), sdp);
-        GstPromise* setPromise = gst_promise_new();
-        g_signal_emit_by_name(webrtc_, "set-remote-description", desc, setPromise);
-        gst_promise_wait(setPromise);
-        gst_promise_unref(setPromise);
+        bool remoteSet = false;
+        invokeOnContext([this, desc, &remoteSet]() {
+            GstPromise* setPromise = gst_promise_new();
+            g_signal_emit_by_name(webrtc_, "set-remote-description", desc, setPromise);
+            gst_promise_wait(setPromise);
+            gst_promise_unref(setPromise);
+            remoteSet = true;
+        });
         gst_webrtc_session_description_free(desc);
+        if (!remoteSet)
+            return false;
 
         std::shared_ptr<AnswerState> state = std::make_shared<AnswerState>();
         std::shared_ptr<AnswerState>* callbackState = new std::shared_ptr<AnswerState>(state);
@@ -275,7 +286,9 @@ public:
                 callbackAnswerState->updated.notify_all();
                 gst_promise_unref(p);
             }, callbackState, NULL);
-        g_signal_emit_by_name(webrtc_, "create-answer", NULL, promise);
+        invokeOnContext([this, promise]() {
+            g_signal_emit_by_name(webrtc_, "create-answer", NULL, promise);
+        });
 
         GstWebRTCSessionDescription* local = NULL;
         {
@@ -287,10 +300,19 @@ public:
             state->description = NULL;
         }
 
-        GstPromise* localPromise = gst_promise_new();
-        g_signal_emit_by_name(webrtc_, "set-local-description", local, localPromise);
-        gst_promise_wait(localPromise);
-        gst_promise_unref(localPromise);
+        bool localSet = false;
+        invokeOnContext([this, local, &localSet]() {
+            GstPromise* localPromise = gst_promise_new();
+            g_signal_emit_by_name(webrtc_, "set-local-description", local, localPromise);
+            gst_promise_wait(localPromise);
+            gst_promise_unref(localPromise);
+            localSet = true;
+        });
+        if (!localSet)
+        {
+            gst_webrtc_session_description_free(local);
+            return false;
+        }
 
         gchar* sdpText = gst_sdp_message_as_text(local->sdp);
         String sdpAnswer = sdpText ? sdpText : "";
@@ -307,12 +329,15 @@ public:
     {
         if (!opened_ || !webrtc_)
             return false;
-        if (candidate.candidate.empty())
-            g_signal_emit_by_name(webrtc_, "add-ice-candidate",
-                                  candidate.sdpMLineIndex, static_cast<const gchar*>(NULL));
-        else
-            g_signal_emit_by_name(webrtc_, "add-ice-candidate",
-                                  candidate.sdpMLineIndex, candidate.candidate.c_str());
+        const String candidateText = candidate.candidate;
+        invokeOnContext([this, candidate, candidateText]() {
+            if (candidateText.empty())
+                g_signal_emit_by_name(webrtc_, "add-ice-candidate",
+                                      candidate.sdpMLineIndex, static_cast<const gchar*>(NULL));
+            else
+                g_signal_emit_by_name(webrtc_, "add-ice-candidate",
+                                      candidate.sdpMLineIndex, candidateText.c_str());
+        });
         return true;
     }
 
@@ -378,6 +403,38 @@ public:
     }
 
 private:
+    void invokeOnContext(const std::function<void()>& fn)
+    {
+        if (!context_)
+            return;
+        struct Task
+        {
+            explicit Task(const std::function<void()>& f) : fn(f), done(false) {}
+            std::function<void()> fn;
+            std::mutex mutex;
+            std::condition_variable updated;
+            bool done;
+        };
+        std::shared_ptr<Task> task = std::make_shared<Task>(fn);
+        std::shared_ptr<Task>* user = new std::shared_ptr<Task>(task);
+        g_main_context_invoke(context_,
+                              +[](gpointer data) -> gboolean {
+                                  std::shared_ptr<Task> callbackTask =
+                                      *static_cast<std::shared_ptr<Task>*>(data);
+                                  delete static_cast<std::shared_ptr<Task>*>(data);
+                                  callbackTask->fn();
+                                  {
+                                      std::lock_guard<std::mutex> lock(callbackTask->mutex);
+                                      callbackTask->done = true;
+                                  }
+                                  callbackTask->updated.notify_all();
+                                  return G_SOURCE_REMOVE;
+                              },
+                              user);
+        std::unique_lock<std::mutex> lock(task->mutex);
+        task->updated.wait_for(lock, std::chrono::seconds(3), [&task]() { return task->done; });
+    }
+
     void runLoop()
     {
         g_main_context_push_thread_default(context_);

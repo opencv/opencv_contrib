@@ -29,7 +29,7 @@ static VideoEncoderParams paramsForChannel(const ChannelInfo& info)
     params.fps = 30;
     params.bitrate = 2000000;
     params.gop = 30;
-    params.preferredCodec = VideoCodec::H264;
+    params.preferredCodec = VideoCodec::VP8;
     return params;
 }
 
@@ -45,11 +45,12 @@ static bool containsVideoMediaSection(const String& sdp)
 struct WebRtcManager::ChannelRuntime
 {
     explicit ChannelRuntime(ChannelStore& store, const String& channel, const VideoEncoderParams& params)
-        : encoder(store, channel, params), refs(0)
+        : encoder(store, channel, params), codec(params.preferredCodec), refs(0)
     {
     }
 
     VideoChannelEncoder encoder;
+    VideoCodec codec;
     int refs;
 };
 
@@ -246,7 +247,7 @@ WebRtcSignalResult WebRtcManager::createOfferAnswer(const String& channel, const
             runtime->channelRuntime->refs++;
         }
 
-        if (!runtime->session->open(VideoCodec::H264, 30))
+        if (!runtime->session->open(runtime->channelRuntime->codec, 30))
             CV_Error(Error::StsError, "failed to open WebRTC session");
 
         WebRtcAnswer answer;

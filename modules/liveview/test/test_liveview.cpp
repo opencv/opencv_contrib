@@ -12,6 +12,7 @@
 #include "../src/webrtc_manager.hpp"
 #include "../src/webrtc_session.hpp"
 
+#include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -555,6 +556,9 @@ TEST(LiveView, ServerRestartKeepsRoutesUsable)
     EXPECT_NE(std::string::npos, json.body.find("\"name\":\"camera\""));
     EXPECT_EQ("/stream/camera.mjpeg",
               server->channelUrl("camera", cv::liveview::Transport::Auto).substr(server->url().size() - 1));
+    server->publish("camera", cv::Mat(12, 16, CV_8UC3, cv::Scalar(4, 5, 6)));
+    HttpResponse jpeg = makeResponse(httpRequest(secondPort, "GET", "/frame/camera.jpg"));
+    EXPECT_EQ(200, jpeg.status);
     (void)firstPort;
     server->stop();
 #endif
@@ -666,6 +670,39 @@ TEST(LiveView, WebRtcRoutesAndSignalingValidation)
                                                       "{\"candidate\":\"\",\"sdpMLineIndex\":0}"));
     EXPECT_EQ(404, candidate.status);
 
+    const cv::String validOfferSdp =
+        "v=0\r\n"
+        "o=- 4611733051604659121 2 IN IP4 127.0.0.1\r\n"
+        "s=-\r\n"
+        "t=0 0\r\n"
+        "a=group:BUNDLE 0\r\n"
+        "a=extmap-allow-mixed\r\n"
+        "a=msid-semantic: WMS\r\n"
+        "m=video 9 UDP/TLS/RTP/SAVPF 96\r\n"
+        "c=IN IP4 0.0.0.0\r\n"
+        "a=rtcp:9 IN IP4 0.0.0.0\r\n"
+        "a=ice-ufrag:test\r\n"
+        "a=ice-pwd:abcdefghijklmnopqrstuvwxyz123456\r\n"
+        "a=ice-options:trickle\r\n"
+        "a=fingerprint:sha-256 "
+        "12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:"
+        "12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF\r\n"
+        "a=setup:actpass\r\n"
+        "a=mid:0\r\n"
+        "a=recvonly\r\n"
+        "a=rtcp-mux\r\n"
+        "a=rtcp-rsize\r\n"
+        "a=rtpmap:96 VP8/90000\r\n"
+        "a=rtcp-fb:96 nack pli\r\n"
+        "a=rtcp-fb:96 ccm fir\r\n";
+    const std::string validOffer =
+        "{\"type\":\"offer\",\"sdp\":\"" + cv::liveview::jsonEscape(validOfferSdp) + "\"}";
+    HttpResponse answer = makeResponse(httpRequest(port, "POST", "/webrtc/camera/offer", 65536, 5000, validOffer));
+    EXPECT_EQ(200, answer.status);
+    EXPECT_NE(std::string::npos, answer.body.find("\"type\":\"answer\""));
+    EXPECT_NE(std::string::npos, answer.body.find("VP8/90000"));
+    EXPECT_NE(std::string::npos, answer.body.find("sendonly"));
+
     server->stop();
     server->start();
     EXPECT_EQ(200, makeResponse(httpRequest(parsePort(server->url()), "GET", "/healthz")).status);
@@ -715,6 +752,68 @@ TEST(LiveView, HttpRoutesExposePublishedChannels)
     EXPECT_EQ(404, makeResponse(httpRequest(port, "GET", "/unknown")).status);
 
     server->stop();
+#endif
+}
+
+TEST(LiveView, ChannelStoreWaitsUnblockOnStop)
+{
+    cv::liveview::ChannelStore store;
+    store.publish("camera", cv::Mat(12, 16, CV_8UC3, cv::Scalar(20, 30, 40)));
+    cv::liveview::ChannelSnapshot snapshot;
+    ASSERT_TRUE(store.waitForJpeg("camera", 0, 2000, snapshot));
+
+    std::atomic<bool> returned(false);
+    std::thread waiter([&store, &returned, &snapshot]() {
+        EXPECT_FALSE(store.waitForJpeg("camera", snapshot.encodedSequence, 5000, snapshot));
+        returned = true;
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    store.stop();
+    waiter.join();
+    EXPECT_TRUE(returned.load());
+    EXPECT_TRUE(store.isStopping());
+}
+
+TEST(LiveView, ChannelStoreRawWaitUnblocksOnStop)
+{
+    cv::liveview::ChannelStore store;
+    store.publish("camera", cv::Mat(12, 16, CV_8UC3, cv::Scalar(20, 30, 40)));
+    cv::liveview::RawFrameSnapshot snapshot;
+    ASSERT_TRUE(store.waitForRawFrame("camera", 0, 2000, snapshot));
+
+    std::atomic<bool> returned(false);
+    std::thread waiter([&store, &returned, &snapshot]() {
+        EXPECT_FALSE(store.waitForRawFrame("camera", snapshot.info.sequence, 5000, snapshot));
+        returned = true;
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    store.stop();
+    waiter.join();
+    EXPECT_TRUE(returned.load());
+}
+
+TEST(LiveView, ServerStopTerminatesActiveMjpegStream)
+{
+#ifdef _WIN32
+    throw SkipTestException("LiveView MJPEG route tests use localhost sockets");
+#else
+    cv::Ptr<cv::liveview::Server> server = cv::liveview::createServer("127.0.0.1", 0);
+    server->start();
+    const int port = parsePort(server->url());
+    server->publish("camera", cv::Mat(12, 16, CV_8UC3, cv::Scalar(20, 30, 40)));
+
+    std::atomic<bool> requestReturned(false);
+    std::string raw;
+    std::thread client([port, &raw, &requestReturned]() {
+        raw = httpRequest(port, "GET", "/stream/camera.mjpeg", 8192, 5000);
+        requestReturned = true;
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    server->stop();
+    client.join();
+    EXPECT_TRUE(requestReturned.load());
+    EXPECT_NE(std::string::npos, raw.find("HTTP/1.1 200 OK\r\n"));
+    EXPECT_NE(std::string::npos, raw.find("--opencv-liveview-frame\r\n"));
 #endif
 }
 

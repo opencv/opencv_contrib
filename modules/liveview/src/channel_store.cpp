@@ -21,20 +21,49 @@ struct ChannelStore::ChannelState
 };
 
 ChannelStore::ChannelStore(int jpegQuality)
-    : jpegQuality_(jpegQuality), stopping_(false)
+    : jpegQuality_(jpegQuality), stopping_(true)
 {
-    encoderThread_ = std::thread(&ChannelStore::encoderLoop, this);
+    start();
 }
 
 ChannelStore::~ChannelStore()
 {
+    stop();
+}
+
+void ChannelStore::stop()
+{
+    if (stopping_.exchange(true))
+        return;
+    dirty_.notify_all();
+    std::vector<std::shared_ptr<ChannelState> > states;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        stopping_ = true;
+        for (std::map<String, std::shared_ptr<ChannelState> >::const_iterator it = channels_.begin();
+             it != channels_.end(); ++it)
+            states.push_back(it->second);
     }
-    dirty_.notify_all();
+    for (size_t i = 0; i < states.size(); ++i)
+    {
+        states[i]->updated.notify_all();
+        states[i]->rawUpdated.notify_all();
+    }
     if (encoderThread_.joinable())
         encoderThread_.join();
+}
+
+void ChannelStore::start()
+{
+    bool expected = true;
+    if (!stopping_.compare_exchange_strong(expected, false))
+        return;
+    if (!encoderThread_.joinable())
+        encoderThread_ = std::thread(&ChannelStore::encoderLoop, this);
+}
+
+bool ChannelStore::isStopping() const
+{
+    return stopping_.load();
 }
 
 std::shared_ptr<ChannelStore::ChannelState> ChannelStore::getOrCreateLocked(const String& name)
@@ -71,6 +100,8 @@ void ChannelStore::publish(const String& name, InputArray frame)
     std::shared_ptr<ChannelState> state;
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        if (stopping_)
+            CV_Error(Error::StsError, "LiveView channel store is stopping");
         state = getOrCreateLocked(name);
     }
 
@@ -131,10 +162,12 @@ bool ChannelStore::waitForRawFrame(const String& name, int64 afterSequence, int 
     std::unique_lock<std::mutex> lock(state->mutex);
     if (state->info.sequence <= afterSequence)
     {
-        state->rawUpdated.wait_for(lock, std::chrono::milliseconds(timeoutMs));
+        state->rawUpdated.wait_for(lock, std::chrono::milliseconds(timeoutMs), [this, &state, afterSequence]() {
+            return stopping_.load() || state->info.sequence > afterSequence;
+        });
     }
 
-    if (state->info.sequence <= afterSequence || state->pending.empty())
+    if (stopping_.load() || state->info.sequence <= afterSequence || state->pending.empty())
         return false;
 
     out.info = state->info;
@@ -164,10 +197,12 @@ bool ChannelStore::waitForJpeg(const String& name, int64 afterSequence, int time
     std::unique_lock<std::mutex> lock(state->mutex);
     if (state->encodedSequence <= afterSequence)
     {
-        state->updated.wait_for(lock, std::chrono::milliseconds(timeoutMs));
+        state->updated.wait_for(lock, std::chrono::milliseconds(timeoutMs), [this, &state, afterSequence]() {
+            return stopping_.load() || state->encodedSequence > afterSequence;
+        });
     }
 
-    if (state->encodedSequence <= afterSequence || state->jpeg.empty())
+    if (stopping_.load() || state->encodedSequence <= afterSequence || state->jpeg.empty())
         return false;
 
     out.info = state->info;
@@ -198,10 +233,10 @@ void ChannelStore::encoderLoop()
         if (!state)
         {
             std::unique_lock<std::mutex> lock(mutex_);
-            if (stopping_)
+            if (stopping_.load())
                 return;
             dirty_.wait_for(lock, std::chrono::milliseconds(50));
-            if (stopping_)
+            if (stopping_.load())
                 return;
             continue;
         }
