@@ -12,8 +12,8 @@ namespace opencv_test { namespace {
 
 typedef perf::TestBaseWithParam<tuple<tuple<string,string,int>, string> > dnn_superres;
 
-#define MODEL testing::Values(tuple<string,string,int> {"espcn","ESPCN_x2.pb",2}, \
-                                tuple<string,string,int> {"lapsrn","LapSRN_x4.pb",4})
+#define MODEL testing::Values(tuple<string,string,int> {"espcn","ESPCN_x2.onnx",2}, \
+                                tuple<string,string,int> {"lapsrn","LapSRN_x4.onnx",4})
 #define IMAGES testing::Values("cv/dnn_superres/butterfly.png", "cv/shared/baboon.png", "cv/shared/lena.png")
 
 const string TEST_DIR = "cv/dnn_superres";
