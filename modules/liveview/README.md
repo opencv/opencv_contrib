@@ -303,16 +303,14 @@ LIVEVIEW_WEBRTC=AUTO|OFF|ON
 WebRTC requires the video encoder path and GStreamer WebRTC development
 packages. When WebRTC is disabled, snapshot and MJPEG remain available.
 
-## Testing Boundaries
+## Tests
 
-Integrated OpenCV tests live in:
+The module test target exercises the server, route handling, channel storage,
+encoding paths, transport negotiation, viewer accounting, and Python session
+helpers.
 
 ```text
 modules/liveview/test/
 ```
 
-They must remain deterministic and must not require webcams, browsers, Jupyter,
-ROS2, external services, or non-local networks.
-
-Development-only browser, notebook, camera, and ROS2 validation belongs outside
-the module test target, under the repository's devtest area.
+These tests use local synthetic frames and localhost HTTP requests.
