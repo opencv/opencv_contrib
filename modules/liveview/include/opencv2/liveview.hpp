@@ -42,6 +42,12 @@ public:
 
     CV_WRAP void publish(const String& name, InputArray frame);
     CV_WRAP std::vector<ChannelInfo> channels() const;
+    CV_WRAP int viewerCount(const String& name = String()) const;
+    CV_WRAP bool hasViewers() const;
+    CV_WRAP bool hasEverHadViewer() const;
+    CV_WRAP int64 lastViewerConnectedTick() const;
+    CV_WRAP int64 lastViewerDisconnectedTick() const;
+    CV_WRAP int64 lastViewerActivityTick() const;
 
 private:
     struct Impl;

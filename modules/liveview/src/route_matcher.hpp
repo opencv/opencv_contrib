@@ -16,6 +16,7 @@ enum class RouteKind
     WebRtcViewer,
     WebRtcOffer,
     WebRtcCandidate,
+    WebRtcClose,
     Unknown
 };
 

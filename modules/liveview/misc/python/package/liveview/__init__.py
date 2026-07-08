@@ -51,6 +51,15 @@ def _normalize_fps(fps):
     return value
 
 
+def _normalize_timeout(value, name):
+    if value is None or value is False:
+        return None
+    result = float(value)
+    if result < 0:
+        raise ValueError("{} must be non-negative".format(name))
+    return result
+
+
 def _normalize_public_url(url, public_host):
     if not public_host:
         return url
@@ -104,7 +113,8 @@ def _display_html(body):
 
 class LiveViewSession:
     def __init__(self, server, feed, name, mode, transport, fps, public_host,
-                 source_id, on_close=None):
+                 source_id, on_close=None, close_when_idle=True,
+                 idle_timeout=3.0, connect_timeout=30.0):
         self.name = name
         self.mode = mode
         self.transport = transport
@@ -117,6 +127,9 @@ class LiveViewSession:
         self._feed = feed
         self._source_id = source_id
         self._on_close = on_close
+        self._close_when_idle = bool(close_when_idle)
+        self._idle_timeout = _normalize_timeout(idle_timeout, "idle_timeout")
+        self._connect_timeout = _normalize_timeout(connect_timeout, "connect_timeout")
         self._closed = threading.Event()
         self._ready = threading.Event()
         self._lock = threading.Lock()
@@ -126,6 +139,12 @@ class LiveViewSession:
                                         name="OpenCVLiveViewPump",
                                         daemon=True)
         self._thread.start()
+        self._monitor_thread = None
+        if self._close_when_idle:
+            self._monitor_thread = threading.Thread(target=self._monitor_idle,
+                                                    name="OpenCVLiveViewIdleMonitor",
+                                                    daemon=True)
+            self._monitor_thread.start()
 
     @property
     def id(self):
@@ -228,8 +247,12 @@ class LiveViewSession:
                 return
             self.state = "closing"
         self._closed.set()
+        self._ready.set()
         if self._thread.is_alive():
             self._thread.join(timeout)
+        if (self._monitor_thread is not None and self._monitor_thread.is_alive() and
+                threading.current_thread() is not self._monitor_thread):
+            self._monitor_thread.join(timeout)
         try:
             self._server.stop()
         finally:
@@ -294,6 +317,58 @@ class LiveViewSession:
         with self._lock:
             self._channels.add(name)
 
+    def _viewer_count(self):
+        if hasattr(self._server, "viewerCount"):
+            try:
+                return int(self._server.viewerCount(self.name))
+            except TypeError:
+                return int(self._server.viewerCount())
+        return 0
+
+    def _has_ever_had_viewer(self):
+        if hasattr(self._server, "hasEverHadViewer"):
+            return bool(self._server.hasEverHadViewer())
+        if hasattr(self._server, "lastViewerConnectedTick"):
+            return int(self._server.lastViewerConnectedTick()) > 0
+        return self._viewer_count() > 0
+
+    def _monitor_idle(self):
+        if not self._ready.wait(self._connect_timeout):
+            if not self._closed.is_set():
+                self.diagnostics.append("closed before first frame timeout")
+                self.close()
+            return
+
+        ready_at = time.monotonic()
+        idle_since = None
+        while not self._closed.is_set():
+            if self._error is not None:
+                return
+            try:
+                viewers = self._viewer_count()
+                ever_connected = self._has_ever_had_viewer()
+            except Exception as exc:
+                self.diagnostics.append("viewer monitor failed: {}".format(exc))
+                self._closed.wait(0.25)
+                continue
+
+            now = time.monotonic()
+            if viewers > 0:
+                idle_since = None
+            elif ever_connected:
+                if idle_since is None:
+                    idle_since = now
+                if self._idle_timeout is not None and now - idle_since >= self._idle_timeout:
+                    self.diagnostics.append("closed after LiveView viewer idle timeout")
+                    self.close()
+                    return
+            elif self._connect_timeout is not None and now - ready_at >= self._connect_timeout:
+                self.diagnostics.append("closed after LiveView viewer connect timeout")
+                self.close()
+                return
+
+            self._closed.wait(0.1)
+
 
 def _replace_existing(source_id, replace, reuse, mode):
     with _ACTIVE_LOCK:
@@ -309,7 +384,8 @@ def _replace_existing(source_id, replace, reuse, mode):
 
 
 def _start_session(feed, name, mode, fps, host, public_host, port, replace,
-                   reuse, display, wait, timeout, source_id, on_close):
+                   reuse, display, wait, timeout, source_id, on_close,
+                   close_when_idle, idle_timeout, connect_timeout):
     if not callable(feed):
         raise TypeError("feed must be callable")
     resolved_mode = _normalize_mode(mode)
@@ -329,7 +405,10 @@ def _start_session(feed, name, mode, fps, host, public_host, port, replace,
                               fps=_normalize_fps(fps),
                               public_host=public_host,
                               source_id=source,
-                              on_close=on_close)
+                              on_close=on_close,
+                              close_when_idle=close_when_idle,
+                              idle_timeout=idle_timeout,
+                              connect_timeout=connect_timeout)
     with _ACTIVE_LOCK:
         _ACTIVE_SESSIONS[source] = session
     if wait:
@@ -345,7 +424,8 @@ def _start_session(feed, name, mode, fps, host, public_host, port, replace,
 
 def show(feed, name="view", mode="auto", fps="auto", host="127.0.0.1",
          public_host=None, port=0, replace=True, reuse=False, show=True,
-         wait=True, timeout=5.0, source_id=None, on_close=None):
+         wait=True, timeout=5.0, source_id=None, on_close=None,
+         close_when_idle=True, idle_timeout=3.0, connect_timeout=30.0):
     return _start_session(feed=feed,
                           name=name,
                           mode=mode,
@@ -359,12 +439,16 @@ def show(feed, name="view", mode="auto", fps="auto", host="127.0.0.1",
                           wait=wait,
                           timeout=timeout,
                           source_id=source_id,
-                          on_close=on_close)
+                          on_close=on_close,
+                          close_when_idle=close_when_idle,
+                          idle_timeout=idle_timeout,
+                          connect_timeout=connect_timeout)
 
 
 def camera(device=0, transform=None, name="camera", mode="auto", fps="auto",
            host="127.0.0.1", public_host=None, port=0, replace=True,
-           reuse=False, show=True, wait=True, timeout=5.0):
+           reuse=False, show=True, wait=True, timeout=5.0,
+           close_when_idle=True, idle_timeout=3.0, connect_timeout=30.0):
     cap = cv.VideoCapture(device)
     if not cap.isOpened():
         cap.release()
@@ -391,7 +475,10 @@ def camera(device=0, transform=None, name="camera", mode="auto", fps="auto",
                           wait=wait,
                           timeout=timeout,
                           source_id="camera:{}".format(device),
-                          on_close=cap.release)
+                          on_close=cap.release,
+                          close_when_idle=close_when_idle,
+                          idle_timeout=idle_timeout,
+                          connect_timeout=connect_timeout)
 
 
 def sessions():

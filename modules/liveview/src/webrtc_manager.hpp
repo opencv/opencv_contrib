@@ -2,6 +2,7 @@
 #define OPENCV_LIVEVIEW_WEBRTC_MANAGER_HPP
 
 #include "channel_store.hpp"
+#include "viewer_registry.hpp"
 #include "video_channel_encoder.hpp"
 #include "webrtc_session.hpp"
 
@@ -32,13 +33,14 @@ struct WebRtcSignalResult
 class WebRtcManager
 {
 public:
-    explicit WebRtcManager(ChannelStore& store);
+    WebRtcManager(ChannelStore& store, ViewerRegistry& viewers);
     ~WebRtcManager();
 
     bool isAvailable() const;
     String viewerHtml(const String& baseUrl, const String& channel) const;
     WebRtcSignalResult createOfferAnswer(const String& channel, const String& requestBody);
     WebRtcSignalResult addCandidate(const String& sessionId, const String& requestBody);
+    WebRtcSignalResult closeSession(const String& sessionId);
     void stop();
 
 private:
@@ -47,8 +49,10 @@ private:
 
     std::shared_ptr<ChannelRuntime> getOrCreateChannelLocked(const String& channel, const ChannelInfo& info);
     void sessionPump(const std::shared_ptr<SessionRuntime>& session);
+    void releaseSession(const std::shared_ptr<SessionRuntime>& session);
 
     ChannelStore& store_;
+    ViewerRegistry& viewers_;
     mutable std::mutex mutex_;
     int nextSessionId_;
     std::atomic<bool> stopping_;

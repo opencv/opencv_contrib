@@ -20,6 +20,11 @@ class FakeServer:
         self.enable_webrtc = enable_webrtc
         self.running = False
         self.published = []
+        self.viewers = {}
+        self.ever_viewer = False
+        self.last_connected = 0
+        self.last_disconnected = 0
+        self.last_activity = 0
         self.lock = threading.Lock()
 
     def start(self):
@@ -34,6 +39,47 @@ class FakeServer:
     def publish(self, name, frame):
         with self.lock:
             self.published.append((name, np.array(frame).copy()))
+
+    def viewerCount(self, name=""):
+        with self.lock:
+            if not name:
+                return sum(self.viewers.values())
+            return self.viewers.get(name, 0)
+
+    def hasViewers(self):
+        return self.viewerCount() > 0
+
+    def hasEverHadViewer(self):
+        with self.lock:
+            return self.ever_viewer
+
+    def lastViewerConnectedTick(self):
+        with self.lock:
+            return self.last_connected
+
+    def lastViewerDisconnectedTick(self):
+        with self.lock:
+            return self.last_disconnected
+
+    def lastViewerActivityTick(self):
+        with self.lock:
+            return self.last_activity
+
+    def connect_viewer(self, name):
+        with self.lock:
+            self.viewers[name] = self.viewers.get(name, 0) + 1
+            self.ever_viewer = True
+            self.last_connected += 1
+            self.last_activity += 1
+
+    def disconnect_viewer(self, name):
+        with self.lock:
+            if self.viewers.get(name, 0) > 1:
+                self.viewers[name] -= 1
+            else:
+                self.viewers.pop(name, None)
+            self.last_disconnected += 1
+            self.last_activity += 1
 
 
 class FakeLiveView:
@@ -109,7 +155,7 @@ class LiveViewFeederTests(unittest.TestCase):
             return np.full((2, 3, 3), counter["value"], np.uint8)
 
         session = lv.show(feed, name="overlay", mode="mjpeg", show=False,
-                          wait=True, fps=60)
+                          wait=True, fps=60, close_when_idle=False)
         self.assertEqual("ready", session.state)
         self.assertIn("overlay", session.channels)
         self.assertEqual("frames:overlay", session.source)
@@ -131,7 +177,8 @@ class LiveViewFeederTests(unittest.TestCase):
                 "mask": np.ones((2, 3), np.uint8),
             }
 
-        session = lv.show(feed, name="raw", mode="mjpeg", show=False, wait=True)
+        session = lv.show(feed, name="raw", mode="mjpeg", show=False,
+                          wait=True, close_when_idle=False)
         session.close()
         published = [name for name, _ in fake_cv.liveview.servers[0].published]
         self.assertIn("raw", published)
@@ -149,7 +196,7 @@ class LiveViewFeederTests(unittest.TestCase):
             return np.zeros((2, 3, 3), np.uint8)
 
         session = lv.show(feed, name="delayed", mode="mjpeg", show=False,
-                          wait=True, fps=100, timeout=2)
+                          wait=True, fps=100, timeout=2, close_when_idle=False)
         self.assertEqual("ready", session.state)
         self.assertGreaterEqual(counter["value"], 3)
         session.close()
@@ -168,9 +215,11 @@ class LiveViewFeederTests(unittest.TestCase):
         lv, fake_cv = load_liveview_module()
 
         first = lv.show(lambda: np.zeros((2, 3, 3), np.uint8),
-                        name="same", mode="mjpeg", show=False, wait=True)
+                        name="same", mode="mjpeg", show=False, wait=True,
+                        close_when_idle=False)
         second = lv.show(lambda: np.ones((2, 3, 3), np.uint8),
-                         name="same", mode="mjpeg", show=False, wait=True)
+                         name="same", mode="mjpeg", show=False, wait=True,
+                         close_when_idle=False)
         self.assertEqual("closed", first.state)
         self.assertEqual("ready", second.state)
         self.assertEqual(2, len(fake_cv.liveview.servers))
@@ -181,7 +230,8 @@ class LiveViewFeederTests(unittest.TestCase):
         fake_cv.liveview.fail_webrtc = True
 
         session = lv.show(lambda: np.zeros((2, 3, 3), np.uint8),
-                          name="auto", mode="auto", show=False, wait=True)
+                          name="auto", mode="auto", show=False, wait=True,
+                          close_when_idle=False)
         self.assertEqual("mjpeg", session.transport)
         self.assertFalse(fake_cv.liveview.servers[0].enable_webrtc)
         session.close()
@@ -191,7 +241,7 @@ class LiveViewFeederTests(unittest.TestCase):
 
         session = lv.show(lambda: np.zeros((2, 3, 3), np.uint8),
                           name="html", mode="mjpeg", show=False, wait=True,
-                          public_host="192.168.50.253")
+                          public_host="192.168.50.253", close_when_idle=False)
         body = session.html()
         self.assertIn("LiveView html", body)
         self.assertIn("<img", body)
@@ -203,7 +253,8 @@ class LiveViewFeederTests(unittest.TestCase):
         lv, _ = load_liveview_module()
 
         session = lv.show(lambda: np.zeros((2, 3, 3), np.uint8),
-                          name="rtc", mode="webrtc", show=False, wait=True)
+                          name="rtc", mode="webrtc", show=False, wait=True,
+                          close_when_idle=False)
         body = session.html()
         self.assertIn("<iframe", body)
         self.assertIn("/webrtc/rtc", body)
@@ -213,9 +264,11 @@ class LiveViewFeederTests(unittest.TestCase):
         lv, fake_cv = load_liveview_module()
 
         first = lv.show(lambda: np.zeros((2, 3, 3), np.uint8),
-                        name="a", mode="mjpeg", show=False, wait=True)
+                        name="a", mode="mjpeg", show=False, wait=True,
+                        close_when_idle=False)
         second = lv.show(lambda: np.zeros((2, 3, 3), np.uint8),
-                         name="b", mode="mjpeg", show=False, wait=True)
+                         name="b", mode="mjpeg", show=False, wait=True,
+                         close_when_idle=False)
         self.assertEqual(2, len(lv.sessions()))
         lv.close_all()
         self.assertEqual("closed", first.state)
@@ -227,11 +280,126 @@ class LiveViewFeederTests(unittest.TestCase):
     def test_camera_is_wrapper_over_show_and_releases_capture(self):
         lv, _ = load_liveview_module()
 
-        session = lv.camera(0, mode="mjpeg", show=False, wait=True)
+        session = lv.camera(0, mode="mjpeg", show=False, wait=True,
+                            close_when_idle=False)
         self.assertEqual(1, len(FakeCapture.instances))
         capture = FakeCapture.instances[0]
         self.assertFalse(capture.released)
         session.close()
+        self.assertTrue(capture.released)
+
+    def test_show_does_not_release_capture_from_closure(self):
+        lv, _ = load_liveview_module()
+        capture = FakeCapture(0)
+
+        def feed():
+            ok, frame = capture.read()
+            return frame if ok else None
+
+        session = lv.show(feed, name="closure", mode="mjpeg", show=False,
+                          wait=True, close_when_idle=False)
+        self.assertFalse(capture.released)
+        session.close()
+        self.assertFalse(capture.released)
+        capture.release()
+
+    def test_show_does_not_release_capture_from_referenced_global(self):
+        lv, _ = load_liveview_module()
+        global GLOBAL_TEST_CAPTURE
+        GLOBAL_TEST_CAPTURE = FakeCapture(0)
+
+        def feed():
+            ok, frame = GLOBAL_TEST_CAPTURE.read()
+            return frame if ok else None
+
+        session = lv.show(feed, name="global", mode="mjpeg", show=False,
+                          wait=True, close_when_idle=False)
+        self.assertFalse(GLOBAL_TEST_CAPTURE.released)
+        session.close()
+        self.assertFalse(GLOBAL_TEST_CAPTURE.released)
+        GLOBAL_TEST_CAPTURE.release()
+        del GLOBAL_TEST_CAPTURE
+
+    def test_replace_disowns_previous_feeder_but_not_capture(self):
+        lv, _ = load_liveview_module()
+        first_capture = FakeCapture(0)
+        second_capture = FakeCapture(0)
+
+        def first_feed():
+            ok, frame = first_capture.read()
+            return frame if ok else None
+
+        def second_feed():
+            ok, frame = second_capture.read()
+            return frame if ok else None
+
+        first = lv.show(first_feed, name="replace_capture", mode="mjpeg",
+                        show=False, wait=True, close_when_idle=False)
+        self.assertFalse(first_capture.released)
+        second = lv.show(second_feed, name="replace_capture", mode="mjpeg",
+                         show=False, wait=True, close_when_idle=False)
+        self.assertEqual("closed", first.state)
+        self.assertFalse(first_capture.released)
+        self.assertFalse(second_capture.released)
+        second.close()
+        self.assertFalse(second_capture.released)
+        first_capture.release()
+        second_capture.release()
+
+    def test_session_closes_when_no_viewer_connects(self):
+        lv, _ = load_liveview_module()
+
+        session = lv.show(lambda: np.zeros((2, 3, 3), np.uint8),
+                          name="unseen", mode="mjpeg", show=False, wait=True,
+                          close_when_idle=True, connect_timeout=0.05)
+        time.sleep(0.25)
+        self.assertEqual("closed", session.state)
+        self.assertEqual({}, lv.sessions())
+
+    def test_session_closes_after_viewer_disconnect_idle_timeout(self):
+        lv, fake_cv = load_liveview_module()
+
+        session = lv.show(lambda: np.zeros((2, 3, 3), np.uint8),
+                          name="idle", mode="mjpeg", show=False, wait=True,
+                          close_when_idle=True, idle_timeout=0.05,
+                          connect_timeout=2.0)
+        server = fake_cv.liveview.servers[0]
+        server.connect_viewer("idle")
+        time.sleep(0.1)
+        self.assertNotEqual("closed", session.state)
+        server.disconnect_viewer("idle")
+        time.sleep(0.25)
+        self.assertEqual("closed", session.state)
+        self.assertFalse(server.running)
+
+    def test_reconnect_cancels_idle_close(self):
+        lv, fake_cv = load_liveview_module()
+
+        session = lv.show(lambda: np.zeros((2, 3, 3), np.uint8),
+                          name="reconnect", mode="mjpeg", show=False, wait=True,
+                          close_when_idle=True, idle_timeout=0.2,
+                          connect_timeout=2.0)
+        server = fake_cv.liveview.servers[0]
+        server.connect_viewer("reconnect")
+        server.disconnect_viewer("reconnect")
+        time.sleep(0.05)
+        server.connect_viewer("reconnect")
+        time.sleep(0.25)
+        self.assertNotEqual("closed", session.state)
+        session.close()
+
+    def test_camera_idle_close_releases_capture(self):
+        lv, fake_cv = load_liveview_module()
+
+        session = lv.camera(0, mode="mjpeg", show=False, wait=True,
+                            close_when_idle=True, idle_timeout=0.05,
+                            connect_timeout=2.0)
+        capture = FakeCapture.instances[0]
+        server = fake_cv.liveview.servers[0]
+        server.connect_viewer("camera")
+        server.disconnect_viewer("camera")
+        time.sleep(0.25)
+        self.assertEqual("closed", session.state)
         self.assertTrue(capture.released)
 
 

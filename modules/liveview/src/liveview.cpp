@@ -3,6 +3,7 @@
 #include "channel_store.hpp"
 #include "mjpeg_writer.hpp"
 #include "route_matcher.hpp"
+#include "viewer_registry.hpp"
 #include "web_backend.hpp"
 #include "webrtc_manager.hpp"
 
@@ -14,8 +15,8 @@ namespace liveview {
 struct Server::Impl
 {
     Impl()
-        : host("127.0.0.1"), port(0), enableWebRTC(false), store(80),
-          backend(createWebBackend()), webrtc(store)
+        : host("127.0.0.1"), port(0), enableWebRTC(false), store(80), viewers(),
+          backend(createWebBackend()), webrtc(store, viewers)
     {
     }
 
@@ -23,6 +24,7 @@ struct Server::Impl
     int port;
     bool enableWebRTC;
     ChannelStore store;
+    ViewerRegistry viewers;
     Ptr<WebBackend> backend;
     WebRtcManager webrtc;
 
@@ -140,7 +142,8 @@ struct Server::Impl
     void handle(const WebRequest& request, WebResponse& response)
     {
         const RouteMatch route = matchRoute(request.method, request.path);
-        if (request.method != "GET" && route.kind != RouteKind::WebRtcOffer && route.kind != RouteKind::WebRtcCandidate)
+        if (request.method != "GET" && route.kind != RouteKind::WebRtcOffer &&
+            route.kind != RouteKind::WebRtcCandidate && route.kind != RouteKind::WebRtcClose)
         {
             sendBody(response, 405, "405 Method Not Allowed\n", "text/plain; charset=utf-8");
             return;
@@ -193,6 +196,17 @@ struct Server::Impl
             sendWebRtcSignal(response, result);
             return;
         }
+        if (route.kind == RouteKind::WebRtcClose)
+        {
+            if (!enableWebRTC || !webrtc.isAvailable())
+            {
+                sendBody(response, 404, "404 Not Found\n", "text/plain; charset=utf-8");
+                return;
+            }
+            WebRtcSignalResult result = webrtc.closeSession(route.channel);
+            sendWebRtcSignal(response, result);
+            return;
+        }
         if (route.kind == RouteKind::Snapshot)
         {
             ChannelSnapshot snapshot;
@@ -205,6 +219,7 @@ struct Server::Impl
             response.setStatus(200);
             response.setHeader("Content-Type", "image/jpeg");
             response.setHeader("Cache-Control", "no-store");
+            viewers.recordActivity();
             response.write(&snapshot.jpeg[0], snapshot.jpeg.size());
             return;
         }
@@ -223,6 +238,7 @@ struct Server::Impl
             response.setHeader("Cache-Control", "no-store");
             if (!response.startStream())
                 return;
+            ScopedViewer viewer(viewers, route.channel);
             int64 lastSequence = 0;
             for (;;)
             {
@@ -323,6 +339,36 @@ void Server::publish(const String& name, InputArray frame)
 std::vector<ChannelInfo> Server::channels() const
 {
     return impl_ ? impl_->store.channels() : std::vector<ChannelInfo>();
+}
+
+int Server::viewerCount(const String& name) const
+{
+    return impl_ ? impl_->viewers.viewerCount(name) : 0;
+}
+
+bool Server::hasViewers() const
+{
+    return viewerCount() > 0;
+}
+
+bool Server::hasEverHadViewer() const
+{
+    return impl_ && impl_->viewers.hasEverConnected();
+}
+
+int64 Server::lastViewerConnectedTick() const
+{
+    return impl_ ? impl_->viewers.lastViewerConnectedTick() : 0;
+}
+
+int64 Server::lastViewerDisconnectedTick() const
+{
+    return impl_ ? impl_->viewers.lastViewerDisconnectedTick() : 0;
+}
+
+int64 Server::lastViewerActivityTick() const
+{
+    return impl_ ? impl_->viewers.lastViewerActivityTick() : 0;
 }
 
 Ptr<Server> createServer(const String& host, int port, bool enableWebRTC)

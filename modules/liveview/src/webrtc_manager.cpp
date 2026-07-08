@@ -60,6 +60,7 @@ struct WebRtcManager::SessionRuntime
     String channel;
     std::shared_ptr<ChannelRuntime> channelRuntime;
     Ptr<WebRtcSession> session;
+    std::unique_ptr<ScopedViewer> viewer;
     std::atomic<bool> stopping;
     std::thread thread;
 
@@ -133,8 +134,8 @@ bool extractJsonIntField(const String& json, const String& key, int& out)
     return true;
 }
 
-WebRtcManager::WebRtcManager(ChannelStore& store)
-    : store_(store), nextSessionId_(1), stopping_(false)
+WebRtcManager::WebRtcManager(ChannelStore& store, ViewerRegistry& viewers)
+    : store_(store), viewers_(viewers), nextSessionId_(1), stopping_(false)
 {
 }
 
@@ -161,6 +162,7 @@ String WebRtcManager::viewerHtml(const String& baseUrl, const String& channel) c
     os << "<p id='s'>connecting</p>";
     os << "<script>";
     os << "const channel=" << "\"" << jsonEscape(channel) << "\";";
+    os << "let sessionId=null;";
     os << "const status=document.getElementById('s');";
     os << "const pc=new RTCPeerConnection({iceServers:[]});";
     os << "pc.addTransceiver('video',{direction:'recvonly'});";
@@ -174,7 +176,15 @@ String WebRtcManager::viewerHtml(const String& baseUrl, const String& channel) c
     os << "headers:{'Content-Type':'application/json'},";
     os << "body:JSON.stringify({type:pc.localDescription.type,sdp:pc.localDescription.sdp})});";
     os << "if(!res.ok){status.textContent='signaling failed';return;}";
-    os << "const ans=await res.json();await pc.setRemoteDescription({type:ans.type,sdp:ans.sdp});})();";
+    os << "const ans=await res.json();sessionId=ans.session;";
+    os << "await pc.setRemoteDescription({type:ans.type,sdp:ans.sdp});})();";
+    os << "function closeSession(){if(!sessionId)return;";
+    os << "const url='/webrtc/session/'+sessionId+'/close';";
+    os << "if(navigator.sendBeacon)navigator.sendBeacon(url,'');";
+    os << "else fetch(url,{method:'POST',keepalive:true}).catch(()=>{});";
+    os << "sessionId=null;}";
+    os << "window.addEventListener('pagehide',closeSession);";
+    os << "window.addEventListener('beforeunload',closeSession);";
     os << "</script></body></html>";
     (void)baseUrl;
     return os.str();
@@ -254,6 +264,7 @@ WebRtcSignalResult WebRtcManager::createOfferAnswer(const String& channel, const
         if (!runtime->session->createAnswer(offer, answer))
             CV_Error(Error::StsError, "failed to create WebRTC answer");
 
+        runtime->viewer.reset(new ScopedViewer(viewers_, channel));
         runtime->thread = std::thread(&WebRtcManager::sessionPump, this, runtime);
         {
             std::lock_guard<std::mutex> lock(mutex_);
@@ -325,6 +336,66 @@ WebRtcSignalResult WebRtcManager::addCandidate(const String& sessionId, const St
     return result;
 }
 
+void WebRtcManager::releaseSession(const std::shared_ptr<SessionRuntime>& session)
+{
+    if (!session)
+        return;
+
+    session->stopping = true;
+    if (session->thread.joinable())
+        session->thread.join();
+    if (session->session)
+        session->session->close();
+    session->viewer.reset();
+
+    std::shared_ptr<ChannelRuntime> unusedChannel;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (session->channelRuntime)
+        {
+            session->channelRuntime->refs--;
+            if (session->channelRuntime->refs <= 0)
+            {
+                std::map<String, std::shared_ptr<ChannelRuntime> >::iterator it = channels_.find(session->channel);
+                if (it != channels_.end() && it->second == session->channelRuntime)
+                {
+                    unusedChannel = it->second;
+                    channels_.erase(it);
+                }
+            }
+            session->channelRuntime.reset();
+        }
+    }
+    if (unusedChannel)
+        unusedChannel->encoder.stop();
+}
+
+WebRtcSignalResult WebRtcManager::closeSession(const String& sessionId)
+{
+    WebRtcSignalResult result;
+    std::shared_ptr<SessionRuntime> runtime;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::map<String, std::shared_ptr<SessionRuntime> >::iterator it = sessions_.find(sessionId);
+        if (it != sessions_.end())
+        {
+            runtime = it->second;
+            sessions_.erase(it);
+        }
+    }
+    if (!runtime)
+    {
+        result.status = WebRtcSignalStatus::NotFound;
+        result.body = statusJson("error", "unknown WebRTC session");
+        return result;
+    }
+
+    releaseSession(runtime);
+    result.status = WebRtcSignalStatus::Ok;
+    result.body = statusJson("ok", "session closed");
+    return result;
+}
+
 void WebRtcManager::sessionPump(const std::shared_ptr<SessionRuntime>& session)
 {
     int64 sequence = 0;
@@ -360,6 +431,7 @@ void WebRtcManager::stop()
             it->second->thread.join();
         if (it->second->session)
             it->second->session->close();
+        it->second->viewer.reset();
     }
     for (std::map<String, std::shared_ptr<ChannelRuntime> >::iterator it = channels.begin(); it != channels.end(); ++it)
         it->second->encoder.stop();

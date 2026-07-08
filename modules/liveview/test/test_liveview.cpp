@@ -64,6 +64,41 @@ static HttpResponse makeResponse(const std::string& raw)
     return response;
 }
 
+static std::string extractJsonString(const std::string& json, const std::string& key)
+{
+    const std::string pattern = "\"" + key + "\"";
+    size_t p = json.find(pattern);
+    if (p == std::string::npos)
+        return std::string();
+    p = json.find(':', p + pattern.size());
+    if (p == std::string::npos)
+        return std::string();
+    p = json.find('"', p + 1);
+    if (p == std::string::npos)
+        return std::string();
+    std::string out;
+    bool escaped = false;
+    for (size_t i = p + 1; i < json.size(); ++i)
+    {
+        const char c = json[i];
+        if (escaped)
+        {
+            out += c;
+            escaped = false;
+            continue;
+        }
+        if (c == '\\')
+        {
+            escaped = true;
+            continue;
+        }
+        if (c == '"')
+            return out;
+        out += c;
+    }
+    return std::string();
+}
+
 #if defined(HAVE_LIVEVIEW_VIDEO_ENCODER_FFMPEG)
 static bool startsWithAnnexBStartCode(const std::vector<uchar>& bytes)
 {
@@ -474,6 +509,10 @@ TEST(LiveView, RouteMatcherAndWritersAreDeterministic)
     EXPECT_EQ(cv::liveview::RouteKind::WebRtcCandidate, route.kind);
     EXPECT_EQ("s1", route.channel);
 
+    route = cv::liveview::matchRoute("POST", "/webrtc/session/s1/close");
+    EXPECT_EQ(cv::liveview::RouteKind::WebRtcClose, route.kind);
+    EXPECT_EQ("s1", route.channel);
+
     EXPECT_EQ(cv::liveview::RouteKind::Unknown, cv::liveview::matchRoute("POST", "/channels.json").kind);
     EXPECT_EQ(cv::liveview::RouteKind::Unknown, cv::liveview::matchRoute("GET", "/frame/../x.jpg").kind);
 
@@ -572,6 +611,11 @@ TEST(LiveView, PublicServerLifecycleAndUrls)
     cv::Ptr<cv::liveview::Server> server = cv::liveview::createServer("127.0.0.1", 0);
     server->start();
     EXPECT_TRUE(server->isRunning());
+    EXPECT_EQ(0, server->viewerCount());
+    EXPECT_EQ(0, server->viewerCount("camera"));
+    EXPECT_FALSE(server->hasViewers());
+    EXPECT_FALSE(server->hasEverHadViewer());
+    EXPECT_EQ(0, server->lastViewerConnectedTick());
     EXPECT_NE(cv::String::npos, server->url().find("http://127.0.0.1:"));
     EXPECT_EQ("/frame/camera.jpg",
               server->channelUrl("camera", cv::liveview::Transport::Snapshot).substr(server->url().size() - 1));
@@ -702,6 +746,24 @@ TEST(LiveView, WebRtcRoutesAndSignalingValidation)
     EXPECT_NE(std::string::npos, answer.body.find("\"type\":\"answer\""));
     EXPECT_NE(std::string::npos, answer.body.find("VP8/90000"));
     EXPECT_NE(std::string::npos, answer.body.find("sendonly"));
+    EXPECT_EQ(1, server->viewerCount());
+    EXPECT_EQ(1, server->viewerCount("camera"));
+    EXPECT_TRUE(server->hasViewers());
+    EXPECT_TRUE(server->hasEverHadViewer());
+    EXPECT_GT(server->lastViewerConnectedTick(), 0);
+
+    const std::string sessionId = extractJsonString(answer.body, "session");
+    ASSERT_FALSE(sessionId.empty());
+    HttpResponse close = makeResponse(httpRequest(port, "POST", "/webrtc/session/" + sessionId + "/close", 4096, 2000));
+    EXPECT_EQ(200, close.status);
+    EXPECT_EQ(0, server->viewerCount());
+    EXPECT_EQ(0, server->viewerCount("camera"));
+    EXPECT_FALSE(server->hasViewers());
+    EXPECT_GT(server->lastViewerDisconnectedTick(), 0);
+
+    HttpResponse closeAgain = makeResponse(
+        httpRequest(port, "POST", "/webrtc/session/" + sessionId + "/close", 4096, 2000));
+    EXPECT_EQ(404, closeAgain.status);
 
     server->stop();
     server->start();
@@ -746,6 +808,10 @@ TEST(LiveView, HttpRoutesExposePublishedChannels)
     EXPECT_EQ(200, jpeg.status);
     std::vector<uchar> bytes(jpeg.body.begin(), jpeg.body.end());
     EXPECT_FALSE(cv::imdecode(bytes, cv::IMREAD_COLOR).empty());
+    EXPECT_EQ(0, server->viewerCount());
+    EXPECT_FALSE(server->hasViewers());
+    EXPECT_FALSE(server->hasEverHadViewer());
+    EXPECT_GT(server->lastViewerActivityTick(), 0);
 
     EXPECT_EQ(404, makeResponse(httpRequest(port, "GET", "/frame/missing.jpg")).status);
     EXPECT_EQ(405, makeResponse(httpRequest(port, "POST", "/channels.json")).status);
@@ -814,6 +880,63 @@ TEST(LiveView, ServerStopTerminatesActiveMjpegStream)
     EXPECT_TRUE(requestReturned.load());
     EXPECT_NE(std::string::npos, raw.find("HTTP/1.1 200 OK\r\n"));
     EXPECT_NE(std::string::npos, raw.find("--opencv-liveview-frame\r\n"));
+#endif
+}
+
+TEST(LiveView, MjpegViewerCountTracksStreamLifetime)
+{
+#ifdef _WIN32
+    throw SkipTestException("LiveView MJPEG route tests use localhost sockets");
+#else
+    cv::Ptr<cv::liveview::Server> server = cv::liveview::createServer("127.0.0.1", 0);
+    server->start();
+    const int port = parsePort(server->url());
+    server->publish("camera", cv::Mat(24, 32, CV_8UC3, cv::Scalar(20, 30, 40)));
+
+    std::string raw;
+    std::thread client([port, &raw]() {
+        raw = httpRequest(port, "GET", "/stream/camera.mjpeg", 8192, 5000);
+    });
+
+    bool sawViewer = false;
+    for (int i = 0; i < 50; ++i)
+    {
+        if (server->viewerCount("camera") > 0)
+        {
+            sawViewer = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+    EXPECT_TRUE(sawViewer);
+    EXPECT_EQ(1, server->viewerCount("camera"));
+    EXPECT_EQ(1, server->viewerCount());
+    EXPECT_TRUE(server->hasViewers());
+    EXPECT_TRUE(server->hasEverHadViewer());
+    EXPECT_GT(server->lastViewerConnectedTick(), 0);
+
+    for (int i = 0; i < 20; ++i)
+        server->publish("camera", cv::Mat(24, 32, CV_8UC3, cv::Scalar(i, i + 1, i + 2)));
+    client.join();
+    server->publish("camera", cv::Mat(24, 32, CV_8UC3, cv::Scalar(7, 8, 9)));
+
+    bool viewerGone = false;
+    for (int i = 0; i < 50; ++i)
+    {
+        if (server->viewerCount("camera") == 0)
+        {
+            viewerGone = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+    EXPECT_TRUE(viewerGone);
+    EXPECT_EQ(0, server->viewerCount());
+    EXPECT_FALSE(server->hasViewers());
+    EXPECT_TRUE(server->hasEverHadViewer());
+    EXPECT_GT(server->lastViewerDisconnectedTick(), 0);
+    EXPECT_NE(std::string::npos, raw.find("HTTP/1.1 200 OK\r\n"));
+    server->stop();
 #endif
 }
 

@@ -64,6 +64,8 @@ RouteMatch matchRoute(const String& method, const String& path)
             out.kind = RouteKind::WebRtcOffer;
         else if (extractChannel(cleanPath, "/webrtc/session/", "/candidate", out.channel))
             out.kind = RouteKind::WebRtcCandidate;
+        else if (extractChannel(cleanPath, "/webrtc/session/", "/close", out.channel))
+            out.kind = RouteKind::WebRtcClose;
     }
     return out;
 }
