@@ -1075,7 +1075,7 @@ CUDA_TEST_P(StereoSGM_NonAligned, ConsistencyCheckCoversWholeImage)
 
     cv::Mat left_cpu(size, CV_8UC1);
     cv::Mat right_cpu(size, CV_8UC1);
-    cv::RNG rng(0xC0FFEE);
+    cv::RNG& rng = cv::theRNG();
     rng.fill(left_cpu,  cv::RNG::UNIFORM, 0, 256);
     rng.fill(right_cpu, cv::RNG::UNIFORM, 0, 256);
 
