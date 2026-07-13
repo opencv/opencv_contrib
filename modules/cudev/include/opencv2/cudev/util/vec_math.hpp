@@ -52,7 +52,7 @@
 
 namespace cv { namespace cudev {
 
-    using cv::cuda::device::compat::double4;
+    using ::cv::cuda::device::compat::double4;
 
 //! @addtogroup cudev
 //! @{

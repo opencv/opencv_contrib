@@ -47,12 +47,13 @@
 #define OPENCV_CUDEV_UTIL_VEC_TRAITS_HPP
 
 #include "../common.hpp"
+#include "opencv2/core/version.hpp"
 #include "opencv2/core/cuda/cuda_compat.hpp"
 
 namespace cv {
 
-    using cv::cuda::device::compat::double4;
-    using cv::cuda::device::compat::make_double4;
+    using ::cv::cuda::device::compat::double4;
+    using ::cv::cuda::device::compat::make_double4;
 
     namespace cudev {
 
@@ -90,6 +91,16 @@ template<> struct MakeVec<bool, 1> { typedef uchar  type; };
 template<> struct MakeVec<bool, 2> { typedef uchar2 type; };
 template<> struct MakeVec<bool, 3> { typedef uchar3 type; };
 template<> struct MakeVec<bool, 4> { typedef uchar4 type; };
+
+template<> struct MakeVec<long, 1> { typedef long type; };
+template<> struct MakeVec<long, 2> { typedef long type; };
+template<> struct MakeVec<long, 3> { typedef long type; };
+template<> struct MakeVec<long, 4> { typedef long type; };
+
+template<> struct MakeVec<unsigned long, 1> { typedef unsigned long type; };
+template<> struct MakeVec<unsigned long, 2> { typedef unsigned long type; };
+template<> struct MakeVec<unsigned long, 3> { typedef unsigned long type; };
+template<> struct MakeVec<unsigned long, 4> { typedef unsigned long type; };
 
 // VecTraits
 
@@ -144,6 +155,24 @@ CV_CUDEV_VEC_TRAITS_INST(int)
 CV_CUDEV_VEC_TRAITS_INST(uint)
 CV_CUDEV_VEC_TRAITS_INST(float)
 CV_CUDEV_VEC_TRAITS_INST(double)
+
+template <> struct VecTraits<long>
+{
+    typedef long elem_type;
+    enum {cn=1};
+    __host__ __device__ __forceinline__ static long all(long v) {return v;}
+    __host__ __device__ __forceinline__ static long make(long x) {return x;}
+    __host__ __device__ __forceinline__ static long make(const long* v) {return *v;}
+};
+
+template <> struct VecTraits<unsigned long>
+{
+    typedef unsigned long elem_type;
+    enum {cn=1};
+    __host__ __device__ __forceinline__ static unsigned long all(unsigned long v) {return v;}
+    __host__ __device__ __forceinline__ static unsigned long make(unsigned long x) {return x;}
+    __host__ __device__ __forceinline__ static unsigned long make(const unsigned long* v) {return *v;}
+};
 CV_CUDEV_VEC_TRAITS_INST(long)
 CV_CUDEV_VEC_TRAITS_INST(ulong)
 
@@ -199,6 +228,7 @@ template<> struct VecTraits<char4>
 namespace cv {
 
 #ifndef CV_32U
+#if !defined(CV_VERSION_MAJOR) || CV_VERSION_MAJOR < 5
 template <> class DataType<uint>
 {
 public:

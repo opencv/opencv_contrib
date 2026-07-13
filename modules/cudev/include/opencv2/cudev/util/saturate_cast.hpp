@@ -68,6 +68,8 @@ template <typename T> __device__ __forceinline__ T saturate_cast(signed long lon
 template <typename T> __device__ __forceinline__ T saturate_cast(unsigned long long v) { return T(v); }
 template <typename T> __device__ __forceinline__ T saturate_cast(float v) { return T(v); }
 template <typename T> __device__ __forceinline__ T saturate_cast(double v) { return T(v); }
+template <typename T> __device__ __forceinline__ T saturate_cast(long v) { return T(v); }
+template <typename T> __device__ __forceinline__ T saturate_cast(unsigned long v) { return T(v); }
 
 #if defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__)
 
