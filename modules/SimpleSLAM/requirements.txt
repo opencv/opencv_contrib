@@ -1,0 +1,12 @@
+lightglue==0.0
+matplotlib==3.10.3
+numpy==2.2.6
+opencv_python==4.11.0.86
+pandas==2.2.3
+scipy==1.15.3
+torch==2.7.0
+tqdm==4.67.1
+open3d==0.18.0
+pyceres==2.3
+pycolmap==3.10.0
+lz4==4.4.4
