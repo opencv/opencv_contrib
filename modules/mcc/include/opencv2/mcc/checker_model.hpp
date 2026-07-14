@@ -48,6 +48,8 @@ enum TYPECHART
     MCC24 = 0, ///< Standard Macbeth Chart with 24 squares
     SG140,       ///< DigitalSG with 140 squares
     VINYL18,   ///< DKK color chart with 12 squares and 6 rectangle
+    SPYDERCHECKR48_V2, // 6x8 = 48 squares
+    SPYDERCHECKR24_V2  // 6x4 = 24 squares
 
 };
 
