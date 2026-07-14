@@ -11,5 +11,6 @@
 #include "quality/qualityssim.hpp"
 #include "quality/qualitygmsd.hpp"
 #include "quality/qualitybrisque.hpp"
+#include "quality/qualitymae.hpp"
 
 #endif
