@@ -167,17 +167,17 @@ public:
   virtual void run(InputArrayOfArrays points2d) = 0;
 
   CV_WRAP
-  virtual void run(InputArrayOfArrays points2d, InputOutputArray K, OutputArray Rs,
-                   OutputArray Ts, OutputArray points3d) = 0;
+  virtual void run(InputArrayOfArrays points2d, CV_IN_OUT InputOutputArray K, CV_OUT OutputArrayOfArrays Rs,
+                   OutputArrayOfArrays Ts, OutputArrayOfArrays points3d) = 0;
 
   virtual void run(const std::vector<String> &images) = 0;
-  virtual void run(const std::vector<String> &images, InputOutputArray K, OutputArray Rs,
-                   OutputArray Ts, OutputArray points3d) = 0;
+  virtual void run(const std::vector<String> &images, CV_IN_OUT InputOutputArray K, CV_OUT OutputArrayOfArrays Rs,
+                   OutputArrayOfArrays Ts, OutputArrayOfArrays points3d) = 0;
 
   CV_WRAP virtual double getError() const = 0;
-  CV_WRAP virtual void getPoints(OutputArray points3d) = 0;
+  CV_WRAP virtual void getPoints(CV_OUT OutputArrayOfArrays points3d) = 0;
   CV_WRAP virtual cv::Mat getIntrinsics() const = 0;
-  CV_WRAP virtual void getCameras(OutputArray Rs, OutputArray Ts) = 0;
+  CV_WRAP virtual void getCameras(CV_OUT OutputArrayOfArrays Rs, OutputArrayOfArrays Ts) = 0;
 
   CV_WRAP
   virtual void
@@ -188,9 +188,9 @@ public:
   setCameraIntrinsicOptions(const libmv_CameraIntrinsicsOptions &libmv_camera_intrinsics_options) = 0;
 };
 
-/** @brief SFMLibmvEuclideanReconstruction class provides an interface with the Libmv Structure From Motion pipeline.
+/** @brief SFMLibmvEuclideanRecons class provides an interface with the Libmv Structure From Motion pipeline.
  */
-class CV_EXPORTS_W SFMLibmvEuclideanReconstruction : public BaseSFM
+class CV_EXPORTS_W SFMLibmvEuclideanRecons : public BaseSFM
 {
 public:
   /** @brief Calls the pipeline in order to perform Eclidean reconstruction.
@@ -213,8 +213,8 @@ public:
       - Tracks must be as precise as possible. It does not handle outliers and is very sensible to them.
   */
   CV_WRAP
-  virtual void run(InputArrayOfArrays points2d, InputOutputArray K, OutputArray Rs,
-                   OutputArray Ts, OutputArray points3d) CV_OVERRIDE = 0;
+  virtual void run(InputArrayOfArrays points2d, CV_IN_OUT InputOutputArray K, CV_OUT OutputArrayOfArrays Rs,
+                   OutputArrayOfArrays Ts, OutputArrayOfArrays points3d) CV_OVERRIDE = 0;
 
   /** @brief Calls the pipeline in order to perform Eclidean reconstruction.
     @param images a vector of string with the images paths.
@@ -236,8 +236,8 @@ public:
       - The images must be ordered as they were an image sequence. Additionally, each frame should be as close as posible to the previous and posterior.
       - For now DAISY features are used in order to compute the 2d points tracks and it only works for 3-4 images.
   */
-  virtual void run(const std::vector<String> &images, InputOutputArray K, OutputArray Rs,
-                   OutputArray Ts, OutputArray points3d) CV_OVERRIDE = 0;
+  virtual void run(const std::vector<String> &images, CV_IN_OUT InputOutputArray K, CV_OUT OutputArrayOfArrays Rs,
+                   OutputArrayOfArrays Ts, OutputArrayOfArrays points3d) CV_OVERRIDE = 0;
 
   /** @brief Returns the computed reprojection error.
   */
@@ -248,7 +248,7 @@ public:
     @param points3d Output array with estimated 3d points.
   */
   CV_WRAP
-  virtual void getPoints(OutputArray points3d) CV_OVERRIDE = 0;
+  virtual void getPoints(CV_OUT OutputArrayOfArrays points3d) CV_OVERRIDE = 0;
 
   /** @brief Returns the refined camera calibration matrix.
   */
@@ -260,7 +260,7 @@ public:
     @param Ts Output vector of 3x1 translations of the camera.
   */
   CV_WRAP
-  virtual void getCameras(OutputArray Rs, OutputArray Ts) CV_OVERRIDE = 0;
+  virtual void getCameras(CV_OUT OutputArrayOfArrays Rs, OutputArrayOfArrays Ts) CV_OVERRIDE = 0;
 
   /** @brief Setter method for reconstruction options.
     @param libmv_reconstruction_options struct with reconstruction options such as initial keyframes,
@@ -278,8 +278,9 @@ public:
   virtual void
   setCameraIntrinsicOptions(const libmv_CameraIntrinsicsOptions &libmv_camera_intrinsics_options) CV_OVERRIDE = 0;
 
-  /** @brief Creates an instance of the SFMLibmvEuclideanReconstruction class. Initializes Libmv. */
-  static Ptr<SFMLibmvEuclideanReconstruction>
+  /** @brief Creates an instance of the SFMLibmvEuclideanRecons class. Initializes Libmv. */
+  CV_WRAP
+  static Ptr<SFMLibmvEuclideanRecons>
     create(const libmv_CameraIntrinsicsOptions &camera_instrinsic_options=libmv_CameraIntrinsicsOptions(),
            const libmv_ReconstructionOptions &reconstruction_options=libmv_ReconstructionOptions());
   };

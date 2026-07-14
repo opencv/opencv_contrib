@@ -189,8 +189,8 @@ public:
     CV_Assert(libmv_reconstruction_);
   }
 
-  virtual void run(InputArrayOfArrays points2d, InputOutputArray K, OutputArray Rs,
-                   OutputArray Ts, OutputArray points3d)
+  virtual void run(InputArrayOfArrays points2d, InputOutputArray K, OutputArrayOfArrays Rs,
+                   OutputArrayOfArrays Ts, OutputArrayOfArrays points3d)
   {
     // Run the pipeline
     run(points2d);
@@ -225,8 +225,8 @@ public:
   }
 
 
-  virtual void run(const std::vector <String> &images, InputOutputArray K, OutputArray Rs,
-                   OutputArray Ts, OutputArray points3d)
+  virtual void run(const std::vector <String> &images, InputOutputArray K, OutputArrayOfArrays Rs,
+                   OutputArrayOfArrays Ts, OutputArrayOfArrays points3d)
   {
     // Run the pipeline
     run(images);
@@ -238,7 +238,7 @@ public:
   virtual double getError() const { return libmv_reconstruction_->error; }
 
   virtual void
-  getPoints(OutputArray points3d) {
+  getPoints(OutputArrayOfArrays points3d) {
     const size_t n_points =
       libmv_reconstruction_->reconstruction.AllPoints().size();
 
@@ -262,7 +262,7 @@ public:
   }
 
   virtual void
-  getCameras(OutputArray Rs, OutputArray Ts) {
+  getCameras(OutputArrayOfArrays Rs, OutputArrayOfArrays Ts) {
     const size_t n_views =
       libmv_reconstruction_->reconstruction.AllCameras().size();
 
@@ -294,9 +294,9 @@ private:
 
   void
   extractLibmvReconstructionData(InputOutputArray K,
-                                 OutputArray Rs,
-                                 OutputArray Ts,
-                                 OutputArray points3d)
+                                 OutputArrayOfArrays Rs,
+                                 OutputArrayOfArrays Ts,
+                                 OutputArrayOfArrays points3d)
   {
     getCameras(Rs, Ts);
     getPoints(points3d);
@@ -310,11 +310,11 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-Ptr<SFMLibmvEuclideanReconstruction>
-SFMLibmvEuclideanReconstruction::create(const libmv_CameraIntrinsicsOptions &camera_instrinsic_options,
+Ptr<SFMLibmvEuclideanRecons>
+SFMLibmvEuclideanRecons::create(const libmv_CameraIntrinsicsOptions &camera_instrinsic_options,
                                         const libmv_ReconstructionOptions &reconstruction_options)
 {
-  return makePtr<SFMLibmvReconstructionImpl<SFMLibmvEuclideanReconstruction> >(camera_instrinsic_options,reconstruction_options);
+  return makePtr<SFMLibmvReconstructionImpl<SFMLibmvEuclideanRecons> >(camera_instrinsic_options,reconstruction_options);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

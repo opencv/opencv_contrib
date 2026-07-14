@@ -82,7 +82,7 @@ reconstruct(InputArrayOfArrays points2d, OutputArray Ps, OutputArray points3d, I
   @param K Input/Output camera matrix \f$K = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$. Input parameters used as initial guess.
   @param is_projective if true, the cameras are supposed to be projective.
 
-  Internally calls libmv simple pipeline routine with some default parameters by instatiating SFMLibmvEuclideanReconstruction class.
+  Internally calls libmv simple pipeline routine with some default parameters by instatiating SFMLibmvEuclideanRecons class.
 
   @note
     - Tracks must be as precise as possible. It does not handle outliers and is very sensible to them.
@@ -119,7 +119,7 @@ reconstruct(const std::vector<String> images, OutputArray Ps, OutputArray points
   @param K Input/Output camera matrix \f$K = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$. Input parameters used as initial guess.
   @param is_projective if true, the cameras are supposed to be projective.
 
-  Internally calls libmv simple pipeline routine with some default parameters by instatiating SFMLibmvEuclideanReconstruction class.
+  Internally calls libmv simple pipeline routine with some default parameters by instatiating SFMLibmvEuclideanRecons class.
 
    @note
     - The images must be ordered as they were an image sequence. Additionally, each frame should be as close as posible to the previous and posterior.
