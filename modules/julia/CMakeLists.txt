@@ -81,12 +81,32 @@ endforeach(m)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/gen/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/gen)
 file(COPY ${HDR_PARSER_PATH} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/gen)
 
+include("${OpenCV_SOURCE_DIR}/cmake/OpenCVBindingsPreprocessorDefinitions.cmake")
+ocv_bindings_generator_populate_preprocessor_definitions(
+  OPENCV_MODULES_BUILD
+  opencv_preprocessor_defs
+)
+
+set(JULIA_GENERATOR_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/gen_julia_config.json")
+set(__config_str
+"{
+  \"preprocessor_definitions\": {
+${opencv_preprocessor_defs}
+  }
+}")
+file(WRITE "${JULIA_GENERATOR_CONFIG}" "${__config_str}")
+unset(__config_str)
+
 message(STATUS "Generating Julia Binding Files")
 
 execute_process(
                 WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/gen"
-                COMMAND ${PYTHON_DEFAULT_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/gen/gen_all.py" ${CMAKE_SOURCE_DIR}/modules ${OPENCV_MODULES_BUILD}
+                COMMAND ${PYTHON_DEFAULT_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/gen/gen_all.py" ${CMAKE_SOURCE_DIR}/modules ${OPENCV_MODULES_BUILD} --config "${JULIA_GENERATOR_CONFIG}"
+                RESULT_VARIABLE JULIA_GENERATOR_RESULT
                 )
+if(NOT JULIA_GENERATOR_RESULT EQUAL 0)
+    message(FATAL_ERROR "Julia bindings generator failed")
+endif()
 
 file(COPY ${CMAKE_CURRENT_BINARY_DIR}/gen/cpp_files/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/gen/autogen_cpp)
 file(COPY ${CMAKE_CURRENT_BINARY_DIR}/gen/jl_cxx_files/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/gen/autogen_jl)

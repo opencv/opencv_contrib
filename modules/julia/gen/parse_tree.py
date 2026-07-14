@@ -105,6 +105,34 @@ functions = {}
 registered_types = ["int", "Size.*", "Rect.*", "Scalar", "RotatedRect", "Point.*", "explicit", "string", "bool", "uchar",
                     "Vec.*", "float", "double", "char", "Mat", "size_t", "RNG", "DescriptorExtractor", "FeatureDetector", "TermCriteria"]
 
+manual_mapped_types = set(["cv::Range", "cv::RotatedRect", "cv::TermCriteria"])
+
+def is_manual_mapped_type(name):
+    normalized = normalize_name(name)
+    return normalized in manual_mapped_types or ("cv::" + normalized) in manual_mapped_types
+
+def read_preprocessor_definitions(config_path):
+    if not config_path:
+        return None
+    with open(config_path, "r") as f:
+        config = json.load(f)
+    return config.get("preprocessor_definitions", None)
+
+def parse_generator_args(args):
+    srcfiles = hdr_parser.opencv_hdr_list
+    config_path = None
+    i = 0
+    while i < len(args):
+        if args[i] == "--config":
+            i += 1
+            config_path = args[i]
+        elif args[i].startswith("--"):
+            raise ValueError("unknown argument: %s" % args[i])
+        else:
+            srcfiles = [l.strip() for l in args[i].split(';') if l.strip()]
+        i += 1
+    return srcfiles, read_preprocessor_definitions(config_path)
+
 class ClassProp(object):
     """
     Helper class to store field information(type, name and flags) of classes and structs
@@ -429,8 +457,9 @@ def add_enum(name, decl):
 
 
 
-def gen_tree(srcfiles):
-    parser = hdr_parser.CppHeaderParser(generate_umat_decls=False, generate_gpumat_decls=False)
+def gen_tree(srcfiles, preprocessor_definitions=None):
+    parser = hdr_parser.CppHeaderParser(generate_umat_decls=False, generate_gpumat_decls=False,
+                                        preprocessor_definitions=preprocessor_definitions)
 
     allowed_func_list = []
 

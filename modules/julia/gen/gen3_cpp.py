@@ -72,6 +72,8 @@ registered_types = ["int", "Size.*", "Rect.*", "Scalar", "RotatedRect", "Point.*
 
 class ClassInfo(ClassInfo):
     def get_cpp_code_header(self):
+        if is_manual_mapped_type(self.name):
+            return ''
         if self.ismap:
             return 'mod.map_type<%s>("%s");\n'%(self.name, self.mapped_name)
         if not self.base:
@@ -80,6 +82,8 @@ class ClassInfo(ClassInfo):
             return 'mod.add_type<%s>("%s", jlcxx::julia_base_type<%s>());\n' % (self.name, self.mapped_name, self.base)
 
     def get_cpp_code_body(self):
+        if is_manual_mapped_type(self.name):
+            return ''
         if self.ismap:
             return ''
         cpp_code = StringIO()
@@ -226,8 +230,8 @@ class FuncVariant(FuncVariant):
 
 
 
-def gen(srcfiles):
-    namespaces, default_values = gen_tree(srcfiles)
+def gen(srcfiles, preprocessor_definitions=None):
+    namespaces, default_values = gen_tree(srcfiles, preprocessor_definitions)
     cpp_code = StringIO()
     include_code = StringIO()
     nsi = sorted(namespaces.items(), key =lambda x: x[0])
@@ -268,6 +272,8 @@ def gen(srcfiles):
         sorted_cls = sort_classes(ns.classes.items())
         for name, cl in sorted_cls:
             cl.__class__ = ClassInfo
+            if is_manual_mapped_type(cl.name):
+                continue
             cpp_code.write(cl.get_cpp_code_header())
             if cl.base:
                 include_code.write("""
@@ -294,6 +300,8 @@ struct SuperType<%s>
         nsname = name.replace("::", "_")
         for name, cl in ns.classes.items():
             cl.__class__ = ClassInfo
+            if is_manual_mapped_type(cl.name):
+                continue
             cpp_code.write(cl.get_cpp_code_body())
             for mname, fs in cl.methods.items():
                 for f in fs:
@@ -324,9 +332,5 @@ struct SuperType<%s>
 
 
 
-srcfiles = hdr_parser.opencv_hdr_list
-if len(sys.argv) > 1:
-    srcfiles = [l.strip() for l in sys.argv[1].split(';')]
-
-
-gen(srcfiles)
+srcfiles, preprocessor_definitions = parse_generator_args(sys.argv[1:])
+gen(srcfiles, preprocessor_definitions)
