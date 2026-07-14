@@ -414,6 +414,23 @@ CV_EXPORTS_W void createGridMesh(const String& name, const Size2f& size, const S
  */
 CV_EXPORTS_W void createTriangleMesh(const String& name, InputArray vertices, InputArray normals = noArray(), InputArray indices = noArray());
 
+/**
+ * Loads a mesh from a known resource location.
+ *
+ * The file format is determined by the file extension. Supported formats are Ogre @c .mesh and everything that Assimp can load.
+ * @param meshname Name of the mesh file
+ * @param vertices vertex coordinates, each value contains 3 floats
+ * @param indices per-face list of vertices, each value contains 3 ints
+ * @param normals per-vertex normals, each value contains 3 floats
+ * @param colors per-vertex colors, each value contains 4 uchars
+ * @param texCoords per-vertex texture coordinates, each value contains 2 floats
+ *
+ * @see addResourceLocation()
+ */
+CV_EXPORTS_W void loadMesh(const String& meshname, OutputArray vertices, OutputArray indices,
+                           OutputArray normals = noArray(), OutputArray colors = noArray(),
+                           OutputArray texCoords = noArray());
+
 /// @deprecated use setMaterialProperty
 CV_EXPORTS_W void updateTexture(const String& name, InputArray image);
 //! @}

@@ -31,7 +31,7 @@ static Vector2 toOGRE_SS = Vector2(1, -1);
 
 WindowScene::~WindowScene() {}
 
-void _createTexture(const String& name, Mat image)
+void _createTexture(const String& name, Mat image, int mipmaps)
 {
     PixelFormat format;
     switch(image.type())
@@ -62,7 +62,7 @@ void _createTexture(const String& name, Mat image)
     if(!tex)
     {
         tex = texMgr.createManual(name, RESOURCEGROUP_NAME, TEX_TYPE_2D, image.cols, image.rows,
-                                  MIP_DEFAULT, format);
+                                  mipmaps, format);
     }
 
     PixelBox box(image.cols, image.rows, 1, format, image.ptr());
@@ -441,7 +441,7 @@ public:
 
         String name = sceneMgr->getName() + "_Background";
 
-        _createTexture(name, image.getMat());
+        _createTexture(name, image.getMat(), 0);
 
         // ensure bgplane is visible
         bgplane->setVisible(true);
@@ -808,7 +808,7 @@ public:
         String name = "_" + sceneMgr->getName() + "_DefaultBackground";
 
         Mat_<Vec3b> img = (Mat_<Vec3b>(2, 1) << Vec3b(2, 1, 1), Vec3b(240, 120, 120));
-        _createTexture(name, img);
+        _createTexture(name, img, 0);
 
         MaterialPtr mat = MaterialManager::getSingleton().create(name, RESOURCEGROUP_NAME);
         Pass* rpass = mat->getTechniques()[0]->getPasses()[0];
@@ -1155,5 +1155,77 @@ void updateTexture(const String& name, InputArray image)
     CV_Assert(tex);
     _createTexture(name, image.getMat());
 }
+
+void loadMesh(const String& meshname, OutputArray vertices, OutputArray indices, OutputArray normals, OutputArray colors, OutputArray texCoords)
+{
+    CV_Assert(_app);
+
+    auto mesh = MeshManager::getSingleton().load(meshname, RESOURCEGROUP_NAME);
+    auto smeshes = mesh->getSubMeshes();
+    CV_Assert(smeshes.size() == 1);
+
+    auto smesh = smeshes.front();
+
+    CV_Assert(smesh->operationType == RenderOperation::OT_TRIANGLE_LIST);
+
+    if (auto ibuf = smesh->indexData->indexBuffer)
+    {
+        auto idtype = ibuf->getType() == HardwareIndexBuffer::IT_16BIT ? CV_16S : CV_32S;
+        auto imat = Mat(smesh->indexData->indexCount, 3, idtype);
+        ibuf->readData(0, ibuf->getSizeInBytes(), imat.ptr());
+        imat.copyTo(indices);
+    }
+
+    auto vertexData = smesh->useSharedVertices ? mesh->sharedVertexData : smesh->vertexData;
+    DefaultHardwareBufferManagerBase swhbm;
+
+    // download all buffers to CPU for reorganization
+    auto tmpVertexData = vertexData->clone(true, &swhbm);
+    auto tgtDecl = swhbm.createVertexDeclaration();
+    tgtDecl->addElement(0, 0, VET_FLOAT3, VES_POSITION); // separate position buffer
+
+    bool has_normals = vertexData->vertexDeclaration->findElementBySemantic(VES_NORMAL);
+    bool has_texcoords = vertexData->vertexDeclaration->findElementBySemantic(VES_TEXTURE_COORDINATES);
+    bool has_colors = vertexData->vertexDeclaration->findElementBySemantic(VES_DIFFUSE);
+    if (has_normals)
+        tgtDecl->addElement(1, 0, VET_FLOAT3, VES_NORMAL); // separate normal buffer
+    if (has_texcoords)
+        tgtDecl->addElement(2, 0, VET_FLOAT2, VES_TEXTURE_COORDINATES); // separate texcoord buffer
+    if (has_colors)
+        tgtDecl->addElement(3, 0, VET_UBYTE4_NORM, VES_DIFFUSE); // separate color buffer
+
+    tmpVertexData->reorganiseBuffers(tgtDecl);
+
+    // copy data
+    auto vertmat = Mat(vertexData->vertexCount, 3, CV_32F);
+    auto posbuf = tmpVertexData->vertexBufferBinding->getBuffer(0);
+    posbuf->readData(0, posbuf->getSizeInBytes(), vertmat.ptr());
+    vertmat.copyTo(vertices);
+
+    if(has_normals && normals.needed())
+    {
+        auto normmat = Mat(vertexData->vertexCount, 3, CV_32F);
+        auto nbuf = tmpVertexData->vertexBufferBinding->getBuffer(1);
+        nbuf->readData(0, nbuf->getSizeInBytes(), normmat.ptr());
+        normmat.copyTo(normals);
+    }
+
+    if(has_texcoords && texCoords.needed())
+    {
+        auto texmat = Mat(vertexData->vertexCount, 2, CV_32F);
+        auto tbuf = tmpVertexData->vertexBufferBinding->getBuffer(2);
+        tbuf->readData(0, tbuf->getSizeInBytes(), texmat.ptr());
+        texmat.copyTo(texCoords);
+    }
+
+    if(has_colors && colors.needed())
+    {
+        auto colmat = Mat(vertexData->vertexCount, 4, CV_8U);
+        auto cbuf = tmpVertexData->vertexBufferBinding->getBuffer(3);
+        cbuf->readData(0, cbuf->getSizeInBytes(), colmat.ptr());
+        colmat.copyTo(colors);
+    }
+}
+
 }
 }
