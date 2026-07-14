@@ -118,8 +118,9 @@ protected:
     bool fit(InputArray image, InputArray faces, OutputArrayOfArrays landmarks) CV_OVERRIDE;
     bool fitImpl( const Mat image, std::vector<Point2f> & landmarks );//!< from a face
 
-    bool addTrainingSample(InputArray image, InputArray landmarks) CV_OVERRIDE;
-    void training(void* parameters) CV_OVERRIDE;
+    bool addTrainingSample(InputArray image, std::vector<Point2f> & landmarks) CV_OVERRIDE;
+    bool setParams(const String& face_cascade_name,const String& facemark_model_name, const String& config_file_path, InputArray scale) CV_OVERRIDE;
+    void training() CV_OVERRIDE;
 
     Rect getBBox(Mat &img, const Mat_<double> shape);
     void prepareTrainingData(Mat img, std::vector<Point2f> facePoints,
@@ -317,15 +318,28 @@ bool FacemarkLBFImpl::getData(void * items){
     return false;
 }
 
-bool FacemarkLBFImpl::addTrainingSample(InputArray image, InputArray landmarks){
+bool FacemarkLBFImpl::addTrainingSample(InputArray image, std::vector<Point2f> & landmarks){
     // FIXIT
-    std::vector<Point2f> & _landmarks = *(std::vector<Point2f>*)landmarks.getObj();
+    std::vector<Point2f> & _landmarks = landmarks;
     prepareTrainingData(image.getMat(), _landmarks, data_faces, data_shapes, data_boxes);
     return true;
 }
 
-void FacemarkLBFImpl::training(void* parameters){
-    CV_UNUSED(parameters);
+bool FacemarkLBFImpl::setParams(const String& face_cascade_name, const String& facemark_model_name, const String& config_file_path, InputArray scale){
+    if(face_cascade_name.empty() && facemark_model_name.empty())
+    {
+      CV_Error_(Error::StsBadArg, ("Both the face cascade name and the facemark model name are empty"));
+    }
+    if(!face_cascade_name.empty())
+        params.cascade_face = face_cascade_name;
+    if(!facemark_model_name.empty())
+        params.model_filename = facemark_model_name;
+    CV_UNUSED(config_file_path);
+    CV_UNUSED(scale);
+    return true;
+}
+
+void FacemarkLBFImpl::training(){
 
     if (data_faces.empty())
     {

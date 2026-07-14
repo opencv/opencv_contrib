@@ -51,7 +51,7 @@ bool getFaces(InputArray image, OutputArray faces, CParams* params)
     return true;
 }
 
-bool loadDatasetList(String imageList, String groundTruth, std::vector<String> & images, std::vector<String> & landmarks){
+bool loadDatasetList(String imageList, String groundTruth, CV_OUT std::vector<String> & images, CV_OUT std::vector<String> & landmarks){
     std::string line;
 
     /*clear the output containers*/
@@ -215,8 +215,8 @@ bool getFacesHAAR(InputArray image, OutputArray faces, const String& face_cascad
     return true;
 }
 
-bool loadTrainingData(vector<String> filename,vector< vector<Point2f> >
-                          & trainlandmarks,vector<String> & trainimages)
+bool loadTrainingData(vector<String> filename, CV_OUT vector< vector<Point2f> >
+                          & trainlandmarks, CV_OUT vector<String> & trainimages)
 {
     string img;
     vector<Point2f> temp;

@@ -8,7 +8,7 @@
 
 namespace cv{
 namespace face{
-class CV_EXPORTS_W FacemarkKazemi : public Facemark
+class CV_EXPORTS_W FacemarkKazemi : public FacemarkTrain
 {
 public:
     struct CV_EXPORTS Params
@@ -35,25 +35,15 @@ public:
         unsigned long num_test_splits;
         /// configfile stores the name of the file containing the values of training parameters
         String configfile;
+        /// modelfile stores the name of the file containing the Kazemi model
+        String modelfile;
+        /// faceCascadefile stores the name of the file containing the face cascade model
+        String faceCascadefile;
+        /// scale to which all the images and the landmarks need to be scaled
+        Size scale;
     };
     static Ptr<FacemarkKazemi> create(const FacemarkKazemi::Params &parameters = FacemarkKazemi::Params());
     virtual ~FacemarkKazemi();
-
-    /** @brief This function is used to train the model using gradient boosting to get a cascade of regressors
-    *which can then be used to predict shape.
-    *@param images A vector of type cv::Mat which stores the images which are used in training samples.
-    *@param landmarks A vector of vectors of type cv::Point2f which stores the landmarks detected in a particular image.
-    *@param scale A size of type cv::Size to which all images and landmarks have to be scaled to.
-    *@param configfile A variable of type std::string which stores the name of the file storing parameters for training the model.
-    *@param modelFilename A variable of type std::string which stores the name of the trained model file that has to be saved.
-    *@returns A boolean value. The function returns true if the model is trained properly or false if it is not trained.
-    */
-    virtual bool training(std::vector<Mat>& images, std::vector< std::vector<Point2f> >& landmarks,std::string configfile,Size scale,std::string modelFilename = "face_landmarks.dat")=0;
-
-    /// set the custom face detector
-    virtual bool setFaceDetector(bool(*f)(InputArray , OutputArray, void*), void* userData)=0;
-    /// get faces using the custom detector
-    virtual bool getFaces(InputArray image, OutputArray faces)=0;
 };
 
 }} // namespace
