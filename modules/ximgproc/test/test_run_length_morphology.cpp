@@ -245,5 +245,31 @@ TEST_P(RL_Paint, same_result)
 
 INSTANTIATE_TEST_CASE_P(TypicalSET, RL_Paint, Values(CV_8U, CV_16U, CV_16S, CV_32F, CV_64F));
 
+static void getRuns(std::vector<cv::Point3i>& runs, const cv::Mat& rleImage)
+{
+    runs.clear();
+    cv::Point3i* ptr = (cv::Point3i*)rleImage.ptr(0);
+    for (int i = 1; i < rleImage.rows; i++)
+    {
+        runs.push_back(ptr[i]);
+    }
+}
+
+TEST(RL_FILL_HOLES, accuracyFillHoles)
+{
+    std::vector<Point3i> runsSrc = { Point3i(1,4,0),Point3i(0,0,1),Point3i(2,2,1), Point3i(4,4,1), Point3i(1,4,2), Point3i(2,2,3), Point3i(4,4,3), Point3i(3,3,4) };
+    std::vector<Point3i> runsDest8 = { Point3i(1,4,0),Point3i(0,4,1),Point3i(1,4,2), Point3i(2,4,3), Point3i(3,3,4) };
+    std::vector<Point3i> runsDest4 = { Point3i(1,4,0),Point3i(0,0,1),Point3i(2,4,1), Point3i(1,4,2), Point3i(2,2,3), Point3i(4,4,3), Point3i(3,3,4) };
+    Mat rleSrc, rleDest8, rleDest4;
+    rl::createRLEImage(runsSrc, rleSrc);
+    rl::fillHoles(rleSrc, rleDest8, 8);
+    rl::fillHoles(rleSrc, rleDest4, 4);
+    std::vector<cv::Point3i> runsDest8Get, runsDest4Get;
+    getRuns(runsDest8Get, rleDest8);
+    getRuns(runsDest4Get, rleDest4);
+    EXPECT_EQ(runsDest8Get, runsDest8);
+    EXPECT_EQ(runsDest4Get, runsDest4);
+}
+
 }
 }
