@@ -3,6 +3,80 @@ Face Recognition with OpenCV {#tutorial_face_main}
 
 [TOC]
 
+Pipeline Overview {#tutorial_face_pipeline}
+=================
+
+A face recognition system built with OpenCV's `face` module follows this pipeline:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   INPUT                             │
+│        Image or video frame (colour/grey)           │
+└───────────────────────┬─────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────┐
+│  Step 1: Face Detection                             │
+│  Locate faces in the frame.                         │
+│  Common approach: Haar cascades or DNN detector     │
+│  Output: bounding box(es) per face                  │
+└───────────────────────┬─────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────┐
+│  Step 2: Pre-processing                             │
+│  • Crop to bounding box                             │
+│  • Resize to fixed size (e.g. 92x112 px)            │
+│  • Convert to grayscale                             │
+│  • Optionally equalise histogram                    │
+└───────────────────────┬─────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────┐
+│  Step 3: Feature Extraction / Model                 │
+│                                                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
+│  │ Eigenfaces  │  │ Fisherfaces │  │    LBPH     │ │
+│  │ (PCA-based) │  │ (LDA-based) │  │ (local tex.)│ │
+│  └─────────────┘  └─────────────┘  └─────────────┘ │
+│  Choose one algorithm -- see Algorithm Guide below  │
+└───────────────────────┬─────────────────────────────┘
+                        │
+          ┌─────────────┴──────────────┐
+          │ Training mode              │ Prediction mode
+          ▼                            ▼
+┌──────────────────┐         ┌──────────────────────┐
+│  model->train()  │         │  model->predict()    │
+│  Labelled images │         │  Returns: label +    │
+│  -> stored model │         │  confidence score    │
+└──────────────────┘         └──────────┬───────────┘
+                                        │
+                                        ▼
+                             ┌──────────────────────┐
+                             │  OUTPUT              │
+                             │  Person label +      │
+                             │  confidence value    │
+                             └──────────────────────┘
+```
+
+**Confidence score note:** A *lower* confidence value means a *better* match for Eigenfaces and
+Fisherfaces. LBPH also returns lower values for better matches. Set a rejection threshold (e.g.
+`> 5000` for Eigenfaces) to avoid accepting unknown faces as known identities.
+
+Algorithm Comparison {#tutorial_face_algo_comparison}
+====================
+
+| Property                        | Eigenfaces     | Fisherfaces    | LBPH           |
+| :------------------------------ | :------------- | :------------- | :------------- |
+| Basis                           | PCA (global)   | LDA (class)    | Local texture  |
+| Illumination robustness         | Low            | Medium         | High           |
+| Pose variation tolerance        | Low            | Low            | Medium         |
+| Min training images per person  | ~10            | ~10            | 1              |
+| Add new face without retraining | No             | No             | Yes            |
+
+**Recommendation for beginners:** Start with **LBPH** — it tolerates lighting variation better,
+does not require all subjects at training time, and its confidence score is easy to threshold.
+
 Introduction {#tutorial_face_intro}
 ============
 
