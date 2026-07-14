@@ -379,7 +379,11 @@ namespace block_reduce_detail
             const uint laneId = Warp::laneId();
 
         #if CV_CUDEV_ARCH >= 300
-            Unroll<16, Pointer, Reference, Op>::loopShfl(val, op, warpSize);
+            // Reduce within a 32 lane logical warp (width WARP_SIZE == 32). A
+            // width 32 shuffle stays inside a 32 lane subgroup of the physical
+            // wavefront, so this is correct on a 64 wide wavefront too, where
+            // the literal warpSize would be 64 and break the per 32 partition.
+            Unroll<16, Pointer, Reference, Op>::loopShfl(val, op, WARP_SIZE);
 
             if (laneId == 0)
                 loadToSmem(smem, val, tid / 32);

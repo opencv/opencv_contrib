@@ -78,6 +78,25 @@
 
 #include "../common.hpp"
 
+// The fast paths below are NVIDIA PTX inline asm (vadd2.u32 et al) that hipcc
+// cannot assemble. On HIP select the portable software emulation by forcing the
+// arch predicate these blocks key on to 0 for this header only; CV_CUDEV_ARCH
+// is restored at the end so other headers keep the shuffle fast paths.
+//
+// The software emulation branches selected on HIP still spell the 32-bit
+// bitwise complement as the PTX "not.b32" instruction, which amdgcn cannot
+// assemble (it crashes the backend with an illegal VGPR-to-SGPR copy). Route
+// that one operation through the C complement operator on HIP while keeping the
+// original PTX on the NVIDIA build.
+#if defined(__HIP_DEVICE_COMPILE__)
+#  pragma push_macro("CV_CUDEV_ARCH")
+#  undef CV_CUDEV_ARCH
+#  define CV_CUDEV_ARCH 0
+#  define CV_CUDEV_NOT_B32(x) ((x) = ~(x))
+#else
+#  define CV_CUDEV_NOT_B32(x) asm("not.b32 %0, %0;" : "+r"(x))
+#endif
+
 /*
   This header file contains inline functions that implement intra-word SIMD
   operations, that are hardware accelerated on sm_3x (Kepler) GPUs. Efficient
@@ -142,6 +161,12 @@ __device__ __forceinline__ uint vadd2(uint a, uint b)
 #elif CV_CUDEV_ARCH >= 200
     asm("vadd.u32.u32.u32.sat %0.h0, %1.h0, %2.h0, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
     asm("vadd.u32.u32.u32.sat %0.h1, %1.h1, %2.h1, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
+#elif defined(__HIP_DEVICE_COMPILE__)
+    // The NVIDIA fast path saturates; the legacy emulation below wraps. On HIP
+    // saturate per halfword so the C3/C4 vectorized add/subtract paths match
+    // the per-element kernels (and the CPU reference) exactly.
+    r  = ::min((a & 0xffffu) + (b & 0xffffu), 0xffffu);
+    r |= ::min((a >> 16) + (b >> 16), 0xffffu) << 16;
 #else
     uint s;
     s = a ^ b;          // sum bits
@@ -163,6 +188,15 @@ __device__ __forceinline__ uint vsub2(uint a, uint b)
 #elif CV_CUDEV_ARCH >= 200
     asm("vsub.u32.u32.u32.sat %0.h0, %1.h0, %2.h0, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
     asm("vsub.u32.u32.u32.sat %0.h1, %1.h1, %2.h1, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
+#elif defined(__HIP_DEVICE_COMPILE__)
+    // Saturating per-halfword subtract (clamp underflow to 0), matching the
+    // NVIDIA .sat fast path rather than the wrapping legacy emulation.
+    {
+        const uint a0 = a & 0xffffu, b0 = b & 0xffffu;
+        const uint a1 = a >> 16,     b1 = b >> 16;
+        r  = (a0 > b0 ? a0 - b0 : 0u);
+        r |= (a1 > b1 ? a1 - b1 : 0u) << 16;
+    }
 #else
     uint s;
     s = a ^ b;          // sum bits
@@ -290,7 +324,7 @@ __device__ __forceinline__ uint vsetge2(uint a, uint b)
     asm("vset2.u32.u32.ge %0, %1, %2, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
 #else
     uint c;
-    asm("not.b32 %0, %0;" : "+r"(b));
+    CV_CUDEV_NOT_B32(b);
     c = vavrg2(a, b);   // (a + ~b + 1) / 2 = (a - b) / 2
     c = c & 0x80008000; // msb = carry-outs
     r = c >> 15;        // convert to bool
@@ -308,7 +342,7 @@ __device__ __forceinline__ uint vcmpge2(uint a, uint b)
     c = r << 16;        // convert bool
     r = c - r;          //  into mask
 #else
-    asm("not.b32 %0, %0;" : "+r"(b));
+    CV_CUDEV_NOT_B32(b);
     c = vavrg2(a, b);   // (a + ~b + 1) / 2 = (a - b) / 2
     c = c & 0x80008000; // msb = carry-outs
     r = c >> 15;        // convert
@@ -327,7 +361,7 @@ __device__ __forceinline__ uint vsetgt2(uint a, uint b)
     asm("vset2.u32.u32.gt %0, %1, %2, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
 #else
     uint c;
-    asm("not.b32 %0, %0;" : "+r"(b));
+    CV_CUDEV_NOT_B32(b);
     c = vavg2(a, b);    // (a + ~b) / 2 = (a - b) / 2 [rounded down]
     c = c & 0x80008000; // msbs = carry-outs
     r = c >> 15;        // convert to bool
@@ -345,7 +379,7 @@ __device__ __forceinline__ uint vcmpgt2(uint a, uint b)
     c = r << 16;        // convert bool
     r = c - r;          //  into mask
 #else
-    asm("not.b32 %0, %0;" : "+r"(b));
+    CV_CUDEV_NOT_B32(b);
     c = vavg2(a, b);    // (a + ~b) / 2 = (a - b) / 2 [rounded down]
     c = c & 0x80008000; // msbs = carry-outs
     r = c >> 15;        // convert
@@ -364,7 +398,7 @@ __device__ __forceinline__ uint vsetle2(uint a, uint b)
     asm("vset2.u32.u32.le %0, %1, %2, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
 #else
     uint c;
-    asm("not.b32 %0, %0;" : "+r"(a));
+    CV_CUDEV_NOT_B32(a);
     c = vavrg2(a, b);   // (b + ~a + 1) / 2 = (b - a) / 2
     c = c & 0x80008000; // msb = carry-outs
     r = c >> 15;        // convert to bool
@@ -382,7 +416,7 @@ __device__ __forceinline__ uint vcmple2(uint a, uint b)
     c = r << 16;        // convert bool
     r = c - r;          //  into mask
 #else
-    asm("not.b32 %0, %0;" : "+r"(a));
+    CV_CUDEV_NOT_B32(a);
     c = vavrg2(a, b);   // (b + ~a + 1) / 2 = (b - a) / 2
     c = c & 0x80008000; // msb = carry-outs
     r = c >> 15;        // convert
@@ -401,7 +435,7 @@ __device__ __forceinline__ uint vsetlt2(uint a, uint b)
     asm("vset2.u32.u32.lt %0, %1, %2, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
 #else
     uint c;
-    asm("not.b32 %0, %0;" : "+r"(a));
+    CV_CUDEV_NOT_B32(a);
     c = vavg2(a, b);    // (b + ~a) / 2 = (b - a) / 2 [rounded down]
     c = c & 0x80008000; // msb = carry-outs
     r = c >> 15;        // convert to bool
@@ -419,7 +453,7 @@ __device__ __forceinline__ uint vcmplt2(uint a, uint b)
     c = r << 16;        // convert bool
     r = c - r;          //  into mask
 #else
-    asm("not.b32 %0, %0;" : "+r"(a));
+    CV_CUDEV_NOT_B32(a);
     c = vavg2(a, b);    // (b + ~a) / 2 = (b - a) / 2 [rounded down]
     c = c & 0x80008000; // msb = carry-outs
     r = c >> 15;        // convert
@@ -534,6 +568,15 @@ __device__ __forceinline__ uint vadd4(uint a, uint b)
     asm("vadd.u32.u32.u32.sat %0.b1, %1.b1, %2.b1, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
     asm("vadd.u32.u32.u32.sat %0.b2, %1.b2, %2.b2, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
     asm("vadd.u32.u32.u32.sat %0.b3, %1.b3, %2.b3, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
+#elif defined(__HIP_DEVICE_COMPILE__)
+    // Saturating per-byte add (clamp overflow to 0xff), matching the NVIDIA
+    // .sat fast path rather than the wrapping legacy emulation.
+    #pragma unroll
+    for (int i = 0; i < 32; i += 8)
+    {
+        const uint sum = ::min(((a >> i) & 0xffu) + ((b >> i) & 0xffu), 0xffu);
+        r |= sum << i;
+    }
 #else
     uint s, t;
     s = a ^ b;          // sum bits
@@ -558,6 +601,16 @@ __device__ __forceinline__ uint vsub4(uint a, uint b)
     asm("vsub.u32.u32.u32.sat %0.b1, %1.b1, %2.b1, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
     asm("vsub.u32.u32.u32.sat %0.b2, %1.b2, %2.b2, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
     asm("vsub.u32.u32.u32.sat %0.b3, %1.b3, %2.b3, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
+#elif defined(__HIP_DEVICE_COMPILE__)
+    // Saturating per-byte subtract (clamp underflow to 0), matching the NVIDIA
+    // .sat fast path rather than the wrapping legacy emulation.
+    #pragma unroll
+    for (int i = 0; i < 32; i += 8)
+    {
+        const uint av = (a >> i) & 0xffu;
+        const uint bv = (b >> i) & 0xffu;
+        r |= (av > bv ? av - bv : 0u) << i;
+    }
 #else
     uint s, t;
     s = a ^ ~b;         // inverted sum bits
@@ -659,7 +712,7 @@ __device__ __forceinline__ uint vsetle4(uint a, uint b)
     asm("vset4.u32.u32.le %0, %1, %2, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
 #else
     uint c;
-    asm("not.b32 %0, %0;" : "+r"(a));
+    CV_CUDEV_NOT_B32(a);
     c = vavrg4(a, b);   // (b + ~a + 1) / 2 = (b - a) / 2
     c = c & 0x80808080; // msb = carry-outs
     r = c >> 7;         // convert to bool
@@ -677,7 +730,7 @@ __device__ __forceinline__ uint vcmple4(uint a, uint b)
     c = r << 8;         // convert bool
     r = c - r;          //  to mask
 #else
-    asm("not.b32 %0, %0;" : "+r"(a));
+    CV_CUDEV_NOT_B32(a);
     c = vavrg4(a, b);   // (b + ~a + 1) / 2 = (b - a) / 2
     c = c & 0x80808080; // msbs = carry-outs
     r = c >> 7;         // convert
@@ -696,7 +749,7 @@ __device__ __forceinline__ uint vsetlt4(uint a, uint b)
     asm("vset4.u32.u32.lt %0, %1, %2, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
 #else
     uint c;
-    asm("not.b32 %0, %0;" : "+r"(a));
+    CV_CUDEV_NOT_B32(a);
     c = vavg4(a, b);    // (b + ~a) / 2 = (b - a) / 2 [rounded down]
     c = c & 0x80808080; // msb = carry-outs
     r = c >> 7;         // convert to bool
@@ -714,7 +767,7 @@ __device__ __forceinline__ uint vcmplt4(uint a, uint b)
     c = r << 8;         // convert bool
     r = c - r;          //  to mask
 #else
-    asm("not.b32 %0, %0;" : "+r"(a));
+    CV_CUDEV_NOT_B32(a);
     c = vavg4(a, b);    // (b + ~a) / 2 = (b - a) / 2 [rounded down]
     c = c & 0x80808080; // msbs = carry-outs
     r = c >> 7;         // convert
@@ -733,7 +786,7 @@ __device__ __forceinline__ uint vsetge4(uint a, uint b)
     asm("vset4.u32.u32.ge %0, %1, %2, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
 #else
     uint c;
-    asm("not.b32 %0, %0;" : "+r"(b));
+    CV_CUDEV_NOT_B32(b);
     c = vavrg4(a, b);   // (a + ~b + 1) / 2 = (a - b) / 2
     c = c & 0x80808080; // msb = carry-outs
     r = c >> 7;         // convert to bool
@@ -751,7 +804,7 @@ __device__ __forceinline__ uint vcmpge4(uint a, uint b)
     s = r << 8;         // convert bool
     r = s - r;          //  to mask
 #else
-    asm ("not.b32 %0,%0;" : "+r"(b));
+    CV_CUDEV_NOT_B32(b);
     r = vavrg4 (a, b);  // (a + ~b + 1) / 2 = (a - b) / 2
     r = r & 0x80808080; // msb = carry-outs
     s = r >> 7;         // build mask
@@ -770,7 +823,7 @@ __device__ __forceinline__ uint vsetgt4(uint a, uint b)
     asm("vset4.u32.u32.gt %0, %1, %2, %3;" : "=r"(r) : "r"(a), "r"(b), "r"(r));
 #else
     uint c;
-    asm("not.b32 %0, %0;" : "+r"(b));
+    CV_CUDEV_NOT_B32(b);
     c = vavg4(a, b);    // (a + ~b) / 2 = (a - b) / 2 [rounded down]
     c = c & 0x80808080; // msb = carry-outs
     r = c >> 7;         // convert to bool
@@ -788,7 +841,7 @@ __device__ __forceinline__ uint vcmpgt4(uint a, uint b)
     c = r << 8;         // convert bool
     r = c - r;          //  to mask
 #else
-    asm("not.b32 %0, %0;" : "+r"(b));
+    CV_CUDEV_NOT_B32(b);
     c = vavg4(a, b);    // (a + ~b) / 2 = (a - b) / 2 [rounded down]
     c = c & 0x80808080; // msb = carry-outs
     r = c >> 7;         // convert
@@ -914,5 +967,10 @@ __device__ __forceinline__ uint vmin4(uint a, uint b)
 //! @}
 
 }}
+
+#if defined(__HIP_DEVICE_COMPILE__)
+#  pragma pop_macro("CV_CUDEV_ARCH")
+#endif
+#undef CV_CUDEV_NOT_B32
 
 #endif

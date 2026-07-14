@@ -2,7 +2,10 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 //
+// Copyright (c) 2026 Advanced Micro Devices, Inc.
+//
 // Author: The "adaskit Team" at Fixstars Corporation
+// Author (HIP port): Jeff Daily <jeff.daily@amd.com>
 
 #include "opencv2/opencv_modules.hpp"
 
@@ -12,11 +15,56 @@
 
 #else
 
+#if !defined(__HIP_PLATFORM_AMD__) && !defined(HAVE_HIP)
 #include <cuda.h>
+#endif
 #include "stereosgm.hpp"
 #include "opencv2/cudev/common.hpp"
 #include "opencv2/cudev/warp/warp.hpp"
 #include "opencv2/cudastereo.hpp"
+
+#if defined(__HIP_DEVICE_COMPILE__) || defined(__HIPCC__)
+// HIP has no SIMD-within-a-register intrinsics (NVIDIA __vminu2 et al.), so
+// provide software equivalents operating on packed unsigned lanes: the *2
+// forms treat the uint32 as two 16-bit lanes, the *4 forms as four 8-bit
+// lanes. __vcmpgtu* returns an all-ones / all-zero mask per lane.
+__device__ __forceinline__ static unsigned int __vminu2(unsigned int a, unsigned int b)
+{
+    unsigned int al = a & 0xffffu, ah = a >> 16, bl = b & 0xffffu, bh = b >> 16;
+    return (::min(ah, bh) << 16) | ::min(al, bl);
+}
+__device__ __forceinline__ static unsigned int __vmaxu2(unsigned int a, unsigned int b)
+{
+    unsigned int al = a & 0xffffu, ah = a >> 16, bl = b & 0xffffu, bh = b >> 16;
+    return (::max(ah, bh) << 16) | ::max(al, bl);
+}
+__device__ __forceinline__ static unsigned int __vcmpgtu2(unsigned int a, unsigned int b)
+{
+    unsigned int al = a & 0xffffu, ah = a >> 16, bl = b & 0xffffu, bh = b >> 16;
+    return ((ah > bh ? 0xffffu : 0u) << 16) | (al > bl ? 0xffffu : 0u);
+}
+__device__ __forceinline__ static unsigned int __vminu4(unsigned int a, unsigned int b)
+{
+    unsigned int r = 0;
+    for (int i = 0; i < 32; i += 8)
+        r |= ::min((a >> i) & 0xffu, (b >> i) & 0xffu) << i;
+    return r;
+}
+__device__ __forceinline__ static unsigned int __vmaxu4(unsigned int a, unsigned int b)
+{
+    unsigned int r = 0;
+    for (int i = 0; i < 32; i += 8)
+        r |= ::max((a >> i) & 0xffu, (b >> i) & 0xffu) << i;
+    return r;
+}
+__device__ __forceinline__ static unsigned int __vcmpgtu4(unsigned int a, unsigned int b)
+{
+    unsigned int r = 0;
+    for (int i = 0; i < 32; i += 8)
+        r |= (((a >> i) & 0xffu) > ((b >> i) & 0xffu) ? 0xffu : 0u) << i;
+    return r;
+}
+#endif
 
 namespace cv { namespace cuda { namespace device {
 namespace stereosgm
@@ -461,6 +509,14 @@ void censusTransform(const GpuMat& src, GpuMat& dest, Stream& _stream)
 {
     CV_Assert(src.size() == dest.size());
     CV_Assert(src.type() == CV_8UC1 || src.type() == CV_16UC1);
+#if defined(__HIP_PLATFORM_AMD__) || defined(HAVE_HIP)
+    // The kernel writes only interior pixels and leaves the half-window border
+    // untouched, relying on the destination already being zero. CUDA's device
+    // allocator happens to hand back zeroed pages so this is latent there, but
+    // the ROCm allocator may return reused (non-zero) memory, leaving the
+    // border garbage and failing the census accuracy test. Zero it explicitly.
+    dest.setTo(Scalar::all(0), _stream);
+#endif
     const int width_per_block = BLOCK_SIZE - WINDOW_WIDTH + 1;
     const int height_per_block = LINES_PER_BLOCK;
     const dim3 gdim(

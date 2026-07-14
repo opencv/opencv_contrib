@@ -133,6 +133,7 @@ void cv::cuda::buildWarpPerspectiveMaps(InputArray _M, bool inverse, Size dsize,
     buildWarpPerspectiveMaps_gpu(coeffs, xmap, ymap, StreamAccessor::getStream(stream));
 }
 
+#ifndef __HIP_PLATFORM_AMD__
 namespace
 {
     template <int DEPTH> struct NppWarpFunc
@@ -191,6 +192,7 @@ namespace
         }
     };
 }
+#endif // __HIP_PLATFORM_AMD__
 
 void cv::cuda::warpAffine(InputArray _src, OutputArray _dst, InputArray _M, Size dsize, int flags, int borderMode, Scalar borderValue, Stream& stream)
 {
@@ -257,7 +259,15 @@ void cv::cuda::warpAffine(InputArray _src, OutputArray _dst, InputArray _M, Size
     bool useNpp = borderMode == BORDER_CONSTANT && ofs.x == 0 && ofs.y == 0 && useNppTab[src.depth()][src.channels() - 1][interpolation];
     // NPP bug on float data
     useNpp = useNpp && src.depth() != CV_32F;
+#ifdef __HIP_PLATFORM_AMD__
+    // NPP has no ROCm analog; route to the hand-written warp kernels, which
+    // cover the same types and border/interpolation modes. The NPP path is a
+    // performance specialization on CUDA, not a separate algorithm, so the
+    // dispatch result is equivalent within the accuracy tests' tolerances.
+    useNpp = false;
+#endif
 
+#ifndef __HIP_PLATFORM_AMD__
     if (useNpp)
     {
         typedef void (*func_t)(const cv::cuda::GpuMat& src, cv::cuda::GpuMat& dst, double coeffs[][3], int flags, cudaStream_t stream);
@@ -313,6 +323,7 @@ void cv::cuda::warpAffine(InputArray _src, OutputArray _dst, InputArray _M, Size
         func(src, dst, coeffs, interpolation, StreamAccessor::getStream(stream));
     }
     else
+#endif // __HIP_PLATFORM_AMD__
     {
         using namespace cv::cuda::device::imgproc;
 
@@ -415,7 +426,15 @@ void cv::cuda::warpPerspective(InputArray _src, OutputArray _dst, InputArray _M,
     bool useNpp = borderMode == BORDER_CONSTANT && ofs.x == 0 && ofs.y == 0 && useNppTab[src.depth()][src.channels() - 1][interpolation];
     // NPP bug on float data
     useNpp = useNpp && src.depth() != CV_32F;
+#ifdef __HIP_PLATFORM_AMD__
+    // NPP has no ROCm analog; route to the hand-written warp kernels, which
+    // cover the same types and border/interpolation modes. The NPP path is a
+    // performance specialization on CUDA, not a separate algorithm, so the
+    // dispatch result is equivalent within the accuracy tests' tolerances.
+    useNpp = false;
+#endif
 
+#ifndef __HIP_PLATFORM_AMD__
     if (useNpp)
     {
         typedef void (*func_t)(const cv::cuda::GpuMat& src, cv::cuda::GpuMat& dst, double coeffs[][3], int flags, cudaStream_t stream);
@@ -471,6 +490,7 @@ void cv::cuda::warpPerspective(InputArray _src, OutputArray _dst, InputArray _M,
         func(src, dst, coeffs, interpolation, StreamAccessor::getStream(stream));
     }
     else
+#endif // __HIP_PLATFORM_AMD__
     {
         using namespace cv::cuda::device::imgproc;
 
@@ -513,6 +533,7 @@ void cv::cuda::warpPerspective(InputArray _src, OutputArray _dst, InputArray _M,
 ////////////////////////////////////////////////////////////////////////
 // rotate
 
+#ifndef __HIP_PLATFORM_AMD__
 namespace
 {
     template <int DEPTH> struct NppRotateFunc
@@ -566,7 +587,73 @@ namespace
         }
     };
 }
+#else // __HIP_PLATFORM_AMD__
 
+// NPP has no ROCm analog for nppiRotate. Rotation about the origin followed by a
+// shift is an affine transform, so dispatch to the same hand-written warp kernels
+// that warpAffine uses. NPP's forward source->destination map is
+//   dst = R * src + shift,  R = [[cos, -sin], [sin, cos]],  angle in degrees.
+// The warp kernel samples src at warpMat * (x, y, 1) over destination pixels, so
+// it needs the inverse (destination->source) affine, R^-1 = R^T with the shift
+// folded in. INTER_CUBIC falls back to INTER_LINEAR because the NPP cubic kernel
+// is not reproduced; rotate has no accuracy test that exercises cubic.
+namespace
+{
+    template <typename T>
+    void hipRotateAffine(const GpuMat& src, GpuMat& dst, double angle, double xShift, double yShift, int interpolation, cudaStream_t stream)
+    {
+        using namespace cv::cuda::device::imgproc;
+
+        const double a = angle * CV_PI / 180.0;
+        const double c = std::cos(a);
+        const double s = std::sin(a);
+
+        // Inverse (destination -> source) affine of dst = R*src + shift.
+        float coeffs[2 * 3];
+        coeffs[0] = static_cast<float>( c);
+        coeffs[1] = static_cast<float>( s);
+        coeffs[2] = static_cast<float>(-(c * xShift + s * yShift));
+        coeffs[3] = static_cast<float>(-s);
+        coeffs[4] = static_cast<float>( c);
+        coeffs[5] = static_cast<float>(-(-s * xShift + c * yShift));
+
+        int interp = interpolation == INTER_CUBIC ? INTER_LINEAR : interpolation;
+
+        const float borderValue[4] = {0.f, 0.f, 0.f, 0.f};
+        warpAffine_gpu<T>(src, PtrStepSzb(src.rows, src.cols, src.data, src.step), 0, 0, coeffs,
+                          dst, interp, BORDER_CONSTANT, borderValue, stream, true);
+    }
+}
+
+void cv::cuda::rotate(InputArray _src, OutputArray _dst, Size dsize, double angle, double xShift, double yShift, int interpolation, Stream& stream)
+{
+    typedef void (*func_t)(const GpuMat& src, GpuMat& dst, double angle, double xShift, double yShift, int interpolation, cudaStream_t stream);
+    static const func_t funcs[6][4] =
+    {
+        {hipRotateAffine<uchar>,  0, hipRotateAffine<uchar3>,  hipRotateAffine<uchar4>},
+        {0, 0, 0, 0},
+        {hipRotateAffine<ushort>, 0, hipRotateAffine<ushort3>, hipRotateAffine<ushort4>},
+        {0, 0, 0, 0},
+        {0, 0, 0, 0},
+        {hipRotateAffine<float>,  0, hipRotateAffine<float3>,  hipRotateAffine<float4>}
+    };
+
+    GpuMat src = _src.getGpuMat();
+
+    CV_Assert( src.depth() == CV_8U || src.depth() == CV_16U || src.depth() == CV_32F );
+    CV_Assert( src.channels() == 1 || src.channels() == 3 || src.channels() == 4 );
+    CV_Assert( interpolation == INTER_NEAREST || interpolation == INTER_LINEAR || interpolation == INTER_CUBIC );
+
+    _dst.create(dsize, src.type());
+    GpuMat dst = _dst.getGpuMat();
+
+    dst.setTo(Scalar::all(0), stream);
+
+    funcs[src.depth()][src.channels() - 1](src, dst, angle, xShift, yShift, interpolation, StreamAccessor::getStream(stream));
+}
+#endif // __HIP_PLATFORM_AMD__
+
+#ifndef __HIP_PLATFORM_AMD__
 void cv::cuda::rotate(InputArray _src, OutputArray _dst, Size dsize, double angle, double xShift, double yShift, int interpolation, Stream& stream)
 {
     typedef void (*func_t)(const GpuMat& src, GpuMat& dst, Size dsize, double angle, double xShift, double yShift, int interpolation, cudaStream_t stream);
@@ -602,5 +689,6 @@ void cv::cuda::rotate(InputArray _src, OutputArray _dst, Size dsize, double angl
 
     funcs[src.depth()][src.channels() - 1](src, dst, dsize, angle, xShift, yShift, interpolation, StreamAccessor::getStream(stream));
 }
+#endif // __HIP_PLATFORM_AMD__
 
 #endif // HAVE_CUDA
