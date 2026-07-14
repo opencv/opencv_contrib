@@ -2292,6 +2292,67 @@ INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, CvtColor, testing::Combine(
     WHOLE_SUBMAT));
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+// cvtColorTwoPlane
+
+PARAM_TEST_CASE(CvtColorTwoPlane, cv::cuda::DeviceInfo, cv::Size, MatDepth, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int depth;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        depth = GET_PARAM(2);
+        useRoi = GET_PARAM(3);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(CvtColorTwoPlane, YUV2BGR_NV12)
+{
+    if ((depth != CV_8U) || useRoi)
+        return;
+
+    cv::Mat src1 = randomMat(size, depth, 16.0, 235.0);
+    cv::Mat src2 = randomMat(size/2, CV_MAKE_TYPE(depth, 2), 16.0, 240.0);
+
+    cv::cuda::GpuMat dst;
+    cv::cuda::cvtColorTwoPlane(loadMat(src1, useRoi), loadMat(src2, useRoi), dst, cv::COLOR_YUV2BGR_NV12);
+
+    cv::Mat dst_gold;
+    cv::cvtColorTwoPlane(src1, src2, dst_gold, cv::COLOR_YUV2BGR_NV12);
+
+    EXPECT_MAT_NEAR(dst_gold(cv::Rect(1, 1, dst.cols - 2, dst.rows - 2)), dst(cv::Rect(1, 1, dst.cols - 2, dst.rows - 2)), 2);
+}
+
+CUDA_TEST_P(CvtColorTwoPlane, YUV2RGB_NV12)
+{
+    if ((depth != CV_8U) || useRoi)
+        return;
+
+    cv::Mat src1 = randomMat(size, depth, 16.0, 235.0);
+    cv::Mat src2 = randomMat(size/2, CV_MAKE_TYPE(depth, 2), 16.0, 240.0);
+
+    cv::cuda::GpuMat dst;
+    cv::cuda::cvtColorTwoPlane(loadMat(src1, useRoi), loadMat(src2, useRoi), dst, cv::COLOR_YUV2RGB_NV12);
+
+    cv::Mat dst_gold;
+    cv::cvtColorTwoPlane(src1, src2, dst_gold, cv::COLOR_YUV2RGB_NV12);
+
+    EXPECT_MAT_NEAR(dst_gold(cv::Rect(1, 1, dst.cols - 2, dst.rows - 2)), dst(cv::Rect(1, 1, dst.cols - 2, dst.rows - 2)), 2);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, CvtColorTwoPlane, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(cv::Size(128, 128)),
+    testing::Values(MatDepth(CV_8U)),
+    WHOLE_SUBMAT));
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Demosaicing
 
 struct Demosaicing : testing::TestWithParam<testing::tuple<cv::cuda::DeviceInfo, bool>>
