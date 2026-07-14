@@ -35,10 +35,15 @@ make && sudo make install
 
 Tesseract will be installed to /usr/local.
 
-3. download the pre-trained classifier data for English language:
-https://code.google.com/p/tesseract-ocr/downloads/detail?name=eng.traineddata.gz
+```bash
+sudo ldconfig
+tesseract -v  /* to check installtion */
+```
 
-unzip it (gzip -d eng.traineddata.gz) and copy to /usr/local/share/tessdata.
+3. download the pre-trained classifier data for English language:
+https://github.com/tesseract-ocr/tessdata/blob/3.04.00/eng.traineddata
+
+Download eng.traineddata and copy to /usr/local/share/tessdata.
 
 Notes
 -----
