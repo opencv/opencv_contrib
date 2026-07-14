@@ -1,0 +1,37 @@
+include(CMakeFindDependencyMacro)
+
+find_dependency(Threads)
+find_dependency(OpenMP)
+find_dependency(OpenCV)
+find_dependency(Eigen3)
+find_dependency(g2o)
+find_dependency(yaml-cpp)
+if(@spdlog_FOUND@)
+    find_dependency(spdlog)
+endif()
+if(@Tracy_FOUND@)
+    find_dependency(Tracy)
+endif()
+
+if(@BOW_FRAMEWORK@ MATCHES "DBoW2")
+    find_dependency(DBoW2)
+elseif(@BOW_FRAMEWORK@ MATCHES "FBoW")
+    find_dependency(fbow)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/@SLAM_TARGETS_EXPORT_NAME@.cmake")
+
+include_directories("@CMAKE_INSTALL_PREFIX@/include")
+
+set(@PROJECT_NAME@_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/include")
+
+link_directories("@CMAKE_INSTALL_PREFIX@/lib")
+set(@PROJECT_NAME@_LIB_DIR "@CMAKE_INSTALL_PREFIX@/lib")
+
+set(@PROJECT_NAME@_LIBS @REQUIRED_LIBRARIES@ @PROJECT_NAME@)
+
+set(@PROJECT_NAME@_FOUND TRUE)
+set(@PROJECT_NAME@_VERSION @PROJECT_VERSION@)
+set(@PROJECT_NAME@_VERSION_MAJOR @PROJECT_VERSION_MAJOR@)
+set(@PROJECT_NAME@_VERSION_MINOR @PROJECT_VERSION_MINOR@)
+set(@PROJECT_NAME@_VERSION_PATCH @PROJECT_VERSION_PATCH@)
