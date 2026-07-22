@@ -913,27 +913,28 @@ void DepthNormal::write(FileStorage& fs) const
 *                                 Response maps                                          *
 \****************************************************************************************/
 
-static void orUnaligned8u(const uchar * src, const int src_stride,
-                          uchar * dst, const int dst_stride,
-                          const int width, const int height)
+static void orUnaligned8u(const uchar* src, int src_step,
+                          uchar* dst, int dst_step,
+                          int width, int height)
 {
-  for (int r = 0; r < height; ++r)
-  {
-    int c = 0;
-
-    for ( ; c <= width - v_uint8::nlanes; c += v_uint8::nlanes)
+    for (int r = 0; r < height; ++r)
     {
-      v_uint8 v_src = v_load_unaligned(src + c);
-      v_uint8 v_dst = v_load_unaligned(dst + c);
-      v_store_unaligned(dst + c, v_src | v_dst);
+        int c = 0;
+        for (; c <= width - cv::v_uint8::nlanes; c += cv::v_uint8::nlanes)
+        {
+            cv::v_uint8 v_src = cv::vx_load(src + c);
+            cv::v_uint8 v_dst = cv::vx_load(dst + c);
+            cv::vx_store(dst + c, cv::v_or(v_src, v_dst));
+        }
+
+        for (; c < width; ++c)
+        {
+            dst[c] |= src[c];
+        }
+
+        src += src_step;
+        dst += dst_step;
     }
-
-    for ( ; c < width; ++c)
-      dst[c] |= src[c];
-
-    src += src_stride;
-    dst += dst_stride;
-  }
 }
 /**
  * \brief Spread binary labels in a quantized image.
