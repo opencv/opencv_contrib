@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html
 
 // This code is also subject to the license terms in the LICENSE_WillowGarage.md file found in this module's directory
-
+#include "opencv2/core/hal/intrin.hpp"
 #include "precomp.hpp"
 
 namespace cv
@@ -914,64 +914,27 @@ void DepthNormal::write(FileStorage& fs) const
 \****************************************************************************************/
 
 static void orUnaligned8u(const uchar * src, const int src_stride,
-                   uchar * dst, const int dst_stride,
-                   const int width, const int height)
+                          uchar * dst, const int dst_stride,
+                          const int width, const int height)
 {
-#if CV_SSE2
-  volatile bool haveSSE2 = checkHardwareSupport(CPU_SSE2);
-#if CV_SSE3
-  volatile bool haveSSE3 = checkHardwareSupport(CPU_SSE3);
-#endif
-  bool src_aligned = reinterpret_cast<unsigned long long>(src) % 16 == 0;
-#endif
-
   for (int r = 0; r < height; ++r)
   {
     int c = 0;
 
-#if CV_SSE2
-    // Use aligned loads if possible
-    if (haveSSE2 && src_aligned)
+    for ( ; c <= width - v_uint8::nlanes; c += v_uint8::nlanes)
     {
-      for ( ; c < width - 15; c += 16)
-      {
-        const __m128i* src_ptr = reinterpret_cast<const __m128i*>(src + c);
-        __m128i* dst_ptr = reinterpret_cast<__m128i*>(dst + c);
-        *dst_ptr = _mm_or_si128(*dst_ptr, *src_ptr);
-      }
+      v_uint8 v_src = v_load_unaligned(src + c);
+      v_uint8 v_dst = v_load_unaligned(dst + c);
+      v_store_unaligned(dst + c, v_src | v_dst);
     }
-#if CV_SSE3
-    // Use LDDQU for fast unaligned load
-    else if (haveSSE3)
-    {
-      for ( ; c < width - 15; c += 16)
-      {
-        __m128i val = _mm_lddqu_si128(reinterpret_cast<const __m128i*>(src + c));
-        __m128i* dst_ptr = reinterpret_cast<__m128i*>(dst + c);
-        *dst_ptr = _mm_or_si128(*dst_ptr, val);
-      }
-    }
-#endif
-    // Fall back to MOVDQU
-    else if (haveSSE2)
-    {
-      for ( ; c < width - 15; c += 16)
-      {
-        __m128i val = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + c));
-        __m128i* dst_ptr = reinterpret_cast<__m128i*>(dst + c);
-        *dst_ptr = _mm_or_si128(*dst_ptr, val);
-      }
-    }
-#endif
+
     for ( ; c < width; ++c)
       dst[c] |= src[c];
 
-    // Advance to next row
     src += src_stride;
     dst += dst_stride;
   }
 }
-
 /**
  * \brief Spread binary labels in a quantized image.
  *
