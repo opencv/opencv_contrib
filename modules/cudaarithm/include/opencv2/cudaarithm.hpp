@@ -1177,6 +1177,21 @@ you can reduce memory requirements at the cost of speed.
  */
 CV_EXPORTS_W Ptr<Convolution> createConvolution(Size user_block_size = Size());
 
+/** @brief Performs class-aware greedy non-maximum suppression on the GPU.
+
+@param boxes  Detection boxes, CV_32FC1 of shape (N,4): [x1, y1, x2, y2].
+@param scores Detection scores, CV_32F, length N.
+@param classes Class ids, CV_32S, length N (boxes of different classes never suppress each other).
+@param indices Output CV_32S row of kept box indices (into the input arrays), score-descending.
+@param score_threshold Boxes with score below this are dropped before NMS.
+@param nms_threshold IoU threshold above which the lower-scoring box is suppressed.
+@param stream Stream for the asynchronous version.
+
+The O(N^2) IoU computation runs as a HIP kernel; the greedy selection is done host-side.
+ */
+CV_EXPORTS_W void nms(InputArray boxes, InputArray scores, InputArray classes, OutputArray indices,
+                      float score_threshold, float nms_threshold, Stream& stream = Stream::Null());
+
 //! @} cudaarithm_arithm
 
 //! @} cudaarithm
