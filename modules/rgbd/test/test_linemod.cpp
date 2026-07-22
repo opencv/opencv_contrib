@@ -20,7 +20,6 @@ TEST(RGBD_Linemod, MatchUnaligned)
 
     std::vector<cv::linemod::Match> matches;
 
-    // التنفيذ للتأكد من عدم حدوث Segfault عند المعالجة
     EXPECT_NO_THROW(detector->match(sources, 80.0f, matches));
 }
 
