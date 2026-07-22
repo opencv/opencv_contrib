@@ -77,8 +77,6 @@ CV_CUDEV_MAKE_VEC_INST(int)
 CV_CUDEV_MAKE_VEC_INST(uint)
 CV_CUDEV_MAKE_VEC_INST(float)
 CV_CUDEV_MAKE_VEC_INST(double)
-CV_CUDEV_MAKE_VEC_INST(long)
-CV_CUDEV_MAKE_VEC_INST(ulong)
 
 #undef CV_CUDEV_MAKE_VEC_INST
 
@@ -173,8 +171,6 @@ template <> struct VecTraits<unsigned long>
     __host__ __device__ __forceinline__ static unsigned long make(unsigned long x) {return x;}
     __host__ __device__ __forceinline__ static unsigned long make(const unsigned long* v) {return *v;}
 };
-CV_CUDEV_VEC_TRAITS_INST(long)
-CV_CUDEV_VEC_TRAITS_INST(ulong)
 
 #undef CV_CUDEV_VEC_TRAITS_INST
 
@@ -244,6 +240,7 @@ public:
          };
 };
 #endif
+#endif // CV_32U
 
 #define CV_CUDEV_DATA_TYPE_INST(_depth_type, _channel_num) \
     template <> class DataType< _depth_type ## _channel_num > \
