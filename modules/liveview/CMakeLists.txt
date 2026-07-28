@@ -2,8 +2,8 @@ set(the_description "Live visual views for OpenCV frame channels")
 
 ocv_module_include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-set(LIVEVIEW_HTTP_BACKEND "AUTO" CACHE STRING "HTTP backend (AUTO, CIVETWEB, BOOST, MONGOOSE)")
-set_property(CACHE LIVEVIEW_HTTP_BACKEND PROPERTY STRINGS AUTO CIVETWEB BOOST MONGOOSE)
+set(LIVEVIEW_HTTP_BACKEND "AUTO" CACHE STRING "HTTP backend (AUTO, CIVETWEB, BOOST)")
+set_property(CACHE LIVEVIEW_HTTP_BACKEND PROPERTY STRINGS AUTO CIVETWEB BOOST)
 string(TOUPPER "${LIVEVIEW_HTTP_BACKEND}" LIVEVIEW_HTTP_BACKEND)
 
 set(LIVEVIEW_VIDEO_ENCODER "AUTO" CACHE STRING "Video encoder backend (AUTO, OFF, FFMPEG)")
@@ -62,11 +62,12 @@ if(NOT LIVEVIEW_HTTP_BACKEND STREQUAL "AUTO")
         set(LIVEVIEW_SELECTED_HTTP_BACKEND "CIVETWEB")
     elseif(LIVEVIEW_HTTP_BACKEND STREQUAL "BOOST" AND BOOST_FOUND)
         set(LIVEVIEW_SELECTED_HTTP_BACKEND "BOOST")
-    elseif(LIVEVIEW_HTTP_BACKEND STREQUAL "MONGOOSE")
-        set(LIVEVIEW_SELECTED_HTTP_BACKEND "MONGOOSE")
+    elseif(LIVEVIEW_HTTP_BACKEND STREQUAL "CIVETWEB")
+        message(FATAL_ERROR "LiveView: LIVEVIEW_HTTP_BACKEND=CIVETWEB requires CivetWeb development files.")
+    elseif(LIVEVIEW_HTTP_BACKEND STREQUAL "BOOST")
+        message(FATAL_ERROR "LiveView: LIVEVIEW_HTTP_BACKEND=BOOST requires Boost.Beast headers.")
     else()
-        set(_liveview_backend_warn
-            "LiveView: requested HTTP backend '${LIVEVIEW_HTTP_BACKEND}' is not available; falling back to AUTO.")
+        message(FATAL_ERROR "LiveView: unknown LIVEVIEW_HTTP_BACKEND='${LIVEVIEW_HTTP_BACKEND}'")
     endif()
 endif()
 
@@ -76,7 +77,8 @@ if(LIVEVIEW_SELECTED_HTTP_BACKEND STREQUAL "")
     elseif(BOOST_FOUND)
         set(LIVEVIEW_SELECTED_HTTP_BACKEND "BOOST")
     else()
-        set(LIVEVIEW_SELECTED_HTTP_BACKEND "MONGOOSE")
+        message(FATAL_ERROR "LiveView: no supported HTTP backend found. Install CivetWeb or Boost.Beast, "
+                            "or set LIVEVIEW_HTTP_BACKEND to an available backend.")
     endif()
 endif()
 
@@ -127,21 +129,6 @@ elseif(LIVEVIEW_SELECTED_HTTP_BACKEND STREQUAL "BOOST")
     if(Threads_FOUND)
         list(APPEND LIVEVIEW_HTTP_LIBS Threads::Threads)
     endif()
-elseif(LIVEVIEW_SELECTED_HTTP_BACKEND STREQUAL "MONGOOSE")
-    set(MONGOOSE_VERSION "7.18")
-    set(MONGOOSE_HASH "e50fe3c2d43cdd5ed96833aae88ad7b1")
-    set(MONGOOSE_URL "https://github.com/cesanta/mongoose/archive/refs/tags/${MONGOOSE_VERSION}.zip")
-    set(MONGOOSE_DOWNLOAD_DIR "${OpenCV_BINARY_DIR}/3rdparty/mongoose")
-    set(MONGOOSE_UNPACK_DIR "${MONGOOSE_DOWNLOAD_DIR}/mongoose-${MONGOOSE_VERSION}")
-    set(LIVEVIEW_HTTP_SOURCES "${MONGOOSE_UNPACK_DIR}/mongoose.c")
-    set(LIVEVIEW_HTTP_INCLUDES "${MONGOOSE_UNPACK_DIR}")
-    ocv_download(
-            FILENAME "${MONGOOSE_VERSION}.zip"
-            URL "${MONGOOSE_URL}"
-            HASH "${MONGOOSE_HASH}"
-            DESTINATION_DIR "${MONGOOSE_DOWNLOAD_DIR}"
-            UNPACK
-    )
 endif()
 
 ocv_define_module(liveview opencv_core opencv_imgcodecs opencv_imgproc WRAP python)
@@ -157,9 +144,6 @@ if(LIVEVIEW_WEBRTC_ENABLED)
     list(APPEND LIVEVIEW_DEFINES "HAVE_LIVEVIEW_WEBRTC_GSTREAMER")
 endif()
 
-if(LIVEVIEW_SELECTED_HTTP_BACKEND STREQUAL "MONGOOSE")
-    target_sources(${the_module} PRIVATE ${LIVEVIEW_HTTP_SOURCES})
-endif()
 if(LIVEVIEW_HTTP_INCLUDES)
     list(REMOVE_DUPLICATES LIVEVIEW_HTTP_INCLUDES)
     target_include_directories(${the_module} PRIVATE ${LIVEVIEW_HTTP_INCLUDES})
@@ -192,11 +176,7 @@ if(TARGET opencv_test_liveview)
         "${CMAKE_CURRENT_SOURCE_DIR}/src/web_backend.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/web_backend_boost.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/web_backend_civetweb.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/web_backend_mongoose.cpp"
     )
-    if(LIVEVIEW_SELECTED_HTTP_BACKEND STREQUAL "MONGOOSE")
-        target_sources(opencv_test_liveview PRIVATE ${LIVEVIEW_HTTP_SOURCES})
-    endif()
     if(LIVEVIEW_HTTP_INCLUDES)
         target_include_directories(opencv_test_liveview PRIVATE ${LIVEVIEW_HTTP_INCLUDES})
     endif()
@@ -249,6 +229,3 @@ message(STATUS "\nLiveView configuration summary:"
                "\n  WebRTC preference        : ${LIVEVIEW_WEBRTC}"
                "\n  GStreamer WebRTC found   : ${_yn_gst_webrtc}"
                "\n  WebRTC enabled           : ${_yn_webrtc}\n")
-if(DEFINED _liveview_backend_warn)
-    message(WARNING "${_liveview_backend_warn}")
-endif()

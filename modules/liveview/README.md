@@ -285,7 +285,7 @@ tests and diagnostics.
 HTTP backend:
 
 ```text
-LIVEVIEW_HTTP_BACKEND=AUTO|MONGOOSE|CIVETWEB|BOOST
+LIVEVIEW_HTTP_BACKEND=AUTO|CIVETWEB|BOOST
 ```
 
 Video encoder:

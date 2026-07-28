@@ -43,7 +43,6 @@ public:
 };
 
 Ptr<WebBackend> createWebBackend();
-Ptr<WebBackend> createMongooseWebBackend();
 Ptr<WebBackend> createCivetWebBackend();
 Ptr<WebBackend> createBoostWebBackend();
 
