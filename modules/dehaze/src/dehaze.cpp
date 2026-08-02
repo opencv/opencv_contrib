@@ -106,7 +106,7 @@ void detectSkyRegion(InputArray _src, OutputArray _skyMask, double threshold)
 
 
    Mat saturation = channels[1];
-   Mat value      = channels[2];  
+   Mat value      = channels[2];
 
 
    // Sky = bright (high V) and not colorful (low S)
