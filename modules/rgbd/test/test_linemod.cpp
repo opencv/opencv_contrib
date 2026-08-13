@@ -39,6 +39,12 @@ TEST(Rgbd_Linemod, match_survives_non16aligned_row_width)
   // Level 0: 64*34 = 2176 = 136*16. Level 1: 32*17 = 544 = 34*16.
   ASSERT_EQ((height * width) % 16, 0);
   ASSERT_EQ((((height + 1) / 2) * ((width + 1) / 2)) % 16, 0);
+  // Guard the test's own premise: if cv::Mat's row-stride convention ever
+  // changed to pad rows to a 16-byte boundary, this test would silently stop
+  // exercising the bug it exists to catch while still passing. Fail loudly
+  // instead.
+  ASSERT_NE(width % 16, 0) << "test premise requires a non-16-aligned row width at level 0";
+  ASSERT_NE(((width + 1) / 2) % 16, 0) << "test premise requires a non-16-aligned row width at level 1";
 
   Mat src(height, width, CV_8UC3, Scalar(0, 0, 0));
   // High-contrast checkerboard so ColorGradient finds strong, plentiful
