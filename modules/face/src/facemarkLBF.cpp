@@ -395,13 +395,7 @@ static void _copyVector2Output(std::vector< std::vector< Point2f > > &vec, Outpu
         for (unsigned int i = 0; i < vec.size(); i++) {
             out.create((int)vec[i].size(), 1, CV_32FC2, i);
             Mat m = out.getMat(i);
-            // `m` is only a header over the destination vector's storage, so the
-            // source has to match its shape already: a copyTo() that needs to
-            // resize reallocates `m` instead of writing through it, and the
-            // landmarks are silently dropped. OpenCV 4 handed out a 1 x N header
-            // here while OpenCV 5 hands out a 1-D one, which is why transposing
-            // to a column left every landmark at (0,0) on 5.x -- see
-            // https://github.com/opencv/opencv/issues/29703
+            // Source must match m's shape or copyTo() reallocates m instead of writing through it.
             Mat(vec[i]).reshape(2, 1).copyTo(m);
         }
     }
