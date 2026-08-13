@@ -38,7 +38,7 @@ TEST(Rgbd_Linemod, spread_handles_non16aligned_row_stride)
                    // for the drifted alignment to be exercised repeatedly.
 
   Mat quantized(height, width, CV_8U);
-  cv::RNG rng(12345);
+  RNG& rng = theRNG();
   // Populate with a mix of single-bit-set quantized orientation labels
   // (valid inputs to spread()) so the OR accumulation is non-trivial.
   static const uchar labels[8] = {1, 2, 4, 8, 16, 32, 64, 128};
