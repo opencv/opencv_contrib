@@ -132,6 +132,15 @@ TEST(CV_Face_FacemarkAAM, test_workflow) {
     EXPECT_TRUE(facemark->fit(image, rects, facial_points));
     EXPECT_TRUE(facial_points[0].size()>0);
 
+    // The fitted points must actually reach the caller's vector. A regression in
+    // the output copy used to hand back the right number of landmarks with every
+    // one of them left at (0,0), which the size check above does not catch.
+    // https://github.com/opencv/opencv/issues/29703
+    size_t nonzero = 0;
+    for (size_t i = 0; i < facial_points[0].size(); i++)
+        if (facial_points[0][i] != Point2f(0, 0)) nonzero++;
+    EXPECT_EQ(nonzero, facial_points[0].size());
+
     /*------------ Test getData ---------------*/
     FacemarkAAM::Data data;
     EXPECT_TRUE(facemark->getData(&data));
