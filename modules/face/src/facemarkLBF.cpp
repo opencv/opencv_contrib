@@ -395,7 +395,6 @@ static void _copyVector2Output(std::vector< std::vector< Point2f > > &vec, Outpu
         for (unsigned int i = 0; i < vec.size(); i++) {
             out.create((int)vec[i].size(), 1, CV_32FC2, i);
             Mat m = out.getMat(i);
-            // Source must match m's shape or copyTo() reallocates m instead of writing through it.
             Mat(vec[i]).reshape(2, 1).copyTo(m);
         }
     }
