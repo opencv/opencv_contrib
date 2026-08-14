@@ -49,6 +49,19 @@
 #include "../common.hpp"
 #include "opencv2/core/cuda/cuda_compat.hpp"
 
+// The 64-bit integer vector-trait rows use the platform's 64-bit integer scalar
+// together with CUDA's matching vector types. On LP64 platforms (e.g. Linux)
+// that is `long`/`ulong` with CUDA's `long1..4`/`ulong1..4`. On Windows `long`
+// is 32-bit, so the 64-bit rows must instead use `long long`/`unsigned long
+// long` with CUDA's `longlong1..4`/`ulonglong1..4`; otherwise
+// VecTraits<int64_t>/<uint64_t> - which core's gpu_mat.cu instantiates - have no
+// matching specialization and the CUDA core module fails to build. CUDA ships
+// the vector types but not the scalar aliases, so define them here.
+#if defined(_WIN32)
+typedef long long          longlong;
+typedef unsigned long long ulonglong;
+#endif
+
 namespace cv {
 
     using cv::cuda::device::compat::double4;
@@ -76,8 +89,14 @@ CV_CUDEV_MAKE_VEC_INST(int)
 CV_CUDEV_MAKE_VEC_INST(uint)
 CV_CUDEV_MAKE_VEC_INST(float)
 CV_CUDEV_MAKE_VEC_INST(double)
+// 64-bit integer rows: width-correct scalar + CUDA vector types per platform.
+#if defined(_WIN32)
+CV_CUDEV_MAKE_VEC_INST(longlong)
+CV_CUDEV_MAKE_VEC_INST(ulonglong)
+#else
 CV_CUDEV_MAKE_VEC_INST(long)
 CV_CUDEV_MAKE_VEC_INST(ulong)
+#endif
 
 #undef CV_CUDEV_MAKE_VEC_INST
 
@@ -144,8 +163,14 @@ CV_CUDEV_VEC_TRAITS_INST(int)
 CV_CUDEV_VEC_TRAITS_INST(uint)
 CV_CUDEV_VEC_TRAITS_INST(float)
 CV_CUDEV_VEC_TRAITS_INST(double)
+// 64-bit integer rows: width-correct scalar + CUDA vector types per platform.
+#if defined(_WIN32)
+CV_CUDEV_VEC_TRAITS_INST(longlong)
+CV_CUDEV_VEC_TRAITS_INST(ulonglong)
+#else
 CV_CUDEV_VEC_TRAITS_INST(long)
 CV_CUDEV_VEC_TRAITS_INST(ulong)
+#endif
 
 #undef CV_CUDEV_VEC_TRAITS_INST
 
