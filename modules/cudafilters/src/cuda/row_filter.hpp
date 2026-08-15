@@ -40,6 +40,7 @@
 //
 //M*/
 
+#include "opencv2/core/cuda.hpp"
 #include "opencv2/core/cuda/common.hpp"
 #include "opencv2/core/cuda/saturate_cast.hpp"
 #include "opencv2/core/cuda/vec_math.hpp"
@@ -160,13 +161,41 @@ namespace row_filter
             PATCH_PER_BLOCK = 4;
         }
 
-        const dim3 block(BLOCK_DIM_X, BLOCK_DIM_Y);
-        const dim3 grid(divUp(src.cols, BLOCK_DIM_X * PATCH_PER_BLOCK), divUp(src.rows, BLOCK_DIM_Y));
+        // Process the image in chunks of rows such that the number of blocks in y-direction does not exceed the maximum grid size
+        DeviceInfo devInfo;
+        const int maxGridY = devInfo.maxGridSize()[1];
+        const int nBlocksX = divUp(src.cols, BLOCK_DIM_X * PATCH_PER_BLOCK);
+        const int nBlocksY = divUp(src.rows, BLOCK_DIM_Y);
+        const int nGrids = divUp(nBlocksY, maxGridY); // Number of launches required to process the whole image
 
+        const dim3 block(BLOCK_DIM_X, BLOCK_DIM_Y);
         B<T> brd(src.cols);
 
-        linearRowFilter<KSIZE, T, D><<<grid, block, 0, stream>>>(src, dst, kernel, anchor, brd);
-        cudaSafeCall( cudaGetLastError() );
+        for(int i = 0; i < nGrids; ++i )
+        {
+            const int startRow = i * maxGridY * BLOCK_DIM_Y;
+            const int endRow =
+                std::min(startRow + maxGridY * BLOCK_DIM_Y, src.rows);
+
+            const int chunkRows = endRow - startRow;
+
+            const dim3 grid(
+                nBlocksX,
+                divUp(chunkRows, BLOCK_DIM_Y)
+            );
+
+            // Get the chunks as views of the original matrices
+            PtrStepSz<T> srcView = src;
+            srcView.data = src.ptr(startRow);
+            srcView.rows = chunkRows;
+
+            PtrStepSz<D> dstView = dst;
+            dstView.data = dst.ptr(startRow);
+            dstView.rows = chunkRows;
+
+            linearRowFilter<KSIZE, T, D><<<grid, block, 0, stream>>>(srcView, dstView, kernel, anchor, brd);
+            cudaSafeCall( cudaGetLastError() );
+        }
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );

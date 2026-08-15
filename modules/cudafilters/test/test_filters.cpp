@@ -361,6 +361,130 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilterWithEmptyKernels, tes
     testing::Values(false, true)//use col kernel
     ));
 
+// Test for issue #4153 row filter
+PARAM_TEST_CASE(SeparableLinearFilterWithRowViewsRowFilter, cv::cuda::DeviceInfo, bool)
+{
+    cv::cuda::DeviceInfo devInfo;
+    bool inPlace;
+
+    cv::Size size;
+    cv::Size ksize;
+    cv::Point anchor;
+    int BLOCK_DIM_Y;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        inPlace = GET_PARAM(1);
+
+        const int maxGridSizeY = devInfo.maxGridSize()[1];
+        const int cc = devInfo.majorVersion() * 10 + devInfo.minorVersion();
+
+        BLOCK_DIM_Y = (cc >= 20) ? 8 : 4;
+
+        size = cv::Size(3, maxGridSizeY*BLOCK_DIM_Y + 1);
+        ksize = cv::Size(3, 1);
+        anchor = cv::Point(-1, -1);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(SeparableLinearFilterWithRowViewsRowFilter, Accuracy)
+{
+    const int srcType = CV_32FC1;
+    cv::Mat src = randomMat(size, srcType);
+    cv::Mat rowKernel = (cv::Mat_<float>(ksize) << -1.0f, 0.0f, 1.0f);
+    cv::Mat colKernel = (cv::Mat_<float>(1, 1) << 1.0f);
+
+    cv::Ptr<cv::cuda::Filter> sepFilterWithRowViews =
+        cv::cuda::createSeparableLinearFilter(srcType, -1,
+            rowKernel,
+            cv::Mat(),
+            cv::Point(-1, -1), cv::BORDER_REPLICATE, cv::BORDER_REPLICATE);
+
+
+    cv::cuda::GpuMat gpuSrc = loadMat(src);
+    cv::cuda::GpuMat gpuDst = inPlace ? gpuSrc : cv::cuda::GpuMat();
+
+    sepFilterWithRowViews->apply(gpuSrc, gpuDst);
+
+    cv::Mat dst_gold;
+    cv::sepFilter2D(src, dst_gold, -1, rowKernel, colKernel, anchor, 0, cv::BORDER_REPLICATE);
+
+    EXPECT_MAT_NEAR(dst_gold, gpuDst, src.depth() < CV_32F ? 1.0 : 1e-2);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilterWithRowViewsRowFilter, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(false, true)//in-place
+    ));
+
+// Test for issue #4153 column filter
+PARAM_TEST_CASE(SeparableLinearFilterWithRowViewsColumnFilter, cv::cuda::DeviceInfo, bool, int)
+{
+    cv::cuda::DeviceInfo devInfo;
+    bool inPlace;
+
+    cv::Size size;
+    cv::Size ksize;
+    cv::Point anchor;
+    int dimension;
+    int BLOCK_DIM_Y;
+    int PATCH_PER_BLOCK;
+    const int BLOCK_DIM_X = 16;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        inPlace = GET_PARAM(1);
+        dimension = GET_PARAM(2);
+
+        const int maxGridSizeY = devInfo.maxGridSize()[1];
+        const int cc = devInfo.majorVersion() * 10 + devInfo.minorVersion();
+
+        BLOCK_DIM_Y = (cc >= 20) ? 16 : 8;
+        PATCH_PER_BLOCK = (cc >= 20) ? 4 : 2;
+
+        size = (dimension == 0) ? cv::Size(maxGridSizeY*BLOCK_DIM_X + 1, 3) : cv::Size(3, maxGridSizeY*BLOCK_DIM_Y*PATCH_PER_BLOCK + 1);
+        ksize = cv::Size(1, 3);
+        anchor = cv::Point(-1, -1);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(SeparableLinearFilterWithRowViewsColumnFilter, Accuracy)
+{
+    const int srcType = CV_32FC1;
+    cv::Mat src = randomMat(size, srcType);
+    cv::Mat colKernel = (cv::Mat_<float>(ksize) << -1.0f, 0.0f, 1.0f);
+    cv::Mat rowKernel = (cv::Mat_<float>(1, 1) << 1.0f);
+
+    cv::Ptr<cv::cuda::Filter> sepFilterWithRowViews =
+        cv::cuda::createSeparableLinearFilter(srcType, -1,
+            cv::Mat(),
+            colKernel.t(),
+            cv::Point(-1, -1), cv::BORDER_REPLICATE, cv::BORDER_REPLICATE);
+
+
+    cv::cuda::GpuMat gpuSrc = loadMat(src);
+    cv::cuda::GpuMat gpuDst = inPlace ? gpuSrc : cv::cuda::GpuMat();
+
+    sepFilterWithRowViews->apply(gpuSrc, gpuDst);
+
+    cv::Mat dst_gold;
+    cv::sepFilter2D(src, dst_gold, -1, rowKernel, colKernel.t(), anchor, 0, cv::BORDER_REPLICATE);
+
+    EXPECT_MAT_NEAR(dst_gold, gpuDst, src.depth() < CV_32F ? 1.0 : 1e-2);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilterWithRowViewsColumnFilter, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(false, true),//in-place
+    testing::Values(0, 1) // excess of elements on 0: rows or 1: columns
+    ));
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Sobel
 
