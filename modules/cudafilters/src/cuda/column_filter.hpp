@@ -40,6 +40,7 @@
 //
 //M*/
 
+#include "opencv2/core/cuda.hpp"
 #include "opencv2/core/cuda/common.hpp"
 #include "opencv2/core/cuda/saturate_cast.hpp"
 #include "opencv2/core/cuda/vec_math.hpp"
@@ -71,16 +72,18 @@ namespace column_filter
 
         __shared__ sum_t smem[(PATCH_PER_BLOCK + 2 * HALO_SIZE) * BLOCK_DIM_Y][BLOCK_DIM_X];
 
-        const int x = blockIdx.x * BLOCK_DIM_X + threadIdx.x;
+        // Use Y grid dimension to index the columns of the image
+        const int x = blockIdx.y * BLOCK_DIM_X + threadIdx.x;
 
         if (x >= src.cols)
             return;
 
         const T* src_col = src.ptr() + x;
 
-        const int yStart = blockIdx.y * (BLOCK_DIM_Y * PATCH_PER_BLOCK) + threadIdx.y;
+        // Use X grid dimension to index the rows of the image
+        const int yStart = blockIdx.x * (BLOCK_DIM_Y * PATCH_PER_BLOCK) + threadIdx.y;
 
-        if (blockIdx.y > 0)
+        if (blockIdx.x > 0)
         {
             //Upper halo
             #pragma unroll
@@ -95,7 +98,7 @@ namespace column_filter
                 smem[threadIdx.y + j * BLOCK_DIM_Y][threadIdx.x] = saturate_cast<sum_t>(brd.at_low(yStart - (HALO_SIZE - j) * BLOCK_DIM_Y, src_col, src.step));
         }
 
-        if (blockIdx.y + 2 < gridDim.y)
+        if (blockIdx.x + 2 < gridDim.x)
         {
             //Main data
             #pragma unroll
@@ -160,14 +163,42 @@ namespace column_filter
             PATCH_PER_BLOCK = 2;
         }
 
+        // Process the image in chunks of rows such that the number of blocks in y-direction does not exceed the maximum grid size
+        DeviceInfo devInfo;
+        const int maxGridY = devInfo.maxGridSize()[1];
+        const int nBlocksX = divUp(src.rows, BLOCK_DIM_Y * PATCH_PER_BLOCK);
+        const int nBlocksY = divUp(src.cols, BLOCK_DIM_X);
+        const int nGrids = divUp(nBlocksY, maxGridY); // Number of launches required to process the whole image
+
         const dim3 block(BLOCK_DIM_X, BLOCK_DIM_Y);
-        const dim3 grid(divUp(src.cols, BLOCK_DIM_X), divUp(src.rows, BLOCK_DIM_Y * PATCH_PER_BLOCK));
 
         B<T> brd(src.rows);
 
-        linearColumnFilter<KSIZE, T, D><<<grid, block, 0, stream>>>(src, dst, kernel, anchor, brd);
+        for(int i = 0; i < nGrids; ++i )
+        {
+            const int startColumn = i * maxGridY * BLOCK_DIM_X;
+            const int endColumn =
+                std::min(startColumn + maxGridY * BLOCK_DIM_X, src.cols);
 
-        cudaSafeCall( cudaGetLastError() );
+            const int chunkCols = endColumn - startColumn;
+
+            const dim3 grid(
+                nBlocksX,
+                divUp(chunkCols, BLOCK_DIM_X)
+            );
+
+            // Get the chunks as views of the original matrices
+            PtrStepSz<T> srcView = src;
+            srcView.data = src.ptr() + startColumn;
+            srcView.cols = chunkCols;
+
+            PtrStepSz<D> dstView = dst;
+            dstView.data = dst.ptr() + startColumn;
+            dstView.cols = chunkCols;
+
+            linearColumnFilter<KSIZE, T, D><<<grid, block, 0, stream>>>(srcView, dstView, kernel, anchor, brd);
+            cudaSafeCall( cudaGetLastError() );
+        }
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
