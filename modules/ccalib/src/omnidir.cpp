@@ -766,9 +766,20 @@ void cv::omnidir::internal::initializeStereoCalibration(InputArrayOfArrays objec
     Mat interIdx1, interIdx2, interOri;
 
     getInterset(idx1, idx2, interIdx1, interIdx2, interOri);
+
+    if (interOri.empty())
+    {
+        CV_Error(cv::Error::StsBadArg,
+            "omnidir::stereoCalibrate: no calibration views are valid for both cameras. "
+            "Each camera individually may have views that survived initial pose estimation, "
+            "but the sets of valid views for camera 1 and camera 2 do not overlap (their "
+            "intersection is empty). Check that the same views are usable for both cameras, "
+            "or verify the object/image point correspondences for every input view.");
+    }
+
     if (idx.empty())
         idx.create(1, (int)interOri.total(), CV_32S);
-    interOri.copyTo(idx.getMat());
+    interOri.copyTo(idx);
 
     int n_inter = (int)interIdx1.total();
 
@@ -1112,6 +1123,18 @@ double cv::omnidir::calibrate(InputArrayOfArrays patternPoints, InputArrayOfArra
         _imagePoints.push_back(_imagePointsTmp[_idx.at<int>(i)]);
     }
 
+    if (_patternPoints.empty())
+    {
+        CV_Error(cv::Error::StsBadArg,
+            "omnidir::calibrate: no calibration views survived initial pose estimation. "
+            "Every input view was rejected because its estimated initial pose reprojection "
+            "error exceeded the internal threshold. This usually means the object points and "
+            "image points for every view do not correspond to a consistent, real calibration "
+            "target (e.g. mismatched or randomly generated correspondences), or the image size "
+            "passed to calibrate() does not match the points. Check the object/image point "
+            "correspondences for every input view.");
+    }
+
     int n = (int)_patternPoints.size();
     Mat finalParam(1, 10 + 6*n, CV_64F);
     Mat currentParam(1, 10 + 6*n, CV_64F);
@@ -1252,7 +1275,7 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
     if(idx.needed())
     {
         idx.create(1, (int)_idx.total(), CV_32S);
-        _idx.copyTo(idx.getMat());
+        _idx.copyTo(idx);
     }
 	for (int i = 0; i < (int)_idx.total(); ++i)
 	{
@@ -1260,6 +1283,9 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
 		_imagePoints1Filt.push_back(_imagePoints1[_idx.at<int>(i)]);
 		_imagePoints2Filt.push_back(_imagePoints2[_idx.at<int>(i)]);
 	}
+
+    // Upheld by internal::initializeStereoCalibration()'s interOri.empty() guard.
+    CV_Assert(!_objectPointsFilt.empty());
 
     int n = (int)_objectPointsFilt.size();
     Mat finalParam(1, 10 + 6*n, CV_64F);
