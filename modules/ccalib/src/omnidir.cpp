@@ -1224,7 +1224,7 @@ double cv::omnidir::calibrate(InputArrayOfArrays patternPoints, InputArrayOfArra
     if (idx.needed())
     {
         idx.create(1, (int)_idx.total(), CV_32S);
-        _idx.copyTo(idx.getMat());
+        _idx.copyTo(idx);
     }
 
     Vec2d std_error;

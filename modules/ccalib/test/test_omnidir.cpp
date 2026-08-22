@@ -48,7 +48,7 @@ static void generateValidView(const Matx33d& K, double xi, const Matx14d& D,
 
 TEST(CV_OmnidirCalibrate, throws_clear_error_when_no_views_survive_initialization)
 {
-    RNG& rng = cv::theRNG();
+    RNG rng(12345); // fixed seed: reproducible independent of run order / other tests' RNG draws
     std::vector<Mat> objectPoints, imagePoints;
     const int nViews = 5;
     const int nPointsPerView = 30;
@@ -114,7 +114,7 @@ TEST(CV_OmnidirStereoCalibrate, throws_clear_error_when_camera_valid_view_sets_d
     Matx33d K2(410, 0, 330, 0, 410, 250, 0, 0, 1);
     double xi1 = 1.0, xi2 = 1.0;
     Matx14d D1(0, 0, 0, 0), D2(0, 0, 0, 0);
-    RNG& rng = cv::theRNG();
+    RNG rng(67890); // fixed seed: reproducible independent of run order / other tests' RNG draws
 
     std::vector<Mat> objectPoints, imagePoints1, imagePoints2;
 
@@ -162,6 +162,38 @@ TEST(CV_OmnidirStereoCalibrate, throws_clear_error_when_camera_valid_view_sets_d
         << "exception message should name the intersection-specific cause, got: " << message;
     EXPECT_EQ(message.find("CV_64FC3"), std::string::npos)
         << "exception message should not resurface the misleading type-assertion text, got: " << message;
+}
+
+TEST(CV_OmnidirStereoCalibrate, succeeds_with_valid_overlapping_views)
+{
+    Matx33d K1(400, 0, 320, 0, 400, 240, 0, 0, 1);
+    Matx33d K2(410, 0, 330, 0, 410, 250, 0, 0, 1);
+    double xi1 = 1.0, xi2 = 1.0;
+    Matx14d D1(0, 0, 0, 0), D2(0, 0, 0, 0);
+
+    std::vector<Mat> objectPoints, imagePoints1, imagePoints2;
+
+    // Both cameras see a valid, self-consistent projection of the same object
+    // points for every view, so the per-camera valid-view sets fully overlap.
+    for (int v = 0; v < 2; ++v)
+    {
+        Mat objPts, img1, img2;
+        generateValidView(K1, xi1, D1, Vec3d(0.02 * v, -0.01, 0.0), Vec3d(0.0, 0.0, 3.0 + 0.1 * v), objPts, img1);
+        generateValidView(K2, xi2, D2, Vec3d(0.02 * v, -0.01, 0.0), Vec3d(0.05, 0.0, 3.0 + 0.1 * v), objPts, img2);
+        objectPoints.push_back(objPts);
+        imagePoints1.push_back(img1);
+        imagePoints2.push_back(img2);
+    }
+
+    Mat Kout1, xiOut1, Dout1, Kout2, xiOut2, Dout2, rvec, tvec;
+    std::vector<Mat> rvecsL, tvecsL;
+    Mat idx;
+    ASSERT_NO_THROW(
+        cv::omnidir::stereoCalibrate(objectPoints, imagePoints1, imagePoints2, Size(640, 480), Size(640, 480),
+            Kout1, xiOut1, Dout1, Kout2, xiOut2, Dout2, rvec, tvec, rvecsL, tvecsL,
+            0, TermCriteria(3, 100, 1e-6), idx)
+    ) << "stereoCalibrate() should not throw the new intersection guard for overlapping valid views";
+    EXPECT_GT((int)idx.total(), 0) << "at least one view should survive for both cameras";
 }
 
 }} // namespace
