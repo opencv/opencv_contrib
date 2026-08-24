@@ -13,12 +13,13 @@
 
 #include <cstddef>
 #include <algorithm>
+#include <atomic>
 namespace zxing {
 
 /* base class for reference-counted objects */
 class Counted {
 private:
-    unsigned int count_;
+    std::atomic<unsigned int> count_;
 
 public:
     Counted() : count_(0) {}
@@ -28,15 +29,14 @@ public:
         return this;
     }
     void release() {
-        count_--;
-        if (count_ == 0) {
+        if (--count_ == 0) {
             count_ = 0xDEADF001;
             delete this;
         }
     }
 
     /* return the current count for denugging purposes or similar */
-    int count() const { return count_; }
+    int count() const { return count_.load(); }
 };
 
 /* counting reference to reference-counted objects */
