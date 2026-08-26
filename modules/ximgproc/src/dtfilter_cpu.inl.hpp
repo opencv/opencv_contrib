@@ -407,8 +407,9 @@ void DTFilterCPU::FilterRF_horPass<WorkVec>::operator()(const Range& range) cons
             for (j = res.cols - 2; j >= 0; j--)
                 adLine[j] *= adLine[j];
         }
+        j = 1;
     #if CV_ENABLE_UNROLLED
-        for (j = 1; j <= cols - 4; j += 4)
+        for (; j <= cols - 4; j += 4)
         {
             dstLine[j] += adLine[j - 1] * (dstLine[j - 1] - dstLine[j]);
             dstLine[j + 1] += adLine[j] * (dstLine[j] - dstLine[j + 1]);
@@ -418,8 +419,10 @@ void DTFilterCPU::FilterRF_horPass<WorkVec>::operator()(const Range& range) cons
     #endif
         for (; j < cols; j++)
             dstLine[j] += adLine[j - 1] * (dstLine[j - 1] - dstLine[j]);
+
+        j = cols - 2;
     #if CV_ENABLE_UNROLLED
-        for (j = cols - 2; j >= 3; j -= 4)
+        for (; j >= 3; j -= 4)
         {
             dstLine[j] += adLine[j] * (dstLine[j + 1] - dstLine[j]);
             dstLine[j - 1] += adLine[j - 1] * (dstLine[j] - dstLine[j - 1]);
