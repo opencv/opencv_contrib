@@ -444,39 +444,38 @@ DTFilterCPU::FilterRF_vertPass<WorkVec>::FilterRF_vertPass(Mat& res_, Mat& alpha
     CV_DbgAssert(res.type() == traits::Type<WorkVec>::value && res.size() == res.size());
 }
 
-template <typename ChanType, typename DistType>
+template <typename WorkVec, typename DistType>
 struct RFPassHelper
 {
-    static void run(ChanType* curRow, const ChanType* prevRow, const DistType* adRow, const Range& rchans, int ch)
+    static void run(WorkVec* curRow, const WorkVec* prevRow, const DistType* adRow, const Range& rcols)
     {
-        for (int j = rchans.start; j < rchans.end; j++)
-            curRow[j] += adRow[j / ch] * (prevRow[j] - curRow[j]);
+        for (int j = rcols.start; j < rcols.end; j++)
+            curRow[j] += adRow[j] * (prevRow[j] - curRow[j]);
     }
 };
 
 template <>
-struct RFPassHelper<float, float>
+struct RFPassHelper<Vec<float, 1>, float>
 {
-    static void run(float* curRow, const float* prevRow, const float* adRow, const Range& rchans, int ch)
+    static void run(Vec<float, 1>* curRow, const Vec<float, 1>* prevRow, const float* adRow, const Range& rcols)
     {
-        int j = rchans.start;
+        float* cur        = reinterpret_cast<float*>(curRow);
+        const float* prev = reinterpret_cast<const float*>(prevRow);
+        int j = rcols.start;
     #if CV_SIMD
-        if (ch == 1)
+        const int step    = VTraits<v_float32>::vlanes();
+        const int simdEnd = rcols.start + ((rcols.end - rcols.start) / step) * step;
+        for (; j < simdEnd; j += step)
         {
-            const int step    = VTraits<v_float32>::vlanes();
-            const int simdEnd = rchans.start + ((rchans.end - rchans.start) / step) * step;
-            for (; j < simdEnd; j += step)
-            {
-                v_float32 vcur  = vx_load(curRow  + j);
-                v_float32 vprev = vx_load(prevRow + j);
-                v_float32 vad   = vx_load(adRow   + j);
-                v_store(curRow + j, v_muladd(vad, v_sub(vprev, vcur), vcur));
-            }
-            vx_cleanup();
+            v_float32 vcur  = vx_load(cur  + j);
+            v_float32 vprev = vx_load(prev + j);
+            v_float32 vad   = vx_load(adRow + j);
+            v_store(cur + j, v_muladd(vad, v_sub(vprev, vcur), vcur));
         }
+        vx_cleanup();
     #endif
-        for (; j < rchans.end; j++)
-            curRow[j] += adRow[j / ch] * (prevRow[j] - curRow[j]);
+        for (; j < rcols.end; j++)
+            cur[j] += adRow[j] * (prev[j] - cur[j]);
     }
 };
 
@@ -488,9 +487,6 @@ void DTFilterCPU::FilterRF_vertPass<WorkVec>::operator()(const Range& range) con
     #else
     Range rcols = range;
     #endif
-    typedef typename DataType<WorkVec>::channel_type ChanType;
-    const int ch = DataType<WorkVec>::channels;
-    const Range rchans(rcols.start * ch, rcols.end * ch);
 
     for (int i = 1; i < res.rows; i++)
     {
@@ -504,8 +500,7 @@ void DTFilterCPU::FilterRF_vertPass<WorkVec>::operator()(const Range& range) con
                 adRow[j] *= adRow[j];
         }
 
-        RFPassHelper<ChanType, DistType>::run(reinterpret_cast<ChanType*>(curRow), reinterpret_cast<const ChanType*>(prevRow),
-                                              reinterpret_cast<const DistType*>(adRow), rchans, ch);
+        RFPassHelper<WorkVec, DistType>::run(curRow, prevRow, adRow, rcols);
     }
 
     for (int i = res.rows - 2; i >= 0; i--)
@@ -514,8 +509,7 @@ void DTFilterCPU::FilterRF_vertPass<WorkVec>::operator()(const Range& range) con
         WorkVec     *curRow  = res.ptr<WorkVec>(i);
         DistType    *adRow   = alphaD.ptr<DistType>(i);
 
-        RFPassHelper<ChanType, DistType>::run(reinterpret_cast<ChanType*>(curRow), reinterpret_cast<const ChanType*>(prevRow),
-                                              reinterpret_cast<const DistType*>(adRow), rchans, ch);
+        RFPassHelper<WorkVec, DistType>::run(curRow, prevRow, adRow, rcols);
     }
 }
 
