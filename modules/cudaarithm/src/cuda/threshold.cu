@@ -356,6 +356,13 @@ double cv::cuda::threshold(InputArray _src, OutputArray _dst, double thresh, dou
     src = src.reshape(1);
     dst = dst.reshape(1);
 
+#ifdef __HIP_PLATFORM_AMD__
+    // NPP provides a float THRESH_TRUNC fast path on CUDA; the generic
+    // thresh_trunc_func kernel below produces the same result, so route the
+    // float case through it rather than reproducing the NPP call.
+    if (false)
+    {
+#else
     if (depth == CV_32F && type == 2 /*THRESH_TRUNC*/)
     {
         NppStreamHandler h(StreamAccessor::getStream(stream));
@@ -374,6 +381,7 @@ double cv::cuda::threshold(InputArray _src, OutputArray _dst, double thresh, dou
 
         if (!stream)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
+#endif
     }
     else
     {

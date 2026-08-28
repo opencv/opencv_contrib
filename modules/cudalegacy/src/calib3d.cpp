@@ -252,7 +252,20 @@ void cv::cuda::solvePnPRansac(const Mat& object, const Mat& image, const Mat& ca
     // Find the best hypothesis index
     Point best_idx;
     double best_score;
+#if defined(HAVE_OPENCV_CUDAARITHM)
     cuda::minMaxLoc(d_hypothesis_scores, NULL, &best_score, NULL, &best_idx);
+#else
+    // cuda::minMaxLoc lives in cudaarithm, which is an optional dependency. The
+    // scores buffer is a single 1xN row, so when cudaarithm is unavailable do
+    // the argmax on the host rather than drop solvePnPRansac entirely.
+    {
+        Mat h_scores;
+        d_hypothesis_scores.download(h_scores);
+        Point maxLoc;
+        cv::minMaxLoc(h_scores, NULL, &best_score, NULL, &maxLoc);
+        best_idx = maxLoc;
+    }
+#endif
     int num_inliers = static_cast<int>(best_score);
 
     // Extract the best hypothesis data
