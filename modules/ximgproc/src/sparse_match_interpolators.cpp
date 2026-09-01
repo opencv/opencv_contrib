@@ -173,10 +173,11 @@ Ptr<EdgeAwareInterpolatorImpl> EdgeAwareInterpolatorImpl::create()
 void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray from_points, InputArray, InputArray to_points, OutputArray dense_flow)
 {
     CV_Assert( !from_image.empty() && (from_image.depth() == CV_8U) && (from_image.channels() == 3 || from_image.channels() == 1) );
-    CV_Assert( !from_points.empty() && !to_points.empty() && from_points.sameSize(to_points) );
+    if (from_points.empty() || to_points.empty())
+        CV_Error(Error::StsBadArg, "EdgeAwareInterpolator requires at least 3 matches");
+    CV_Assert(from_points.sameSize(to_points));
     CV_Assert((from_points.isVector() || from_points.isMat()) && from_points.depth() == CV_32F);
     CV_Assert((to_points.isVector() || to_points.isMat()) && to_points.depth() == CV_32F);
-    CV_Assert(from_points.sameSize(to_points));
 
     w = from_image.cols();
     h = from_image.rows();
@@ -203,12 +204,19 @@ void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray fr
     match_num = (int)matches_vector.size();
     CV_Assert(match_num<SHRT_MAX);
 
+    if (match_num < 3)
+        CV_Error(Error::StsBadArg, "EdgeAwareInterpolator requires at least 3 unique matches");
+    if (k < 3)
+        CV_Error(Error::StsBadArg, "EdgeAwareInterpolator requires at least 3 neighbors");
+
+    const int num_neighbors = std::min(k, match_num);
+
     Mat src = from_image.getMat();
     labels = Mat(h,w,CV_32S);
     labels = Scalar(-1);
-    NNlabels = Mat(match_num,k,CV_32S);
+    NNlabels = Mat(match_num,num_neighbors,CV_32S);
     NNlabels = Scalar(-1);
-    NNdistances = Mat(match_num,k,CV_32F);
+    NNdistances = Mat(match_num,num_neighbors,CV_32F);
     NNdistances = Scalar(0.0f);
     g = new vector<node>[match_num];
 
@@ -575,6 +583,7 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
 {
     int start = std::min(range.start * stripe_sz, inst->match_num);
     int end   = std::min(range.end   * stripe_sz, inst->match_num);
+    const int num_neighbors = inst->NNlabels.cols;
     nodeHeap q((int)inst->match_num);
     int num_expanded_vertices;
     unsigned char* expanded_flag = new unsigned char[inst->match_num];
@@ -591,7 +600,7 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
         q.add(node((int)i,0.0f));
         int* NNlabels_row    = inst->NNlabels.ptr<int>(i);
         float* NNdistances_row = inst->NNdistances.ptr<float>(i);
-        while(num_expanded_vertices<inst->k && !q.empty())
+        while(num_expanded_vertices<num_neighbors && !q.empty())
         {
             node vert_for_expansion = q.getMin();
             expanded_flag[vert_for_expansion.label] = 1;
@@ -609,6 +618,8 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
                     q.updateNode(node(neighbors[j].label,vert_for_expansion.dist+neighbors[j].dist));
             }
         }
+
+        CV_Assert(num_expanded_vertices == num_neighbors);
     }
     delete[] expanded_flag;
 }
@@ -774,11 +785,12 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
 
     int* KNNlabels;
     float* KNNdistances;
-    unsigned char* is_used = new unsigned char[inst->k];
+    const int num_neighbors = inst->NNlabels.cols;
+    unsigned char* is_used = new unsigned char[num_neighbors];
     Mat hypothesis_transform;
 
-    int* inlier_labels    = new int[inst->k];
-    float* inlier_distances = new float[inst->k];
+    int* inlier_labels    = new int[num_neighbors];
+    float* inlier_distances = new float[num_neighbors];
     float* tr;
     int num_inliers;
     Point2f a,b;
@@ -792,26 +804,26 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
         KNNdistances = inst->NNdistances.ptr<float>(i);
         if(inc>0) //forward pass
         {
-            cv::hal::exp32f(KNNdistances,KNNdistances,inst->k);
+            cv::hal::exp32f(KNNdistances,KNNdistances,num_neighbors);
 
             Point2f average = Point2f(0.0f,0.0f);
-            for(int j=0;j<inst->k;j++)
+            for(int j=0;j<num_neighbors;j++)
                 average += matches[KNNlabels[j]].target_image_pos - matches[KNNlabels[j]].reference_image_pos;
-            average/=inst->k;
+            average/=num_neighbors;
             float average_dist = 0.0;
             Point2f vec;
-            for(int j=0;j<inst->k;j++)
+            for(int j=0;j<num_neighbors;j++)
             {
                 vec = (matches[KNNlabels[j]].target_image_pos - matches[KNNlabels[j]].reference_image_pos);
                 average_dist += abs(vec.x-average.x) + abs(vec.y-average.y);
             }
-            eps[i] = min(0.5f*(average_dist/inst->k),2.0f);
+            eps[i] = min(0.5f*(average_dist/num_neighbors),2.0f);
         }
 
         for(int it=0;it<inst->ransac_interpolation_num_iter;it++)
         {
-            generateHypothesis(KNNlabels,inst->k,inst->rngs[range.start],is_used,matches,hypothesis_transform);
-            verifyHypothesis(KNNlabels,KNNdistances,inst->k,matches,eps[i],inst->regularization_coef,hypothesis_transform,transforms[i],weighted_inlier_nums[i]);
+            generateHypothesis(KNNlabels,num_neighbors,inst->rngs[range.start],is_used,matches,hypothesis_transform);
+            verifyHypothesis(KNNlabels,KNNdistances,num_neighbors,matches,eps[i],inst->regularization_coef,hypothesis_transform,transforms[i],weighted_inlier_nums[i]);
         }
 
         //propagate hypotheses from neighbors:
@@ -819,7 +831,7 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
         for(int j=0;j<(int)inst->g[i].size();j++)
         {
             if((inc*neighbors[j].label)<(inc*i) && (inc*neighbors[j].label)>=(inc*start)) //already processed this neighbor
-                verifyHypothesis(KNNlabels,KNNdistances,inst->k,matches,eps[i],inst->regularization_coef,transforms[neighbors[j].label],transforms[i],weighted_inlier_nums[i]);
+                verifyHypothesis(KNNlabels,KNNdistances,num_neighbors,matches,eps[i],inst->regularization_coef,transforms[neighbors[j].label],transforms[i],weighted_inlier_nums[i]);
         }
 
         if(inc<0) //backward pass
@@ -828,7 +840,7 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
             tr = transforms[i].ptr<float>(0);
             num_inliers = 0;
 
-            for(int j=0;j<inst->k;j++)
+            for(int j=0;j<num_neighbors;j++)
             {
                 a = matches[KNNlabels[j]].reference_image_pos;
                 b = matches[KNNlabels[j]].target_image_pos;
