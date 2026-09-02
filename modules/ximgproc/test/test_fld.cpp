@@ -328,4 +328,23 @@ TEST_F(ximgproc_ED, detectLinesAndEllipses)
     EXPECT_GE(ellipses.size(), ellipses_size);
     EXPECT_LE(ellipses.size(), ellipses_size + 2);
 }
+
+// Regression test for the input-image aliasing bug: with Params::Sigma < 1.0,
+// detectEdges() set smoothImage = srcImage (aliasing the caller's Mat), and
+// detectEllipses()'s internal in-place GaussianBlur then overwrote the user's
+// input image. The input must be treated as read-only.
+TEST_F(ximgproc_ED, detectEllipsesDoesNotModifyInput)
+{
+    Mat img(200, 200, CV_8UC1, Scalar(255));
+    circle(img, Point(100, 100), 60, Scalar(0), 2, LINE_8);
+    Mat backup = img.clone();
+
+    detector->params.Sigma = 0.0;   // Sigma < 1.0 takes the aliasing path
+    detector->detectEdges(img);
+    vector<Vec6d> ellipses;
+    detector->detectEllipses(ellipses);
+
+    EXPECT_EQ(0, countNonZero(img != backup))
+        << "detectEllipses() modified the caller's input image in place";
+}
 }} // namespace
