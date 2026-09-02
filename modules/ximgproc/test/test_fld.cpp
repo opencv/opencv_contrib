@@ -328,4 +328,24 @@ TEST_F(ximgproc_ED, detectLinesAndEllipses)
     EXPECT_GE(ellipses.size(), ellipses_size);
     EXPECT_LE(ellipses.size(), ellipses_size + 2);
 }
+
+// Exercises ValidateCircles() over ellipses of varied size/orientation so that
+// candidates with an ODD computed perimeter are processed. For those,
+// ComputeEllipsePoints() leaves px/py[noPoints-1] unwritten while the validation
+// loop reads it; before the fix this is an uninitialised/stale read (flagged by
+// valgrind/MSan at edge_drawing.cpp's ValidateCircles branches). This test guards
+// that path under memory-checking CI.
+TEST_F(ximgproc_ED, detectEllipsesOddPerimeterNoUninitRead)
+{
+    Mat img(400, 400, CV_8UC1, Scalar(255));
+    ellipse(img, Point(120, 120), Size(70, 45),  20, 0, 360, Scalar(0), 2, LINE_8);
+    ellipse(img, Point(280, 150), Size(55, 55),   0, 0, 360, Scalar(0), 2, LINE_8);
+    ellipse(img, Point(200, 300), Size(90, 40),  60, 0, 360, Scalar(0), 2, LINE_8);
+    ellipse(img, Point(320, 320), Size(33, 50), 130, 0, 360, Scalar(0), 2, LINE_8);
+    ellipse(img, Point(90,  320), Size(48, 27),  95, 0, 360, Scalar(0), 2, LINE_8);
+    detector->detectEdges(img);
+    vector<Vec6d> ellipses;
+    ASSERT_NO_THROW(detector->detectEllipses(ellipses));
+    EXPECT_GE(ellipses.size(), 1u);
+}
 }} // namespace
