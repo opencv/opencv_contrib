@@ -1393,9 +1393,15 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
     if (min_line_len < 9) // avoids small line segments in the result. Might be deleted!
         min_line_len = 9;
 
-    // Temporary buffers used during line fitting
-    double* x = new double[(width + height) * 8];
-    double* y = new double[(width + height) * 8];
+    // Temporary buffers used during line fitting.
+    // A segment is a 1-pixel-wide chain that can wind through the whole image,
+    // so its length is bounded by the pixel count, not by the image perimeter.
+    size_t buffer_size = (size_t)(width + height) * 8;
+    for (size_t i = 0; i < segmentPoints.size(); i++)
+        buffer_size = std::max(buffer_size, segmentPoints[i].size());
+
+    double* x = new double[buffer_size];
+    double* y = new double[buffer_size];
 
     lines.clear();
     linesNo = 0;
