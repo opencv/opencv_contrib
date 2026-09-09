@@ -42,7 +42,7 @@ Explanation
     Instantiate a dnn super-resolution object.
 -#  **Read the model**
     @code{.cpp}
-    path = "models/ESPCN_x2.pb"
+    path = "models/ESPCN_x2.onnx"
     sr.readModel(path);
     sr.setModel("espcn", 2);
     @endcode

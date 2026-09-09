@@ -26,13 +26,13 @@ Source Code of the sample
 You can run the sample code by doing
 
 ```run
-<path_of_your_opencv_build_directory>/bin/example_dnn_superres_dnn_superres <path_to_image.png> <algo_string> <upscale_int> <model_path.pb>
+<path_of_your_opencv_build_directory>/bin/example_dnn_superres_dnn_superres <path_to_image.png> <algo_string> <upscale_int> <model_path.onnx>
 ```
 
 Example:
 
 ```run
-/home/opencv/build/bin/example_dnn_superres_dnn_superres /home/image.png edsr 2 /home/EDSR_x2.pb
+/home/opencv/build/bin/example_dnn_superres_dnn_superres /home/image.png edsr 2 /home/EDSR_x2.onnx
 ```
 
 @includelineno dnn_superres/samples/dnn_superres.cpp
@@ -58,17 +58,17 @@ Explanation
     This is just to create the object, register the custom dnn layers and get access to the class functions.
 -#  **Read the model**
     @code{.cpp}
-    path = "models/FSRCNN_x2.pb"
+    path = "models/FSRCNN_x2.onnx"
     sr.readModel(path);
     @endcode
 
-    This reads the TensorFlow model from the .pb file. Here 'path' is one of the pre-trained Tensorflow models' path file. You can download the models from OpenCV's GitHub, in the 'dnn_superres' module.
+    This reads the ONNX model from the .onnx file. Here 'path' is one of the pre-trained models' path file. You can download the models from OpenCV's GitHub, in the 'dnn_superres' module.
 -#  **Set the model**
     @code{.cpp}
     sr.setModel("fsrcnn", 2);
     @endcode
 
-    Depending on the model you want to run, you have to set the algorithm and upscale factor. This is to know the desired algorithm and scale, even if you change the .pb file's name. For example: if you chose FSRCNN_x2.pb, your algorithm and scale will be 'fsrcnn' and 2, respectively. (Other algorithm options include "edsr", "espcn" and "lapsrn".)
+    Depending on the model you want to run, you have to set the algorithm and upscale factor. This is to know the desired algorithm and scale, even if you change the .onnx file's name. For example: if you chose FSRCNN_x2.onnx, your algorithm and scale will be 'fsrcnn' and 2, respectively. (Other algorithm options include "edsr", "espcn" and "lapsrn".)
 -#  **Upscale an image**
     @code{.cpp}
     Mat img = cv::imread(img_path);
@@ -92,7 +92,7 @@ sr = dnn_superres.DnnSuperResImpl_create()
 image = cv2.imread('./image.png')
 
 # Read the desired model
-path = "EDSR_x4.pb"
+path = "EDSR_x4.onnx"
 sr.readModel(path)
 
 # Set the desired model and scale to get correct pre- and post-processing

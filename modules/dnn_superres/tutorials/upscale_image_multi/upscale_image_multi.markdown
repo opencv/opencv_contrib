@@ -34,7 +34,7 @@ Run the sample code with the following command
 
 ```run
 ./bin/example_dnn_superres_dnn_superres_multioutput path/to/image.png 2,4 NCHW_output_2x,NCHW_output_4x \
-path/to/opencv_contrib/modules/dnn_superres/models/LapSRN_x4.pb
+path/to/opencv_contrib/modules/dnn_superres/models/LapSRN_x4.onnx
 ```
 
 
@@ -60,7 +60,7 @@ Explanation
 
 -#  **Read the model**
     @code{.cpp}
-    path = "models/LapSRN_x8.pb"
+    path = "models/LapSRN_x8.onnx"
     sr.readModel(path);
     @endcode
 

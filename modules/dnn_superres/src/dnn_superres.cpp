@@ -63,7 +63,7 @@ void DnnSuperResImpl::readModel(const String& path)
 {
     if ( path.size() )
     {
-        this->net = dnn::readNetFromTensorflow(path); // engine classic removed
+        this->net = dnn::readNetFromONNX(path);
         CV_LOG_INFO(NULL, "Successfully loaded model: " << path);
     }
     else
@@ -74,15 +74,10 @@ void DnnSuperResImpl::readModel(const String& path)
 
 void DnnSuperResImpl::readModel(const String& weights, const String& definition)
 {
-    if ( weights.size() && definition.size() )
-    {
-        this->net = dnn::readNetFromTensorflow(weights, definition);
-        CV_LOG_INFO(NULL, "Successfully loaded model: " << weights << " " << definition);
-    }
-    else
-    {
-        CV_Error(Error::StsBadArg, String("Could not load model: ") + weights + " " + definition);
-    }
+    CV_UNUSED(definition);
+    CV_LOG_WARNING(NULL, "readModel(weights, definition) is deprecated: ONNX models are "
+                         "single-file, the 'definition' argument is ignored.");
+    readModel(weights);
 }
 
 void DnnSuperResImpl::setModel(const String& algo, int scale)
@@ -126,9 +121,9 @@ void DnnSuperResImpl::upsample(InputArray img, OutputArray result)
 
         Mat Y = ycbcr_channels[0];
 
-        //Create blob from image so it has size 1,1,Width,Height
-        cv::Mat blob;
-        dnn::blobFromImage(Y, blob, 1.0);
+        // Models expect NHWC input [1, H, W, 1], reshape without copying data
+        std::vector<int> nhwc_shape = {1, Y.rows, Y.cols, 1};
+        cv::Mat blob = Y.reshape(1, nhwc_shape);
 
         //Get the HR output
         this->net.setInput(blob);
@@ -203,9 +198,9 @@ void DnnSuperResImpl::upsampleMultioutput(InputArray img, std::vector<Mat> &imgs
 
         Mat Y = ycbcr_channels[0];
 
-        //Create blob from image so it has size 1,1,Width,Height
-        cv::Mat blob;
-        dnn::blobFromImage(Y, blob, 1.0);
+        // Models expect NHWC input [1, H, W, 1], reshape without copying data
+        std::vector<int> nhwc_shape = {1, Y.rows, Y.cols, 1};
+        cv::Mat blob = Y.reshape(1, nhwc_shape);
 
         //Get the HR outputs
         std::vector <Mat> outputs_blobs;
