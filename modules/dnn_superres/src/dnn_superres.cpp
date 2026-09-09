@@ -74,15 +74,10 @@ void DnnSuperResImpl::readModel(const String& path)
 
 void DnnSuperResImpl::readModel(const String& weights, const String& definition)
 {
-    if ( weights.size() && definition.size() )
-    {
-        this->net = dnn::readNetFromONNX(weights);
-        CV_LOG_INFO(NULL, "Successfully loaded model: " << weights);
-    }
-    else
-    {
-        CV_Error(Error::StsBadArg, String("Could not load model: ") + weights + " " + definition);
-    }
+    CV_UNUSED(definition);
+    CV_LOG_WARNING(NULL, "readModel(weights, definition) is deprecated: ONNX models are "
+                         "single-file, the 'definition' argument is ignored.");
+    readModel(weights);
 }
 
 void DnnSuperResImpl::setModel(const String& algo, int scale)
@@ -126,7 +121,7 @@ void DnnSuperResImpl::upsample(InputArray img, OutputArray result)
 
         Mat Y = ycbcr_channels[0];
 
-        // Models expect NHWC input [1, H, W, 1] — reshape without copying data
+        // Models expect NHWC input [1, H, W, 1], reshape without copying data
         std::vector<int> nhwc_shape = {1, Y.rows, Y.cols, 1};
         cv::Mat blob = Y.reshape(1, nhwc_shape);
 
@@ -203,7 +198,7 @@ void DnnSuperResImpl::upsampleMultioutput(InputArray img, std::vector<Mat> &imgs
 
         Mat Y = ycbcr_channels[0];
 
-        // Models expect NHWC input [1, H, W, 1] — reshape without copying data
+        // Models expect NHWC input [1, H, W, 1], reshape without copying data
         std::vector<int> nhwc_shape = {1, Y.rows, Y.cols, 1};
         cv::Mat blob = Y.reshape(1, nhwc_shape);
 
