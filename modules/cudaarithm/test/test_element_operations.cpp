@@ -2073,6 +2073,152 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Bitwise_Array, testing::Combine(
     TYPES(CV_8U, CV_32S, 1, 4)));
 
 //////////////////////////////////////////////////////////////////////////////
+// Bitwise_Array_Misaligned
+
+namespace
+{
+    // How the rows of an operand are made to start at an address the 32-bit
+    // and 16-bit paths may not read: MISALIGN_OFFSET shifts the first row with
+    // a ROI, MISALIGN_STEP leaves the first row aligned and shifts every later
+    // one with a step that is not a multiple of the word size.
+    enum { MISALIGN_OFFSET = 0, MISALIGN_STEP = 1 };
+
+    // Which operands are built that way. The others are whole matrices, so an
+    // alignment check that forgets one operand still meets a misaligned row.
+    enum { MISALIGN_SRC1 = 1, MISALIGN_SRC2 = 2, MISALIGN_DST = 4, MISALIGN_ALL = 7 };
+
+    IMPLEMENT_PARAM_CLASS(MisalignKind, int)
+    IMPLEMENT_PARAM_CLASS(MisalignOperands, int)
+}
+
+PARAM_TEST_CASE(Bitwise_Array_Misaligned, cv::cuda::DeviceInfo, cv::Size, MatType, MisalignKind, MisalignOperands)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int type;
+    int kind;
+    int operands;
+
+    cv::Mat src1;
+    cv::Mat src2;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        type = GET_PARAM(2);
+        kind = GET_PARAM(3);
+        operands = GET_PARAM(4);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+
+        // randomMat() saturates to the type, so the 0..INT_MAX range used by
+        // Bitwise_Array would make every 8-bit element 0xFF and the expected
+        // result independent of the data.
+        const double maxVal = CV_MAT_DEPTH(type) == CV_8U ? 256.0 : 65536.0;
+
+        src1 = randomMat(size, type, 0.0, maxVal);
+        src2 = randomMat(size, type, 0.0, maxVal);
+    }
+
+    // Both kinds depend on how GpuMat allocates, which nothing else here
+    // pins down, so check the operand really is misaligned rather than let
+    // the tests keep passing while testing nothing.
+    void checkMisaligned(const cv::cuda::GpuMat& m) const
+    {
+        if (kind == MISALIGN_OFFSET)
+            ASSERT_NE(0u, reinterpret_cast<size_t>(m.data) % 4);
+        else
+            ASSERT_NE(0u, m.step % 4);
+    }
+
+    cv::cuda::GpuMat createMisaligned(int operand) const
+    {
+        if ((operands & operand) == 0)
+            return cv::cuda::GpuMat(size, type);
+
+        if (kind == MISALIGN_OFFSET)
+        {
+            cv::cuda::GpuMat parent(size.height, size.width + 1, type);
+            cv::cuda::GpuMat m = parent(cv::Rect(1, 0, size.width, size.height));
+            checkMisaligned(m);
+            return m;
+        }
+
+        // createContinuous() sets step to cols * elemSize(), which the extra
+        // column makes odd here, so the rows are misaligned at x offset 0
+        cv::cuda::GpuMat parent;
+        cv::cuda::createContinuous(size.height, size.width + 1, type, parent);
+        cv::cuda::GpuMat m = parent(cv::Rect(0, 0, size.width, size.height));
+        checkMisaligned(m);
+        return m;
+    }
+
+    cv::cuda::GpuMat loadMisaligned(const cv::Mat& m, int operand) const
+    {
+        cv::cuda::GpuMat d_m = createMisaligned(operand);
+        d_m.upload(m);
+        return d_m;
+    }
+};
+
+CUDA_TEST_P(Bitwise_Array_Misaligned, Not)
+{
+    cv::cuda::GpuMat dst = createMisaligned(MISALIGN_DST);
+    // bitwise_not has one source, so either source bit selects it
+    cv::cuda::bitwise_not(loadMisaligned(src1, MISALIGN_SRC1 | MISALIGN_SRC2), dst);
+
+    cv::Mat dst_gold = ~src1;
+
+    EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
+}
+
+CUDA_TEST_P(Bitwise_Array_Misaligned, Or)
+{
+    cv::cuda::GpuMat dst = createMisaligned(MISALIGN_DST);
+    cv::cuda::bitwise_or(loadMisaligned(src1, MISALIGN_SRC1), loadMisaligned(src2, MISALIGN_SRC2), dst);
+
+    cv::Mat dst_gold = src1 | src2;
+
+    EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
+}
+
+CUDA_TEST_P(Bitwise_Array_Misaligned, And)
+{
+    cv::cuda::GpuMat dst = createMisaligned(MISALIGN_DST);
+    cv::cuda::bitwise_and(loadMisaligned(src1, MISALIGN_SRC1), loadMisaligned(src2, MISALIGN_SRC2), dst);
+
+    cv::Mat dst_gold = src1 & src2;
+
+    EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
+}
+
+CUDA_TEST_P(Bitwise_Array_Misaligned, Xor)
+{
+    cv::cuda::GpuMat dst = createMisaligned(MISALIGN_DST);
+    cv::cuda::bitwise_xor(loadMisaligned(src1, MISALIGN_SRC1), loadMisaligned(src2, MISALIGN_SRC2), dst);
+
+    cv::Mat dst_gold = src1 ^ src2;
+
+    EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Bitwise_Array_Misaligned, testing::Combine(
+    ALL_DEVICES,
+    // 128 columns make the row width in bytes a multiple of 4 for every type
+    // below; 114 makes it a multiple of 2 only for the 8-bit types, so both
+    // the 32-bit and the 16-bit path are entered; DIFFERENT_SIZES uses 113,
+    // where the width in bytes is odd for CV_8U and the byte path is taken
+    // whatever the addresses are
+    testing::Values(cv::Size(128, 128), cv::Size(114, 114)),
+    // an element is 1, 3 and 2 bytes wide, so a one element offset covers all
+    // three misaligned remainders modulo 4
+    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_16UC1)),
+    testing::Values(MisalignKind(MISALIGN_OFFSET), MisalignKind(MISALIGN_STEP)),
+    testing::Values(MisalignOperands(MISALIGN_SRC1), MisalignOperands(MISALIGN_SRC2),
+                    MisalignOperands(MISALIGN_DST), MisalignOperands(MISALIGN_ALL))));
+
+//////////////////////////////////////////////////////////////////////////////
 // Bitwise_Scalar
 
 PARAM_TEST_CASE(Bitwise_Scalar, cv::cuda::DeviceInfo, cv::Size, MatDepth, Channels)
