@@ -937,6 +937,10 @@ bool CascadeClassifierImpl::load(const String& filename)
     data = Data();
     featureEvaluator.release();
 
+    // no-op: trigger paired CI for opencv#29945 (issue opencv#29939 —
+    // FileStorage recursion depth limit). Verifying cascade files with
+    // deeply nested stage/weak-classifier/tree-node structures still
+    // load correctly under the new CV_PERSISTENCE_MAX_DEPTH.
     FileStorage fs(filename, FileStorage::READ);
     if( !fs.isOpened() )
         return false;
