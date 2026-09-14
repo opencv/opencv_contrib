@@ -275,7 +275,7 @@ bool FacemarkKazemiImpl::fit(InputArray img, InputArray roi, OutputArrayOfArrays
             }
         }
         for(unsigned long j=0;j<shapes[e].size();j++){
-                Mat C = (Mat_<double>(3,1) << shapes[e][j].x, shapes[e][j].y, 1);
+                Mat C = Mat_<double>({3,1}, {shapes[e][j].x, shapes[e][j].y, 1});
                 Mat D = warp_mat*C;
                 shapes[e][j].x=float(D.at<double>(0,0));
                 shapes[e][j].y=float(D.at<double>(1,0));

@@ -35,7 +35,7 @@ static void read_write_attributes()
     //! [tutorial_write_mat]
     String attr_mat_name = "array attribute";
     Mat attr_mat;
-    attr_mat = (cv::Mat_<float>(2, 3) << 0, 1, 2, 3, 4, 5, 6);
+    attr_mat = cv::Mat_<float>({2, 3}, {0, 1, 2, 3, 4, 5, 6});
     if (!h5io->atexists(attr_mat_name))
         h5io->atwrite(attr_mat, attr_mat_name);
     //! [tutorial_write_mat]

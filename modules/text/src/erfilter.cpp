@@ -1034,10 +1034,10 @@ ERClassifierNM1::ERClassifierNM1(const string& filename)
 double ERClassifierNM1::eval(const ERStat& stat)
 {
     //Classify
-    Mat sample = (Mat_<float>(1,4) <<  (float)(stat.rect.width)/(stat.rect.height), // aspect ratio
+    Mat sample = Mat_<float>({1,4}, {(float)(stat.rect.width)/(stat.rect.height), // aspect ratio
                      sqrt((float)(stat.area))/stat.perimeter, // compactness
                      (float)(1-stat.euler), //number of holes
-                     stat.med_crossings);
+                     stat.med_crossings});
 
     float votes = boost->predict( sample, noArray(), (int)DTrees::PREDICT_SUM | (int)StatModel::RAW_OUTPUT);
 
@@ -1065,11 +1065,11 @@ ERClassifierNM2::ERClassifierNM2(const string& filename)
 double ERClassifierNM2::eval(const ERStat& stat)
 {
     //Classify
-    Mat sample = (Mat_<float>(1,7) << (float)(stat.rect.width)/(stat.rect.height), // aspect ratio
+    Mat sample = Mat_<float>({1,7}, {(float)(stat.rect.width)/(stat.rect.height), // aspect ratio
                      sqrt((float)(stat.area))/stat.perimeter, // compactness
                      (float)(1-stat.euler), //number of holes
                      stat.med_crossings, stat.hole_area_ratio,
-                     stat.convex_hull_ratio, stat.num_inflexion_points);
+                     stat.convex_hull_ratio, stat.num_inflexion_points});
 
     float votes = boost->predict( sample, noArray(), (int)DTrees::PREDICT_SUM | (int)StatModel::RAW_OUTPUT);
 
@@ -1216,11 +1216,11 @@ void get_gradient_magnitude(Mat& _grey_img, Mat& _gradient_magnitude)
 {
     Mat C = Mat_<float>(_grey_img);
 
-    Mat kernel = (Mat_<float>(1,3) << -1,0,1);
+    Mat kernel = Mat_<float>({1,3}, {-1,0,1});
     Mat grad_x;
     filter2D(C, grad_x, -1, kernel, Point(-1,-1), 0, BORDER_DEFAULT);
 
-    Mat kernel2 = (Mat_<float>(3,1) << -1,0,1);
+    Mat kernel2 = Mat_<float>({3,1}, {-1,0,1});
     Mat grad_y;
     filter2D(C, grad_y, -1, kernel2, Point(-1,-1), 0, BORDER_DEFAULT);
 

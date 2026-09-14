@@ -125,7 +125,7 @@ bool FacemarkKazemiImpl::calcMeanShape (vector< vector<Point2f> >& trainlandmark
         //loop to bring points to a common reference and adding
         for(k=0;k<trainlandmarks[i].size();k++){
             Point2f pt=trainlandmarks[i][k];
-            C = (Mat_<double>(3,1) << pt.x, pt.y, 1);
+            C = Mat_<double>({3,1}, {pt.x, pt.y, 1});
             D = warp_mat*C;
             pt.x = float(D.at<double>(0,0));
             pt.y = float(D.at<double>(1,0));

@@ -22,7 +22,7 @@ TEST(ML_RTrees, getVotes)
     randu(data, 0, 10);
 
     //labels
-    Mat labels = (Mat_<int>(n,1) << 0,0,0,0, 1,1,1,1, 2,2,2,2);
+    Mat labels = Mat_<int>({n,1}, {0,0,0,0, 1,1,1,1, 2,2,2,2});
 
     rt->train(data, ml::ROW_SAMPLE, labels);
 
@@ -57,9 +57,9 @@ TEST(ML_RTrees, 11142_sample_weights_regression)
     // RTrees for regression
     Ptr<ml::RTrees> rt = cv::ml::RTrees::create();
     //simple regression problem of x -> 2x
-    Mat data = (Mat_<float>(n,1) << 1, 2, 3);
-    Mat values = (Mat_<float>(n,1) << 2, 4, 6);
-    Mat weights = (Mat_<float>(n, 1) << 10, 10, 10);
+    Mat data = Mat_<float>({n,1}, {1, 2, 3});
+    Mat values = Mat_<float>({n,1}, {2, 4, 6});
+    Mat weights = Mat_<float>({n,1}, {10, 10, 10});
 
     Ptr<TrainData> trainData = TrainData::create(data, ml::ROW_SAMPLE, values);
     rt->train(trainData);
@@ -80,8 +80,8 @@ TEST(ML_RTrees, 11142_sample_weights_classification)
 
     Mat data(n, 4, CV_32F);
     randu(data, 0, 10);
-    Mat labels = (Mat_<int>(n,1) << 0,0,0,0, 1,1,1,1, 2,2,2,2);
-    Mat weights = (Mat_<float>(n, 1) << 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10);
+    Mat labels = Mat_<int>({n,1}, {0,0,0,0, 1,1,1,1, 2,2,2,2});
+    Mat weights = Mat_<float>({n, 1}, {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10});
 
     rt->train(data, ml::ROW_SAMPLE, labels);
     rt->clear();
@@ -102,7 +102,7 @@ TEST(ML_RTrees, bug_12974_throw_exception_when_predict_different_feature_count)
     cv::Ptr<RTrees> model = RTrees::create();
     Mat samples(10, numFeatures, CV_32F);
     randu(samples, 0, 10);
-    Mat labels = (Mat_<int>(10,1) << 0,0,0,0,0,1,1,1,1,1);
+    Mat labels = Mat_<int>({10,1}, {0,0,0,0,0,1,1,1,1,1});
     cv::Ptr<TrainData> trainData = TrainData::create(samples, cv::ml::ROW_SAMPLE, labels);
     model->train(trainData);
     // try to predict on data which have fewer features - this should throw an exception

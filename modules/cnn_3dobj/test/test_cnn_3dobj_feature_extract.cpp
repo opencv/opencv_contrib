@@ -52,7 +52,7 @@ void CV_CNN_Feature_Test::run(int)
     descriptor.extract(img_base, feature_test, feature_blob);
     // Reference feature is computed by Caffe extract_features tool.
     // To generate values for different images, use extract_features with the resetted image list in prototxt.
-    Mat feature_reference = (Mat_<float>(1,3) << -312.4805, 8.4768486, -224.98953);
+    Mat feature_reference = Mat_<float>({1,3}, {-312.4805, 8.4768486, -224.98953});
     float dist = cvtest::norm(feature_test, feature_reference, NORM_L1);
     if (dist > 5) {
       ts->printf(cvtest::TS::LOG, "Extracted featrue is not the same from the one extracted from Caffe.");

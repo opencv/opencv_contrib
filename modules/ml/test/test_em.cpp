@@ -77,8 +77,7 @@ INSTANTIATE_TEST_CASE_P(/**/, ML_EM_Params,
 TEST(ML_EM, save_load)
 {
     const int nclusters = 2;
-    Mat_<double> samples(3, 1);
-    samples << 1., 2., 3.;
+    Mat_<double> samples({3, 1}, {1., 2., 3.});
 
     std::vector<double> firstResult;
     string filename = cv::tempfile(".xml");

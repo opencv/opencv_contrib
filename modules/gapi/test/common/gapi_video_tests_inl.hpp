@@ -249,9 +249,9 @@ TEST_P(KalmanFilterCircleSampleTest, AccuracyTest)
     kp.errorCov = Mat::eye(2, 2, type);
 
     if (type == CV_32F)
-        kp.transitionMatrix = (Mat_<float>(2, 2) << 1, 1, 0, 1);
+        kp.transitionMatrix = Mat_<float>({2, 2}, {1, 1, 0, 1});
     else
-        kp.transitionMatrix = (Mat_<double>(2, 2) << 1, 1, 0, 1);
+        kp.transitionMatrix = Mat_<double>({2, 2}, {1, 1, 0, 1});
 
     kp.processNoiseCov = Mat::eye(2, 2, type) * (1e-5);
     kp.measurementMatrix = Mat::eye(1, 2, type);

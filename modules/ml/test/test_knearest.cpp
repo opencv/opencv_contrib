@@ -72,12 +72,12 @@ TEST(ML_KNearest, accuracy)
 
 TEST(ML_KNearest, regression_12347)
 {
-    Mat xTrainData = (Mat_<float>(5,2) << 1, 1.1, 1.1, 1, 2, 2, 2.1, 2, 2.1, 2.1);
-    Mat yTrainLabels = (Mat_<float>(5,1) << 1, 1, 2, 2, 2);
+    Mat xTrainData = Mat_<float>({5,2}, {1.f, 1.1f, 1.1f, 1.f, 2.f, 2.f, 2.1f, 2.f, 2.1f, 2.1f});
+    Mat yTrainLabels = Mat_<float>({5,1}, {1, 1, 2, 2, 2});
     Ptr<KNearest> knn = KNearest::create();
     knn->train(xTrainData, ml::ROW_SAMPLE, yTrainLabels);
 
-    Mat xTestData = (Mat_<float>(2,2) << 1.1, 1.1, 2, 2.2);
+    Mat xTestData = Mat_<float>({2,2}, {1.1f, 1.1f, 2.f, 2.2f});
     Mat zBestLabels, neighbours, dist;
     // check output shapes:
     int K = 16, Kexp = std::min(K, xTrainData.rows);
@@ -94,8 +94,8 @@ TEST(ML_KNearest, regression_12347)
 
 TEST(ML_KNearest, bug_11877)
 {
-    Mat trainData = (Mat_<float>(5,2) << 3, 3, 3, 3, 4, 4, 4, 4, 4, 4);
-    Mat trainLabels = (Mat_<float>(5,1) << 0, 0, 1, 1, 1);
+    Mat trainData = Mat_<float>({5,2}, {3, 3, 3, 3, 4, 4, 4, 4, 4, 4});
+    Mat trainLabels = Mat_<float>({5,1}, {0, 0, 1, 1, 1});
 
     Ptr<KNearest> knnKdt = KNearest::create();
     knnKdt->setAlgorithmType(KNearest::KDTREE);
@@ -103,8 +103,8 @@ TEST(ML_KNearest, bug_11877)
 
     knnKdt->train(trainData, ml::ROW_SAMPLE, trainLabels);
 
-    Mat testData = (Mat_<float>(2,2) << 3.1, 3.1, 4, 4.1);
-    Mat testLabels = (Mat_<int>(2,1) << 0, 1);
+    Mat testData = Mat_<float>({2,2}, {3.1f, 3.1f, 4.f, 4.1f});
+    Mat testLabels = Mat_<int>({2,1}, {0, 1});
     Mat result;
 
     knnKdt->findNearest(testData, 1, result);

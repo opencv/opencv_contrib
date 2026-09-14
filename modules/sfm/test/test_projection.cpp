@@ -90,18 +90,17 @@ TEST(Sfm_projection, euclideanToHomogeneous)
 
 TEST(Sfm_projection, P_From_KRt)
 {
-  Matx33d K, Kp;
-  K << 10,  1, 30,
-        0, 20, 40,
-        0,  0,  1;
+  Matx33d Kp;
+  Matx33d K(10,  1, 30,
+             0, 20, 40,
+             0,  0,  1);
 
-  Matx33d R, Rp;
-  R << 1, 0, 0,
-       0, 1, 0,
-       0, 0, 1;
+  Matx33d Rp;
+  Matx33d R(1, 0, 0,
+            0, 1, 0,
+            0, 0, 1);
 
-  Vec3d t, tp;
-  t << 1, 2, 3;
+  Vec3d t(1,2,3), tp;
 
   Matx34d P(3,4);
   projectionFromKRt(K, R, t, P);

@@ -201,7 +201,7 @@ void ContourFitting::estimateTransformation(InputArray _src, InputArray _ref, Ou
         }
     }
     while ((x1>-nbElt));
-    Mat x=(Mat_<double>(1,5)<<alphaMin/ nbElt,phiMin,sMin, fdCtr2.at<Vec2d>(0, 0)[0]- fdCtr1.at<Vec2d>(0, 0)[0], fdCtr2.at<Vec2d>(0, 0)[1]- fdCtr1.at<Vec2d>(0, 0)[1]);
+    Mat x=Mat_<double>({1,5}, {alphaMin/ nbElt,phiMin,sMin, fdCtr2.at<Vec2d>(0, 0)[0]- fdCtr1.at<Vec2d>(0, 0)[0], fdCtr2.at<Vec2d>(0, 0)[1]- fdCtr1.at<Vec2d>(0, 0)[1]});
     if (distFin)
         *distFin= distMin;
     x.copyTo(_alphaPhiST);
