@@ -108,10 +108,14 @@ Either dsize or both fx and fy must be non-zero.
 @param interpolation Interpolation method. INTER_NEAREST , INTER_LINEAR , INTER_CUBIC , and INTER_AREA are
 supported.
 @param stream Stream for the asynchronous version.
+@param align_corners If true (INTER_LINEAR only), the corner pixels of source and destination are
+aligned: the sampling map becomes src = dst * (srcSize-1)/(dstSize-1), matching PyTorch's
+`interpolate(align_corners=True)` and the reference bilinear used by some ML preprocessors.
+When false (default), the existing scale mapping src = dst * srcSize/dstSize is used.
 
 @sa resize
  */
-CV_EXPORTS_W void resize(InputArray src, OutputArray dst, Size dsize, double fx=0, double fy=0, int interpolation = INTER_LINEAR, Stream& stream = Stream::Null());
+CV_EXPORTS_W void resize(InputArray src, OutputArray dst, Size dsize, double fx=0, double fy=0, int interpolation = INTER_LINEAR, Stream& stream = Stream::Null(), bool align_corners = false);
 
 /** @brief Applies an affine transformation to an image.
 

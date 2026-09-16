@@ -54,6 +54,11 @@
 
 namespace cv { namespace cuda { namespace device
 {
+    // Host->device sentinel for the align-corners truncating-linear resize path.
+    // Kept out of the public InterpolationFlags enum; passed via the internal
+    // `interpolation` int by cv::cuda::resize when align_corners is requested.
+    enum { INTER_LINEAR_ALIGN_CORNERS_TRUNC = 100 };
+
     __device__ __forceinline__ float lanczos_weight(float x_)
     {
         float x = fabsf(x_);
@@ -268,6 +273,51 @@ namespace cv { namespace cuda { namespace device
         }
     }
 
+    // per-channel floor helpers for 1/3/4-channel float work types
+    __device__ __forceinline__ float  floorVec(float v)  { return ::floorf(v); }
+    __device__ __forceinline__ float3 floorVec(float3 v) { return make_float3(::floorf(v.x), ::floorf(v.y), ::floorf(v.z)); }
+    __device__ __forceinline__ float4 floorVec(float4 v) { return make_float4(::floorf(v.x), ::floorf(v.y), ::floorf(v.z), ::floorf(v.w)); }
+
+    // Truncating bilinear (align-corners caller supplies fx=(src-1)/(dst-1)).
+    // Matches reference integer bilinear that casts the interpolated value with
+    // truncation (round-toward-zero) instead of round-to-nearest — needed for
+    // bit-exact parity with CPU/reference preprocessors (e.g. Qwen-VL / PyTorch).
+    template <typename T> __global__ void resize_linear_trunc(const PtrStepSz<T> src, PtrStepSz<T> dst, const float fy, const float fx)
+    {
+        typedef typename TypeVec<float, VecTraits<T>::cn>::vec_type work_type;
+
+        const int dst_x = blockDim.x * blockIdx.x + threadIdx.x;
+        const int dst_y = blockDim.y * blockIdx.y + threadIdx.y;
+
+        if (dst_x < dst.cols && dst_y < dst.rows)
+        {
+            const float src_x = dst_x * fx;
+            const float src_y = dst_y * fy;
+
+            work_type out = VecTraits<work_type>::all(0);
+
+            const int x1 = __float2int_rd(src_x);
+            const int y1 = __float2int_rd(src_y);
+            const int x2 = x1 + 1;
+            const int y2 = y1 + 1;
+            const int x2_read = ::min(x2, src.cols - 1);
+            const int y2_read = ::min(y2, src.rows - 1);
+
+            T src_reg = src(y1, x1);
+            out = out + src_reg * ((x2 - src_x) * (y2 - src_y));
+            src_reg = src(y1, x2_read);
+            out = out + src_reg * ((src_x - x1) * (y2 - src_y));
+            src_reg = src(y2_read, x1);
+            out = out + src_reg * ((x2 - src_x) * (src_y - y1));
+            src_reg = src(y2_read, x2_read);
+            out = out + src_reg * ((src_x - x1) * (src_y - y1));
+
+            // truncate toward zero per channel (matches static_cast<T> on the ref)
+            work_type tr = floorVec(out);
+            dst(dst_y, dst_x) = saturate_cast<T>(tr);
+        }
+    }
+
     template <class Ptr2D, typename T> __global__ void resize(Ptr2D src, PtrStepSz<T> dst, const float fy, const float fx)
     {
         const int dst_x = blockDim.x * blockIdx.x + threadIdx.x;
@@ -334,6 +384,19 @@ namespace cv { namespace cuda { namespace device
         const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
 
         resize_linear<<<grid, block, 0, stream>>>(src, dst, fy, fx);
+        cudaSafeCall( cudaGetLastError() );
+
+        if (stream == 0)
+            cudaSafeCall( cudaDeviceSynchronize() );
+    }
+
+    template <typename T>
+    void call_resize_linear_trunc_glob(const PtrStepSz<T>& src, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
+    {
+        const dim3 block(32, 8);
+        const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
+
+        resize_linear_trunc<<<grid, block, 0, stream>>>(src, dst, fy, fx);
         cudaSafeCall( cudaGetLastError() );
 
         if (stream == 0)
@@ -554,6 +617,16 @@ namespace cv { namespace cuda { namespace device
         }
     };
 
+    // Truncating linear (align-corners parity path). Always uses the glob kernel
+    // so the truncation is applied uniformly regardless of scale factor.
+    template <typename T> struct ResizeLinearTruncDispatcher
+    {
+        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& /*srcWhole*/, int /*yoff*/, int /*xoff*/, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
+        {
+            call_resize_linear_trunc_glob(src, dst, fy, fx, stream);
+        }
+    };
+
     template <typename T> struct SelectImplForLinear
     {
         static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
@@ -723,21 +796,26 @@ namespace cv { namespace cuda { namespace device
     template <typename T> void resize(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream)
     {
         typedef void (*func_t)(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream);
-        static const func_t funcs[5] =
+        static const func_t funcs[6] =
         {
             ResizeNearestDispatcher<T>::call,
             ResizeLinearDispatcher<T>::call,
             ResizeCubicDispatcher<T>::call,
             ResizeAreaDispatcher<T>::call,
-            ResizeLanczosDispatcher<T>::call
+            ResizeLanczosDispatcher<T>::call,
+            ResizeLinearTruncDispatcher<T>::call   // index 5: align-corners truncating linear
         };
+
+        // sentinel from the host side: INTER_LINEAR + align_corners parity path
+        if (interpolation == INTER_LINEAR_ALIGN_CORNERS_TRUNC)
+            interpolation = 5;
 
         // change to linear if area interpolation upscaling
         if (interpolation == 3 && (fx <= 1.f || fy <= 1.f))
             interpolation = 1;
 
         // Bounds check for interpolation mode
-        CV_Assert(interpolation >= 0 && interpolation < 5);
+        CV_Assert(interpolation >= 0 && interpolation < 6);
 
         funcs[interpolation](static_cast< PtrStepSz<T> >(src), static_cast< PtrStepSz<T> >(srcWhole), yoff, xoff, static_cast< PtrStepSz<T> >(dst), fy, fx, stream);
     }
