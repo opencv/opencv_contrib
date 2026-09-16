@@ -13,6 +13,9 @@
 // Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
 // Copyright (C) 2009, Willow Garage Inc., all rights reserved.
 // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+// Copyright (c) 2026 Advanced Micro Devices, Inc. All rights reserved.
+//
+// \author Jeff Daily <jeff.daily@amd.com>
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -42,6 +45,167 @@
 //M*/
 
 #include "precomp.hpp"
+
+#ifdef HAVE_ROCDECODE
+
+cv::cudacodec::detail::VideoParser::VideoParser(VideoDecoder* videoDecoder, FrameQueue* frameQueue, const bool allowFrameDrop, const bool udpSource) :
+    videoDecoder_(videoDecoder), frameQueue_(frameQueue), allowFrameDrop_(allowFrameDrop)
+{
+    if (udpSource) maxUnparsedPackets_ = 0;
+    const rocDecVideoCodec rocCodec = videoDecoder->codec();
+    // Reject codecs rocDecode does not implement up front, with a clear message.
+    // rocDecode declares MPEG1/2/4, VC1, VP8 and JPEG in its enum but its parser
+    // currently decodes only AVC/HEVC/AV1/VP9; codecToRocDec already returns
+    // NumCodecs for VC1 and the H.264 SVC/MVC extensions. This is the same guard
+    // class as the per-device caps query in VideoDecoder::create -- a catchable
+    // StsNotImplemented, never a crash -- so the multi-arch binary degrades
+    // gracefully on an unsupported codec just as it does on a device with no VCN.
+    const bool rocDecodeSupportsCodec = rocCodec == rocDecVideoCodec_AVC || rocCodec == rocDecVideoCodec_HEVC ||
+                                        rocCodec == rocDecVideoCodec_AV1 || rocCodec == rocDecVideoCodec_VP9;
+    if (!rocDecodeSupportsCodec) {
+        CV_Error(Error::StsNotImplemented, std::string("cudacodec::VideoReader: the AMD rocDecode library does not support this codec. ") +
+            "rocDecode decodes H.264 (AVC), H.265 (HEVC), AV1 and VP9; it lacks MPEG-1/2/4, VC-1, VP8 and MJPEG (use the FFmpeg cv::VideoCapture backend for those).");
+    }
+    RocdecParserParams params = {};
+    params.codec_type = rocCodec;
+    params.max_num_decode_surfaces = 1;
+    params.max_display_delay = 1; // push frames to the decoder as quickly as possible
+    params.user_data = this;
+    params.pfn_sequence_callback = HandleVideoSequenceProc;
+    params.pfn_decode_picture = HandlePictureDecodeProc;
+    params.pfn_display_picture = HandlePictureDisplayProc;
+    if (rocDecCreateVideoParser(&parser_, &params) != ROCDEC_SUCCESS)
+        CV_Error(Error::StsNotImplemented, "cudacodec::VideoReader: rocDecCreateVideoParser failed (codec unsupported by the rocDecode parser).");
+}
+
+bool cv::cudacodec::detail::VideoParser::parseVideoData(const unsigned char* data, size_t size, const bool rawMode, const bool containsKeyFrame, bool endOfStream)
+{
+    RocdecSourceDataPacket packet = {};
+    packet.flags = ROCDEC_PKT_TIMESTAMP;
+    if (endOfStream)
+        packet.flags |= ROCDEC_PKT_ENDOFSTREAM;
+    packet.payload_size = static_cast<uint32_t>(size);
+    packet.payload = data;
+
+    if (rawMode)
+        currentFramePackets.push_back(RawPacket(data, size, containsKeyFrame));
+
+    rocDecStatus retVal = ROCDEC_SUCCESS;
+    try {
+        retVal = rocDecParseVideoData(parser_, &packet);
+    }
+    catch (const cv::Exception& e) {
+        CV_LOG_ERROR(NULL, e.msg);
+        hasError_ = true;
+        frameQueue_->endDecode();
+        return false;
+    }
+
+    if (retVal != ROCDEC_SUCCESS) {
+        hasError_ = true;
+        frameQueue_->endDecode();
+        return false;
+    }
+
+    ++unparsedPackets_;
+    if (maxUnparsedPackets_ && unparsedPackets_ > maxUnparsedPackets_) {
+        CV_LOG_ERROR(NULL, "Maximum number of packets (" << maxUnparsedPackets_ << ") parsed without decoding a frame or reconfiguring the decoder, if reading from \
+            a live source consider initializing with VideoReaderInitParams::udpSource == true.");
+        hasError_ = true;
+        frameQueue_->endDecode();
+        return false;
+    }
+
+    if (endOfStream)
+        frameQueue_->endDecode();
+
+    return !frameQueue_->isEndOfDecode();
+}
+
+int cv::cudacodec::detail::VideoParser::HandleVideoSequence(RocdecVideoFormat* format)
+{
+    unparsedPackets_ = 0;
+
+    FormatInfo newFormat;
+    newFormat.videoFullRangeFlag = format->video_signal_description.video_full_range_flag;
+    newFormat.colorSpaceStandard = static_cast<ColorSpaceStandard>(format->video_signal_description.matrix_coefficients);
+    newFormat.codec = videoDecoder_->format().codec; // keep the demuxer's codec (rocDecode and cudacodec enums differ)
+    newFormat.chromaFormat = static_cast<ChromaFormat>(format->chroma_format);
+    newFormat.nBitDepthMinus8 = format->bit_depth_luma_minus8;
+    newFormat.nBitDepthChromaMinus8 = format->bit_depth_chroma_minus8;
+    newFormat.ulWidth = format->coded_width;
+    newFormat.ulHeight = format->coded_height;
+    newFormat.fps = format->frame_rate.denominator ? format->frame_rate.numerator / static_cast<float>(format->frame_rate.denominator) : 0;
+    newFormat.targetSz = videoDecoder_->getTargetSz();
+    newFormat.srcRoi = videoDecoder_->getSrcRoi();
+    if (newFormat.srcRoi.empty()) {
+        newFormat.displayArea = Rect(Point(format->display_area.left, format->display_area.top), Point(format->display_area.right, format->display_area.bottom));
+        if (newFormat.targetSz.empty())
+            newFormat.targetSz = Size((format->display_area.right - format->display_area.left), (format->display_area.bottom - format->display_area.top));
+    }
+    else
+        newFormat.displayArea = newFormat.srcRoi;
+    newFormat.width = newFormat.targetSz.width ? newFormat.targetSz.width : format->coded_width;
+    newFormat.height = newFormat.targetSz.height ? newFormat.targetSz.height : format->coded_height;
+    newFormat.targetRoi = videoDecoder_->getTargetRoi();
+    newFormat.ulNumDecodeSurfaces = min(!allowFrameDrop_ ? max(videoDecoder_->nDecodeSurfaces(), static_cast<int>(format->min_num_decode_surfaces)) :
+        static_cast<int>(format->min_num_decode_surfaces) * 2, 32);
+    newFormat.deinterlaceMode = format->progressive_sequence ? Weave : Adaptive;
+    int maxW = max(static_cast<int>(format->coded_width), 0);
+    int maxH = max(static_cast<int>(format->coded_height), 0);
+    newFormat.ulMaxWidth = maxW;
+    newFormat.ulMaxHeight = maxH;
+    newFormat.enableHistogram = videoDecoder_->enableHistogram();
+
+    frameQueue_->waitUntilEmpty();
+    int retVal = newFormat.ulNumDecodeSurfaces;
+    if (videoDecoder_->inited()) {
+        retVal = videoDecoder_->reconfigure(newFormat);
+        if (retVal > 1 && newFormat.ulNumDecodeSurfaces != frameQueue_->getMaxSz())
+            frameQueue_->resize(newFormat.ulNumDecodeSurfaces);
+    }
+    else {
+        frameQueue_->init(newFormat.ulNumDecodeSurfaces);
+        videoDecoder_->create(newFormat);
+    }
+    return retVal;
+}
+
+int cv::cudacodec::detail::VideoParser::HandlePictureDecode(RocdecPicParams* picParams)
+{
+    unparsedPackets_ = 0;
+
+    bool isFrameAvailable = frameQueue_->waitUntilFrameAvailable(picParams->curr_pic_idx, allowFrameDrop_);
+    if (!isFrameAvailable)
+        return false;
+
+    if (!videoDecoder_->decodePicture(picParams)) {
+        CV_LOG_ERROR(NULL, "Decoding failed!");
+        hasError_ = true;
+        return false;
+    }
+    return true;
+}
+
+int cv::cudacodec::detail::VideoParser::HandlePictureDisplay(RocdecParserDispInfo* dispInfo)
+{
+    unparsedPackets_ = 0;
+
+    // RocdecParserDispInfo has the same picture_index / progressive_frame /
+    // top_field_first / repeat_first_field / pts fields as the compat
+    // CUVIDPARSERDISPINFO the frame queue stores, so forward it directly.
+    CUVIDPARSERDISPINFO disp;
+    disp.picture_index = dispInfo->picture_index;
+    disp.progressive_frame = dispInfo->progressive_frame;
+    disp.top_field_first = dispInfo->top_field_first;
+    disp.repeat_first_field = dispInfo->repeat_first_field;
+    disp.pts = dispInfo->pts;
+    frameQueue_->enqueue(&disp, currentFramePackets);
+    currentFramePackets.clear();
+    return true;
+}
+
+#endif // HAVE_ROCDECODE
 
 #ifdef HAVE_NVCUVID
 

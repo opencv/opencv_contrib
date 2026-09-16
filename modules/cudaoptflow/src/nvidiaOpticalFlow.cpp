@@ -26,24 +26,34 @@ cv::Ptr<cv::cuda::NvidiaOpticalFlow_2_0> cv::cuda::NvidiaOpticalFlow_2_0::create
 
 #elif !defined HAVE_NVIDIA_OPTFLOW
 
+#ifdef __HIP_PLATFORM_AMD__
+#define OPENCV_NVOF_ERROR CV_Error(cv::Error::StsNotImplemented, \
+    "Hardware optical flow is not available on ROCm: AMD GPUs expose no dedicated " \
+    "optical-flow engine. Use the software flows (BroxOpticalFlow, SparsePyrLKOpticalFlow, " \
+    "DensePyrLKOpticalFlow, FarnebackOpticalFlow, OpticalFlowDual_TVL1) instead.")
+#else
+#define OPENCV_NVOF_ERROR CV_Error(cv::Error::HeaderIsNull, \
+    "OpenCV was build without NVIDIA OpticalFlow support")
+#endif
+
 cv::Ptr<cv::cuda::NvidiaOpticalFlow_1_0> cv::cuda::NvidiaOpticalFlow_1_0::create(
     cv::Size, NVIDIA_OF_PERF_LEVEL, bool, bool, bool, int, Stream&, Stream&)
 {
-    CV_Error(cv::Error::HeaderIsNull, "OpenCV was build without NVIDIA OpticalFlow support");
+    OPENCV_NVOF_ERROR;
 }
 
 cv::Ptr<cv::cuda::NvidiaOpticalFlow_2_0> cv::cuda::NvidiaOpticalFlow_2_0::create(
     cv::Size, NVIDIA_OF_PERF_LEVEL, NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE, NVIDIA_OF_HINT_VECTOR_GRID_SIZE,
     bool, bool, bool, int, Stream&, Stream&)
 {
-    CV_Error(cv::Error::HeaderIsNull, "OpenCV was build without NVIDIA OpticalFlow support");
+    OPENCV_NVOF_ERROR;
 }
 
 cv::Ptr<cv::cuda::NvidiaOpticalFlow_2_0> cv::cuda::NvidiaOpticalFlow_2_0::create(
     cv::Size, std::vector<Rect>, NVIDIA_OF_PERF_LEVEL, NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE, NVIDIA_OF_HINT_VECTOR_GRID_SIZE,
     bool, bool, bool, int, Stream&, Stream&)
 {
-    CV_Error(cv::Error::HeaderIsNull, "OpenCV was build without NVIDIA OpticalFlow support");
+    OPENCV_NVOF_ERROR;
 }
 
 #else

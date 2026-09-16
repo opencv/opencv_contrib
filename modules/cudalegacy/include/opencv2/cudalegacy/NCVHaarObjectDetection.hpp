@@ -196,7 +196,7 @@ struct HaarClassifierNodeDescriptor32
         return *(Ncv32f_a *)&this->_ui1.x;
     }
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
     __device__ Ncv32f getLeafValue(void)
     {
         return __int_as_float(this->_ui1.x);

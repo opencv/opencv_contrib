@@ -4,7 +4,11 @@
 
 #pragma once
 #include <stdint.h>
+#ifdef __HIP_PLATFORM_AMD__
+#include <hip/hip_runtime.h>
+#else
 #include <cuda_runtime.h>
+#endif
 
 namespace cv { namespace cuda { namespace device {
 struct ColorMatrix {

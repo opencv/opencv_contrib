@@ -57,15 +57,32 @@
 #include "opencv2/core/private.cuda.hpp"
 #include <opencv2/core/utils/logger.hpp>
 
-#if defined(HAVE_NVCUVID) || defined(HAVE_NVCUVENC)
+// A hardware video-decode back end is available when either the NVIDIA NVCUVID
+// SDK (CUDA) or the AMD rocDecode library (ROCm) is present. The shared decode
+// plumbing keys on this so it builds against whichever back end is configured.
+// Defined after the OpenCV headers above so that HAVE_ROCDECODE / HAVE_NVCUVID
+// (which come from cvconfig.h, pulled in by private.cuda.hpp) are already visible.
+#if defined(HAVE_NVCUVID) || defined(HAVE_ROCDECODE)
+    #define HAVE_CUDACODEC_DECODER
+#endif
+
+#if defined(HAVE_NVCUVID) || defined(HAVE_NVCUVENC) || defined(HAVE_ROCDECODE)
     #if _WIN32
         #define NOMINMAX
     #endif
-    #if defined(HAVE_NVCUVID)
-        #if defined(HAVE_DYNLINK_NVCUVID_HEADER)
-            #include <dynlink_nvcuvid.h>
-        #elif defined(HAVE_NVCUVID_HEADER)
-            #include <nvcuvid.h>
+    #if defined(HAVE_NVCUVID) || defined(HAVE_ROCDECODE)
+        #if defined(HAVE_NVCUVID)
+            #if defined(HAVE_DYNLINK_NVCUVID_HEADER)
+                #include <dynlink_nvcuvid.h>
+            #elif defined(HAVE_NVCUVID_HEADER)
+                #include <nvcuvid.h>
+            #endif
+        #elif defined(HAVE_ROCDECODE)
+            // rocDecode supplies the same decode model as NVCUVID; this shim maps the
+            // cuvid type/helper names the shared plumbing uses onto rocDecode so the
+            // codec-agnostic code (frame_queue / video_source / video_reader) compiles
+            // unchanged and only the back ends (video_decoder / video_parser) differ.
+            #include "rocdecode_video_compat.hpp"
         #endif
 
         #ifdef _WIN32
@@ -78,7 +95,9 @@
         #include "thread.hpp"
         #include "video_source.hpp"
         #include "ffmpeg_video_source.hpp"
-        #include "cuvid_video_source.hpp"
+        #if defined(HAVE_NVCUVID)
+            #include "cuvid_video_source.hpp"
+        #endif
         #include "frame_queue.hpp"
         #include "video_decoder.hpp"
         #include "video_parser.hpp"
