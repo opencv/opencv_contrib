@@ -11,9 +11,9 @@ namespace
 {
 TEST(CORE, MERGE)
 {
-    Mat m1 = (Mat_<uchar>(2, 2) << 1, 4, 7, 10);
-    Mat m2 = (Mat_<uchar>(2, 2) << 2, 5, 8, 11);
-    Mat m3 = (Mat_<uchar>(2, 2) << 3, 6, 9, 12);
+    Mat m1 = Mat_<uchar>({2, 2}, {1, 4, 7, 10});
+    Mat m2 = Mat_<uchar>({2, 2}, {2, 5, 8, 11});
+    Mat m3 = Mat_<uchar>({2, 2}, {3, 6, 9, 12});
     Mat channels[3] = {m1, m2, m3};
     Mat m;
     cv::merge(channels, 3, m);

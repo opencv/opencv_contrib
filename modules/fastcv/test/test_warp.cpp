@@ -136,7 +136,7 @@ TEST(WarpAffine3ChannelTest, accuracy)
     cv::Mat src = imread(cvtest::findDataFile("cv/shared/baboon.png"));
 
     // Define the transformation matrix
-    cv::Mat M = (cv::Mat_<float>(2, 3) << 2.0, 0, -50.0, 0, 2.0, -50.0);
+    cv::Mat M = cv::Mat_<float>({2, 3}, {2.0, 0, -50.0, 0, 2.0, -50.0});
 
     cv::Size dsize(src.cols, src.rows);
 
@@ -156,7 +156,7 @@ TEST(WarpAffineROITest, accuracy)
 
     float angle = 180.0; // Rotation angle in degrees
     float radians = angle * CV_PI / 180.0;
-    cv::Mat affine = (cv::Mat_<float>(2, 2) << cos(radians), -sin(radians), sin(radians), cos(radians));
+    cv::Mat affine = cv::Mat_<float>({2, 2}, {cos(radians), -sin(radians), sin(radians), cos(radians)});
 
     cv::Mat patch;
     cv::Mat roi = src(cv::Rect(0, 0, 100, 100));

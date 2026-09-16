@@ -115,9 +115,9 @@ void ft::FT12D_polynomial(InputArray matrix, InputArray kernel, OutputArray c00,
             multiply(vecY.mul(vecY), kernelMasked, denominator01, 1, CV_32F);
 
             Scalar c00sum, c10sum, c01sum;
-            divide(sum(numerator00), sum(denominator00), c00sum, 1, CV_32F);
-            divide(sum(numerator10), sum(denominator10), c10sum, 1, CV_32F);
-            divide(sum(numerator01), sum(denominator01), c01sum, 1, CV_32F);
+            divide(sum(numerator00), sum(denominator00), c00sum, 1);
+            divide(sum(numerator10), sum(denominator10), c10sum, 1);
+            divide(sum(numerator01), sum(denominator01), c01sum, 1);
 
             c00Mat.row(o).col(i) = c00sum;
             c10Mat.row(o).col(i) = c10sum;
@@ -281,9 +281,9 @@ void ft::FT12D_process(InputArray matrix, InputArray kernel, OutputArray output,
             multiply(vecY.mul(vecY), kernelMasked, denominator01, 1, CV_32F);
 
             Scalar c00, c10, c01;
-            divide(sum(numerator00), sum(denominator00), c00, 1, CV_32F);
-            divide(sum(numerator10), sum(denominator10), c10, 1, CV_32F);
-            divide(sum(numerator01), sum(denominator01), c01, 1, CV_32F);
+            divide(sum(numerator00), sum(denominator00), c00, 1);
+            divide(sum(numerator10), sum(denominator10), c10, 1);
+            divide(sum(numerator01), sum(denominator01), c01, 1);
 
             Mat component, updatedC10, updatedC01;
 

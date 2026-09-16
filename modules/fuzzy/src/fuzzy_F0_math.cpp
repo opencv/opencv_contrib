@@ -349,7 +349,7 @@ void ft::FT02D_components(InputArray matrix, InputArray kernel, OutputArray comp
             multiply(roiImage, kernelMasked, numerator, 1, CV_32F);
 
             Scalar value;
-            divide(sum(numerator), sum(kernelMasked), value, 1, CV_32F);
+            divide(sum(numerator), sum(kernelMasked), value, 1);
 
             componentsMat.row(o).col(i).setTo(value);
         }
@@ -444,7 +444,7 @@ void ft::FT02D_process(InputArray matrix, InputArray kernel, OutputArray output,
             multiply(roiMatrix, kernelMasked, numerator, 1, CV_32F);
 
             Scalar component;
-            divide(sum(numerator), sum(kernelMasked), component, 1, CV_32F);
+            divide(sum(numerator), sum(kernelMasked), component, 1);
 
             Mat inverse;
             multiply(kernel, component, inverse, 1, CV_32F);
@@ -527,7 +527,7 @@ int ft::FT02D_iteration(InputArray matrix, InputArray kernel, OutputArray output
             }
 
             Scalar component;
-            divide(sum(numerator), denominator, component, 1, CV_32F);
+            divide(sum(numerator), denominator, component, 1);
 
             Mat inverse;
             multiply(kernel, component, inverse, 1, CV_32F);

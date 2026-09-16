@@ -130,7 +130,7 @@ bool FacemarkKazemiImpl :: getRelativePixels(vector<Point2f> sample,vector<Point
             index = nearest[i];
         index = getNearestLandmark(pixel_coordinates[i]);
         pixel_coordinates[i] = pixel_coordinates[i] - meanshape[index];
-        Mat C = (Mat_<double>(3,1) << pixel_coordinates[i].x, pixel_coordinates[i].y, 0);
+        Mat C = Mat_<double>({3,1}, {pixel_coordinates[i].x, pixel_coordinates[i].y, 0});
         if(!transform_mat.empty()){
             Mat D =transform_mat*C;
             pixel_coordinates[i].x = float((D.at<double>(0,0)));
@@ -150,7 +150,7 @@ bool FacemarkKazemiImpl::getPixelIntensities(Mat img,vector<Point2f> pixel_coord
     Mat dst = img.clone();
     Mat C,D;
     for(size_t j=0;j<pixel_coordinates.size();j++){
-        C = (Mat_<double>(3,1) << pixel_coordinates[j].x, pixel_coordinates[j].y, 1);
+        C = Mat_<double>({3,1}, {pixel_coordinates[j].x, pixel_coordinates[j].y, 1});
         D = transform_mat*C;
         pixel_coordinates[j].x = float(D.at<double>(0,0));
         pixel_coordinates[j].y = float(D.at<double>(1,0));
