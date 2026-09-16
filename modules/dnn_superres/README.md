@@ -16,9 +16,15 @@ Refer to the tutorials to understand how to use this module.
 
 There are four models which are trained.
 
+**Model format.** OpenCV 5 removed the TensorFlow importer, so `readModel()` accepts ONNX only.
+The repositories linked below publish TensorFlow `.pb` weights, which have to be converted to
+ONNX before they can be loaded. The converted models used by this module's tests live in
+`opencv_extra` under `testdata/cv/dnn_superres/`: `ESPCN_x2.onnx`, `FSRCNN_x2.onnx`,
+`FSRCNN_x3.onnx` and `LapSRN_x4.onnx`. No converted EDSR model is distributed yet.
+
 #### EDSR
 
-Trained models can be downloaded from [here](https://github.com/Saafke/EDSR_Tensorflow/tree/master/models).
+Trained weights (TensorFlow `.pb`) can be downloaded from [here](https://github.com/Saafke/EDSR_Tensorflow/tree/master/models).
 
 - Size of the model: ~38.5MB. This is a quantized version, so that it can be uploaded to GitHub. (Original was 150MB.)
 - This model was trained for 3 days with a batch size of 16
@@ -31,7 +37,7 @@ Trained models can be downloaded from [here](https://github.com/Saafke/EDSR_Tens
 
 #### ESPCN
 
-Trained models can be downloaded from [here](https://github.com/fannymonori/TF-ESPCN/tree/master/export).
+Trained weights (TensorFlow `.pb`) can be downloaded from [here](https://github.com/fannymonori/TF-ESPCN/tree/master/export).
 
 - Size of the model: ~100kb
 - This model was trained for ~100 iterations with a batch size of 32
@@ -44,7 +50,7 @@ Trained models can be downloaded from [here](https://github.com/fannymonori/TF-E
 
 #### FSRCNN
 
-Trained models can be downloaded from [here](https://github.com/Saafke/FSRCNN_Tensorflow/tree/master/models).
+Trained weights (TensorFlow `.pb`) can be downloaded from [here](https://github.com/Saafke/FSRCNN_Tensorflow/tree/master/models).
 
 - Size of the model: ~40KB (~9kb for FSRCNN-small)
 - This model was trained for ~30 iterations with a batch size of 1
@@ -57,7 +63,7 @@ Trained models can be downloaded from [here](https://github.com/Saafke/FSRCNN_Te
 
 #### LapSRN
 
-Trained models can be downloaded from [here](https://github.com/fannymonori/TF-LapSRN/tree/master/export).
+Trained weights (TensorFlow `.pb`) can be downloaded from [here](https://github.com/fannymonori/TF-LapSRN/tree/master/export).
 
 - Size of the model: between 1-5Mb
 - This model was trained for ~50 iterations with a batch size of 32

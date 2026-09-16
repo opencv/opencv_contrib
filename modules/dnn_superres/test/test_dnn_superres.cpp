@@ -46,17 +46,17 @@ void runSingleModel(std::string algorithm, int scale, std::string model_filename
 
 TEST(CV_DnnSuperResSingleOutputTest, accuracy_espcn_2)
 {
-    runSingleModel("espcn", 2, "ESPCN_x2.pb");
+    runSingleModel("espcn", 2, "ESPCN_x2.onnx");
 }
 
 TEST(CV_DnnSuperResSingleOutputTest, accuracy_fsrcnn_2)
 {
-    runSingleModel("fsrcnn", 2, "FSRCNN_x2.pb");
+    runSingleModel("fsrcnn", 2, "FSRCNN_x2.onnx");
 }
 
 TEST(CV_DnnSuperResSingleOutputTest, accuracy_fsrcnn_3)
 {
-    runSingleModel("fsrcnn", 3, "FSRCNN_x3.pb");
+    runSingleModel("fsrcnn", 3, "FSRCNN_x3.onnx");
 }
 
 
@@ -108,7 +108,7 @@ TEST(CV_DnnSuperResMultiOutputTest, accuracy)
     //x4
     std::vector<String> names_4x {"NCHW_output_2x", "NCHW_output_4x"};
     std::vector<int> scales_4x {2, 4};
-    runMultiModel("lapsrn", 4, "LapSRN_x4.pb", scales_4x, names_4x);
+    runMultiModel("lapsrn", 4, "LapSRN_x4.onnx", scales_4x, names_4x);
 }
 
 }}
