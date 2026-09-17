@@ -4,4 +4,7 @@ ocv_define_module(rgbd opencv_core opencv_geometry opencv_imgproc opencv_ptcloud
 
 if(HAVE_OPENGL)
   ocv_target_link_libraries(${the_module} PRIVATE "${OPENGL_LIBRARIES}")
+  if(UNIX AND NOT APPLE)
+    ocv_target_link_libraries(${the_module} PRIVATE "-lGL")
+  endif()
 endif()
