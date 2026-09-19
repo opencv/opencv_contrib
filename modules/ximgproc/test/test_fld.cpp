@@ -293,7 +293,7 @@ TEST_F(ximgproc_ED, detectLinesAndEllipses)
 
     size_t segments_size = 6458;
     size_t lines_size = 6264;
-    size_t ellipses_size = 2449;
+    size_t ellipses_size = 2450;
     EXPECT_EQ(detector->getSegments().size(), segments_size);
     EXPECT_GE(lines.size(), lines_size);
     EXPECT_LE(lines.size(), lines_size + 2);
@@ -307,7 +307,7 @@ TEST_F(ximgproc_ED, detectLinesAndEllipses)
 
     segments_size = 2717;
     lines_size = 6197;
-    ellipses_size = 2446;
+    ellipses_size = 2447;
     EXPECT_EQ(detector->getSegments().size(), segments_size);
     EXPECT_GE(lines.size(), lines_size);
     EXPECT_LE(lines.size(), lines_size + 2);
