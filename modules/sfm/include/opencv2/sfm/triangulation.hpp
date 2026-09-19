@@ -47,7 +47,8 @@ namespace sfm
 //! @{
 
 /** @brief Reconstructs bunch of points by triangulation.
-  @param points2d Input vector of vectors of 2d points (the inner vector is per image). Has to be 2 X N.
+  @param points2d Input vector of 2xN matrices, one per image. Each column
+  contains the coordinates of one corresponding 2D point.
   @param projection_matrices Input vector with 3x4 projections matrices of each image.
   @param points3d Output array with computed 3d points. Is 3 x N.
 
