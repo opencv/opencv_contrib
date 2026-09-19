@@ -3251,6 +3251,11 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
 
         if (circle->isEllipse)
         {
+            // ComputeEllipsePoints() fills exactly 2*(noPoints/2) points, so for an
+            // odd noPoints the last slot px/py[noPoints-1] is never written; drop it
+            // so the validation loop below does not read an uninitialised/stale value.
+            if (noPoints % 2)
+                noPoints--;
             ComputeEllipsePoints(circle->eq.coeff, px, py, noPoints);
         }
         else
