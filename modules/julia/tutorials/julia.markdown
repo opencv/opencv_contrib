@@ -126,7 +126,7 @@ Running The Included Sample
 -----------------------
 
 
-Let's try running one of the included samples now. In this tutorial we will see how to run the `face_detect_dnn.jl` sample. This samples uses a deep neural network to detect faces in the video stream by webcam. The screenshot is from a slightly edited version that reads an image instead. First navigate to `opencv_contrib/modules/julia/samples/`. Next, you need two files "opencv_face_detector.pbtxt" and "opencv_face_detector_uint8.pb" from [link](https://github.com/opencv/opencv_extra/tree/master/testdata/dnn);simply download and place them in the same directory as `face_detect_dnn.jl`. Now you're ready to run. Start a terminal and simply type:
+Let's try running one of the included samples now. In this tutorial we will see how to run the `face_detect_dnn.jl` sample. This samples uses a deep neural network to detect faces in the video stream by webcam. The screenshot is from a slightly edited version that reads an image instead. First navigate to `opencv_contrib/modules/julia/samples/`. Next, you need the file "opencv_face_detector_uint8.onnx" from [link](https://github.com/opencv/opencv_extra/tree/master/testdata/dnn);simply download and place it in the same directory as `face_detect_dnn.jl`. Now you're ready to run. Start a terminal and simply type:
 
 ```
 > julia face_detect_dnn.jl
