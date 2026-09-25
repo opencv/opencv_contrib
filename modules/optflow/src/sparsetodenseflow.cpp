@@ -96,6 +96,11 @@ CV_EXPORTS_W void calcOpticalFlowSparseToDense(InputArray from, InputArray to, O
         }
     }
 
+    if(points_filtered.size()<2)
+        CV_Error(Error::StsBadArg, "calcOpticalFlowSparseToDense: too few matches to interpolate from, try a smaller grid_step");
+    if((size_t)k>=points_filtered.size())
+        k = (int)points_filtered.size()-1;
+
     flow.create(from.size(),CV_32FC2);
     Mat dense_flow = flow.getMat();
 
