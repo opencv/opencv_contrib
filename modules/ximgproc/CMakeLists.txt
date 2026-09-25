@@ -1,2 +1,5 @@
 set(the_description "Extended image processing module. It includes edge-aware filters and etc.")
+
+ocv_add_dispatched_file(accum SSE4_1 AVX AVX2)
+
 ocv_define_module(ximgproc opencv_core opencv_imgproc opencv_geometry opencv_stereo opencv_imgcodecs opencv_video WRAP python java objc js)
