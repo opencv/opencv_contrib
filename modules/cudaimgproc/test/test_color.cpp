@@ -2508,6 +2508,108 @@ INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, SwapChannels, testing::Combine(
     DIFFERENT_SIZES,
     WHOLE_SUBMAT));
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// AlphaComp
+
+namespace
+{
+    // Host reference for cv::cuda::alphaComp, following the Porter-Duff algebra
+    // NPP implements: per pixel as=a1/maxv, ad=a2/maxv, factors (Fa,Fb) per op,
+    // colour = C1*w1 + C2*w2 (w*=own alpha for straight ops, w*=F for premul),
+    // alpha = maxv*(as*Fa + ad*Fb), saturated to the type.
+    template <typename T>
+    cv::Mat alphaCompGold(const cv::Mat& img1, const cv::Mat& img2, int op, double maxv)
+    {
+        cv::Mat dst(img1.size(), img1.type());
+        const bool premul = op >= cv::cuda::ALPHA_OVER_PREMUL;
+        for (int y = 0; y < img1.rows; ++y)
+        {
+            const T* p1 = img1.ptr<T>(y);
+            const T* p2 = img2.ptr<T>(y);
+            T* d = dst.ptr<T>(y);
+            for (int x = 0; x < img1.cols; ++x)
+            {
+                const double as = (double)p1[x * 4 + 3] / maxv;
+                const double ad = (double)p2[x * 4 + 3] / maxv;
+                double Fa = 1.0, Fb = 0.0;
+                switch (op)
+                {
+                    case cv::cuda::ALPHA_OVER: case cv::cuda::ALPHA_OVER_PREMUL: Fa = 1.0;      Fb = 1.0 - as; break;
+                    case cv::cuda::ALPHA_IN:   case cv::cuda::ALPHA_IN_PREMUL:   Fa = ad;       Fb = 0.0;      break;
+                    case cv::cuda::ALPHA_OUT:  case cv::cuda::ALPHA_OUT_PREMUL:  Fa = 1.0 - ad; Fb = 0.0;      break;
+                    case cv::cuda::ALPHA_ATOP: case cv::cuda::ALPHA_ATOP_PREMUL: Fa = ad;       Fb = 1.0 - as; break;
+                    case cv::cuda::ALPHA_XOR:  case cv::cuda::ALPHA_XOR_PREMUL:  Fa = 1.0 - ad; Fb = 1.0 - as; break;
+                    case cv::cuda::ALPHA_PLUS: case cv::cuda::ALPHA_PLUS_PREMUL: Fa = 1.0;      Fb = 1.0;      break;
+                    default: Fa = 1.0; Fb = 0.0; break; // ALPHA_PREMUL
+                }
+                const double w1 = premul ? Fa : as * Fa;
+                const double w2 = premul ? Fb : ad * Fb;
+                for (int c = 0; c < 3; ++c)
+                    d[x * 4 + c] = cv::saturate_cast<T>((double)p1[x * 4 + c] * w1 + (double)p2[x * 4 + c] * w2);
+                d[x * 4 + 3] = cv::saturate_cast<T>(maxv * (as * Fa + ad * Fb));
+            }
+        }
+        return dst;
+    }
+
+    cv::Mat alphaCompGold(const cv::Mat& img1, const cv::Mat& img2, int op)
+    {
+        switch (img1.depth())
+        {
+            case CV_8U:  return alphaCompGold<uchar> (img1, img2, op, 255.0);
+            case CV_16U: return alphaCompGold<ushort>(img1, img2, op, 65535.0);
+            case CV_32S: return alphaCompGold<int>   (img1, img2, op, 2147483647.0);
+            default:     return alphaCompGold<float> (img1, img2, op, 1.0);
+        }
+    }
+
+    IMPLEMENT_PARAM_CLASS(AlphaOp, int)
+}
+
+PARAM_TEST_CASE(AlphaComp, cv::cuda::DeviceInfo, cv::Size, MatType, AlphaOp)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int type;
+    int op;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        type = GET_PARAM(2);
+        op = GET_PARAM(3);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(AlphaComp, Accuracy)
+{
+    cv::Mat img1 = randomMat(size, type, 0.0, type == CV_32FC4 ? 1.0 : 255.0);
+    cv::Mat img2 = randomMat(size, type, 0.0, type == CV_32FC4 ? 1.0 : 255.0);
+
+    cv::cuda::GpuMat dst;
+    cv::cuda::alphaComp(loadMat(img1), loadMat(img2), dst, op);
+
+    cv::Mat dst_gold = alphaCompGold(img1, img2, op);
+
+    // Float arithmetic and the 32S near-INT_MAX scaling differ from a pure
+    // host double computation by a few ULP; integer 8U/16U are exact.
+    double eps = (type == CV_8UC4 || type == CV_16UC4) ? 1.0 : (type == CV_32SC4 ? 4.0 : 1e-3);
+    EXPECT_MAT_NEAR(dst_gold, dst, eps);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, AlphaComp, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    testing::Values(MatType(CV_8UC4), MatType(CV_16UC4), MatType(CV_32SC4), MatType(CV_32FC4)),
+    testing::Values(
+        AlphaOp(cv::cuda::ALPHA_OVER), AlphaOp(cv::cuda::ALPHA_IN), AlphaOp(cv::cuda::ALPHA_OUT),
+        AlphaOp(cv::cuda::ALPHA_ATOP), AlphaOp(cv::cuda::ALPHA_XOR), AlphaOp(cv::cuda::ALPHA_PLUS),
+        AlphaOp(cv::cuda::ALPHA_OVER_PREMUL), AlphaOp(cv::cuda::ALPHA_IN_PREMUL), AlphaOp(cv::cuda::ALPHA_OUT_PREMUL),
+        AlphaOp(cv::cuda::ALPHA_ATOP_PREMUL), AlphaOp(cv::cuda::ALPHA_XOR_PREMUL), AlphaOp(cv::cuda::ALPHA_PLUS_PREMUL),
+        AlphaOp(cv::cuda::ALPHA_PREMUL))));
+
 
 }} // namespace
 #endif // HAVE_CUDA

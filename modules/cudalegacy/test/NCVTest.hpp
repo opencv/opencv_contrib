@@ -54,7 +54,12 @@
 #include <algorithm>
 #include <fstream>
 
+#if defined(__HIP_PLATFORM_AMD__)
+#include <hip/hip_runtime.h>
+#include "opencv2/core/cuda/cuda_to_hip.h"
+#else
 #include <cuda_runtime.h>
+#endif
 
 #include "opencv2/cudalegacy.hpp"
 

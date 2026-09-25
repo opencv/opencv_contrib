@@ -345,6 +345,94 @@ namespace cv { namespace cuda { namespace device
 
 }}}
 
+#ifdef __HIP_PLATFORM_AMD__
+// The CUDA median uses a 32-lane wavelet matrix that does not map cleanly to a
+// wave64 wavefront. ROCm instead computes the per-pixel median directly: each
+// thread gathers its (2*radius+1)^2 window (BORDER_REPLICATE, matching
+// cv::medianBlur) and selects the middle element. Windows are small (radius<=7,
+// so at most 225 samples), so a counting-rank selection is cheap and exact for
+// every depth and channel count.
+namespace cv { namespace cuda { namespace device { namespace median_hip
+{
+    template <typename T, int CN>
+    __global__ void medianKernel(const PtrStepSz<T> src, PtrStep<T> dst, int radius)
+    {
+        const int x = blockIdx.x * blockDim.x + threadIdx.x;
+        const int y = blockIdx.y * blockDim.y + threadIdx.y;
+        if (x >= src.cols || y >= src.rows)
+            return;
+
+        const int win = 2 * radius + 1;
+        const int total = win * win;
+        const int medPos = total / 2;
+
+        T* drow = dst.ptr(y) + x * CN;
+        for (int c = 0; c < CN; ++c)
+        {
+            // Counting rank: the median is the value whose number of strictly
+            // smaller samples is <= medPos and (smaller + equal) > medPos.
+            for (int jj = 0; jj < win; ++jj)
+            {
+                int sy = ::min(::max(y - radius + jj, 0), src.rows - 1);
+                const T* srow = src.ptr(sy);
+                for (int ii = 0; ii < win; ++ii)
+                {
+                    int sx = ::min(::max(x - radius + ii, 0), src.cols - 1);
+                    const T cand = srow[sx * CN + c];
+                    int less = 0, equal = 0;
+                    for (int j2 = 0; j2 < win; ++j2)
+                    {
+                        int sy2 = ::min(::max(y - radius + j2, 0), src.rows - 1);
+                        const T* srow2 = src.ptr(sy2);
+                        for (int i2 = 0; i2 < win; ++i2)
+                        {
+                            int sx2 = ::min(::max(x - radius + i2, 0), src.cols - 1);
+                            const T v = srow2[sx2 * CN + c];
+                            if (v < cand) ++less;
+                            else if (v == cand) ++equal;
+                        }
+                    }
+                    if (less <= medPos && less + equal > medPos)
+                    {
+                        drow[c] = cand;
+                        jj = win; // break outer
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    template <typename T, int CN>
+    void medianImpl(PtrStepSz<T> src, PtrStep<T> dst, int radius, hipStream_t stream)
+    {
+        const dim3 block(16, 16);
+        const dim3 grid(divUp(src.cols, block.x), divUp(src.rows, block.y));
+        medianKernel<T, CN><<<grid, block, 0, stream>>>(src, dst, radius);
+        cudaSafeCall(hipGetLastError());
+        if (stream == 0)
+            cudaSafeCall(hipDeviceSynchronize());
+    }
+
+    template <typename T>
+    void medianFiltering_hip(const PtrStepSz<T> src, PtrStepSz<T> dst, int radius, int cn, hipStream_t stream)
+    {
+        PtrStepSz<T> s(src.rows, src.cols, (T*)src.data, src.step);
+        PtrStep<T> d((T*)dst.data, dst.step);
+        switch (cn)
+        {
+            case 1: medianImpl<T, 1>(s, d, radius, stream); break;
+            case 3: medianImpl<T, 3>(s, d, radius, stream); break;
+            case 4: medianImpl<T, 4>(s, d, radius, stream); break;
+        }
+    }
+
+    template void medianFiltering_hip<uchar>(const PtrStepSz<uchar>, PtrStepSz<uchar>, int, int, hipStream_t);
+    template void medianFiltering_hip<ushort>(const PtrStepSz<ushort>, PtrStepSz<ushort>, int, int, hipStream_t);
+    template void medianFiltering_hip<float>(const PtrStepSz<float>, PtrStepSz<float>, int, int, hipStream_t);
+}}}}
+#endif // __HIP_PLATFORM_AMD__
+
 
 #ifdef __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
 namespace cv { namespace cuda { namespace device

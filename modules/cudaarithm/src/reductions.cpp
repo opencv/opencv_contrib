@@ -134,6 +134,47 @@ double cv::cuda::norm(InputArray _src, int normType, InputArray _mask)
 ////////////////////////////////////////////////////////////////////////
 // meanStdDev
 
+#ifdef __HIP_PLATFORM_AMD__
+namespace
+{
+    // NPP's nppiMean_StdDev computes the population mean and standard deviation
+    // of a single-channel image. Reproduce it from the already ported sum and
+    // squared-sum reductions: stddev = sqrt(E[x^2] - E[x]^2). The result is the
+    // 1x2 CV_64F (mean, stddev) row the public API returns.
+    void meanStdDevHip(const GpuMat& gsrc, GpuMat& gdst, const GpuMat& gmask, Stream& stream)
+    {
+        const double total = gmask.empty()
+            ? static_cast<double>(gsrc.rows) * gsrc.cols
+            : static_cast<double>(cv::cuda::countNonZero(gmask));
+
+        cv::Scalar s = cv::cuda::sum(gsrc, gmask);
+        cv::Scalar sq = cv::cuda::sqrSum(gsrc, gmask);
+
+        const double mean = total > 0 ? s[0] / total : 0.0;
+        const double var = total > 0 ? sq[0] / total - mean * mean : 0.0;
+        const double stddev = std::sqrt(std::max(var, 0.0));
+
+        cv::Mat hostDst(1, 2, CV_64FC1);
+        hostDst.at<double>(0, 0) = mean;
+        hostDst.at<double>(0, 1) = stddev;
+        gdst.upload(hostDst, stream);
+    }
+}
+
+void cv::cuda::meanStdDev(InputArray src, OutputArray dst, Stream& stream)
+{
+    if (!deviceSupports(FEATURE_SET_COMPUTE_13))
+        CV_Error(cv::Error::StsNotImplemented, "Not sufficient compute capebility");
+
+    const GpuMat gsrc = getInputMat(src, stream);
+    CV_Assert( (gsrc.type() == CV_8UC1) || (gsrc.type() == CV_32FC1) );
+    GpuMat gdst = getOutputMat(dst, 1, 2, CV_64FC1, stream);
+    meanStdDevHip(gsrc, gdst, GpuMat(), stream);
+    syncOutput(gdst, dst, stream);
+}
+
+#else
+
 void cv::cuda::meanStdDev(InputArray src, OutputArray dst, Stream& stream)
 {
     if (!deviceSupports(FEATURE_SET_COMPUTE_13))
@@ -195,6 +236,8 @@ void cv::cuda::meanStdDev(InputArray src, OutputArray dst, Stream& stream)
     syncOutput(gdst, dst, stream);
 }
 
+#endif // __HIP_PLATFORM_AMD__
+
 void cv::cuda::meanStdDev(InputArray src, Scalar& mean, Scalar& stddev)
 {
     Stream& stream = Stream::Null();
@@ -226,6 +269,23 @@ void cv::cuda::meanStdDev(InputArray _src, Scalar& mean, Scalar& stddev, InputAr
     mean = Scalar(vals[0]);
     stddev = Scalar(vals[1]);
 }
+
+#ifdef __HIP_PLATFORM_AMD__
+
+void cv::cuda::meanStdDev(InputArray src, OutputArray dst, InputArray mask, Stream& stream)
+{
+    if (!deviceSupports(FEATURE_SET_COMPUTE_13))
+        CV_Error(cv::Error::StsNotImplemented, "Not sufficient compute capebility");
+
+    const GpuMat gsrc = getInputMat(src, stream);
+    const GpuMat gmask = getInputMat(mask, stream);
+    CV_Assert( (gsrc.type() == CV_8UC1) || (gsrc.type() == CV_32FC1) );
+    GpuMat gdst = getOutputMat(dst, 1, 2, CV_64FC1, stream);
+    meanStdDevHip(gsrc, gdst, gmask, stream);
+    syncOutput(gdst, dst, stream);
+}
+
+#else
 
 void cv::cuda::meanStdDev(InputArray src, OutputArray dst, InputArray mask, Stream& stream)
 {
@@ -294,8 +354,36 @@ void cv::cuda::meanStdDev(InputArray src, OutputArray dst, InputArray mask, Stre
     syncOutput(gdst, dst, stream);
 }
 
+#endif // __HIP_PLATFORM_AMD__
+
 //////////////////////////////////////////////////////////////////////////////
 // rectStdDev
+
+#ifdef __HIP_PLATFORM_AMD__
+
+namespace cv { namespace cuda { namespace detail {
+    void rectStdDevHip(const GpuMat& src, const GpuMat& sqr, GpuMat& dst, Rect rect, cudaStream_t stream);
+}}}
+
+void cv::cuda::rectStdDev(InputArray _src, InputArray _sqr, OutputArray _dst, Rect rect, Stream& _stream)
+{
+    GpuMat src = getInputMat(_src, _stream);
+    GpuMat sqr = getInputMat(_sqr, _stream);
+
+    CV_Assert( src.type() == CV_32SC1 && sqr.type() == CV_64FC1 );
+
+    GpuMat dst = getOutputMat(_dst, src.size(), CV_32FC1, _stream);
+
+    cudaStream_t stream = StreamAccessor::getStream(_stream);
+    cv::cuda::detail::rectStdDevHip(src, sqr, dst, rect, stream);
+
+    if (stream == 0)
+        cudaSafeCall( cudaDeviceSynchronize() );
+
+    syncOutput(dst, _dst, _stream);
+}
+
+#else
 
 void cv::cuda::rectStdDev(InputArray _src, InputArray _sqr, OutputArray _dst, Rect rect, Stream& _stream)
 {
@@ -333,5 +421,7 @@ void cv::cuda::rectStdDev(InputArray _src, InputArray _sqr, OutputArray _dst, Re
 
     syncOutput(dst, _dst, _stream);
 }
+
+#endif // __HIP_PLATFORM_AMD__
 
 #endif
