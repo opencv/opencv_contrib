@@ -223,6 +223,7 @@ cv.calcBackProject
 cv.compareHist
 cv.equalizeHist
 cv.createCLAHE
+cv.CLAHE.apply
 cv.wrapperEMD
 cv.watershed
 cv.pyrMeanShiftFiltering
