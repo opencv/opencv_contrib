@@ -922,7 +922,14 @@ static void orUnaligned8u(const uchar * src, const int src_stride,
 #if CV_SSE3
   volatile bool haveSSE3 = checkHardwareSupport(CPU_SSE3);
 #endif
-  bool src_aligned = reinterpret_cast<unsigned long long>(src) % 16 == 0;
+  // NOTE: this function does not (and must not) branch on src/dst alignment.
+  // src_stride and dst_stride are caller-controlled and not guaranteed to be
+  // multiples of 16 (see spread()'s dst.step1()), so `src += src_stride` and
+  // `dst += dst_stride` can drift either pointer in and out of 16-byte
+  // alignment from one row to the next. Any alignment check computed once
+  // per call (as a prior version of this function did) goes stale after the
+  // first such drift, so both src and dst must always be accessed with
+  // unaligned load/store intrinsics, unconditionally, in every row.
 #endif
 
   for (int r = 0; r < height; ++r)
@@ -930,36 +937,29 @@ static void orUnaligned8u(const uchar * src, const int src_stride,
     int c = 0;
 
 #if CV_SSE2
-    // Use aligned loads if possible
-    if (haveSSE2 && src_aligned)
-    {
-      for ( ; c < width - 15; c += 16)
-      {
-        const __m128i* src_ptr = reinterpret_cast<const __m128i*>(src + c);
-        __m128i* dst_ptr = reinterpret_cast<__m128i*>(dst + c);
-        *dst_ptr = _mm_or_si128(*dst_ptr, *src_ptr);
-      }
-    }
 #if CV_SSE3
     // Use LDDQU for fast unaligned load
-    else if (haveSSE3)
+    if (haveSSE3)
     {
       for ( ; c < width - 15; c += 16)
       {
         __m128i val = _mm_lddqu_si128(reinterpret_cast<const __m128i*>(src + c));
         __m128i* dst_ptr = reinterpret_cast<__m128i*>(dst + c);
-        *dst_ptr = _mm_or_si128(*dst_ptr, val);
+        __m128i result = _mm_or_si128(_mm_loadu_si128(dst_ptr), val);
+        _mm_storeu_si128(dst_ptr, result);
       }
     }
+    else
 #endif
     // Fall back to MOVDQU
-    else if (haveSSE2)
+    if (haveSSE2)
     {
       for ( ; c < width - 15; c += 16)
       {
         __m128i val = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + c));
         __m128i* dst_ptr = reinterpret_cast<__m128i*>(dst + c);
-        *dst_ptr = _mm_or_si128(*dst_ptr, val);
+        __m128i result = _mm_or_si128(_mm_loadu_si128(dst_ptr), val);
+        _mm_storeu_si128(dst_ptr, result);
       }
     }
 #endif
