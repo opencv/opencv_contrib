@@ -923,6 +923,9 @@ static void orUnaligned8u(const uchar * src, const int src_stride,
   volatile bool haveSSE3 = checkHardwareSupport(CPU_SSE3);
 #endif
   bool src_aligned = reinterpret_cast<unsigned long long>(src) % 16 == 0;
+  bool dst_aligned = reinterpret_cast<unsigned long long>(dst) % 16 == 0;
+  src_aligned = src_aligned && src_stride % 16 == 0;
+  dst_aligned = dst_aligned && dst_stride % 16 == 0;
 #endif
 
   for (int r = 0; r < height; ++r)
@@ -931,7 +934,7 @@ static void orUnaligned8u(const uchar * src, const int src_stride,
 
 #if CV_SSE2
     // Use aligned loads if possible
-    if (haveSSE2 && src_aligned)
+    if (haveSSE2 && src_aligned && dst_aligned)
     {
       for ( ; c < width - 15; c += 16)
       {
@@ -948,7 +951,8 @@ static void orUnaligned8u(const uchar * src, const int src_stride,
       {
         __m128i val = _mm_lddqu_si128(reinterpret_cast<const __m128i*>(src + c));
         __m128i* dst_ptr = reinterpret_cast<__m128i*>(dst + c);
-        *dst_ptr = _mm_or_si128(*dst_ptr, val);
+        __m128i dst_val = _mm_loadu_si128(dst_ptr);
+        _mm_storeu_si128(dst_ptr, _mm_or_si128(dst_val, val));
       }
     }
 #endif
@@ -959,7 +963,8 @@ static void orUnaligned8u(const uchar * src, const int src_stride,
       {
         __m128i val = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + c));
         __m128i* dst_ptr = reinterpret_cast<__m128i*>(dst + c);
-        *dst_ptr = _mm_or_si128(*dst_ptr, val);
+        __m128i dst_val = _mm_loadu_si128(dst_ptr);
+        _mm_storeu_si128(dst_ptr, _mm_or_si128(dst_val, val));
       }
     }
 #endif
