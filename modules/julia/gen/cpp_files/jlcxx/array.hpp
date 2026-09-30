@@ -26,6 +26,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 namespace jlcxx
 {
 
+namespace opencv_julia_detail
+{
+template <typename T>
+inline T* array_data(jl_array_t* arr)
+{
+#if (JULIA_VERSION_MAJOR * 100 + JULIA_VERSION_MINOR) >= 111
+  return jl_array_data(arr, T);
+#else
+  return static_cast<T*>(jl_array_data(arr));
+#endif
+}
+}
+
 template<typename PointedT, typename CppT>
 struct ValueExtractor
 {
@@ -189,22 +202,22 @@ public:
 
   iterator begin()
   {
-    return iterator(static_cast<julia_t*>(jl_array_data(wrapped())));
+    return iterator(opencv_julia_detail::array_data<julia_t>(wrapped()));
   }
 
   const_iterator begin() const
   {
-    return const_iterator(static_cast<julia_t*>(jl_array_data(wrapped())));
+    return const_iterator(opencv_julia_detail::array_data<julia_t>(wrapped()));
   }
 
   iterator end()
   {
-    return iterator(static_cast<julia_t*>(jl_array_data(wrapped())) + jl_array_len(wrapped()));
+    return iterator(opencv_julia_detail::array_data<julia_t>(wrapped()) + jl_array_len(wrapped()));
   }
 
   const_iterator end() const
   {
-    return const_iterator(static_cast<julia_t*>(jl_array_data(wrapped())) + jl_array_len(wrapped()));
+    return const_iterator(opencv_julia_detail::array_data<julia_t>(wrapped()) + jl_array_len(wrapped()));
   }
 
   void push_back(const ValueT& val)
@@ -221,12 +234,12 @@ public:
 
   const julia_t* data() const
   {
-    return (julia_t*)jl_array_data(wrapped());
+    return opencv_julia_detail::array_data<julia_t>(wrapped());
   }
 
   julia_t* data()
   {
-    return (julia_t*)jl_array_data(wrapped());
+    return opencv_julia_detail::array_data<julia_t>(wrapped());
   }
 
   std::size_t size() const
@@ -293,7 +306,11 @@ struct PackedArrayType<T*, WrappedPtrTrait>
 {
   static jl_datatype_t* type()
   {
+#if (JLCXX_VERSION_MAJOR > 0) || (JLCXX_VERSION_MAJOR == 0 && JLCXX_VERSION_MINOR >= 14)
+    return apply_type(jlcxx::julia_type("Ptr"), julia_base_type<T>());
+#else
     return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Ptr"), jl_svec1(julia_base_type<T>()));
+#endif
   }
 };
 

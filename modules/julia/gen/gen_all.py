@@ -10,6 +10,16 @@ import subprocess
 import os
 
 mod_path = sys.argv[1]
+modules = []
+config_path = None
+i = 2
+while i < len(sys.argv):
+    if sys.argv[i] == "--config":
+        i += 1
+        config_path = sys.argv[i]
+    else:
+        modules.append(sys.argv[i])
+    i += 1
 
 
 hdr_list = [
@@ -21,7 +31,7 @@ mod_path+"/core/include/opencv2/core/persistence.hpp",
 mod_path+"/core/include/opencv2/core/types.hpp",
 mod_path+"/core/include/opencv2/core/utility.hpp"]
 
-for module in sys.argv[2:]:
+for module in modules:
     if module=='opencv_imgproc':
         hdr_list.append(mod_path+"/imgproc/include/opencv2/imgproc.hpp")
     elif module =='opencv_dnn':
@@ -39,6 +49,10 @@ if not os.path.exists('autogen_cpp'):
     os.makedirs('autogen_cpp')
     os.makedirs('autogen_jl')
 
-subprocess.call([sys.executable, 'gen3_cpp.py', str(';'.join(hdr_list))])
-subprocess.call([sys.executable, 'gen3_julia_cxx.py', str(';'.join(hdr_list))])
-subprocess.call([sys.executable, 'gen3_julia.py', str(';'.join(hdr_list))])
+generator_args = [str(';'.join(hdr_list))]
+if config_path:
+    generator_args.extend(["--config", config_path])
+
+subprocess.check_call([sys.executable, 'gen3_cpp.py'] + generator_args)
+subprocess.check_call([sys.executable, 'gen3_julia_cxx.py'] + generator_args)
+subprocess.check_call([sys.executable, 'gen3_julia.py'] + generator_args)

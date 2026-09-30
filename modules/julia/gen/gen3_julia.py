@@ -36,8 +36,8 @@ class FuncVariant(FuncVariant):
         return 'const %s = OpenCV.%s_%s' %(self.mapped_name, ns, self.mapped_name)
 
 
-def gen(srcfiles):
-    namespaces, _ = gen_tree(srcfiles)
+def gen(srcfiles, preprocessor_definitions=None):
+    namespaces, _ = gen_tree(srcfiles, preprocessor_definitions)
 
     jl_code = StringIO()
     for name, ns in namespaces.items():
@@ -50,6 +50,8 @@ def gen(srcfiles):
         if name != 'cv':
             for cname, cl in ns.classes.items():
                 cl.__class__ = ClassInfo
+                if is_manual_mapped_type(cl.name):
+                    continue
                 for mname, fs in cl.methods.items():
                     for f in fs:
                         f.__class__ = FuncVariant
@@ -91,9 +93,5 @@ def gen(srcfiles):
 
 
 
-srcfiles = hdr_parser.opencv_hdr_list
-if len(sys.argv) > 1:
-    srcfiles = [l.strip() for l in sys.argv[1].split(';')]
-
-
-gen(srcfiles)
+srcfiles, preprocessor_definitions = parse_generator_args(sys.argv[1:])
+gen(srcfiles, preprocessor_definitions)

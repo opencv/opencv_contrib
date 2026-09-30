@@ -25,7 +25,11 @@ struct IsSmartPointerType<cv::Ptr<T>> : std::true_type
 template <typename T>
 struct ConstructorPointerType<cv::Ptr<T>>
 {
+#if (JLCXX_VERSION_MAJOR > 0) || (JLCXX_VERSION_MAJOR == 0 && JLCXX_VERSION_MINOR >= 14)
+    typedef cv::Ptr<T> type;
+#else
     typedef T *type;
+#endif
 };
 
 template<typename T, int Val>
