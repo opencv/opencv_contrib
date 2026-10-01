@@ -328,4 +328,42 @@ TEST_F(ximgproc_ED, detectLinesAndEllipses)
     EXPECT_GE(ellipses.size(), ellipses_size);
     EXPECT_LE(ellipses.size(), ellipses_size + 2);
 }
+
+// Regression test for the detectLines() heap buffer overflow. The line-fitting
+// scratch buffers are sized (width+height)*8, but a single edge segment is a
+// 1-pixel-wide chain that can wind through the whole image, so its length is
+// bounded by width*height, not by the perimeter. A segment longer than the
+// buffer overflowed it at the "x[k]=segment[k].x" fill loop (heap corruption,
+// reported by AddressSanitizer). The image below is one long serpentine stroke
+// that yields a single segment far larger than the buffer.
+TEST_F(ximgproc_ED, detectLinesLongWindingSegment)
+{
+    Mat img(400, 400, CV_8UC1, Scalar(255));
+    const int pitch = 16, margin = 20;
+    Point prev(margin, margin);
+    bool down = true;
+    for (int x = margin; x < img.cols - margin; x += pitch)
+    {
+        Point p1(x, down ? margin : img.rows - margin);
+        Point p2(x, down ? img.rows - margin : margin);
+        line(img, prev, p1, Scalar(0), 2, LINE_8);
+        line(img, p1, p2, Scalar(0), 2, LINE_8);
+        prev = p2;
+        down = !down;
+    }
+    detector->detectEdges(img);
+
+    // Precondition: at least one segment is longer than the (width+height)*8
+    // scratch buffer that detectLines() allocates. Otherwise the test would not
+    // exercise the overflow.
+    size_t max_seg = 0;
+    for (const std::vector<Point>& s : detector->getSegments())
+        max_seg = std::max(max_seg, s.size());
+    EXPECT_GT(max_seg, size_t((img.cols + img.rows) * 8))
+        << "test image did not produce an over-long segment; adjust the image";
+
+    // Before the fix this overflowed the line-fitting buffers (heap-buffer-overflow
+    // under AddressSanitizer); after the fix it completes cleanly.
+    detector->detectLines(lines);
+}
 }} // namespace
