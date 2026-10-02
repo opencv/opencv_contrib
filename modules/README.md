@@ -100,6 +100,6 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **ximgproc**: Extended Image Processing -- Structured Forests / Domain Transform Filter / Guided Filter / Adaptive Manifold Filter / Joint Bilateral Filter / Superpixels / Ridge Detection Filter.
 
-- **xobjdetect**: Boosted 2D Object Detection -- Uses a Waldboost cascade and local binary patterns computed as integral features for 2D object detection.
+- **xobjdetect**: Extended 2D Object Detection -- Waldboost cascade and boosted features (local binary patterns computed as integral) for 2D object detection / Fine-grained search based on Gaussian process regression with latent variables for object detection.
 
 - **xphoto**: Extra Computational Photography -- Additional photo processing algorithms: Color balance / Denoising / Inpainting.
