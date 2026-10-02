@@ -236,6 +236,14 @@ cv::Mat cv::viz::readCloud(const String& file, OutputArray colors, OutputArray n
     sink->SetInputConnection(reader->GetOutputPort());
     sink->SetOutput(cloud, colors, normals);
     sink->Write();
+    // NOW swap R<->B: PLY is RGB, OpenCV is BGR
+    if (colors.needed() && colors.getMat().data) {
+        cv::Mat c = colors.getMat();
+        int n = c.cols * c.rows;
+        cv::Vec3b* p = c.ptr<cv::Vec3b>();
+        for (int i = 0; i < n; ++i)
+            std::swap(p[i][0], p[i][2]);
+    }
 
     return cloud;
 }
@@ -285,7 +293,22 @@ void cv::viz::readTrajectory(OutputArray _traj, const String& files_format, int 
         traj.push_back(affine);
     }
 
-    Mat(traj).convertTo(_traj, _traj.depth());
+    if (!traj.empty())
+    {
+        Mat(traj).convertTo(_traj, _traj.depth());
+    }
+    else if (_traj.kind() == _InputArray::STD_VECTOR)
+    {
+        _traj.create(0, 1, CV_64FC(16));  // assign empty typed array
+    }
+     else if (_traj.kind() == _InputArray::MAT)
+    {
+        _traj.create(0, 1, CV_64FC(16));  // assign empty typed array
+    }
+     else
+    {
+        CV_Error(Error::StsError, "Unsupported array kind");
+    }
 }
 
 void cv::viz::writeTrajectory(InputArray _traj, const String& files_format, int start, const String& tag)
