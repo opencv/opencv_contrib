@@ -1,0 +1,33 @@
+# EuRoC MH01 配置文件
+Camera:
+  name: cam0
+  setup: monocular
+  model: perspective
+  fx: 458.654
+  fy: 457.296
+  cx: 367.215
+  cy: 248.375
+  k1: -0.28340811
+  k2: 0.07395907
+  p1: 0.00019359
+  p2: 1.76187114e-05
+  k3: 0.0
+  fps: 20.0
+  cols: 752
+  rows: 480
+  color_order: Gray
+
+Feature:
+  name: ORB
+  max_num_keypoints: 1000
+  scale_factor: 1.2
+  num_levels: 8
+
+Preprocessing:
+  min_size: 800
+
+Mapping:
+  baseline_dist_thr_ratio: 0.02
+
+System:
+  map_format: msgpack
