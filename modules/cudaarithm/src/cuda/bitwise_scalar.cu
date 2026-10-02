@@ -88,6 +88,64 @@ namespace
         }
     };
 
+#ifdef __HIP_PLATFORM_AMD__
+    // NPP supplies the per-channel constant bitwise operators (nppiAndC/OrC/XorC)
+    // on the C3/C4 inputs the dispatch table routes here. They apply a separate
+    // constant to each channel, so reproduce that directly as a HIP kernel: read
+    // the cn-channel pixel, combine each lane with its own constant, write back.
+    enum { HIP_BIT_AND, HIP_BIT_OR, HIP_BIT_XOR };
+
+    template <typename T>
+    __device__ __forceinline__ T hipBitOp(int op, T a, T b)
+    {
+        return op == HIP_BIT_AND ? (a & b) : (op == HIP_BIT_OR ? (a | b) : (a ^ b));
+    }
+
+    template <typename T, int cn>
+    __global__ void hipBitwiseCKernel(const GlobPtrSz<typename MakeVec<T, cn>::type> src,
+                                      GlobPtr<typename MakeVec<T, cn>::type> dst,
+                                      int rows, int cols, T c0, T c1, T c2, T c3, int op)
+    {
+        typedef typename MakeVec<T, cn>::type vec_type;
+        const int x = blockIdx.x * blockDim.x + threadIdx.x;
+        const int y = blockIdx.y * blockDim.y + threadIdx.y;
+        if (x >= cols || y >= rows)
+            return;
+        vec_type s = src(y, x);
+        vec_type d;
+        T* dp = reinterpret_cast<T*>(&d);
+        const T* sp = reinterpret_cast<const T*>(&s);
+        dp[0] = hipBitOp<T>(op, sp[0], c0);
+        if (cn > 1) dp[1] = hipBitOp<T>(op, sp[1], c1);
+        if (cn > 2) dp[2] = hipBitOp<T>(op, sp[2], c2);
+        if (cn > 3) dp[3] = hipBitOp<T>(op, sp[3], c3);
+        dst(y, x) = d;
+    }
+
+    template <typename T, int cn>
+    void hipBitwiseC(const GpuMat& src, cv::Scalar value, GpuMat& dst, int op, Stream& _stream)
+    {
+        typedef typename MakeVec<T, cn>::type vec_type;
+        cudaStream_t stream = StreamAccessor::getStream(_stream);
+        const dim3 block(32, 8);
+        const dim3 grid(divUp(src.cols, block.x), divUp(src.rows, block.y));
+        hipBitwiseCKernel<T, cn><<<grid, block, 0, stream>>>(
+            globPtr<vec_type>(src), globPtr<vec_type>(dst), src.rows, src.cols,
+            cv::saturate_cast<T>(value[0]), cv::saturate_cast<T>(value[1]),
+            cv::saturate_cast<T>(value[2]), cv::saturate_cast<T>(value[3]), op);
+        CV_CUDEV_SAFE_CALL(cudaGetLastError());
+        if (stream == 0)
+            CV_CUDEV_SAFE_CALL(cudaDeviceSynchronize());
+    }
+
+    template <typename T, int cn, int op> struct HipBitwiseC
+    {
+        static void call(const GpuMat& src, cv::Scalar value, GpuMat& dst, Stream& stream)
+        {
+            hipBitwiseC<T, cn>(src, value, dst, op, stream);
+        }
+    };
+#else
     template <int DEPTH, int cn> struct NppBitwiseCFunc
     {
         typedef typename NPPTypeTraits<DEPTH>::npp_type npp_type;
@@ -130,6 +188,7 @@ namespace
                 CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
         }
     };
+#endif // __HIP_PLATFORM_AMD__
 }
 
 void bitScalar(const GpuMat& src, cv::Scalar value, bool, GpuMat& dst, const GpuMat& mask, double, Stream& stream, int op)
@@ -139,7 +198,32 @@ void bitScalar(const GpuMat& src, cv::Scalar value, bool, GpuMat& dst, const Gpu
     typedef void (*func_t)(const GpuMat& src, cv::Scalar value, GpuMat& dst, Stream& stream);
     static const func_t funcs[3][6][4] =
     {
-#if USE_NPP_STREAM_CTX
+#ifdef __HIP_PLATFORM_AMD__
+        {
+            {BitScalar<uchar, bitScalarOp<bit_and, uchar> >::call  , 0, HipBitwiseC<uchar , 3, HIP_BIT_AND>::call, BitScalar4< bitScalarOp<bit_and, uint> >::call},
+            {BitScalar<uchar, bitScalarOp<bit_and, uchar> >::call  , 0, HipBitwiseC<uchar , 3, HIP_BIT_AND>::call, BitScalar4< bitScalarOp<bit_and, uint> >::call},
+            {BitScalar<ushort, bitScalarOp<bit_and, ushort> >::call, 0, HipBitwiseC<ushort, 3, HIP_BIT_AND>::call, HipBitwiseC<ushort, 4, HIP_BIT_AND>::call},
+            {BitScalar<ushort, bitScalarOp<bit_and, ushort> >::call, 0, HipBitwiseC<ushort, 3, HIP_BIT_AND>::call, HipBitwiseC<ushort, 4, HIP_BIT_AND>::call},
+            {BitScalar<uint, bitScalarOp<bit_and, uint> >::call    , 0, HipBitwiseC<uint  , 3, HIP_BIT_AND>::call, HipBitwiseC<uint  , 4, HIP_BIT_AND>::call},
+            {BitScalar<uint, bitScalarOp<bit_and, uint> >::call    , 0, HipBitwiseC<uint  , 3, HIP_BIT_AND>::call, HipBitwiseC<uint  , 4, HIP_BIT_AND>::call}
+        },
+        {
+            {BitScalar<uchar, bitScalarOp<bit_or, uchar> >::call  , 0, HipBitwiseC<uchar , 3, HIP_BIT_OR>::call, BitScalar4< bitScalarOp<bit_or, uint> >::call},
+            {BitScalar<uchar, bitScalarOp<bit_or, uchar> >::call  , 0, HipBitwiseC<uchar , 3, HIP_BIT_OR>::call, BitScalar4< bitScalarOp<bit_or, uint> >::call},
+            {BitScalar<ushort, bitScalarOp<bit_or, ushort> >::call, 0, HipBitwiseC<ushort, 3, HIP_BIT_OR>::call, HipBitwiseC<ushort, 4, HIP_BIT_OR>::call},
+            {BitScalar<ushort, bitScalarOp<bit_or, ushort> >::call, 0, HipBitwiseC<ushort, 3, HIP_BIT_OR>::call, HipBitwiseC<ushort, 4, HIP_BIT_OR>::call},
+            {BitScalar<uint, bitScalarOp<bit_or, uint> >::call    , 0, HipBitwiseC<uint  , 3, HIP_BIT_OR>::call, HipBitwiseC<uint  , 4, HIP_BIT_OR>::call},
+            {BitScalar<uint, bitScalarOp<bit_or, uint> >::call    , 0, HipBitwiseC<uint  , 3, HIP_BIT_OR>::call, HipBitwiseC<uint  , 4, HIP_BIT_OR>::call}
+        },
+        {
+            {BitScalar<uchar, bitScalarOp<bit_xor, uchar> >::call  , 0, HipBitwiseC<uchar , 3, HIP_BIT_XOR>::call, BitScalar4< bitScalarOp<bit_xor, uint> >::call},
+            {BitScalar<uchar, bitScalarOp<bit_xor, uchar> >::call  , 0, HipBitwiseC<uchar , 3, HIP_BIT_XOR>::call, BitScalar4< bitScalarOp<bit_xor, uint> >::call},
+            {BitScalar<ushort, bitScalarOp<bit_xor, ushort> >::call, 0, HipBitwiseC<ushort, 3, HIP_BIT_XOR>::call, HipBitwiseC<ushort, 4, HIP_BIT_XOR>::call},
+            {BitScalar<ushort, bitScalarOp<bit_xor, ushort> >::call, 0, HipBitwiseC<ushort, 3, HIP_BIT_XOR>::call, HipBitwiseC<ushort, 4, HIP_BIT_XOR>::call},
+            {BitScalar<uint, bitScalarOp<bit_xor, uint> >::call    , 0, HipBitwiseC<uint  , 3, HIP_BIT_XOR>::call, HipBitwiseC<uint  , 4, HIP_BIT_XOR>::call},
+            {BitScalar<uint, bitScalarOp<bit_xor, uint> >::call    , 0, HipBitwiseC<uint  , 3, HIP_BIT_XOR>::call, HipBitwiseC<uint  , 4, HIP_BIT_XOR>::call}
+        }
+#elif USE_NPP_STREAM_CTX
         {
             {BitScalar<uchar, bitScalarOp<bit_and, uchar> >::call  , 0, NppBitwiseC<CV_8U , 3, nppiAndC_8u_C3R_Ctx >::call, BitScalar4< bitScalarOp<bit_and, uint> >::call},
             {BitScalar<uchar, bitScalarOp<bit_and, uchar> >::call  , 0, NppBitwiseC<CV_8U , 3, nppiAndC_8u_C3R_Ctx >::call, BitScalar4< bitScalarOp<bit_and, uint> >::call},

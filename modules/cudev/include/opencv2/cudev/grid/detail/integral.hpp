@@ -173,9 +173,14 @@ namespace integral_detail
     #if CV_CUDEV_ARCH >= 300
         __shared__ int sums[128];
 
+        // This shuffle scan integral is built around a 32 lane logical warp
+        // (width 32 shuffles, sums[] indexed per 32 threads). Partition by the
+        // logical width 32 rather than the physical warpSize so it is correct on
+        // a 64 wide wavefront (where warpSize is 64) as well as a 32 wide one.
+        const int kLogicalWarp = 32;
         const int id = threadIdx.x;
-        const int lane_id = id % warpSize;
-        const int warp_id = id / warpSize;
+        const int lane_id = id % kLogicalWarp;
+        const int warp_id = id / kLogicalWarp;
 
         const uint4 data = img(blockIdx.x, id);
 
@@ -237,7 +242,7 @@ namespace integral_detail
         // The results are uniformly added back to the warps.
         // last thread in the warp holding sum of the warp
         // places that in shared
-        if (threadIdx.x % warpSize == warpSize - 1)
+        if (lane_id == kLogicalWarp - 1)
             sums[warp_id] = result[15];
 
         __syncthreads();
@@ -407,7 +412,11 @@ namespace integral_detail
         // launch 1 block / row
         const int grid = rows;
 
+#if !defined(__HIP_PLATFORM_AMD__)
+        // L1 cache preference hint; HIP takes a const void* and has no equivalent
+        // tuning knob here, so it is simply omitted on the ROCm path.
         CV_CUDEV_SAFE_CALL( cudaFuncSetCacheConfig(horisontal_pass_8u_shfl_kernel, cudaFuncCachePreferL1) );
+#endif
 
         GlobPtr<uint4> src4 = globPtr((uint4*) src.data, src.step);
         GlobPtr<uint4> integral4 = globPtr((uint4*) integral.data, integral.step);

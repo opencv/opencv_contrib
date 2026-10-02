@@ -46,7 +46,11 @@
 #ifndef OPENCV_CUDEV_COMMON_HPP
 #define OPENCV_CUDEV_COMMON_HPP
 
+#if defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__)
+#include <hip/hip_runtime.h>
+#else
 #include <cuda_runtime.h>
+#endif
 #include "opencv2/core/cuda.hpp"
 #include "opencv2/core/cuda_stream_accessor.hpp"
 

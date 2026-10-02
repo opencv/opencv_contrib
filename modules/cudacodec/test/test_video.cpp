@@ -505,7 +505,7 @@ void generateTestImages(Mat bgrIn, Mat& testImg, Mat& out, const cudacodec::Surf
 
 #endif // HAVE_NVCUVID || HAVE_NVCUVENC || HAVE_CUDA
 
-#if defined(HAVE_NVCUVID) || defined(HAVE_NVCUVENC)
+#if defined(HAVE_NVCUVID) || defined(HAVE_NVCUVENC) || defined(HAVE_ROCDECODE)
 struct SetDevice : testing::TestWithParam<cv::cuda::DeviceInfo>
 {
     cv::cuda::DeviceInfo devInfo;
@@ -591,7 +591,7 @@ struct Seek : SetDevice
 };
 
 
-#if defined(HAVE_NVCUVID)
+#if defined(HAVE_NVCUVID) || defined(HAVE_ROCDECODE)
 //////////////////////////////////////////////////////
 // VideoReader
 

@@ -43,7 +43,7 @@
 
 #include "precomp.hpp"
 
-#ifdef HAVE_NVCUVID
+#ifdef HAVE_CUDACODEC_DECODER
 
 RawPacket::RawPacket(const unsigned char* data_, const size_t size, const bool containsKeyFrame_) :
     data(data_,data_ + size), containsKeyFrame(containsKeyFrame_) {};
@@ -171,4 +171,4 @@ bool cv::cudacodec::detail::FrameQueue::dequeue(CUVIDPARSERDISPINFO& displayInfo
     return false;
 }
 
-#endif // HAVE_NVCUVID
+#endif // HAVE_CUDACODEC_DECODER
