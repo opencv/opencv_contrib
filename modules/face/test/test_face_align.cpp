@@ -38,10 +38,15 @@ TEST(CV_Face_FacemarkKazemi, can_create_default) {
 TEST(CV_Face_FacemarkKazemi, can_loadTrainingData) {
     string filename = cvtest::findDataFile("face/lbpcascade_frontalface_improved.xml", true);
     string configfile_name = cvtest::findDataFile("face/config.xml", true);
+    string modelfilename = "face_landmark_model.dat";
+    Size scale = Size(460,460);
     CascadeClassifier face_cascade;
     EXPECT_TRUE(face_cascade.load(filename));
     FacemarkKazemi::Params params;
     params.configfile = configfile_name;
+    params.faceCascadefile = filename;
+    params.modelfile = modelfilename;
+    params.scale = scale;
     Ptr<FacemarkKazemi> facemark;
     EXPECT_NO_THROW(facemark = FacemarkKazemi::create(params));
     EXPECT_TRUE(facemark->setFaceDetector((cv::face::FN_FaceDetector)myDetector, &face_cascade));
@@ -51,21 +56,19 @@ TEST(CV_Face_FacemarkKazemi, can_loadTrainingData) {
     filename = cvtest::findDataFile("face/2.txt", true);
     filenames.push_back(filename);
     vector<String> imagenames;
-    vector< vector<Point2f> > trainlandmarks,Trainlandmarks;
+    vector< vector<Point2f> > trainlandmarks;
     vector<Rect> rectangles;
     //Test getData function
     EXPECT_NO_THROW(loadTrainingData(filenames,trainlandmarks,imagenames));
-    vector<Mat> trainimages;
     for(unsigned long i=0;i<imagenames.size();i++){
         string img = cvtest::findDataFile(imagenames[i], true);
         Mat src = imread(img);
         EXPECT_TRUE(!src.empty());
-        trainimages.push_back(src);
-        Trainlandmarks.push_back(trainlandmarks[i]);
+        EXPECT_TRUE(facemark->addTrainingSample(src, trainlandmarks[i]));
     }
-    string modelfilename = "face_landmark_model.dat";
-    Size scale = Size(460,460);
-    EXPECT_TRUE(facemark->training(trainimages,Trainlandmarks,configfile_name,scale,modelfilename));
+    // std::vector<float> scale(2, 460);
+    // EXPECT_TRUE(facemark->setParams(filename,modelfilename,configfile_name,scale));
+    EXPECT_NO_THROW(facemark->training());
 }
 TEST(CV_Face_FacemarkKazemi, can_detect_landmarks) {
     string cascade_name = cvtest::findDataFile("face/lbpcascade_frontalface_improved.xml", true);
