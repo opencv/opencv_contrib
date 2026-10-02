@@ -92,7 +92,54 @@ CChartModel::CChartModel(const TYPECHART chartType)
         for(int color = 0 ; color < (int)chart.size() ; color++)
             chart[color].assign(CChartVinylColors[color] , CChartVinylColors[color] + 9 );
 
+         break;
+    case SPYDERCHECKR48_V2: // SpyderCheckr 48 (v2)
+        size = cv::Size2i(6, 8);         
+        boxsize = cv::Size2f(16.75f, 22.25f); 
+        box.resize(4);
+        box[0] = cv::Point2f(0.00f, 0.00f);
+        box[1] = cv::Point2f(22.25f, 0.00f);
+        box[2] = cv::Point2f(22.25f, 16.75f);
+        box[3] = cv::Point2f(0.00f, 16.75f);
+
+        cellchart.assign(CSpyder48Cellchart, CSpyder48Cellchart + 4 * 48);
+        center.assign(CSpyder48Center, CSpyder48Center + 48);
+
+        chart.resize(size.area(), std::vector<float>(9));
+        for (int color = 0; color < (int)chart.size(); color++)
+           chart[color].assign(CSpyder48Colors[color], CSpyder48Colors[color] + 9);
+        
         break;
+    case SPYDERCHECKR24_V2:
+    {
+        CChartModel full(SPYDERCHECKR48_V2);
+        size = cv::Size2i(6, 4); // 4x6 = 24
+        boxsize = full.boxsize;
+        box = full.box;
+
+        cellchart.clear();
+        center.clear();
+        chart.clear();
+
+        const int rows = full.size.width;  
+        const int cols = full.size.height; 
+
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 4; c < 8; c++)
+            {
+                int idxFull = r * cols + c;
+
+                for (int k = 0; k < 4; k++)
+                    cellchart.push_back(full.cellchart[4 * idxFull + k]);
+
+                center.push_back(full.center[idxFull]);
+                chart.push_back(full.chart[idxFull]);
+            }
+        }
+
+        break;    
+    }
     }
 }
 
