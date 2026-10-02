@@ -36,9 +36,12 @@
 
 #include "precomp.hpp"
 #include "opencv2/ximgproc/disparity_filter.hpp"
-#include "opencv2/imgcodecs.hpp"
 #include <math.h>
 #include <vector>
+
+#ifdef HAVE_OPENCV_IMGCODECS
+#  include "opencv2/imgcodecs.hpp"
+#endif
 
 namespace cv {
 namespace ximgproc {
@@ -492,8 +495,9 @@ Ptr<DisparityWLSFilter> createDisparityWLSFilterGeneric(bool use_confidence)
 
 #define UNKNOWN_DISPARITY 16320
 
-int readGT(String src_path,OutputArray dst)
+int readGT(String src_path, OutputArray dst)
 {
+#ifdef HAVE_OPENCV_IMGCODECS
     Mat src = imread(src_path,IMREAD_UNCHANGED);
     dst.create(src.rows,src.cols,CV_16S);
     Mat& dstMat = dst.getMatRef();
@@ -525,6 +529,9 @@ int readGT(String src_path,OutputArray dst)
     }
     else
         return 1;
+#else
+    CV_Error(Error::StsNotImplemented, "The requested function/feature is not implemented");
+#endif
 }
 
 double computeMSE(InputArray GT, InputArray src, Rect ROI)
