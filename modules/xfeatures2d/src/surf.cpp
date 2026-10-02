@@ -485,6 +485,7 @@ static void fastHessianDetector( const Mat& sum, const Mat& mask_sum, std::vecto
 
     // Allocate space and calculate properties of each layer
     int index = 0, middleIndex = 0, step = SAMPLE_STEP0;
+    int octave_mask = SURF_HAAR_SIZE0;
 
     for( int octave = 0; octave < nOctaves; octave++ )
     {
@@ -493,7 +494,7 @@ static void fastHessianDetector( const Mat& sum, const Mat& mask_sum, std::vecto
             /* The integral image sum is one pixel bigger than the source image*/
             dets[index].create( (sum.rows-1)/step, (sum.cols-1)/step, CV_32F );
             traces[index].create( (sum.rows-1)/step, (sum.cols-1)/step, CV_32F );
-            sizes[index] = (SURF_HAAR_SIZE0 + SURF_HAAR_SIZE_INC*layer) << octave;
+            sizes[index] = octave_mask + (SURF_HAAR_SIZE_INC*layer<<(octave));
             sampleSteps[index] = step;
 
             if( 0 < layer && layer <= nOctaveLayers )
@@ -501,6 +502,7 @@ static void fastHessianDetector( const Mat& sum, const Mat& mask_sum, std::vecto
             index++;
         }
         step *= 2;
+        octave_mask += SURF_HAAR_SIZE_INC<<octave;
     }
 
     // Calculate hessian determinant and trace samples in each layer
