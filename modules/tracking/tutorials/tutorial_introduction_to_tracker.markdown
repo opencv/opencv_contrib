@@ -50,7 +50,6 @@ Explanation
     + MEDIANFLOW
     + TLD
     + KCF
-    + GOTURN
     + MOSSE
 
     Each tracker algorithm has their own advantages and disadvantages, please refer the documentation of @ref cv::Tracker for more detailed information.

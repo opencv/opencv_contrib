@@ -20,8 +20,6 @@ inline cv::Ptr<cv::Tracker> createTrackerByName(const std::string& name)
         tracker = legacy::upgradeTrackingAPI(legacy::TrackerMedianFlow::create());
     else if (name == "MIL")
         tracker = cv::TrackerMIL::create();
-    else if (name == "GOTURN")
-        tracker = cv::TrackerGOTURN::create();
     else if (name == "MOSSE")
         tracker = legacy::upgradeTrackingAPI(legacy::TrackerMOSSE::create());
     else if (name == "CSRT")
@@ -48,8 +46,6 @@ inline cv::Ptr<cv::legacy::Tracker> createTrackerByName_legacy(const std::string
         tracker = legacy::TrackerMedianFlow::create();
     else if (name == "MIL")
         tracker = legacy::TrackerMIL::create();
-    else if (name == "GOTURN")
-        CV_Error(cv::Error::StsNotImplemented, "FIXIT: migration on new API is required");
     else if (name == "MOSSE")
         tracker = legacy::TrackerMOSSE::create();
     else if (name == "CSRT")

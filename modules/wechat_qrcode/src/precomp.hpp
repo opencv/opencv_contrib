@@ -23,6 +23,8 @@
 #include <vector>
 #include <map>
 #include "imgsource.hpp"
+#include "opencv2/geometry.hpp"
+
 using std::ostringstream;
 using std::string;
 using std::vector;

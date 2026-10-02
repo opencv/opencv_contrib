@@ -22,7 +22,7 @@ CV_AverageHashTest::~CV_AverageHashTest(){}
 
 void CV_AverageHashTest::run(int )
 {
-    cv::Mat const input = (cv::Mat_<uchar>(8, 8) <<
+    cv::Mat const input = cv::Mat_<uchar>({8, 8}, {
                            1, 5, 4, 6, 3, 2, 7, 8,
                            2, 4, 8, 9, 2, 1, 4, 3,
                            3, 4, 5, 7, 9, 8, 7, 6,
@@ -30,7 +30,7 @@ void CV_AverageHashTest::run(int )
                            8, 7, 2, 3, 6, 4, 5, 1,
                            3, 4, 1, 2, 9, 8, 4, 2,
                            6, 7, 8, 9, 7, 4, 3, 2,
-                           8, 7, 6, 5, 4, 3, 2, 1);
+                           8, 7, 6, 5, 4, 3, 2, 1});
     cv::Mat hash;
     cv::img_hash::averageHash(input, hash);
     bool const expectResult[] =

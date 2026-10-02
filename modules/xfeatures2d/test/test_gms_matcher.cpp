@@ -92,7 +92,7 @@ void CV_GMSMatcherTest::run( int )
             {
                 Point2f ptRef = keypointsRef[matchesGMS[i].trainIdx].pt;
                 Point2f ptCur = keypointsCur[matchesGMS[i].queryIdx].pt;
-                Mat matRef = (Mat_<double>(3,1) << ptRef.x, ptRef.y, 1);
+                Mat matRef = Mat_<double>({3,1}, {ptRef.x, ptRef.y, 1});
                 Mat matTrans = H1toCur * matRef;
                 Point2f ptTrans( (float) (matTrans.at<double>(0,0)/matTrans.at<double>(2,0)),
                                  (float) (matTrans.at<double>(1,0)/matTrans.at<double>(2,0)));

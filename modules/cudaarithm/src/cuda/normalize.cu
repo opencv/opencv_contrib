@@ -219,7 +219,7 @@ void cv::cuda::normalize(InputArray _src, OutputArray _dst, double a, double b, 
     typedef void (*func_minmax_t)(const GpuMat& _src, GpuMat& _dst, double a, double b, const GpuMat& mask, Stream& stream);
     typedef void (*func_norm_t)(const GpuMat& _src, GpuMat& _dst, double a, int normType, const GpuMat& mask, Stream& stream);
 
-    static const func_minmax_t funcs_minmax[] =
+    static const func_minmax_t funcs_minmax[CV_DEPTH_MAX] =
     {
         normalizeMinMax<uchar, float, float>,
         normalizeMinMax<schar, float, float>,
@@ -230,7 +230,7 @@ void cv::cuda::normalize(InputArray _src, OutputArray _dst, double a, double b, 
         normalizeMinMax<double, double, double>
     };
 
-    static const func_norm_t funcs_norm[] =
+    static const func_norm_t funcs_norm[CV_DEPTH_MAX] =
     {
         normalizeNorm<uchar, float, float>,
         normalizeNorm<schar, float, float>,
@@ -273,11 +273,13 @@ void cv::cuda::normalize(InputArray _src, OutputArray _dst, double a, double b, 
     if (normType == NORM_MINMAX)
     {
         const func_minmax_t func = funcs_minmax[src_depth];
+        CV_Assert(func);
         func(src, dst, a, b, mask, stream);
     }
     else
     {
         const func_norm_t func = funcs_norm[src_depth];
+        CV_Assert(func);
         func(src, dst, a, normType, mask, stream);
     }
 

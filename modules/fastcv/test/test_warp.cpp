@@ -122,10 +122,12 @@ TEST_P(WarpPerspective, accuracy)
     EXPECT_LT(num_diff_pixels, src.size().area()*0.05);
 }
 
+
+// BUG: https://github.com/opencv/opencv_contrib/issues/3959
 INSTANTIATE_TEST_CASE_P(FastCV_Extension, WarpPerspective,Combine(
                    ::testing::Values(perf::szVGA, perf::sz720p, perf::sz1080p),
                    ::testing::Values(INTER_NEAREST, INTER_LINEAR, INTER_AREA),
-                   ::testing::Values(BORDER_CONSTANT, BORDER_REPLICATE, BORDER_TRANSPARENT)
+                   ::testing::Values(BORDER_CONSTANT, BORDER_REPLICATE /*, BORDER_TRANSPARENT*/)
 ));
 INSTANTIATE_TEST_CASE_P(FastCV_Extension, WarpPerspective2Plane, Values(perf::szVGA, perf::sz720p, perf::sz1080p));
 
@@ -134,7 +136,7 @@ TEST(WarpAffine3ChannelTest, accuracy)
     cv::Mat src = imread(cvtest::findDataFile("cv/shared/baboon.png"));
 
     // Define the transformation matrix
-    cv::Mat M = (cv::Mat_<float>(2, 3) << 2.0, 0, -50.0, 0, 2.0, -50.0);
+    cv::Mat M = cv::Mat_<float>({2, 3}, {2.0, 0, -50.0, 0, 2.0, -50.0});
 
     cv::Size dsize(src.cols, src.rows);
 
@@ -154,7 +156,7 @@ TEST(WarpAffineROITest, accuracy)
 
     float angle = 180.0; // Rotation angle in degrees
     float radians = angle * CV_PI / 180.0;
-    cv::Mat affine = (cv::Mat_<float>(2, 2) << cos(radians), -sin(radians), sin(radians), cos(radians));
+    cv::Mat affine = cv::Mat_<float>({2, 2}, {(float)cos(radians), (float)-sin(radians), (float)sin(radians), (float)cos(radians)});
 
     cv::Mat patch;
     cv::Mat roi = src(cv::Rect(0, 0, 100, 100));

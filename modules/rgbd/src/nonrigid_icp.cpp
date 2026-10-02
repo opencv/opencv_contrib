@@ -18,14 +18,14 @@ namespace dynafu
 {
 using namespace kinfu;
 
-NonRigidICP::NonRigidICP(const Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations) :
+NonRigidICP::NonRigidICP(const Matx33f _intrinsics, const cv::Ptr<dynafu::TSDFVolume>& _volume, int _iterations) :
 iterations(_iterations), volume(_volume), intrinsics(_intrinsics)
 {}
 
 class ICPImpl : public NonRigidICP
 {
 public:
-    ICPImpl(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations);
+    ICPImpl(const cv::Matx33f _intrinsics, const cv::Ptr<dynafu::TSDFVolume>& _volume, int _iterations);
 
     virtual bool estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
                                    InputArray vertImage, InputArray oldPoints,
@@ -40,7 +40,7 @@ private:
     float huberWeight(Vec3f v, float sigma) const;
 };
 
-ICPImpl::ICPImpl(const Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations) :
+ICPImpl::ICPImpl(const Matx33f _intrinsics, const cv::Ptr<dynafu::TSDFVolume>& _volume, int _iterations) :
 NonRigidICP(_intrinsics, _volume, _iterations)
 {}
 
@@ -289,7 +289,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
 
     Mat Vc(oldPoints.size(), CV_32FC3, nan3);
     Mat Nc(oldPoints.size(), CV_32FC3, nan3);
-    cv::kinfu::Intr::Projector proj = intrinsics.makeProjector();
+    cv::Intr::Projector proj = Intr(intrinsics).makeProjector();
 
     for (int y = 0; y < oldPoints.size().height; y++)
     {
@@ -463,7 +463,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
     return true;
 }
 
-cv::Ptr<NonRigidICP> makeNonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume,
+cv::Ptr<NonRigidICP> makeNonRigidICP(const cv::Matx33f& _intrinsics, const cv::Ptr<TSDFVolume>& _volume,
                                      int _iterations)
 {
     return makePtr<ICPImpl>(_intrinsics, _volume, _iterations);

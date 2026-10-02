@@ -24,7 +24,7 @@ The example code
 
 -   captures images (*videoio*), e.g. from a webcam,
 -   applies some filters to each image (*imgproc*),
--   detects image features and matches them to the previous image (*features2d*).
+-   detects image features and matches them to the previous image (*features*).
 
 If the program is compiled without visual debugging (see CMakeLists.txt below) the only result is
 some information printed to the command line. We want to demonstrate how much debugging or
@@ -54,7 +54,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 add_executable(cvvt main.cpp)
 target_link_libraries(cvvt
-  opencv_core opencv_videoio opencv_imgproc opencv_features2d
+  opencv_core opencv_videoio opencv_imgproc opencv_features
   opencv_cvv
 )
 @endcode

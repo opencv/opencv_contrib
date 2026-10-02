@@ -1,0 +1,33 @@
+name: PR:5.x
+
+on:
+  pull_request:
+    branches:
+      - 5.x
+
+jobs:
+  Linux:
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-PR-Linux.yaml@main
+    with:
+      workflow_branch: main
+
+  Ubuntu2404-ARM64:
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-ARM64.yaml@main
+
+  Ubuntu2404-ARM64-FastCV:
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-ARM64-FastCV.yaml@main
+
+  Ubuntu2004-x64-CUDA:
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-U20-Cuda.yaml@main
+
+  Windows10-x64:
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-W10.yaml@main
+
+  macOS-ARM64:
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-macOS-ARM64.yaml@main
+
+  macOS-X64:
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-macOS-x86_64.yaml@main
+
+  Linux-RISC-V-Clang:
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-5.x-RISCV.yaml@main

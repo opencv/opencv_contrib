@@ -352,29 +352,23 @@ namespace
         int region_count = 0;
 
         // Discard under-size foreground regions:
-
         d_foreground.download(h_foreground);
 
-        int mode = RETR_LIST;
-        if (params.is_obj_without_holes) mode |= RETR_EXTERNAL;
-        findContours(h_foreground, foreground_regions, mode, CHAIN_APPROX_NONE);
+        std::vector<std::vector<cv::Point> > contours, result;
+        std::vector<cv::Vec4i> hierarchy;
+        cv::findContours(h_foreground, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+        CV_Assert(contours.size() > 0);
 
-        for (size_t i = 0; i < foreground_regions.size(); ++i)
+        // adding top-level contours to results, filtering by size
+        for (size_t i = 0; i < contours.size(); ++i)
         {
-            const std::vector<Point> &cnt = foreground_regions[i];
-            const Rect rect = boundingRect(cnt);
-
-            if (rect.width * rect.height < params.minArea)
-            {
-                // Delete under-size contour:
-            }
-            else
-            {
-                foreground_regions[region_count++] = foreground_regions[i];
-            }
+            const std::vector<cv::Point> & cnt = contours[i];
+            const cv::Rect brect = cv::boundingRect(cnt);
+            bool isHole = hierarchy[i][3] >= 0; // contour with parent is hole
+            if (brect.area() < params.minArea || (isHole && params.is_obj_without_holes))
+                continue;
+            foreground_regions.push_back(cnt);
         }
-
-        foreground_regions.resize(region_count);
         h_foreground.setTo(0);
 
         drawContours(h_foreground, foreground_regions, -1, Scalar::all(255), -1);

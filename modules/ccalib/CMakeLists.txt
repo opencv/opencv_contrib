@@ -1,2 +1,2 @@
 set(the_description "Custom Calibration Pattern")
-ocv_define_module(ccalib opencv_core opencv_imgproc opencv_calib3d opencv_features2d opencv_highgui opencv_imgcodecs WRAP python)
+ocv_define_module(ccalib opencv_core opencv_imgproc opencv_geometry opencv_calib opencv_objdetect opencv_features opencv_xfeatures2d opencv_highgui opencv_imgcodecs WRAP python)

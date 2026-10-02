@@ -71,7 +71,7 @@ TEST(ReferenceTest, ConstRefs)
 
 TEST(ReferenceTest, ConstRefsFromMutable)
 {
-	int i = 0;
+	int i = 100;
 	Reference<const int> ref{ i };
 	EXPECT_EQ(ref.getPtr(), &i);
 }

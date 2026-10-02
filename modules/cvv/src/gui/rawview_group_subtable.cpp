@@ -4,7 +4,7 @@
 #include <algorithm>
 
 #include <opencv2/core.hpp>
-#include <opencv2/features2d.hpp>
+#include <opencv2/features.hpp>
 
 #include <QVBoxLayout>
 #include <QStringList>

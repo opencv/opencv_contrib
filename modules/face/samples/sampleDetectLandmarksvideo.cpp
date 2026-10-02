@@ -3,7 +3,7 @@
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/videoio.hpp"
-#include "opencv2/objdetect.hpp"
+#include "opencv2/xobjdetect.hpp"
 #include <iostream>
 #include <vector>
 #include <string>

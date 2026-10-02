@@ -1,4 +1,4 @@
-package org.opencv.test.features2d;
+package org.opencv.test.features;
 
 import org.opencv.test.OpenCVTestCase;
 import org.opencv.test.OpenCVTestRunner;

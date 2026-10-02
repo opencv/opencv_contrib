@@ -368,7 +368,7 @@ TrackerSamplerPF::Params::Params(){
     iterationNum=20;
     particlesNum=100;
     alpha=0.9;
-    std=(Mat_<double>(1,4)<<15.0,15.0,15.0,15.0);
+    std=Mat_<double>({1,4},{15.0,15.0,15.0,15.0});
 }
 TrackerSamplerPF::TrackerSamplerPF(const Mat& chosenRect,const TrackerSamplerPF::Params &parameters):
     params( parameters ),_function(new TrackingFunctionPF(chosenRect)){
@@ -378,8 +378,8 @@ TrackerSamplerPF::TrackerSamplerPF(const Mat& chosenRect,const TrackerSamplerPF:
 }
 bool TrackerSamplerPF::samplingImpl( const Mat& image, Rect boundingBox, std::vector<Mat>& sample ){
     Ptr<TrackerTargetState> ptr;
-    Mat_<double> _last_guess=(Mat_<double>(1,4)<<(double)boundingBox.x,(double)boundingBox.y,
-    (double)boundingBox.x+boundingBox.width,(double)boundingBox.y+boundingBox.height);
+    Mat_<double> _last_guess({1,4}, {(double)boundingBox.x,(double)boundingBox.y,
+    (double)boundingBox.x+boundingBox.width,(double)boundingBox.y+boundingBox.height});
     PFSolver* promoted_solver=dynamic_cast<PFSolver*>(static_cast<MinProblemSolver*>(_solver));
 
     promoted_solver->setParamsSTD(params.std);

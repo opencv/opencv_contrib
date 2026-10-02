@@ -50,7 +50,7 @@
 #include "opencv2/core/cuda/cuda_compat.hpp"
 
 namespace cv {
-    
+
     using cv::cuda::device::compat::double4;
     using cv::cuda::device::compat::make_double4;
 
@@ -76,6 +76,8 @@ CV_CUDEV_MAKE_VEC_INST(int)
 CV_CUDEV_MAKE_VEC_INST(uint)
 CV_CUDEV_MAKE_VEC_INST(float)
 CV_CUDEV_MAKE_VEC_INST(double)
+CV_CUDEV_MAKE_VEC_INST(long)
+CV_CUDEV_MAKE_VEC_INST(ulong)
 
 #undef CV_CUDEV_MAKE_VEC_INST
 
@@ -142,6 +144,8 @@ CV_CUDEV_VEC_TRAITS_INST(int)
 CV_CUDEV_VEC_TRAITS_INST(uint)
 CV_CUDEV_VEC_TRAITS_INST(float)
 CV_CUDEV_VEC_TRAITS_INST(double)
+CV_CUDEV_VEC_TRAITS_INST(long)
+CV_CUDEV_VEC_TRAITS_INST(ulong)
 
 #undef CV_CUDEV_VEC_TRAITS_INST
 
@@ -194,6 +198,7 @@ template<> struct VecTraits<char4>
 
 namespace cv {
 
+#ifndef CV_32U
 template <> class DataType<uint>
 {
 public:
@@ -208,6 +213,7 @@ public:
            type         = CV_MAKE_TYPE(depth, channels)
          };
 };
+#endif
 
 #define CV_CUDEV_DATA_TYPE_INST(_depth_type, _channel_num) \
     template <> class DataType< _depth_type ## _channel_num > \

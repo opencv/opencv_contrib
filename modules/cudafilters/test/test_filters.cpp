@@ -323,7 +323,7 @@ PARAM_TEST_CASE(SeparableLinearFilterWithEmptyKernels, cv::cuda::DeviceInfo, Mat
 CUDA_TEST_P(SeparableLinearFilterWithEmptyKernels, Accuracy)
 {
     cv::Mat src = randomMat(size, srcType);
-    cv::Mat rowKernel = (cv::Mat_<float>(ksize) << -1, 0, 1);
+    cv::Mat rowKernel = cv::Mat_<float>({ksize.height, ksize.width}, {-1, 0, 1});
     cv::Mat colKernel = rowKernel.t();
     cv::Mat oneKernel = cv::Mat::ones(cv::Size(1, 1), CV_32FC1);
     cv::Mat noKernel = cv::Mat();

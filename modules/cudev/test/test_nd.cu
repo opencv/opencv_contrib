@@ -41,12 +41,6 @@ public:
             else
                 ret.push_back(Range::all());
 
-        if (dims == 1)
-        {
-            // Mat expects two ranges even in this case
-            ret.push_back(Range::all());
-        }
-
         return ret;
     }
 

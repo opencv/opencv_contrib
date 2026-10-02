@@ -45,7 +45,8 @@ Mentor: Delia Passalacqua
 
 namespace opencv_test { namespace {
 
-static bool customDetector( InputArray image, OutputArray ROIs, CascadeClassifier *face_detector){
+static bool customDetector( InputArray image, OutputArray ROIs, void *_face_detector){
+    CascadeClassifier *face_detector = (CascadeClassifier*)_face_detector;
     Mat gray;
     std::vector<Rect> & faces = *(std::vector<Rect>*) ROIs.getObj();
     faces.clear();
@@ -108,7 +109,7 @@ TEST(CV_Face_FacemarkAAM, test_workflow) {
 
     Mat image;
     std::vector<Point2f> landmarks;
-    for(size_t i=0;i<images_train.size();i++)
+    for(size_t i = 0; i < images_train.size(); i++)
     {
         image = imread(images_train[i].c_str());
         EXPECT_TRUE(loadFacePoints(points_train[i].c_str(),landmarks));

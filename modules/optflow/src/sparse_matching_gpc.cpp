@@ -47,9 +47,7 @@
 #include "opencv2/imgcodecs.hpp"
 #include "opencl_kernels_optflow.hpp"
 #include "opencv2/core/hal/intrin.hpp"
-#ifdef CV_CXX11
 #include <random>  // std::mt19937
-#endif
 
 /* Disable "from double to float" and "from size_t to int" warnings.
  * Fixing these would make the code look ugly by introducing explicit cast all around.
@@ -407,12 +405,8 @@ void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSampl
                                                             // with a small displacement and train to better distinguish hard pairs.
   std::nth_element( mag.begin(), mag.begin() + n, mag.end() );
   mag.resize( n );
-#ifdef CV_CXX11
   std::mt19937 std_rng(cv::theRNG()());
   std::shuffle(mag.begin(), mag.end(), std_rng);
-#else
-  std::random_shuffle( mag.begin(), mag.end() );
-#endif
   n /= patchRadius;
   mag.resize( n );
 

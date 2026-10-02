@@ -18,7 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-#include <opencv2/features2d.hpp>
+#include <opencv2/features.hpp>
 
 #include "libmv/correspondence/feature_matching.h"
 

@@ -48,7 +48,7 @@
 #endif
 
 #include "opencv2/core/cuda.hpp"
-#include "opencv2/objdetect.hpp"
+#include "opencv2/xobjdetect.hpp"
 
 /**
   @addtogroup cuda
@@ -70,11 +70,11 @@ namespace cv { namespace cuda {
 
 @note
     -   An example applying the HOG descriptor for people detection can be found at
-        opencv_source_code/samples/cpp/peopledetect.cpp
+        xobjdetect_module/samples/peopledetect.cpp
     -   A CUDA example applying the HOG descriptor for people detection can be found at
-        opencv_source_code/samples/gpu/hog.cpp
+        xobjdetect_module/samples/gpu/hog.cpp
     -   (Python) An example applying the HOG descriptor for people detection can be found at
-        opencv_source_code/samples/python/peopledetect.py
+        xobjdetect_module/samples/python/peopledetect.py
  */
 class CV_EXPORTS_W HOG : public Algorithm
 {
@@ -222,8 +222,8 @@ public:
 /** @brief Cascade classifier class used for object detection. Supports HAAR and LBP cascades. :
 
 @note
-   -   A cascade classifier example can be found at
-        opencv_source_code/samples/gpu/cascadeclassifier.cpp
+    -   A cascade classifier example can be found at
+        xobjdetect_module/samples/gpu/cascadeclassifier.cpp
     -   A Nvidea API specific cascade classifier example can be found at
         opencv_source_code/samples/gpu/cascadeclassifier_nvidia_api.cpp
  */

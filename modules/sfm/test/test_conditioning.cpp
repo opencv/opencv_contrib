@@ -39,10 +39,9 @@ namespace opencv_test { namespace {
 
 TEST(Sfm_conditioning, normalizePoints)
 {
-  int n = 4;
-  Mat_<double> points(2, n);
-  points << 0, 0, 1, 1,
-            0, 2, 1, 3;
+  Mat_<double> points({2, 4},{
+            0, 0, 1, 1,
+            0, 2, 1, 3});
 
   Mat_<double> T, normalized_points;
   normalizePoints( points, normalized_points, T );

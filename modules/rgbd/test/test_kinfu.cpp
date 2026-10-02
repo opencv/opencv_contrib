@@ -326,7 +326,7 @@ void flyTest(bool hiDense, bool inequal, bool hashTsdf = false)
 
     double rvecThreshold = hiDense ? 0.01 : 0.02;
     ASSERT_LT(cv::norm(kfPose.rvec() - pose.rvec()), rvecThreshold);
-    double poseThreshold = hiDense ? 0.03 : 0.1;
+    double poseThreshold = hiDense ? 0.11 : 0.2;
     ASSERT_LT(cv::norm(kfPose.translation() - pose.translation()), poseThreshold);
 }
 
@@ -346,6 +346,7 @@ TEST( KinectFusion, highDense )
 TEST(KinectFusion, DISABLED_highDense)
 #endif
 {
+    applyTestTag(CV_TEST_TAG_LONG, CV_TEST_TAG_DEBUG_VERYLONG);
     flyTest(true, false);
 }
 

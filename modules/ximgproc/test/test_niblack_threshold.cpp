@@ -7,7 +7,7 @@ namespace opencv_test { namespace {
 
 TEST(ximgproc_niBlackThreshold, sauvola)
 {
-    Mat src = (Mat_<uchar>(3, 3) << 1, 1, 1, 2, 2, 2, 3, 3, 3);
+    Mat src = Mat_<uchar>({3, 3}, {1, 1, 1, 2, 2, 2, 3, 3, 3});
     Mat dst;
     cv::ximgproc::niBlackThreshold(src, dst, 255, THRESH_BINARY, 3, 1, BINARIZATION_SAUVOLA, 1);
 

@@ -201,7 +201,7 @@ namespace
     {
         typedef cv::Scalar (*func_t)(const cv::Mat& src);
 
-        static const func_t funcs[] =
+        static const func_t funcs[CV_DEPTH_MAX] =
         {
             absSumImpl<uchar>,
             absSumImpl<schar>,
@@ -212,7 +212,10 @@ namespace
             absSumImpl<double>
         };
 
-        return funcs[src.depth()](src);
+        auto f = funcs[src.depth()];
+        CV_Assert(f);
+
+        return f(src);
     }
 
     template <typename T>
@@ -241,7 +244,7 @@ namespace
     {
         typedef cv::Scalar (*func_t)(const cv::Mat& src);
 
-        static const func_t funcs[] =
+        static const func_t funcs[CV_DEPTH_MAX] =
         {
             sqrSumImpl<uchar>,
             sqrSumImpl<schar>,
@@ -252,7 +255,10 @@ namespace
             sqrSumImpl<double>
         };
 
-        return funcs[src.depth()](src);
+        auto f = funcs[src.depth()];
+        CV_Assert(f);
+
+        return f(src);
     }
 }
 
@@ -519,7 +525,7 @@ namespace
     {
         typedef void (*func_t)(const cv::Mat& src, cv::Point loc_gold, cv::Point loc);
 
-        static const func_t funcs[] =
+        static const func_t funcs[CV_DEPTH_MAX] =
         {
             expectEqualImpl<uchar>,
             expectEqualImpl<schar>,
@@ -530,7 +536,10 @@ namespace
             expectEqualImpl<double>
         };
 
-        funcs[src.depth()](src, loc_gold, loc);
+        auto f = funcs[src.depth()];
+        CV_Assert(f);
+
+        f(src, loc_gold, loc);
     }
 }
 

@@ -5,11 +5,7 @@
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
 #include "precomp.hpp"
-#include "fast_icp.hpp"
-#include "tsdf.hpp"
-#include "hash_tsdf.hpp"
-#include "colored_tsdf.hpp"
-#include "kinfu_frame.hpp"
+#include "opencv2/geometry.hpp"
 
 namespace cv {
 namespace colored_kinfu {
@@ -22,7 +18,7 @@ void Params::setInitialVolumePose(Matx33f R, Vec3f t)
 
 void Params::setInitialVolumePose(Matx44f homogen_tf)
 {
-    Params::volumePose.matrix = homogen_tf;
+    volumePose = homogen_tf;
 }
 
 Ptr<Params> Params::defaultParams()
@@ -31,7 +27,7 @@ Ptr<Params> Params::defaultParams()
 
     p.frameSize = Size(640, 480);
 
-    p.volumeType = VolumeType::TSDF;
+    p.volumeKind = VolumeType::TSDF;
 
     float fx, fy, cx, cy;
     fx = fy = 525.f;
@@ -73,7 +69,7 @@ Ptr<Params> Params::defaultParams()
     p.voxelSize = volSize/512.f; //meters
 
     // default pose of volume cube
-    p.volumePose = Affine3f().translate(Vec3f(-volSize/2.f, -volSize/2.f, 0.5f));
+    p.volumePose = Affine3f().translate(Vec3f(-volSize/2.f, -volSize/2.f, 0.5f)).matrix;
     p.tsdf_trunc_dist = 7 * p.voxelSize; // about 0.04f in meters
     p.tsdf_max_weight = 64;   //frames
 
@@ -114,8 +110,8 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
         p = coarseParams();
     else
         p = defaultParams();
-    p->volumeType = VolumeType::HASHTSDF;
-    p->truncateThreshold = rgbd::Odometry::DEFAULT_MAX_DEPTH();
+    p->volumeKind = VolumeType::HashTSDF;
+    p->truncateThreshold = 4.f;
     return p;
 }
 
@@ -126,7 +122,7 @@ Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
         p = coarseParams();
     else
         p = defaultParams();
-    p->volumeType = VolumeType::COLOREDTSDF;
+    p->volumeKind = VolumeType::ColorTSDF;
 
     return p;
 }
@@ -139,12 +135,13 @@ public:
     ColoredKinFuImpl(const Params& _params);
     virtual ~ColoredKinFuImpl();
 
+    static VolumeSettings paramsToSettings(const Params& params);
     const Params& getParams() const CV_OVERRIDE;
 
     void render(OutputArray image) const CV_OVERRIDE;
     void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
 
-    virtual void getCloud(OutputArray points, OutputArray normals, OutputArray colors) const CV_OVERRIDE;
+    virtual void getCloud(OutputArray points, OutputArray normals) const CV_OVERRIDE;
     void getPoints(OutputArray points) const CV_OVERRIDE;
     void getNormals(InputArray points, OutputArray normals) const CV_OVERRIDE;
 
@@ -158,26 +155,49 @@ public:
 
 private:
     Params params;
+    VolumeSettings settings;
 
-    cv::Ptr<ICP> icp;
-    cv::Ptr<Volume> volume;
+    Odometry icp;
+    Volume volume;
 
     int frameCounter;
     Matx44f pose;
-    std::vector<MatType> pyrPoints;
-    std::vector<MatType> pyrNormals;
-    std::vector<MatType> pyrColors;
+    // Mutable because it contains cache updated by icp.prepareFrame() during rendering
+    mutable OdometryFrame renderFrame;
+    OdometryFrame prevFrame;
 };
 
+template< typename MatType >
+VolumeSettings ColoredKinFuImpl<MatType>::paramsToSettings(const Params& params)
+{
+    VolumeSettings vs(VolumeType::TSDF);
+    vs.setVoxelSize(params.voxelSize);
+    vs.setVolumePose(params.volumePose);
+    vs.setRaycastStepFactor(params.raycast_step_factor);
+    vs.setTsdfTruncateDistance(params.tsdf_trunc_dist);
+    vs.setMaxWeight(params.tsdf_max_weight);
+    vs.setMaxDepth(params.truncateThreshold);
+    vs.setCameraIntegrateIntrinsics(params.intr);
+    vs.setDepthFactor(params.depthFactor);
+    vs.setVolumeResolution(params.volumeDims);
+
+    return vs;
+}
 
 template< typename MatType >
 ColoredKinFuImpl<MatType>::ColoredKinFuImpl(const Params &_params) :
     params(_params),
-    icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
-    pyrPoints(), pyrNormals(), pyrColors()
+    settings(paramsToSettings(params)),
+    volume(VolumeType::ColorTSDF, settings)
 {
-    volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose.matrix, params.raycast_step_factor,
-                        params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold, params.volumeDims);
+    OdometrySettings ods;
+    ods.setCameraMatrix(Mat(params.intr));
+    ods.setMaxRotation(30.f);
+    ods.setMaxTranslation(params.voxelSize * (float)params.volumeDims[0] * 0.5f);
+    ods.setIterCounts(params.icpIterations);
+
+    icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
+
     reset();
 }
 
@@ -186,7 +206,7 @@ void ColoredKinFuImpl<MatType >::reset()
 {
     frameCounter = 0;
     pose = Affine3f::Identity().matrix;
-    volume->reset();
+    volume.reset();
 }
 
 template< typename MatType >
@@ -251,8 +271,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
 {
     CV_TRACE_FUNCTION();
 
-    MatType depth;
-    MatType rgb;
+    MatType depth, rgb;
 
     if(_depth.type() != DEPTH_TYPE)
         _depth.convertTo(depth, DEPTH_TYPE);
@@ -261,45 +280,38 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
 
     if (_rgb.type() != COLOR_TYPE)
     {
-        cv::Mat rgb_tmp, rgbchannel[3], z;
-        std::vector<Mat> channels;
+        MatType rgb_tmp;
+        std::vector<MatType> channels;
         _rgb.convertTo(rgb_tmp, COLOR_TYPE);
-        cv::split(rgb_tmp, rgbchannel);
-        z = cv::Mat::zeros(rgbchannel[0].size(), CV_32F);
-        channels.push_back(rgbchannel[0]); channels.push_back(rgbchannel[1]);
-        channels.push_back(rgbchannel[2]); channels.push_back(z);
+        cv::split(rgb_tmp, channels);
+        // we use 4-channel RGB0 image
+        // for vectorization simplicity
+        channels.push_back(MatType::zeros(channels[0].size(), CV_32F));
         merge(channels, rgb);
     }
     else
         rgb = _rgb;
 
-
-    std::vector<MatType> newPoints, newNormals, newColors;
-    makeColoredFrameFromDepth(depth, rgb,
-                       newPoints, newNormals, newColors,
-                       params.intr, params.rgb_intr,
-                       params.pyramidLevels,
-                       params.depthFactor,
-                       params.bilateral_sigma_depth,
-                       params.bilateral_sigma_spatial,
-                       params.bilateral_kernel_size,
-                       params.truncateThreshold);
+    OdometryFrame newFrame(depth, rgb);
 
     if(frameCounter == 0)
     {
+        icp.prepareFrame(newFrame);
+
         // use depth instead of distance
-        volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
-        pyrPoints  = newPoints;
-        pyrNormals = newNormals;
-        pyrColors  = newColors;
+        volume.integrate(depth, rgb, pose);
     }
     else
     {
         Affine3f affine;
-        bool success = icp->estimateTransform(affine, pyrPoints, pyrNormals, newPoints, newNormals);
-        if(!success)
-            return false;
+        Matx44d mrt;
+        Mat Rt;
+        icp.prepareFrames(newFrame, prevFrame);
+        bool success = icp.compute(newFrame, prevFrame, Rt);
 
+        if (!success)
+            return false;
+        affine.matrix = Matx44f(Rt);
         pose = (Affine3f(pose) * affine).matrix;
 
         float rnorm = (float)cv::norm(affine.rvec());
@@ -308,15 +320,18 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
         {
             // use depth instead of distance
-            volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
+            volume.integrate(depth, rgb, pose);
         }
-        MatType& points  = pyrPoints [0];
-        MatType& normals = pyrNormals[0];
-        MatType& colors  = pyrColors [0];
-        volume->raycast(pose, params.intr, params.frameSize, points, normals, colors);
-        buildPyramidPointsNormals(points, normals, pyrPoints, pyrNormals,
-                                  params.pyramidLevels);
+        MatType points, normals, colors;
+
+        volume.raycast(pose, points, normals, colors);
+        std::vector<MatType> pch(3);
+        split(points, pch);
+        newFrame = OdometryFrame(pch[2], colors, noArray(), normals);
     }
+
+    renderFrame = newFrame;
+    prevFrame = newFrame;
 
     frameCounter++;
     return true;
@@ -327,8 +342,13 @@ template< typename MatType >
 void ColoredKinFuImpl<MatType>::render(OutputArray image) const
 {
     CV_TRACE_FUNCTION();
+    MatType pts, nrm, rgb;
+    icp.prepareFrame(renderFrame);
+    renderFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
+    renderFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM, 0);
+    renderFrame.getImage(rgb);
 
-    renderPointsNormalsColors(pyrPoints[0], pyrNormals[0], pyrColors[0],image, params.lightPose);
+    detail::renderPointsNormalsColors(pts, nrm, rgb, image);
 }
 
 template< typename MatType >
@@ -338,29 +358,29 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _camera
 
     Affine3f cameraPose(_cameraPose);
     MatType points, normals, colors;
-    volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals, colors);
-    renderPointsNormalsColors(points, normals, colors, image, params.lightPose);
+    volume.raycast(_cameraPose, points, normals, colors);
+    detail::renderPointsNormalsColors(points, normals, colors, image);
 }
 
 
 template< typename MatType >
-void ColoredKinFuImpl<MatType>::getCloud(OutputArray p, OutputArray n, OutputArray c) const
+void ColoredKinFuImpl<MatType>::getCloud(OutputArray p, OutputArray n) const
 {
-    volume->fetchPointsNormalsColors(p, n, c);
+    volume.fetchPointsNormals(p, n);
 }
 
 
 template< typename MatType >
 void ColoredKinFuImpl<MatType>::getPoints(OutputArray points) const
 {
-    volume->fetchPointsNormals(points, noArray());
+    volume.fetchPointsNormals(points, noArray());
 }
 
 
 template< typename MatType >
 void ColoredKinFuImpl<MatType>::getNormals(InputArray points, OutputArray normals) const
 {
-    volume->fetchNormals(points, normals);
+    volume.fetchNormals(points, normals);
 }
 
 // importing class

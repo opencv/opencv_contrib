@@ -99,8 +99,8 @@ TEST(fuzzy_image, kernel)
     Mat kernel1;
     ft::createKernel(ft::LINEAR, 2, kernel1, 1);
 
-    Mat vectorA = (Mat_<float>(1, 5) << 0, 0.5, 1, 0.5, 0);
-    Mat vectorB = (Mat_<float>(5, 1) << 0, 0.5, 1, 0.5, 0);
+    Mat vectorA = Mat_<float>({1, 5}, {0, 0.5, 1, 0.5, 0});
+    Mat vectorB = Mat_<float>({5, 1}, {0, 0.5, 1, 0.5, 0});
 
     Mat kernel2;
     ft::createKernel(vectorA, vectorB, kernel2, 1);

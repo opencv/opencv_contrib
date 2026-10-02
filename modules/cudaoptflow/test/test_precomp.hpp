@@ -47,6 +47,8 @@
 
 #include "opencv2/cudaoptflow.hpp"
 #include "opencv2/cudaarithm.hpp"
+#include "opencv2/cudaimgproc.hpp"
+#include "opencv2/features.hpp"
 #include "opencv2/video.hpp"
 #include "opencv2/optflow.hpp"
 

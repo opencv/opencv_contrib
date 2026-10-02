@@ -143,10 +143,10 @@ CV_EXPORTS_W void FastHoughTransform( InputArray  src,
 * @param   angleRange  The part of Hough space where point is situated, see cv::AngleRangeOption
 * @param   makeSkew    Specifies to do or not to do image skewing, see cv::HoughDeskewOption
 * @param   rules       Specifies strictness of line segment calculating, see cv::RulesOption
-* @retval  [Vec4i]     Coordinates of line segment corresponded by point in Hough space.
-* @remarks If rules parameter set to RO_STRICT
+* @return  [Vec4i]     Coordinates of line segment corresponded by point in Hough space.
+* @note If rules parameter set to RO_STRICT
            then returned line cut along the border of source image.
-* @remarks If rules parameter set to RO_WEAK then in case of point, which belongs
+* @note If rules parameter set to RO_WEAK then in case of point, which belongs
            the incorrect part of Hough image, returned line will not intersect source image.
 *
 * The function calculates coordinates of line segment corresponded by point in Hough space.

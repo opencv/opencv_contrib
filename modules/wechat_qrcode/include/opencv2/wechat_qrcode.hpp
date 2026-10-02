@@ -25,18 +25,14 @@ class CV_EXPORTS_W WeChatQRCode {
 public:
     /**
      * @brief Initialize the WeChatQRCode.
-     * It includes two models, which are packaged with caffe format.
-     * Therefore, there are prototxt and caffe models (In total, four paramenters).
+     * It includes two CNN-based models in ONNX format:
+     * a detector model and a super resolution model.
      *
-     * @param detector_prototxt_path prototxt file path for the detector
-     * @param detector_caffe_model_path caffe model file path for the detector
-     * @param super_resolution_prototxt_path prototxt file path for the super resolution model
-     * @param super_resolution_caffe_model_path caffe file path for the super resolution model
+     * @param detector_model_path onnx model file path for the detector
+     * @param super_resolution_model_path onnx model file path for the super resolution model
      */
-    CV_WRAP WeChatQRCode(const std::string& detector_prototxt_path = "",
-                         const std::string& detector_caffe_model_path = "",
-                         const std::string& super_resolution_prototxt_path = "",
-                         const std::string& super_resolution_caffe_model_path = "");
+    CV_WRAP WeChatQRCode(const std::string& detector_model_path = "",
+                         const std::string& super_resolution_model_path = "");
     ~WeChatQRCode(){};
 
     /**

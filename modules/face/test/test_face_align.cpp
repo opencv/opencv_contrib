@@ -6,8 +6,9 @@
 namespace opencv_test { namespace {
 using namespace cv::face;
 
-static bool myDetector( InputArray image, OutputArray ROIs, CascadeClassifier* face_cascade)
+static bool myDetector( InputArray image, OutputArray ROIs, void* _face_cascade)
 {
+    CascadeClassifier* face_cascade = (CascadeClassifier*)_face_cascade;
     Mat gray;
     std::vector<Rect> faces;
     if(image.channels()>1){

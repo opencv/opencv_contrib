@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 
     // Load the network
     std::cout << "Loading the network...\n";
-    Net net = dnn::readNetFromCaffe(model_prototxt, model_binary);
+    Net net = dnn::readNet(model_binary, model_prototxt);
     if (net.empty())
     {
        std::cerr << "Couldn't load the model !\n";

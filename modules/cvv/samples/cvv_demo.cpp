@@ -3,7 +3,7 @@
 
 // library includes
 #include <opencv2/imgproc.hpp>
-#include <opencv2/features2d.hpp>
+#include <opencv2/features.hpp>
 #include <opencv2/videoio.hpp>
 
 #define CVVISUAL_DEBUGMODE

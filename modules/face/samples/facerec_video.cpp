@@ -20,7 +20,7 @@
 #include "opencv2/face.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#include "opencv2/objdetect.hpp"
+#include "opencv2/xobjdetect.hpp"
 
 #include <iostream>
 #include <fstream>

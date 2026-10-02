@@ -46,7 +46,7 @@
 #include "opencv2/ts/cuda_perf.hpp"
 
 #include "opencv2/cudafeatures2d.hpp"
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 
 namespace opencv_test {
 using namespace perf;

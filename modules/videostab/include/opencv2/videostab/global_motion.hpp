@@ -46,7 +46,7 @@
 #include <vector>
 #include <fstream>
 #include "opencv2/core.hpp"
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 #include "opencv2/opencv_modules.hpp"
 #include "opencv2/videostab/optical_flow.hpp"
 #include "opencv2/videostab/motion_core.hpp"
@@ -54,6 +54,10 @@
 
 #ifdef HAVE_OPENCV_CUDAIMGPROC
 #  include "opencv2/cudaimgproc.hpp"
+#endif
+
+#ifdef HAVE_OPENCV_CUDAFEATURES2D
+#  include "opencv2/cudafeatures2d.hpp"
 #endif
 
 namespace cv
@@ -261,7 +265,7 @@ private:
     std::vector<Point2f> pointsPrevGood_, pointsGood_;
 };
 
-#if defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAOPTFLOW)
+#if defined(HAVE_OPENCV_CUDAIMGPROC) && defined(HAVE_OPENCV_CUDAFEATURES2D) && defined(HAVE_OPENCV_CUDAOPTFLOW)
 
 class CV_EXPORTS KeypointBasedMotionEstimatorGpu : public ImageMotionEstimatorBase
 {

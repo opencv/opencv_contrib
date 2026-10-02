@@ -129,7 +129,7 @@ namespace cv
 
                 /**** sampler ****/
 
-                int getSampleCount() const CV_OVERRIDE                      { return mSampler->getGrayscaleBits(); }
+                int getSampleCount() const CV_OVERRIDE                      { return mSampler->getSampleCount(); }
                 int getGrayscaleBits() const CV_OVERRIDE                    { return mSampler->getGrayscaleBits(); }
                 int getWindowRadius() const CV_OVERRIDE                     { return mSampler->getWindowRadius(); }
                 float getWeightX() const CV_OVERRIDE                        { return mSampler->getWeightX(); }

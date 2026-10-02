@@ -8,13 +8,13 @@
 #include <iostream>
 #include "opencv2/opencv_modules.hpp"
 
-#ifdef HAVE_OPENCV_CALIB3D
+#ifdef HAVE_OPENCV_3D
 
-#include "opencv2/calib3d.hpp"
+#include "opencv2/geometry.hpp"
 #include "opencv2/videoio.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 #include "opencv2/xfeatures2d.hpp"
 #include <list>
 #include <vector>
@@ -25,7 +25,7 @@ using namespace cv::xfeatures2d;
 
 static void help(char **av)
 {
-    cout << "\nThis program demonstrated the use of features2d with the Fast corner detector and brief descriptors\n"
+    cout << "\nThis program demonstrated the use of features with the Fast corner detector and brief descriptors\n"
         << "to track planar objects by computing their homography from the key (training) image to the query (test) image\n\n" << endl;
     cout << "usage: " << av[0] << " <video device number>\n" << endl;
     cout << "The following keys do stuff:" << endl;
@@ -241,7 +241,7 @@ int main(int ac, char ** av)
 
 int main()
 {
-    std::cerr << "OpenCV was built without calib3d module" << std::endl;
+    std::cerr << "OpenCV was built without 3d module" << std::endl;
     return 0;
 }
 

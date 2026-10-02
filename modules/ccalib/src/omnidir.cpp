@@ -58,6 +58,7 @@
  */
 #include "precomp.hpp"
 #include "opencv2/ccalib/omnidir.hpp"
+#include "opencv2/stereo.hpp"
 #include <fstream>
 #include <iostream>
 namespace cv { namespace

@@ -48,7 +48,7 @@
 #include "opencv2/ts/cuda_test.hpp"
 
 #include "opencv2/cudaobjdetect.hpp"
-#include "opencv2/objdetect.hpp"
+#include "opencv2/xobjdetect.hpp"
 
 #include "cvconfig.h"
 

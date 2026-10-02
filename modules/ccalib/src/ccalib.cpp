@@ -48,8 +48,9 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/features2d.hpp>
+#include <opencv2/geometry.hpp>
+#include <opencv2/calib.hpp>
+#include <opencv2/features.hpp>
 
 #include <vector>
 #include <cstring>
@@ -220,7 +221,7 @@ void CustomPattern::refinePointsPos(const Mat& img, vector<Point2f>& p)
     Mat gray;
     cvtColor(img, gray, COLOR_RGB2GRAY);
     cornerSubPix(gray, p, Size(10, 10), Size(-1, -1),
-                TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS, 30, 0.1));
+                TermCriteria(cv::TermCriteria::MAX_ITER + cv::TermCriteria::EPS, 30, 0.1));
 
 }
 

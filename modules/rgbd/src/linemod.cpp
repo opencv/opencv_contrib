@@ -590,7 +590,7 @@ void ColorGradient::write(FileStorage& fs) const
 \****************************************************************************************/
 
 // Contains GRANULARITY and NORMAL_LUT
-#include "normal_lut.i"
+#include "normal_lut.hpp"
 
 static void accumBilateral(long delta, long i, long j, long * A, long * b, int threshold)
 {

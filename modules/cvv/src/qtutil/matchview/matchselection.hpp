@@ -3,7 +3,7 @@
 
 #include <QFrame>
 
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 
 namespace cvv{ namespace qtutil{
 

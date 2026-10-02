@@ -176,7 +176,7 @@ struct CV_EXPORTS_W_SIMPLE KeyLine
 binary descriptor.
 
 Class' interface is mainly based on the ones of classical detectors and extractors, such as
-Feature2d's @ref features2d_main and @ref features2d_match. Retrieved information about lines is
+Feature2d's @ref features_main and @ref features_match. Retrieved information about lines is
 stored in line_descriptor::KeyLine objects.
  */
 class CV_EXPORTS_W BinaryDescriptor : public Algorithm
@@ -979,7 +979,7 @@ LSDParam params;
 };
 
 /** @brief furnishes all functionalities for querying a dataset provided by user or internal to
-class (that user must, anyway, populate) on the model of @ref features2d_match
+class (that user must, anyway, populate) on the model of @ref features_match
 
 
 Once descriptors have been extracted from an image (both they represent lines and points), it

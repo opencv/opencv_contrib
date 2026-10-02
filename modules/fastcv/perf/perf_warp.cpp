@@ -130,7 +130,7 @@ PERF_TEST_P(WarpAffine3ChannelPerf, run, Combine(
 
     cv::Mat src(szSrc, dataType), dst(sz, dataType);
 
-    cvtest::fillGradient(src);
+    cvtest::fillGradient<uint8_t>(src);
 
     //Affine matrix
     float angle = 30.0; // Rotation angle in degrees
@@ -160,8 +160,8 @@ typedef perf::TestBaseWithParam<std::tuple<cv::Size, cv::Point2f, cv::Mat>> Warp
 PERF_TEST_P(WarpAffineROIPerfTest, run, ::testing::Combine(
     ::testing::Values(cv::Size(50, 50), cv::Size(100, 100)), // patch size
     ::testing::Values(cv::Point2f(50.0f, 50.0f), cv::Point2f(100.0f, 100.0f)), // position
-    ::testing::Values((cv::Mat_<float>(2, 2) << 1, 0, 0, 1), // identity matrix
-                      (cv::Mat_<float>(2, 2) << cos(CV_PI), -sin(CV_PI), sin(CV_PI), cos(CV_PI))) // rotation matrix
+    ::testing::Values(cv::Mat_<float>({2, 2}, {1, 0, 0, 1}), // identity matrix
+                      cv::Mat_<float>({2, 2}, {cos(CV_PI), -sin(CV_PI), sin(CV_PI), cos(CV_PI)})) // rotation matrix
 ))
 {
     cv::Size patchSize = std::get<0>(GetParam());
@@ -169,7 +169,7 @@ PERF_TEST_P(WarpAffineROIPerfTest, run, ::testing::Combine(
     cv::Mat affine = std::get<2>(GetParam());
 
     cv::Mat src = cv::imread(cvtest::findDataFile("cv/shared/baboon.png"), cv::IMREAD_GRAYSCALE);
-    
+
     // Create ROI with top-left at the specified position
     cv::Rect roiRect(static_cast<int>(position.x), static_cast<int>(position.y), patchSize.width, patchSize.height);
 
@@ -207,8 +207,8 @@ PERF_TEST_P(WarpAffinePerfTest, run, ::testing::Combine(
     float tx = static_cast<float>(std::rand() % 100) - 50; // Random translation between -50 and 50
     float ty = static_cast<float>(std::rand() % 100) - 50; // Random translation between -50 and 50
     float radians = angle * CV_PI / 180.0;
-    cv::Mat affine = (cv::Mat_<float>(2, 3) << scale * cos(radians), -scale * sin(radians), tx,
-                                               scale * sin(radians),  scale * cos(radians), ty);
+    cv::Mat affine = cv::Mat_<float>({2, 3}, { (float)(scale * cos(radians)), (float)(-scale * sin(radians)), tx,
+                                               (float)(scale * sin(radians)),  (float)(scale * cos(radians)), ty});
 
     // Compute the inverse affine matrix
     cv::Mat inverseAffine = getInverseAffine(affine);

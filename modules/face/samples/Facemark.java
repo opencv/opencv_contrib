@@ -2,7 +2,7 @@ import org.opencv.core.*;
 import org.opencv.face.*;
 import org.opencv.imgcodecs.*;
 import org.opencv.imgproc.*;
-import org.opencv.objdetect.*;
+import org.opencv.xobjdetect.*;
 import java.util.*;
 
 

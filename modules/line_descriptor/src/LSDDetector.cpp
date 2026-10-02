@@ -40,6 +40,7 @@
  //M*/
 
 #include "precomp.hpp"
+#include "opencv2/geometry.hpp"
 
 //using namespace cv;
 namespace cv
@@ -218,8 +219,8 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
       }
     }
   }
-
 }
+
 }
 }
 

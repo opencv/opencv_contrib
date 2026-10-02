@@ -56,6 +56,7 @@
 #include "opencv2/core/private.cuda.hpp"
 #endif
 #include "opencv2/core/ocl.hpp"
+#include "opencv2/core/hal/hal.hpp"
 
 #include "opencv2/opencv_modules.hpp"
 

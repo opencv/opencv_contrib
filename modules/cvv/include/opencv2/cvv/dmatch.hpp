@@ -4,7 +4,7 @@
 #include <string>
 
 #include "opencv2/core.hpp"
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 
 #include "call_meta_data.hpp"
 #include "debug_mode.hpp"

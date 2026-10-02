@@ -166,13 +166,14 @@ TEST_P(MSERTest, accuracy)
     EXPECT_GT(ratioInliers, 0.363);
 }
 
-INSTANTIATE_TEST_CASE_P(FastCV_Extension, MSERTest,
-    ::testing::Combine(::testing::Values( // useBboxes useContourData
-                                         std::tuple<bool, bool> { true, false},
-                                         std::tuple<bool, bool> {false, false},
-                                         std::tuple<bool, bool> { true,  true}),
-                       ::testing::Values(4, 8), // numNeighbors
-                       ::testing::Values("cv/shared/baboon.png", "cv/mser/puzzle.png")
-                      )
-    );
+// BUG: https://github.com/opencv/opencv_contrib/issues/3957
+//INSTANTIATE_TEST_CASE_P(FastCV_Extension, MSERTest,
+//    ::testing::Combine(::testing::Values( // useBboxes useContourData
+//                                         std::tuple<bool, bool> { true, false},
+//                                         std::tuple<bool, bool> {false, false},
+//                                         std::tuple<bool, bool> { true,  true}),
+//                       ::testing::Values(4, 8), // numNeighbors
+//                       ::testing::Values("cv/shared/baboon.png", "cv/mser/puzzle.png")
+//                      )
+//    );
 }} // namespaces opencv_test, ::

@@ -108,9 +108,9 @@ meanAndVarianceAlongRows( InputArray _A,
 //inline Mat
 //skewMatMinimal( const Mat_<T> &x )
 //{
-//  Mat_<T> skew(2,3);
-//  skew << 0, -1,  x(1),
-//          1,  0, -x(0);
+//  Mat_<T> skew({2,3}, {
+//          0, -1,  x(1),
+//          1,  0, -x(0)});
 //  return skew;
 //}
 //
@@ -135,10 +135,10 @@ template<typename T>
 Mat
 skewMat( const Mat_<T> &x )
 {
-  Mat_<T> skew(3,3);
-  skew <<   0 , -x(2),  x(1),
+  Mat_<T> skew({3,3}, {
+            0 , -x(2),  x(1),
           x(2),    0 , -x(0),
-         -x(1),  x(0),    0;
+         -x(1),  x(0),    0});
 
   return std::move(skew);
 }
@@ -162,7 +162,7 @@ skew( InputArray _x )
   }
   else
   {
-    //CV_Error(CV_StsBadArg, "The DataType must be CV_32F or CV_64F");
+    //CV_Error(cv::Error::StsBadArg, "The DataType must be CV_32F or CV_64F");
   }
 
   return skewMatrix;

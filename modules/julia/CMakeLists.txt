@@ -66,7 +66,7 @@ ocv_add_module(
     opencv_highgui
     opencv_videoio
     opencv_dnn
-    opencv_features2d
+    opencv_features
     opencv_objdetect
     opencv_calib3d
 )

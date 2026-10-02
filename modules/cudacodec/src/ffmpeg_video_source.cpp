@@ -54,16 +54,12 @@ using namespace cv::cudacodec::detail;
 
 static std::string fourccToString(int fourcc)
 {
-    union {
-        int u32;
-        unsigned char c[4];
-    } i32_c;
-    i32_c.u32 = fourcc;
-    return cv::format("%c%c%c%c",
-        (i32_c.c[0] >= ' ' && i32_c.c[0] < 128) ? i32_c.c[0] : '?',
-        (i32_c.c[1] >= ' ' && i32_c.c[1] < 128) ? i32_c.c[1] : '?',
-        (i32_c.c[2] >= ' ' && i32_c.c[2] < 128) ? i32_c.c[2] : '?',
-        (i32_c.c[3] >= ' ' && i32_c.c[3] < 128) ? i32_c.c[3] : '?');
+    char str[5] = {'\0', '\0', '\0', '\0'};
+    for (int i = 0; i < 4; i++) {
+        char c = (char)(fourcc >> i*8);
+        str[i] = ' ' <= c && c < 128 ? c : '?';
+    }
+    return std::string(str);
 }
 
 static
@@ -156,7 +152,7 @@ void cv::cudacodec::detail::FFmpegVideoSource::updateFormat(const FormatInfo& vi
 bool cv::cudacodec::detail::FFmpegVideoSource::get(const int propertyId, double& propertyVal) const
 {
     propertyVal = cap.get(propertyId);
-    if (propertyVal != 0.)
+    if (propertyVal != CAP_PROP_UNKNOWN)
         return true;
 
     CV_Assert(videoCaptureParams.size() % 2 == 0);

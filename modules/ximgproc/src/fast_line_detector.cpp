@@ -5,6 +5,7 @@
 #include "precomp.hpp"
 #include <vector>
 #include <iostream>
+#include "opencv2/geometry.hpp"
 
 struct SEGMENT
 {

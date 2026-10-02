@@ -42,9 +42,9 @@ TEST(Sfm_robust, fundamentalFromCorrespondences8PointRobust)
 {
     double tolerance = 1e-8;
     const int n = 16;
-    Mat_<double> x1(2,n);
-    x1 << 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5,
-          0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 5;
+    Mat_<double> x1({2,n},{
+          0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5,
+          0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 5});
 
     Mat_<double> x2 = x1.clone();
     for (int i = 0; i < n; ++i)
@@ -101,9 +101,9 @@ TEST(Sfm_robust, fundamentalFromCorrespondences7PointRobust)
 {
     double tolerance = 1e-8;
     const int n = 16;
-    Mat_<double> x1(2,n);
-    x1 << 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5,
-          0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 5;
+    Mat_<double> x1({2,n},{
+          0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5,
+          0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 5});
 
     Mat_<double> x2 = x1.clone();
     for (int i = 0; i < n; ++i)

@@ -40,8 +40,8 @@ using namespace jlcxx;
 #include <opencv2/videoio.hpp>
 #endif
 
-#ifdef HAVE_OPENCV_FEATURES2D
-#include <opencv2/features2d.hpp>
+#ifdef HAVE_OPENCV_FEATURES
+#include <opencv2/features.hpp>
 typedef SimpleBlobDetector::Params SimpleBlobDetector_Params;
 typedef AKAZE::DescriptorType AKAZE_DescriptorType;
 typedef AgastFeatureDetector::DetectorType AgastFeatureDetector_DetectorType;
@@ -51,9 +51,9 @@ typedef KAZE::DiffusivityType KAZE_DiffusivityType;
 typedef ORB::ScoreType ORB_ScoreType;
 #endif
 
-#ifdef HAVE_OPENCV_OBJDETECT
+#ifdef HAVE_OPENCV_XOBJDETECT
 
-#include <opencv2/objdetect.hpp>
+#include <opencv2/xobjdetect.hpp>
 
 typedef HOGDescriptor::HistogramNormType HOGDescriptor_HistogramNormType;
 typedef HOGDescriptor::DescriptorStorageFormat HOGDescriptor_DescriptorStorageFormat;

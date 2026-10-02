@@ -9,7 +9,7 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/affine.hpp"
-#include <opencv2/rgbd/volume.hpp>
+#include <opencv2/ptcloud.hpp>
 
 namespace cv {
 namespace colored_kinfu {
@@ -18,8 +18,10 @@ namespace colored_kinfu {
 
 struct CV_EXPORTS_W Params
 {
-
-    CV_WRAP Params(){}
+    CV_WRAP Params()
+    {
+        setInitialVolumePose(Matx44f::eye());
+    }
 
     /**
      * @brief Constructor for Params
@@ -85,7 +87,7 @@ struct CV_EXPORTS_W Params
     /** @brief rgb frame size in pixels */
     CV_PROP_RW Size rgb_frameSize;
 
-    CV_PROP_RW kinfu::VolumeType volumeType;
+    CV_PROP_RW VolumeType volumeKind;
 
     /** @brief camera intrinsics */
     CV_PROP_RW Matx33f intr;
@@ -127,7 +129,7 @@ struct CV_EXPORTS_W Params
     CV_PROP_RW float tsdf_min_camera_movement;
 
     /** @brief initial volume pose in meters */
-    Affine3f volumePose;
+    CV_PROP_RW Matx44f volumePose;
 
     /** @brief distance to truncate in meters
 
@@ -223,16 +225,15 @@ public:
 
     CV_WRAP virtual void render(OutputArray image, const Matx44f& cameraPose) const = 0;
 
-    /** @brief Gets points, normals and colors of current 3d mesh
+    /** @brief Gets points and normals of current 3d mesh
 
       The order of normals corresponds to order of points.
       The order of points is undefined.
 
         @param points vector of points which are 4-float vectors
         @param normals vector of normals which are 4-float vectors
-        @param colors vector of colors which are 4-float vectors
      */
-    CV_WRAP virtual void getCloud(OutputArray points, OutputArray normals, OutputArray colors = noArray()) const = 0;
+    CV_WRAP virtual void getCloud(OutputArray points, OutputArray normals) const = 0;
 
     /** @brief Gets points of current 3d mesh
 

@@ -42,13 +42,12 @@ TEST(Sfm_fundamental, fundamentalFromProjections)
     double tolerance_prop = 1e-7;
     double tolerance_near = 1e-15;
 
-    Matx34d P1_gt, P2_gt;
-    P1_gt << 1, 0, 0, 0,
-             0, 1, 0, 0,
-             0, 0, 1, 0;
-    P2_gt << 1, 1, 1, 3,
-             0, 2, 0, 3,
-             0, 1, 1, 0;
+    Matx34d P1_gt(1, 0, 0, 0,
+                  0, 1, 0, 0,
+                  0, 0, 1, 0);
+    Matx34d P2_gt(1, 1, 1, 3,
+                  0, 2, 0, 3,
+                  0, 1, 1, 0);
 
     Matx33d F_gt;
     fundamentalFromProjections(P1_gt, P2_gt, F_gt);

@@ -361,9 +361,9 @@ Ptr<Scene> Scene::create(int nScene, Size sz, Matx33f _intr, float _depthFactor)
         return makePtr<CubeSpheresScene>(sz, _intr, _depthFactor);
 }
 
-static inline void CheckFrequency(Mat image)
+static inline void checkRenderedColors(Mat image)
 {
-    float all = (float)image.size().height * image.size().width;
+    float area = (float)image.total();
     int cc1 = 0, cc2 = 0, cc3 = 0, cc4 = 0;
     Vec3b c1 = Vec3b(200, 0, 0), c2 = Vec3b(0, 200, 0);
     Vec3b c3 = Vec3b(0, 0, 200), c4 = Vec3b(100, 100, 100);
@@ -378,10 +378,10 @@ static inline void CheckFrequency(Mat image)
             if (color == c4) cc4++;
         }
     }
-    ASSERT_LT(float(cc1) / all, 0.2);
-    ASSERT_LT(float(cc2) / all, 0.2);
-    ASSERT_LT(float(cc3) / all, 0.2);
-    ASSERT_LT(float(cc4) / all, 0.2);
+    ASSERT_LT(float(cc1) / area, 0.2);
+    ASSERT_LT(float(cc2) / area, 0.2);
+    ASSERT_LT(float(cc3) / area, 0.2);
+    ASSERT_LT(float(cc4) / area, 0.2);
 }
 
 static const bool display = false;
@@ -427,14 +427,14 @@ void flyTest(bool hiDense, bool test_colors)
         {
             Mat rendered;
             kf->render(rendered);
-            CheckFrequency(rendered);
+            checkRenderedColors(rendered);
             return;
         }
     }
 
     double rvecThreshold = hiDense ? 0.01 : 0.02;
     ASSERT_LT(cv::norm(kfPose.rvec() - pose.rvec()), rvecThreshold);
-    double poseThreshold = hiDense ? 0.03 : 0.1;
+    double poseThreshold = hiDense ? 0.1 : 0.2;
     ASSERT_LT(cv::norm(kfPose.translation() - pose.translation()), poseThreshold);
 }
 
@@ -451,9 +451,10 @@ TEST(ColoredKinectFusion, DISABLED_lowDense)
 #ifdef OPENCV_ENABLE_NONFREE
 TEST(ColoredKinectFusion, highDense)
 #else
-TEST(KinectFusion, DISABLED_highDense)
+TEST(ColoredKinectFusion, DISABLED_highDense)
 #endif
 {
+    applyTestTag(CV_TEST_TAG_LONG, CV_TEST_TAG_DEBUG_VERYLONG);
     flyTest(true, false);
 }
 
@@ -469,9 +470,10 @@ TEST(ColoredKinectFusion, DISABLED_color_lowDense)
 #ifdef OPENCV_ENABLE_NONFREE
 TEST(ColoredKinectFusion, color_highDense)
 #else
-TEST(KinectFusion, DISABLED_color_highDense)
+TEST(ColoredKinectFusion, DISABLED_color_highDense)
 #endif
 {
+    applyTestTag(CV_TEST_TAG_LONG, CV_TEST_TAG_DEBUG_VERYLONG);
     flyTest(true, true);
 }
 

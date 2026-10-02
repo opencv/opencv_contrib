@@ -9,7 +9,7 @@
 #include <OgreRectangle2D.h>
 #include <OgreCompositorManager.h>
 
-#include <opencv2/calib3d.hpp>
+#include <opencv2/geometry.hpp>
 #include <opencv2/core/utils/configuration.private.hpp>
 
 
@@ -807,7 +807,7 @@ public:
     {
         String name = "_" + sceneMgr->getName() + "_DefaultBackground";
 
-        Mat_<Vec3b> img = (Mat_<Vec3b>(2, 1) << Vec3b(2, 1, 1), Vec3b(240, 120, 120));
+        Mat_<Vec3b> img = Mat_<Vec3b>({2, 1}, {Vec3b(2, 1, 1), Vec3b(240, 120, 120)});
         _createTexture(name, img);
 
         MaterialPtr mat = MaterialManager::getSingleton().create(name, RESOURCEGROUP_NAME);

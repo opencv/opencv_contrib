@@ -5,10 +5,6 @@
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
 #include "precomp.hpp"
-#include "fast_icp.hpp"
-#include "tsdf.hpp"
-#include "hash_tsdf.hpp"
-#include "kinfu_frame.hpp"
 
 namespace cv {
 namespace kinfu {
@@ -20,7 +16,7 @@ void Params::setInitialVolumePose(Matx33f R, Vec3f t)
 
 void Params::setInitialVolumePose(Matx44f homogen_tf)
 {
-    Params::volumePose.matrix = homogen_tf;
+    Params::volumePose = homogen_tf;
 }
 
 Ptr<Params> Params::defaultParams()
@@ -29,7 +25,7 @@ Ptr<Params> Params::defaultParams()
 
     p.frameSize = Size(640, 480);
 
-    p.volumeType = VolumeType::TSDF;
+    p.volumeKind = VolumeType::TSDF;
 
     float fx, fy, cx, cy;
     fx = fy = 525.f;
@@ -62,7 +58,7 @@ Ptr<Params> Params::defaultParams()
     p.voxelSize = volSize/512.f; //meters
 
     // default pose of volume cube
-    p.volumePose = Affine3f().translate(Vec3f(-volSize/2.f, -volSize/2.f, 0.5f));
+    p.volumePose = Affine3f().translate(Vec3f(-volSize/2.f, -volSize/2.f, 0.5f)).matrix;
     p.tsdf_trunc_dist = 7 * p.voxelSize; // about 0.04f in meters
     p.tsdf_max_weight = 64;   //frames
 
@@ -102,8 +98,8 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
         p = coarseParams();
     else
         p = defaultParams();
-    p->volumeType = VolumeType::HASHTSDF;
-    p->truncateThreshold = rgbd::Odometry::DEFAULT_MAX_DEPTH();
+    p->volumeKind = VolumeType::HashTSDF;
+    p->truncateThreshold = 4.f;
     return p;
 }
 
@@ -114,7 +110,7 @@ Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
         p = coarseParams();
     else
         p = defaultParams();
-    p->volumeType = VolumeType::COLOREDTSDF;
+    p->volumeKind = VolumeType::ColorTSDF;
 
     return p;
 }
@@ -127,6 +123,7 @@ public:
     KinFuImpl(const Params& _params);
     virtual ~KinFuImpl();
 
+    static VolumeSettings paramsToSettings(const Params& params);
     const Params& getParams() const CV_OVERRIDE;
 
     void render(OutputArray image) const CV_OVERRIDE;
@@ -146,25 +143,46 @@ public:
 
 private:
     Params params;
+    VolumeSettings settings;
 
-    cv::Ptr<ICP> icp;
-    cv::Ptr<Volume> volume;
+    Odometry icp;
+    Volume volume;
 
     int frameCounter;
     Matx44f pose;
-    std::vector<MatType> pyrPoints;
-    std::vector<MatType> pyrNormals;
+    OdometryFrame prevFrame;
+    OdometryFrame renderFrame;
 };
 
+template< typename MatType >
+VolumeSettings KinFuImpl<MatType>::paramsToSettings(const Params& params)
+{
+    VolumeSettings vs(VolumeType::TSDF);
+    vs.setVoxelSize(params.voxelSize);
+    vs.setVolumePose(params.volumePose);
+    vs.setRaycastStepFactor(params.raycast_step_factor);
+    vs.setTsdfTruncateDistance(params.tsdf_trunc_dist);
+    vs.setMaxWeight(params.tsdf_max_weight);
+    vs.setMaxDepth(params.truncateThreshold);
+    vs.setCameraIntegrateIntrinsics(params.intr);
+    vs.setDepthFactor(params.depthFactor);
+    vs.setVolumeResolution(params.volumeDims);
+
+    return vs;
+}
 
 template< typename MatType >
 KinFuImpl<MatType>::KinFuImpl(const Params &_params) :
     params(_params),
-    icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
-    pyrPoints(), pyrNormals()
+    settings(paramsToSettings(params)),
+    volume(VolumeType::TSDF, settings)
 {
-    volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose.matrix, params.raycast_step_factor,
-                        params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold, params.volumeDims);
+    OdometrySettings ods;
+    ods.setMaxRotation(30.f);
+    ods.setMaxTranslation(params.voxelSize * params.volumeDims[0] * 0.5f);
+    ods.setCameraMatrix(Mat(params.intr));
+    icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
+
     reset();
 }
 
@@ -173,7 +191,7 @@ void KinFuImpl<MatType >::reset()
 {
     frameCounter = 0;
     pose = Affine3f::Identity().matrix;
-    volume->reset();
+    volume.reset();
 }
 
 template< typename MatType >
@@ -240,29 +258,24 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
     else
         depth = _depth;
 
+    OdometryFrame newFrame(depth);
 
-    std::vector<MatType> newPoints, newNormals;
-    makeFrameFromDepth(depth, newPoints, newNormals, params.intr,
-                       params.pyramidLevels,
-                       params.depthFactor,
-                       params.bilateral_sigma_depth,
-                       params.bilateral_sigma_spatial,
-                       params.bilateral_kernel_size,
-                       params.truncateThreshold);
     if(frameCounter == 0)
     {
+        icp.prepareFrame(newFrame);
         // use depth instead of distance
-        volume->integrate(depth, params.depthFactor, pose, params.intr);
-        pyrPoints  = newPoints;
-        pyrNormals = newNormals;
+        volume.integrate(depth, pose);
     }
     else
     {
         Affine3f affine;
-        bool success = icp->estimateTransform(affine, pyrPoints, pyrNormals, newPoints, newNormals);
+        Matx44d mrt;
+        Mat Rt;
+        icp.prepareFrames(newFrame, prevFrame);
+        bool success = icp.compute(newFrame, prevFrame, Rt);
         if(!success)
             return false;
-
+        affine.matrix = Matx44f(Rt);
         pose = (Affine3f(pose) * affine).matrix;
 
         float rnorm = (float)cv::norm(affine.rvec());
@@ -271,14 +284,19 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
         {
             // use depth instead of distance
-            volume->integrate(depth, params.depthFactor, pose, params.intr);
+            volume.integrate(depth, pose);
         }
-        MatType& points  = pyrPoints [0];
-        MatType& normals = pyrNormals[0];
-        volume->raycast(pose, params.intr, params.frameSize, points, normals);
-        buildPyramidPointsNormals(points, normals, pyrPoints, pyrNormals,
-                                  params.pyramidLevels);
+
+        MatType points, normals;
+        volume.raycast(pose, points, normals);
+
+        std::vector<MatType> pch(3);
+        split(points, pch);
+        newFrame = OdometryFrame(pch[2], noArray(), noArray(), normals);
     }
+
+    renderFrame = newFrame;
+    prevFrame = newFrame;
 
     frameCounter++;
     return true;
@@ -289,8 +307,10 @@ template< typename MatType >
 void KinFuImpl<MatType>::render(OutputArray image) const
 {
     CV_TRACE_FUNCTION();
-
-    renderPointsNormals(pyrPoints[0], pyrNormals[0], image, params.lightPose);
+    MatType pts, nrm;
+    renderFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
+    renderFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM,  0);
+    detail::renderPointsNormals(pts, nrm, image, params.lightPose);
 }
 
 
@@ -301,29 +321,29 @@ void KinFuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPose) c
 
     Affine3f cameraPose(_cameraPose);
     MatType points, normals;
-    volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals);
-    renderPointsNormals(points, normals, image, params.lightPose);
+    volume.raycast(_cameraPose, points, normals);
+    detail::renderPointsNormals(points, normals, image, params.lightPose);
 }
 
 
 template< typename MatType >
 void KinFuImpl<MatType>::getCloud(OutputArray p, OutputArray n) const
 {
-    volume->fetchPointsNormals(p, n);
+    volume.fetchPointsNormals(p, n);
 }
 
 
 template< typename MatType >
 void KinFuImpl<MatType>::getPoints(OutputArray points) const
 {
-    volume->fetchPointsNormals(points, noArray());
+    volume.fetchPointsNormals(points, noArray());
 }
 
 
 template< typename MatType >
 void KinFuImpl<MatType>::getNormals(InputArray points, OutputArray normals) const
 {
-    volume->fetchNormals(points, normals);
+    volume.fetchNormals(points, normals);
 }
 
 // importing class

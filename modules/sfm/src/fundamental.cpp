@@ -62,9 +62,9 @@ namespace sfm
                               Mat_<T> P1,
                               Mat_<T> P2 )
   {
-    P1 << 1, 0, 0, 0,
+    Mat_<T>({P1.rows, P1.cols}, {1, 0, 0, 0,
           0, 1, 0, 0,
-          0, 0, 1, 0;
+          0, 0, 1, 0}).copyTo(P1);
 
     Vec<T,3> e2;
     cv::SVD::solveZ(F.t(), e2);

@@ -47,7 +47,6 @@
 #include "opencv2/imgproc.hpp"
 
 #include "opencv2/core.hpp"
-
 #include "opencv2/core/types.hpp"
 
 namespace cv
@@ -173,7 +172,7 @@ namespace xphoto
         else if ( img.type() == CV_32FC1 )
             grayDctDenoising( img, img, sigma, psize );
         else
-            CV_Error_( Error::StsNotImplemented,
+            CV_Error_( cv::Error::StsNotImplemented,
             ("Unsupported source image format (=%d)", img.type()) );
 
         img.convertTo( dst, src.type() );

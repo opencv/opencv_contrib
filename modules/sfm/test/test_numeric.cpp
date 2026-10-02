@@ -41,10 +41,9 @@ template<typename T>
 static void
 test_meanAndVarianceAlongRows( void )
 {
-    int n = 4;
-    Mat_<T> points(2,n);
-    points << 0, 0, 1, 1,
-              0, 2, 1, 3;
+    Mat_<T> points({2,4}, {
+              0, 0, 1, 1,
+              0, 2, 1, 3});
 
     Mat_<T> mean, variance;
     meanAndVarianceAlongRows(points, mean, variance);
@@ -65,8 +64,7 @@ TEST(Sfm_numeric, meanAndVarianceAlongRows)
 TEST(Sfm_numeric, skewMat)
 {
   // Testing with floats
-  Vec3f a;
-  a << 1,2,3;
+  Vec3f a(1,2,3);
 
   Matx33f ax = skew(a);
 
@@ -76,8 +74,7 @@ TEST(Sfm_numeric, skewMat)
   EXPECT_FLOAT_EQ( ax(1,2), -ax(2,1) );
 
   // Testing with doubles
-  Vec3d b;
-  b << 1,2,3;
+  Vec3d b(1,2,3);
 
   Matx33d bx = skew(b);
 

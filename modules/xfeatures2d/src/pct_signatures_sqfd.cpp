@@ -138,7 +138,7 @@ namespace cv
 
                     for (int i = range.start; i < range.end; i++)
                     {
-                        if (mImageSignatures[i].empty())
+                        if ((*mImageSignatures)[i].empty())
                         {
                             CV_Error_(Error::StsBadArg, ("Signature ID: %d is empty!", i));
                         }

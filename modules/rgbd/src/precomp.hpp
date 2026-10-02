@@ -11,11 +11,11 @@
 #define __OPENCV_PRECOMP_H__
 
 #include <iostream>
+#include <limits>
 #include <vector>
 #include <list>
 #include <set>
 #include <unordered_set>
-#include <limits>
 
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
@@ -23,7 +23,15 @@
 #include "opencv2/core/ocl.hpp"
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
-#include "opencv2/calib3d.hpp"
+#include "opencv2/geometry.hpp"
+#include "opencv2/geometry/detail/optimizer.hpp"
+#include "opencv2/ptcloud.hpp"
+#include "opencv2/ptcloud/volume_settings.hpp"
+#include "opencv2/ptcloud/detail/pose_graph.hpp"
+#include "opencv2/ptcloud/detail/kinfu_frame.hpp"
+#include "opencv2/ptcloud/detail/submap.hpp"
 #include "opencv2/rgbd.hpp"
+
+#include "utils.hpp"
 
 #endif

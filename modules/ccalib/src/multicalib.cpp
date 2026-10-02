@@ -225,7 +225,7 @@ void MultiCameraCalibration::loadImages()
         _xi[camera].convertTo(_xi[camera], CV_32F);
         //else
         //{
-        //    CV_Error_(CV_StsOutOfRange, "Unknown camera type, use PINHOLE or OMNIDIRECTIONAL");
+        //    CV_Error_(cv::Error::StsOutOfRange, "Unknown camera type, use PINHOLE or OMNIDIRECTIONAL");
         //}
 
         for (int i = 0; i < (int)_omEachCamera[camera].size(); ++i)

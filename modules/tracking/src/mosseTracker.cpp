@@ -119,13 +119,11 @@ protected:
         double ang = rng.uniform(-C,C);
         double c=cos(ang), s=sin(ang);
         // affine warp matrix
-        Mat_<float> W(2,3);
-        W << c + rng.uniform(-C,C), -s + rng.uniform(-C,C), 0,
-             s + rng.uniform(-C,C),  c + rng.uniform(-C,C), 0;
+        Mat_<float> W({2,3}, {static_cast<float>(c + rng.uniform(-C,C)), static_cast<float>(-s + rng.uniform(-C,C)), 0,
+                              static_cast<float>(s + rng.uniform(-C,C)), static_cast<float>(c + rng.uniform(-C,C)), 0});
 
         // random translation
-        Mat_<float> center_warp(2, 1);
-        center_warp << a.cols/2, a.rows/2;
+        Mat_<float> center_warp({2, 1}, {static_cast<float>(a.cols)/2, static_cast<float>(a.rows)/2});
         W.col(2) = center_warp - (W.colRange(0, 2))*center_warp;
 
         Mat warped;

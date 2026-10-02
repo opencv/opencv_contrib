@@ -36,8 +36,8 @@ public:
     TSDFVolumeCPU(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                   float _raycastStepFactor, bool zFirstMemOrder = true);
 
-    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, Ptr<WarpField> wf) override;
-    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
+    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::Matx33f intrMatrix, Ptr<WarpField> wf) override;
+    virtual void raycast(cv::Affine3f cameraPose, cv::Matx33f intrMatrix, cv::Size frameSize,
                          cv::OutputArray points, cv::OutputArray normals) const override;
 
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
@@ -317,13 +317,14 @@ struct IntegrateInvoker : ParallelLoopBody
 };
 
 // use depth instead of distance (optimization)
-void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics, Ptr<WarpField> wf)
+void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::Matx33f intrMatrix, Ptr<WarpField> wf)
 {
     CV_TRACE_FUNCTION();
 
     CV_Assert(_depth.type() == DEPTH_TYPE);
     Depth depth = _depth.getMat();
 
+    Intr intrinsics(intrMatrix);
     IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor, wf);
     Range range(0, volResolution.x);
     parallel_for_(range, ii);
@@ -547,7 +548,7 @@ struct RaycastInvoker : ParallelLoopBody
 };
 
 
-void TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize,
+void TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, cv::Matx33f intrMatrix, Size frameSize,
                             cv::OutputArray _points, cv::OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
@@ -560,6 +561,7 @@ void TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frame
     Points points   =  _points.getMat();
     Normals normals = _normals.getMat();
 
+    Intr intrinsics(intrMatrix);
     RaycastInvoker ri(points, normals, cameraPose, intrinsics, *this);
 
     const int nstripes = -1;

@@ -8,7 +8,6 @@
 #define __OPENCV_DYNAFU_NONRIGID_ICP_H__
 
 #include "precomp.hpp"
-#include "kinfu_frame.hpp"
 #include "warpfield.hpp"
 #include "dynafu_tsdf.hpp"
 
@@ -18,7 +17,7 @@ namespace dynafu {
 class NonRigidICP
 {
 public:
-    NonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations);
+    NonRigidICP(const cv::Matx33f _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations);
 
     virtual bool estimateWarpNodes(WarpField& currentWarp, const Affine3f& pose,
                                    InputArray vertImage, InputArray oldPoints,
@@ -30,11 +29,11 @@ public:
 protected:
 
     int iterations;
-    const cv::Ptr<TSDFVolume>& volume;
-    cv::kinfu::Intr intrinsics;
+    const cv::Ptr<dynafu::TSDFVolume>& volume;
+    cv::Matx33f intrinsics;
 };
 
-cv::Ptr<NonRigidICP> makeNonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume,
+cv::Ptr<NonRigidICP> makeNonRigidICP(const cv::Matx33f& _intrinsics, const cv::Ptr<TSDFVolume>& _volume,
                                      int _iterations);
 
 } // namespace dynafu

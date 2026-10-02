@@ -62,7 +62,7 @@
 #endif
 
 // clang has been supported since 5.0
-#if defined(__clang__) && (__clang_major__ >= 5)
+#if defined(__clang__)
 #define __OPENCV_USE_WAVELET_MATRIX_FOR_MEDIAN_FILTER_CUDA__
 #endif
 

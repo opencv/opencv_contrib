@@ -1,0 +1,1 @@
+ocv_add_tool(opencv_annotation MODULES opencv_core opencv_highgui opencv_imgproc opencv_imgcodecs opencv_videoio)

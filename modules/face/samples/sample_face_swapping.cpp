@@ -2,8 +2,9 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
-#include "opencv2/objdetect.hpp"
+#include "opencv2/xobjdetect.hpp"
 #include "opencv2/photo.hpp" // seamlessClone()
+#include "opencv2/geometry.hpp" // Subdiv2D()
 #include <iostream>
 using namespace cv;
 using namespace cv::face;

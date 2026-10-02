@@ -46,7 +46,7 @@
 #include "opencv2/ts/cuda_test.hpp"
 
 #include "opencv2/cudafeatures2d.hpp"
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 
 #include "cvconfig.h"
 

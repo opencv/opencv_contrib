@@ -39,7 +39,7 @@
 #ifdef __cplusplus
 
 #include <opencv2/core.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/stereo.hpp>
 
 namespace cv {
 namespace ximgproc {

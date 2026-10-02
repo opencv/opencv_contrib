@@ -75,7 +75,7 @@ namespace
 void cv::cuda::findMinMaxLoc(InputArray _src, OutputArray _minMaxVals, OutputArray _loc, InputArray _mask, Stream& stream)
 {
     typedef void (*func_t)(const GpuMat& _src, const GpuMat& mask, GpuMat& _valBuf, GpuMat& _locBuf, Stream& stream);
-    static const func_t funcs[] =
+    static const func_t funcs[CV_DEPTH_MAX] =
     {
         minMaxLocImpl<uchar, int>,
         minMaxLocImpl<schar, int>,
@@ -99,6 +99,7 @@ void cv::cuda::findMinMaxLoc(InputArray _src, OutputArray _minMaxVals, OutputArr
     GpuMat locBuf(pool.getAllocator());
 
     const func_t func = funcs[src_depth];
+    CV_Assert(func);
     func(src, mask, valBuf, locBuf, stream);
 
     GpuMat minMaxVals = valBuf.colRange(0, 1);

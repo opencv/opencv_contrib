@@ -24,7 +24,7 @@ static void write_root_group_single_channel()
 
     // prepare data
     Mat data;
-    data = (cv::Mat_<float>(2, 3) << 0, 1, 2, 3, 4, 5, 6);
+    data = cv::Mat_<float>({2, 3}, {0, 1, 2, 3, 4, 5, 6});
 
     //! [tutorial_open_file]
     Ptr<hdf::HDF5> h5io = hdf::open(filename);
@@ -57,7 +57,7 @@ static void write_single_channel()
 
     // prepare data
     Mat data;
-    data = (cv::Mat_<float>(2, 3) << 0, 1, 2, 3, 4, 5);
+    data = cv::Mat_<float>({2, 3}, {0, 1, 2, 3, 4, 5});
 
     Ptr<hdf::HDF5> h5io = hdf::open(filename);
 

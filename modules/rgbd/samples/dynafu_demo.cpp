@@ -9,7 +9,8 @@
 #include <iostream>
 #include <fstream>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/geometry.hpp>
+#include <opencv2/ptcloud.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/utils/logger.hpp>
 #include <opencv2/rgbd.hpp>
@@ -190,7 +191,7 @@ int main(int argc, char **argv)
                 Vec3d volSize = df->getParams().voxelSize*Vec3d(df->getParams().volumeDims);
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                      volSize),
-                                  df->getParams().volumePose);
+                                  Affine3f(df->getParams().volumePose));
                 PauseCallbackArgs pca(*df);
                 window.registerMouseCallback(pauseCallback, (void*)&pca);
                 window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
@@ -258,7 +259,7 @@ int main(int argc, char **argv)
                     Vec3d volSize = df->getParams().voxelSize*df->getParams().volumeDims;
                     window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                          volSize),
-                                      df->getParams().volumePose);
+                                      Affine3f(df->getParams().volumePose));
                     window.setViewerPose(df->getPose());
                     window.spinOnce(1, true);
                 }
@@ -293,6 +294,7 @@ int main(int argc, char **argv)
         case 'p':
             if(!idle)
                 pause = true;
+            break;
 #endif
         default:
             break;

@@ -9,6 +9,7 @@
 #define __OPENCV_TEST_PRECOMP_HPP__
 
 #include "opencv2/ts.hpp"
+#include "opencv2/geometry.hpp"
 #include "opencv2/wechat_qrcode.hpp"
 
 #endif

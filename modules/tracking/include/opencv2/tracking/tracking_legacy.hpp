@@ -286,45 +286,6 @@ public:
   virtual ~TrackerKCF() CV_OVERRIDE {}
 };
 
-#if 0  // legacy variant is not available
-/** @brief the GOTURN (Generic Object Tracking Using Regression Networks) tracker
-
- *  GOTURN (@cite GOTURN) is kind of trackers based on Convolutional Neural Networks (CNN). While taking all advantages of CNN trackers,
- *  GOTURN is much faster due to offline training without online fine-tuning nature.
- *  GOTURN tracker addresses the problem of single target tracking: given a bounding box label of an object in the first frame of the video,
- *  we track that object through the rest of the video. NOTE: Current method of GOTURN does not handle occlusions; however, it is fairly
- *  robust to viewpoint changes, lighting changes, and deformations.
- *  Inputs of GOTURN are two RGB patches representing Target and Search patches resized to 227x227.
- *  Outputs of GOTURN are predicted bounding box coordinates, relative to Search patch coordinate system, in format X1,Y1,X2,Y2.
- *  Original paper is here: <http://davheld.github.io/GOTURN/GOTURN.pdf>
- *  As long as original authors implementation: <https://github.com/davheld/GOTURN#train-the-tracker>
- *  Implementation of training algorithm is placed in separately here due to 3d-party dependencies:
- *  <https://github.com/Auron-X/GOTURN_Training_Toolkit>
- *  GOTURN architecture goturn.prototxt and trained model goturn.caffemodel are accessible on opencv_extra GitHub repository.
-*/
-class CV_EXPORTS_W TrackerGOTURN : public cv::legacy::Tracker
-{
-public:
-  struct CV_EXPORTS Params
-  {
-    Params();
-    void read(const FileNode& /*fn*/);
-    void write(FileStorage& /*fs*/) const;
-    String modelTxt;
-    String modelBin;
-  };
-
-  /** @brief Constructor
-  @param parameters GOTURN parameters TrackerGOTURN::Params
-  */
-  static Ptr<legacy::TrackerGOTURN> create(const TrackerGOTURN::Params &parameters);
-
-  CV_WRAP static Ptr<legacy::TrackerGOTURN> create();
-
-  virtual ~TrackerGOTURN() CV_OVERRIDE {}
-};
-#endif
-
 /** @brief the MOSSE (Minimum Output Sum of Squared %Error) tracker
 
 The implementation is based on @cite MOSSE Visual Object Tracking using Adaptive Correlation Filters

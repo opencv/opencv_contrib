@@ -7,7 +7,8 @@
 #define __FASTCV_EXT_PERF_PRECOMP_HPP__
 
 #include <opencv2/ts.hpp>
-#include <opencv2/features2d.hpp>
+#include <opencv2/geometry.hpp>
+#include <opencv2/features.hpp>
 #include <opencv2/fastcv.hpp>
 
 namespace opencv_test {

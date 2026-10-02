@@ -52,6 +52,7 @@
 #include <vector>
 #include <iomanip>
 #include <limits>
+#include <iostream>
 
 #include <vtkVersionMacros.h>
 #include <vtkAppendPolyData.h>

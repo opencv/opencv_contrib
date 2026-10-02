@@ -135,7 +135,7 @@ namespace
 void absDiffMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat&, double, Stream& stream, int)
 {
     typedef void (*func_t)(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream);
-    static const func_t funcs[] =
+    static const func_t funcs[CV_DEPTH_MAX] =
     {
         absDiffMat_v1<uchar>,
         absDiffMat_v1<schar>,
