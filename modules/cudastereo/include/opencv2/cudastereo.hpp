@@ -300,7 +300,7 @@ class CV_EXPORTS_W DisparityBilateralFilter : public cv::Algorithm
 public:
     /** @brief Refines a disparity map using joint bilateral filtering.
 
-    @param disparity Input disparity map. CV_8UC1 and CV_16SC1 types are supported.
+    @param disparity Input disparity map. CV_8UC1, CV_16SC1, and CV_32FC1 types are supported.
     @param image Input image. CV_8UC1 and CV_8UC3 types are supported.
     @param dst Destination disparity map. It has the same size and type as disparity .
     @param stream Stream for the asynchronous version.
