@@ -46,7 +46,7 @@ namespace cv {
                     class CV_EXPORTS_W GraphSegmentation : public Algorithm {
                         public:
                             /** @brief Segment an image and store output in dst
-                                @param src The input image. Any number of channel (1 (Eg: Gray), 3 (Eg: RGB), 4 (Eg: RGB-D)) can be provided
+                                @param src The input image. Any number of channel (1 (Eg: Gray), 3 (Eg: RGB), 4 (Eg: RGB-D)) can be provided. Supported depth is CV_8U / CV_16U / CV_8S / CV_16S / CV_32F / CV_64F.
                                 @param dst The output segmentation. It's a CV_32SC1 Mat with the same number of cols and rows as input image, with an unique, sequential, id for each pixel.
                             */
                             CV_WRAP virtual void processImage(InputArray src, OutputArray dst) = 0;
