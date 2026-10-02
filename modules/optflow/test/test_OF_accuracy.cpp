@@ -287,6 +287,25 @@ TEST(DenseOpticalFlow_SparseToDenseFlow, ReferenceAccuracy)
     EXPECT_LE(calcRMSE(GT, flow), target_RMSE);
 }
 
+TEST(DenseOpticalFlow_SparseToDenseFlow, Regression_4195)
+{
+    // https://github.com/opencv/opencv_contrib/issues/4195
+    RNG rng(1);
+    Mat from(48, 64, CV_8UC1);
+    rng.fill(from, RNG::UNIFORM, 0, 255);
+    Mat to = from.clone();
+    Mat flow;
+
+    // The default k of 128 exceeds the 48 points sampled with grid_step 8.
+    ASSERT_NO_THROW(calcOpticalFlowSparseToDense(from, to, flow));
+    EXPECT_EQ(from.size(), flow.size());
+    EXPECT_EQ(CV_32FC2, flow.type());
+    EXPECT_TRUE(checkRange(flow));
+
+    Mat small = from(Rect(0, 0, 8, 8)).clone();
+    EXPECT_THROW(calcOpticalFlowSparseToDense(small, small, flow), cv::Exception);
+}
+
 TEST(DenseOpticalFlow_PCAFlow, ReferenceAccuracy)
 {
     Mat frame1, frame2, GT;

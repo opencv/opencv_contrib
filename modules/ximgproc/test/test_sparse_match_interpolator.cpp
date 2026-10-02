@@ -216,5 +216,56 @@ TEST_P(InterpolatorTest, MultiThreadReproducibility)
 }
 INSTANTIATE_TEST_CASE_P(FullSet,InterpolatorTest, Combine(Values(szODD,szVGA), GuideTypes::all()));
 
+TEST(InterpolatorTest, RejectsTooFewMatches)
+{
+    // https://github.com/opencv/opencv_contrib/issues/4195
+    Mat src(16, 16, CV_8UC1, Scalar(0));
+    Ptr<EdgeAwareInterpolator> interpolator = createEdgeAwareInterpolator();
+
+    for (int count = 0; count < 3; count++)
+    {
+        vector<Point2f> from_points, to_points;
+        for (int i = 0; i < count; i++)
+        {
+            from_points.push_back(Point2f((float)i + 1, (float)i + 1));
+            to_points.push_back(from_points.back() + Point2f(1, 1));
+        }
+
+        Mat flow;
+        try
+        {
+            interpolator->interpolate(src, from_points, Mat(), to_points, flow);
+            FAIL() << "Expected cv::Exception for " << count << " matches";
+        }
+        catch (const cv::Exception& e)
+        {
+            EXPECT_EQ(Error::StsBadArg, e.code);
+        }
+    }
+}
+
+TEST(InterpolatorTest, KExceedsMatchCount)
+{
+    // https://github.com/opencv/opencv_contrib/issues/4195
+    Mat src(16, 16, CV_8UC1, Scalar(0));
+    const Point2f points[] = {
+        Point2f(1, 1), Point2f(8, 1), Point2f(14, 2), Point2f(2, 12), Point2f(12, 14)
+    };
+    vector<Point2f> from_points(points, points + 5);
+    vector<Point2f> to_points;
+    for (size_t i = 0; i < from_points.size(); i++)
+        to_points.push_back(from_points[i] + Point2f(1, 1));
+    Mat flow;
+
+    Ptr<EdgeAwareInterpolator> interpolator = createEdgeAwareInterpolator();
+    interpolator->setK(128);
+    interpolator->setUsePostProcessing(false);
+    interpolator->interpolate(src, from_points, Mat(), to_points, flow);
+
+    EXPECT_EQ(128, interpolator->getK());
+    EXPECT_EQ(src.size(), flow.size());
+    EXPECT_EQ(CV_32FC2, flow.type());
+    EXPECT_TRUE(checkRange(flow));
+}
 
 }} // namespace
