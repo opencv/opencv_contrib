@@ -98,6 +98,8 @@ namespace cv { namespace cuda { namespace device
                             continue;
 
                         value_type value = saturate_cast<value_type>(src(cy, cx));
+                        if (isnan(norm_l1(value)))
+                            continue;
 
                         float weight = ::exp(space2 * sigma_spatial2_inv_half + sqr(norm_l1(value - center)) * sigma_color2_inv_half);
                         sum1 = sum1 + weight * value;
@@ -114,6 +116,8 @@ namespace cv { namespace cuda { namespace device
                             continue;
 
                         value_type value = saturate_cast<value_type>(b.at(cy, cx, src.data, src.step));
+                        if (isnan(norm_l1(value)))
+                            continue;
 
                         float weight = ::exp(space2 * sigma_spatial2_inv_half + sqr(norm_l1(value - center)) * sigma_color2_inv_half);
 
