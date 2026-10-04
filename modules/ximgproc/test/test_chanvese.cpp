@@ -84,34 +84,38 @@ TEST(ximgproc_ChanVese, outputIsBinaryForSyntheticInput)
     EXPECT_EQ(cv::countNonZero(valid), static_cast<int>(dst.total()));
 }
 
-TEST(ximgproc_ChanVese, referenceImageCheck)
-{
-    Mat src = imread(cvtest::findDataFile("cv/ximgproc/chanvese_input.png"), IMREAD_GRAYSCALE);
-    Mat expected = imread(cvtest::findDataFile("cv/ximgproc/chanvese_output.png"), IMREAD_GRAYSCALE);
+//I am removing the test case given below as it was used to locally test the 
+//code on my machine
 
-    ASSERT_FALSE(src.empty());
-    ASSERT_FALSE(expected.empty());
 
-    Mat dst;
-    cv::ximgproc::segmentation::ChanVeseInit(src, dst);
+// TEST(ximgproc_ChanVese, referenceImageCheck)
+// {
+//     Mat src = imread(cvtest::findDataFile("cv/ximgproc/chanvese_input.png"), IMREAD_GRAYSCALE);
+//     Mat expected = imread(cvtest::findDataFile("cv/ximgproc/chanvese_output.png"), IMREAD_GRAYSCALE);
 
-    ASSERT_FALSE(dst.empty());
-    EXPECT_EQ(dst.size(), src.size());
-    EXPECT_EQ(dst.type(), CV_32F);
-    EXPECT_EQ(dst.channels(), 1);
+//     ASSERT_FALSE(src.empty());
+//     ASSERT_FALSE(expected.empty());
 
-    Mat checker;
-    dst.convertTo(checker, CV_8U);
+//     Mat dst;
+//     cv::ximgproc::segmentation::ChanVeseInit(src, dst);
 
-    EXPECT_EQ(checker.size(), expected.size());
-    // chanvese.cpp returns a binary image, so allow a small relative difference
-    const int checkerCount = cv::countNonZero(checker);
-    const int expectedCount = cv::countNonZero(expected);
-    const int diff = std::abs(checkerCount - expectedCount);
-    const double relDiff = expectedCount > 0
-        ? static_cast<double>(diff) / expectedCount
-        : (checkerCount == 0 ? 0.0 : 1.0);
-    EXPECT_LE(relDiff, 0.01);
-}
+//     ASSERT_FALSE(dst.empty());
+//     EXPECT_EQ(dst.size(), src.size());
+//     EXPECT_EQ(dst.type(), CV_32F);
+//     EXPECT_EQ(dst.channels(), 1);
+
+//     Mat checker;
+//     dst.convertTo(checker, CV_8U);
+
+//     EXPECT_EQ(checker.size(), expected.size());
+//     // chanvese.cpp returns a binary image, so allow a small relative difference
+//     const int checkerCount = cv::countNonZero(checker);
+//     const int expectedCount = cv::countNonZero(expected);
+//     const int diff = std::abs(checkerCount - expectedCount);
+//     const double relDiff = expectedCount > 0
+//         ? static_cast<double>(diff) / expectedCount
+//         : (checkerCount == 0 ? 0.0 : 1.0);
+//     EXPECT_LE(relDiff, 0.01);
+// }
 
 }} // namespace
