@@ -46,7 +46,6 @@
  ***************************************************************/
 
 #include "precomp.hpp"
-#include <iostream>
 using namespace std;
 using namespace cv;
 
@@ -72,7 +71,7 @@ public:
         l1=1.0f; 
         l2=1.0f; 
         mu=0.1f;
-        v=0.1f; 
+        v=0.0f; 
         iter=40; 
         tol=1e-3; 
         dt=0.5f;
