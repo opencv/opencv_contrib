@@ -116,7 +116,7 @@ void StereoSGMImpl::compute(InputArray _left, InputArray _right, OutputArray _di
     census_transform::censusTransform(left, censused_left, _stream);
     census_transform::censusTransform(right, censused_right, _stream);
 
-    ensureSizeIsEnough(1, size.width * size.height * params.numDisparities * num_paths, CV_8UC1, aggregated);
+    ensureSizeIsEnough(num_paths, size.width * size.height * params.numDisparities, CV_8UC1, aggregated);
     ensureSizeIsEnough(size, CV_16SC1, left_disp_tmp);
     ensureSizeIsEnough(size, CV_16SC1, right_disp_tmp);
 
