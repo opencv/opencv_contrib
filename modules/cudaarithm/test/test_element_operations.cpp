@@ -2086,6 +2086,66 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Bitwise_Array, testing::Combine(
     DIFFERENT_SIZES,
     TYPES(CV_8U, CV_32S, 1, 4)));
 
+PARAM_TEST_CASE(Bitwise_RoiAlignment, cv::cuda::DeviceInfo, MatType, int)
+{
+    cv::cuda::DeviceInfo devInfo;
+    int type;
+    int xOffset;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        type = GET_PARAM(1);
+        xOffset = GET_PARAM(2);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(Bitwise_RoiAlignment, Accuracy)
+{
+    const cv::Size roiSize(16, 8);
+    const cv::Size baseSize(roiSize.width + xOffset + 1, roiSize.height);
+    const cv::Rect roi(xOffset, 0, roiSize.width, roiSize.height);
+
+    cv::Mat src1 = randomMat(baseSize, type, 0.0, std::numeric_limits<int>::max());
+    cv::Mat src2 = randomMat(baseSize, type, 0.0, std::numeric_limits<int>::max());
+
+    cv::cuda::GpuMat d_src1_base, d_src2_base, d_dst_base;
+    d_src1_base.upload(src1);
+    d_src2_base.upload(src2);
+    d_dst_base.upload(cv::Mat::zeros(baseSize, type));
+
+    cv::cuda::GpuMat d_src1 = d_src1_base(roi);
+    cv::cuda::GpuMat d_src2 = d_src2_base(roi);
+    cv::cuda::GpuMat d_dst = d_dst_base(roi);
+
+    const cv::Mat src1_roi = src1(roi);
+    const cv::Mat src2_roi = src2(roi);
+
+    cv::Mat dst_gold;
+    cv::cuda::bitwise_not(d_src1, d_dst);
+    cv::bitwise_not(src1_roi, dst_gold);
+    EXPECT_MAT_NEAR(dst_gold, d_dst, 0.0);
+
+    cv::cuda::bitwise_or(d_src1, d_src2, d_dst);
+    cv::bitwise_or(src1_roi, src2_roi, dst_gold);
+    EXPECT_MAT_NEAR(dst_gold, d_dst, 0.0);
+
+    cv::cuda::bitwise_and(d_src1, d_src2, d_dst);
+    cv::bitwise_and(src1_roi, src2_roi, dst_gold);
+    EXPECT_MAT_NEAR(dst_gold, d_dst, 0.0);
+
+    cv::cuda::bitwise_xor(d_src1, d_src2, d_dst);
+    cv::bitwise_xor(src1_roi, src2_roi, dst_gold);
+    EXPECT_MAT_NEAR(dst_gold, d_dst, 0.0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Bitwise_RoiAlignment, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_16UC1)),
+    testing::Values(1, 2, 3, 5)));
+
 //////////////////////////////////////////////////////////////////////////////
 // Bitwise_Scalar
 
