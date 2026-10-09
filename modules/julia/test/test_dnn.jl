@@ -11,7 +11,7 @@ function IOU(boxA, boxB)
 end
 
 const cv = OpenCV
-net = cv.dnn.DetectionModel(joinpath(ENV["OPENCV_TEST_DATA_PATH"], "dnn", "opencv_face_detector.pbtxt"),joinpath(ENV["OPENCV_TEST_DATA_PATH"], "dnn", "opencv_face_detector_uint8.pb"))
+net = cv.dnn.DetectionModel(joinpath(ENV["OPENCV_TEST_DATA_PATH"], "dnn", "onnx", "models", "opencv_face_detector_uint8.onnx"))
 size0 = 300
 
 cv.dnn.setPreferableTarget(net, cv.dnn.DNN_TARGET_CPU)
