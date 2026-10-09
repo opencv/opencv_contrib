@@ -74,30 +74,24 @@ WeChatQRCode::WeChatQRCode(const String& detector_model_path,
 
 WeChatQRCode::WeChatQRCode(const char* detector_model_buffer, size_t detector_model_len,
                            const char* super_resolution_model_buffer, size_t super_resolution_model_len) {
+  CV_Assert(detector_model_buffer != nullptr && detector_model_len > 0);
+  CV_Assert(super_resolution_model_buffer != nullptr && super_resolution_model_len > 0);
+
   p = makePtr<WeChatQRCode::Impl>();
-  if (detector_model_buffer && detector_model_len > 0) {
-    // initialize detector model
-    p->use_nn_detector_ = true;
-    p->detector_ = make_shared<SSDDetector>();
-    auto ret = p->detector_->init(detector_model_buffer, detector_model_len);
-    CV_Assert(ret == 0);
-  } else {
-    p->use_nn_detector_ = false;
-    p->detector_ = NULL;
-  }
+  // initialize detector model
+  p->use_nn_detector_ = true;
+  p->detector_ = make_shared<SSDDetector>();
+  auto ret = p->detector_->init(detector_model_buffer, detector_model_len);
+  CV_Assert(ret == 0);
+
   // initialize super_resolution_model
   // it could also support non model weights by cubic resizing
   // so, we initialize it first.
-  if (super_resolution_model_buffer && super_resolution_model_len > 0) {
-    p->use_nn_sr_ = true;
-    p->super_resolution_model_ = make_shared<SuperScale>();
-    auto ret = p->super_resolution_model_->init(
-        super_resolution_model_buffer, super_resolution_model_len);
-    CV_Assert(ret == 0);
-  } else {
-    p->use_nn_sr_ = false;
-    p->super_resolution_model_ = make_shared<SuperScale>();
-  }
+  p->use_nn_sr_ = true;
+  p->super_resolution_model_ = make_shared<SuperScale>();
+  ret = p->super_resolution_model_->init(
+      super_resolution_model_buffer, super_resolution_model_len);
+  CV_Assert(ret == 0);
 }
 
 vector<string> WeChatQRCode::detectAndDecode(InputArray img, OutputArrayOfArrays points) {
