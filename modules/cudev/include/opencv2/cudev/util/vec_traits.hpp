@@ -215,6 +215,36 @@ template<> struct VecTraits<char4>
     __host__ __device__ __forceinline__ static char4 make(const schar* v) {return make_char4(v[0], v[1], v[2], v[3]);}
 };
 
+template <> struct VecTraits<long long>
+{
+    typedef long long type;
+    typedef long long elem_type;
+    enum { cn = 1 };
+    static __device__ __host__ __forceinline__ long long all(long long v) { return v; }
+    static __device__ __host__ __forceinline__ long long make(long long v) { return v; }
+    static __device__ __host__ __forceinline__ long long make(const long long* v) { return *v; }
+};
+
+template <> struct VecTraits<unsigned long long>
+{
+    typedef unsigned long long type;
+    typedef unsigned long long elem_type;
+    enum { cn = 1 };
+    static __device__ __host__ __forceinline__ unsigned long long all(unsigned long long v) { return v; }
+    static __device__ __host__ __forceinline__ unsigned long long make(unsigned long long v) { return v; }
+    static __device__ __host__ __forceinline__ unsigned long long make(const unsigned long long* v) { return *v; }
+};
+
+template<> struct MakeVec<long long, 1> { typedef long long type; };
+template<> struct MakeVec<long long, 2> { typedef longlong2 type; };
+template<> struct MakeVec<long long, 3> { typedef longlong3 type; };
+template<> struct MakeVec<long long, 4> { typedef longlong4 type; };
+
+template<> struct MakeVec<unsigned long long, 1> { typedef unsigned long long type; };
+template<> struct MakeVec<unsigned long long, 2> { typedef ulonglong2 type; };
+template<> struct MakeVec<unsigned long long, 3> { typedef ulonglong3 type; };
+template<> struct MakeVec<unsigned long long, 4> { typedef ulonglong4 type; };
+
 //! @}
 
 }}
