@@ -17,6 +17,12 @@ int SuperScale::init(const std::string &onnx_path) {
     return 0;
 }
 
+int SuperScale::init(const char* model_buffer, size_t model_len) {
+  srnet_ = dnn::readNetFromONNX(model_buffer, model_len);
+  net_loaded_ = true;
+  return 0;
+}
+
 Mat SuperScale::processImageScale(const Mat &src, float scale, const bool &use_sr,
                                   int sr_max_size) {
     Mat dst = src;

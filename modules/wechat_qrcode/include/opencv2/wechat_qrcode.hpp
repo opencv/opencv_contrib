@@ -33,6 +33,8 @@ public:
      */
     CV_WRAP WeChatQRCode(const std::string& detector_model_path = "",
                          const std::string& super_resolution_model_path = "");
+    WeChatQRCode(const char* detector_model_buffer, size_t detector_model_len,
+                 const char* super_resolution_model_buffer, size_t super_resolution_model_len);
     ~WeChatQRCode(){};
 
     /**
