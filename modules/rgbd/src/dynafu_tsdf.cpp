@@ -127,7 +127,7 @@ void TSDFVolumeCPU::reset()
     volume.forEach<VecT>([](VecT& vv, const int* /* position */)
     {
         Voxel& v = reinterpret_cast<Voxel&>(vv);
-        v.v = 0; v.weight = 0;
+        v.v = 0; v.weight = 0; v.n = 0;
     });
 }
 
