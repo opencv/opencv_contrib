@@ -100,7 +100,7 @@ CUDA_TEST_P(ResizeLanczos, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeLanczos, testing::Combine(
     testing::Values(cv::cuda::DeviceInfo()),
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+    testing::Values(MatType(CV_8UC1), MatType(CV_8UC2), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
     testing::Values(0.3, 0.5, 1.5, 2.0),
     WHOLE_SUBMAT));
 
@@ -147,7 +147,7 @@ CUDA_TEST_P(ResizeLanczosSameAsHost, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeLanczosSameAsHost, testing::Combine(
     testing::Values(cv::cuda::DeviceInfo()),
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+    testing::Values(MatType(CV_8UC1), MatType(CV_8UC2), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
     testing::Values(0.3, 0.5, 1.5, 2.0),
     WHOLE_SUBMAT));
 
