@@ -61,7 +61,7 @@ void cv::cuda::resize(InputArray _src, OutputArray _dst, Size dsize, double fx, 
     typedef void (*func_t)(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
     static const func_t funcs[6][4] =
     {
-        {device::resize<uchar>      , 0 /*device::resize<uchar2>*/ , device::resize<uchar3>     , device::resize<uchar4>     },
+        {device::resize<uchar>      , device::resize<uchar2>      , device::resize<uchar3>     , device::resize<uchar4>     },
         {0 /*device::resize<schar>*/, 0 /*device::resize<char2>*/  , 0 /*device::resize<char3>*/, 0 /*device::resize<char4>*/},
         {device::resize<ushort>     , 0 /*device::resize<ushort2>*/, device::resize<ushort3>    , device::resize<ushort4>    },
         {device::resize<short>      , 0 /*device::resize<short2>*/ , device::resize<short3>     , device::resize<short4>     },
