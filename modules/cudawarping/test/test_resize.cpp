@@ -155,7 +155,7 @@ CUDA_TEST_P(Resize, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, Resize, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+    testing::Values(MatType(CV_8UC1), MatType(CV_8UC2), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
     testing::Values(0.3, 0.5, 1.5, 2.0),
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC)),
     WHOLE_SUBMAT));
@@ -201,7 +201,7 @@ CUDA_TEST_P(ResizeSameAsHost, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeSameAsHost, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+    testing::Values(MatType(CV_8UC1), MatType(CV_8UC2), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
     testing::Values(0.3, 0.5),
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_AREA)),
     WHOLE_SUBMAT));
@@ -312,7 +312,7 @@ CUDA_TEST_P(ResizeContinuous, Regression_Issue28407)
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeContinuous, testing::Combine(
     ALL_DEVICES,
     testing::Values(cv::Size(10, 10), cv::Size(64, 64), cv::Size(128, 128)),
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_32FC1)),
+    testing::Values(MatType(CV_8UC1), MatType(CV_8UC2), MatType(CV_8UC3), MatType(CV_32FC1)),
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC))));
 
 }} // namespace
