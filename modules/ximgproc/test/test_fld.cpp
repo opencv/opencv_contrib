@@ -329,22 +329,61 @@ TEST_F(ximgproc_ED, detectLinesAndEllipses)
     EXPECT_LE(ellipses.size(), ellipses_size + 2);
 }
 
-// Regression test for the input-image aliasing bug: with Params::Sigma < 1.0,
-// detectEdges() set smoothImage = srcImage (aliasing the caller's Mat), and
-// detectEllipses()'s internal in-place GaussianBlur then overwrote the user's
-// input image. The input must be treated as read-only.
-TEST_F(ximgproc_ED, detectEllipsesDoesNotModifyInput)
+// With Sigma < 1.0, detectEdges() used to let smoothImage share the caller's buffer
+// (edge_drawing.cpp:411), so every later GaussianBlur() into smoothImage blurred the
+// caller's image in place: in detectEllipses() (:2718), in the PFmode branch of
+// detectEdges() (:430), and in the next detectEdges() with Sigma >= 1.0 (:413/:415),
+// which wrote into the previous input. Each phase below uses its own detector.
+TEST_F(ximgproc_ED, inputNotModifiedWithSigmaBelowOne)
 {
-    Mat img(200, 200, CV_8UC1, Scalar(255));
-    circle(img, Point(100, 100), 60, Scalar(0), 2, LINE_8);
-    Mat backup = img.clone();
-
-    detector->params.Sigma = 0.0;   // Sigma < 1.0 takes the aliasing path
-    detector->detectEdges(img);
+    Mat circ(200, 200, CV_8UC1, Scalar(255));
+    circle(circ, Point(100, 100), 60, Scalar(0), 2, LINE_8);
+    Mat rect(200, 200, CV_8UC1, Scalar(255));
+    rectangle(rect, Point(50, 50), Point(150, 150), Scalar(0), 2, LINE_8);
     vector<Vec6d> ellipses;
-    detector->detectEllipses(ellipses);
+    Mat img, other;
+    Ptr<EdgeDrawing> ed;
 
-    EXPECT_EQ(0, countNonZero(img != backup))
+    // 1. detectEllipses()
+    img = circ.clone();
+    ed = createEdgeDrawing();
+    ed->params.Sigma = 0.0;
+    ed->detectEdges(img);
+    ed->detectEllipses(ellipses);
+    EXPECT_EQ(0, countNonZero(img != circ))
         << "detectEllipses() modified the caller's input image in place";
+
+    // 2. detectEdges() with PFmode, without detectEllipses()
+    img = circ.clone();
+    ed = createEdgeDrawing();
+    ed->params.Sigma = 0.0;
+    ed->params.PFmode = true;
+    ed->detectEdges(img);
+    EXPECT_EQ(0, countNonZero(img != circ))
+        << "detectEdges() with PFmode modified the caller's input image in place";
+
+    // 3. the next detectEdges() with Sigma >= 1.0 on an image of the same size
+    img = circ.clone();
+    other = rect.clone();
+    ed = createEdgeDrawing();
+    ed->params.Sigma = 0.0;
+    ed->detectEdges(img);
+    ed->params.Sigma = 1.0;   // the default value
+    ed->detectEdges(other);
+    EXPECT_EQ(0, countNonZero(img != circ))
+        << "a later detectEdges() call overwrote an earlier input image";
+    EXPECT_EQ(0, countNonZero(other != rect))
+        << "detectEdges() modified the caller's input image in place";
+
+    // 4. as 1, but Sigma is raised before detectEllipses(): whether the input is
+    //    written must not depend on the parameter value at that moment
+    img = circ.clone();
+    ed = createEdgeDrawing();
+    ed->params.Sigma = 0.0;
+    ed->detectEdges(img);
+    ed->params.Sigma = 1.0;
+    ed->detectEllipses(ellipses);
+    EXPECT_EQ(0, countNonZero(img != circ))
+        << "detectEllipses() modified the caller's input image after Sigma was raised";
 }
 }} // namespace
