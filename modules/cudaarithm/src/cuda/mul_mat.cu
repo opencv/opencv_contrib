@@ -66,6 +66,39 @@ namespace
         }
     };
 
+    template <typename D> struct MulOp<ushort, D> : binary_function<ushort, ushort, D>
+    {
+        __device__ __forceinline__ D operator ()(ushort a, ushort b) const
+        {
+            return saturate_cast<D>(static_cast<unsigned int>(a) * b);
+        }
+    };
+
+    template <> struct MulOp<ushort, int> : binary_function<ushort, ushort, int>
+    {
+        __device__ __forceinline__ int operator ()(ushort a, ushort b) const
+        {
+            // CV_32S output does not saturate.
+            return static_cast<int>(static_cast<unsigned int>(a) * b);
+        }
+    };
+
+    template <> struct MulOp<int, float> : binary_function<int, int, float>
+    {
+        __device__ __forceinline__ float operator ()(int a, int b) const
+        {
+            return saturate_cast<float>(static_cast<double>(a) * b);
+        }
+    };
+
+    template <> struct MulOp<int, double> : binary_function<int, int, double>
+    {
+        __device__ __forceinline__ double operator ()(int a, int b) const
+        {
+            return static_cast<double>(a) * b;
+        }
+    };
+
     template <typename T, typename S, typename D> struct MulScaleOp : binary_function<T, T, D>
     {
         S scale;
