@@ -3,7 +3,7 @@ Object Detection using CNNs {#tutorial_dnn_objdetect}
 
 # Building
 
-Build samples of "dnn_objectect" module. Refer to OpenCV build tutorials for details.
+Build samples of "dnn_objdetect" module. Refer to OpenCV build tutorials for details.
 Enable `BUILD_EXAMPLES=ON` CMake option and build these targets (Linux):
 - example_dnn_objdetect_image_classification
 - example_dnn_objdetect_obj_detect
