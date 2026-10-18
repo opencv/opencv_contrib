@@ -240,8 +240,16 @@ namespace cv { namespace cuda { namespace device
 
         if (dst_x < dst.cols && dst_y < dst.rows)
         {
-            const float src_x = dst_x * fx;
-            const float src_y = dst_y * fy;
+            // Align source and destination pixel centers with CPU resize.
+            const float src_x = fminf(
+                fmaxf((dst_x + 0.5f) * fx - 0.5f, 0.0f),
+                static_cast<float>(src.cols - 1)
+            );
+
+            const float src_y = fminf(
+                fmaxf((dst_y + 0.5f) * fy - 0.5f, 0.0f),
+                static_cast<float>(src.rows - 1)
+            );
 
             work_type out = VecTraits<work_type>::all(0);
 
@@ -277,6 +285,34 @@ namespace cv { namespace cuda { namespace device
         {
             const float src_x = dst_x * fx;
             const float src_y = dst_y * fy;
+
+            dst(dst_y, dst_x) = src(src_y, src_x);
+        }
+    }
+
+    template <class Ptr2D, typename T>
+    __global__ void resize_linear_tex_kernel(
+        Ptr2D src,
+        PtrStepSz<T> dst,
+        const float fy,
+        const float fx,
+        const int src_rows,
+        const int src_cols)
+    {
+        const int dst_x = blockDim.x * blockIdx.x + threadIdx.x;
+        const int dst_y = blockDim.y * blockIdx.y + threadIdx.y;
+
+        if (dst_x < dst.cols && dst_y < dst.rows)
+        {
+            const float src_x = fminf(
+                fmaxf((dst_x + 0.5f) * fx - 0.5f, 0.0f),
+                static_cast<float>(src_cols - 1)
+            );
+
+            const float src_y = fminf(
+                fmaxf((dst_y + 0.5f) * fy - 0.5f, 0.0f),
+                static_cast<float>(src_rows - 1)
+            );
 
             dst(dst_y, dst_x) = src(src_y, src_x);
         }
@@ -349,7 +385,9 @@ namespace cv { namespace cuda { namespace device
         {
             cudev::Texture<T> texSrc(src);
             LinearFilter<cudev::TexturePtr<T>> filteredSrc(texSrc);
-            resize<<<grid, block>>>(filteredSrc, dst, fy, fx);
+            resize_linear_tex_kernel<<<grid, block>>>(
+                filteredSrc, dst, fy, fx, src.rows, src.cols
+            );
         }
         else
         {
@@ -357,7 +395,9 @@ namespace cv { namespace cuda { namespace device
             BrdReplicate<T> brd(src.rows, src.cols);
             BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>> brdSrc(texSrcWhole, brd);
             LinearFilter<BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>>> filteredSrc(brdSrc);
-            resize<<<grid, block>>>(filteredSrc, dst, fy, fx);
+            resize_linear_tex_kernel<<<grid, block>>>(
+                filteredSrc, dst, fy, fx, src.rows, src.cols
+            );
         }
         cudaSafeCall( cudaGetLastError() );
         cudaSafeCall( cudaDeviceSynchronize() );

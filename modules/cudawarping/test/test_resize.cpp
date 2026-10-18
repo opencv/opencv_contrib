@@ -146,8 +146,31 @@ CUDA_TEST_P(Resize, Accuracy)
     cv::cuda::GpuMat dst = createMat(cv::Size(cv::saturate_cast<int>(src.cols * coeff), cv::saturate_cast<int>(src.rows * coeff)), type, useRoi);
     cv::cuda::resize(loadMat(src, useRoi), dst, cv::Size(), coeff, coeff, interpolation);
 
+
     cv::Mat dst_gold;
-    resizeGold(src, dst_gold, coeff, coeff, interpolation);
+
+    if (interpolation == cv::INTER_LINEAR)
+    {
+        cv::resize(
+            src,
+            dst_gold,
+            cv::Size(),
+            coeff,
+            coeff,
+            interpolation
+        );
+    }
+    else
+    {
+        resizeGold(
+            src,
+            dst_gold,
+            coeff,
+            coeff,
+            interpolation
+        );
+    }
+
 
     EXPECT_MAT_NEAR(dst_gold, dst, src.depth() == CV_32F ? 1e-2 : 1.0);
 }
@@ -161,6 +184,67 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, Resize, testing::Combine(
     WHOLE_SUBMAT));
 
 /////////////////
+
+PARAM_TEST_CASE(ResizeLinearHalfPixel, cv::cuda::DeviceInfo, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        useRoi = GET_PARAM(1);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(ResizeLinearHalfPixel, MatchesHost)
+{
+    // Reproduce issue #30384.
+    cv::Mat src = cv::Mat::zeros(32, 32, CV_32FC1);
+    src.at<float>(16, 16) = 1.0f;
+
+    const cv::Size dstSize(96, 96);
+
+    // CPU reference.
+    cv::Mat expected;
+    cv::resize(src, expected, dstSize, 0, 0, cv::INTER_LINEAR);
+
+    // Upload either a whole image or an ROI.
+    cv::cuda::GpuMat gpuSrc = loadMat(src, useRoi);
+
+    // Default CUDA stream.
+    cv::cuda::GpuMat gpuDefault;
+    cv::cuda::resize(
+        gpuSrc, gpuDefault, dstSize, 0, 0, cv::INTER_LINEAR
+    );
+
+    // Non-default CUDA stream.
+    cv::cuda::Stream stream;
+    cv::cuda::GpuMat gpuAsync;
+    cv::cuda::resize(
+        gpuSrc, gpuAsync, dstSize, 0, 0,
+        cv::INTER_LINEAR, stream
+    );
+
+    stream.waitForCompletion();
+
+    cv::Mat defaultResult;
+    cv::Mat asyncResult;
+
+    gpuDefault.download(defaultResult);
+    gpuAsync.download(asyncResult);
+
+    // Both CUDA paths must agree with CPU.
+    EXPECT_MAT_NEAR(expected, defaultResult, 1e-4);
+    EXPECT_MAT_NEAR(expected, asyncResult, 1e-4);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    CUDA_Warping,
+    ResizeLinearHalfPixel,
+    testing::Combine(ALL_DEVICES, WHOLE_SUBMAT)
+);
 
 PARAM_TEST_CASE(ResizeSameAsHost, cv::cuda::DeviceInfo, cv::Size, MatType, double, Interpolation, UseRoi)
 {
