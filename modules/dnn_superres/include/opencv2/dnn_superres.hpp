@@ -80,9 +80,10 @@ public:
 
     /** @brief Read the model from the given path
     @param weights Path to the model weights file.
-    @param definition Path to the model definition file.
+    @param definition Unused. Kept for backward compatibility.
+    @deprecated ONNX models are single-file; use readModel(const String&) instead.
     */
-    void readModel(const String& weights, const String& definition);
+    CV_DEPRECATED void readModel(const String& weights, const String& definition);
 
     /** @brief Set desired model
     @param algo String containing one of the desired models:
