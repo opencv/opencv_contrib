@@ -54,6 +54,32 @@ namespace cv { namespace cuda { namespace device
 {
     template <typename T> struct Bayer2BGR;
 
+    __device__ __forceinline__ uchar4 loadBayerVector(const PtrStepSzb& src, int y, int x)
+    {
+        const uchar* row = src.ptr(y);
+        const int first = x << 2;
+
+        if (first + 3 < src.cols && (reinterpret_cast<size_t>(row) & 3) == 0)
+            return reinterpret_cast<const uchar4*>(row)[x];
+
+        return make_uchar4(row[::min(first,     src.cols - 1)],
+                           row[::min(first + 1, src.cols - 1)],
+                           row[::min(first + 2, src.cols - 1)],
+                           row[::min(first + 3, src.cols - 1)]);
+    }
+
+    __device__ __forceinline__ ushort2 loadBayerVector16(const PtrStepSzb& src, int y, int x)
+    {
+        const ushort* row = reinterpret_cast<const ushort*>(src.ptr(y));
+        const int first = x << 1;
+
+        if (first + 1 < src.cols && (reinterpret_cast<size_t>(row) & 3) == 0)
+            return reinterpret_cast<const ushort2*>(row)[x];
+
+        return make_ushort2(row[::min(first,     src.cols - 1)],
+                            row[::min(first + 1, src.cols - 1)]);
+    }
+
     template <> struct Bayer2BGR<uchar>
     {
         uchar3 res0;
@@ -64,17 +90,17 @@ namespace cv { namespace cuda { namespace device
         __device__ void apply(const PtrStepSzb& src, int s_x, int s_y, bool blue_last, bool start_with_green)
         {
             uchar4 patch[3][3];
-            patch[0][1] = ((const uchar4*) src.ptr(s_y - 1))[s_x];
-            patch[0][0] = ((const uchar4*) src.ptr(s_y - 1))[::max(s_x - 1, 0)];
-            patch[0][2] = ((const uchar4*) src.ptr(s_y - 1))[::min(s_x + 1, ((src.cols + 3) >> 2) - 1)];
+            patch[0][1] = loadBayerVector(src, s_y - 1, s_x);
+            patch[0][0] = loadBayerVector(src, s_y - 1, ::max(s_x - 1, 0));
+            patch[0][2] = loadBayerVector(src, s_y - 1, ::min(s_x + 1, ((src.cols + 3) >> 2) - 1));
 
-            patch[1][1] = ((const uchar4*) src.ptr(s_y))[s_x];
-            patch[1][0] = ((const uchar4*) src.ptr(s_y))[::max(s_x - 1, 0)];
-            patch[1][2] = ((const uchar4*) src.ptr(s_y))[::min(s_x + 1, ((src.cols + 3) >> 2) - 1)];
+            patch[1][1] = loadBayerVector(src, s_y, s_x);
+            patch[1][0] = loadBayerVector(src, s_y, ::max(s_x - 1, 0));
+            patch[1][2] = loadBayerVector(src, s_y, ::min(s_x + 1, ((src.cols + 3) >> 2) - 1));
 
-            patch[2][1] = ((const uchar4*) src.ptr(s_y + 1))[s_x];
-            patch[2][0] = ((const uchar4*) src.ptr(s_y + 1))[::max(s_x - 1, 0)];
-            patch[2][2] = ((const uchar4*) src.ptr(s_y + 1))[::min(s_x + 1, ((src.cols + 3) >> 2) - 1)];
+            patch[2][1] = loadBayerVector(src, s_y + 1, s_x);
+            patch[2][0] = loadBayerVector(src, s_y + 1, ::max(s_x - 1, 0));
+            patch[2][2] = loadBayerVector(src, s_y + 1, ::min(s_x + 1, ((src.cols + 3) >> 2) - 1));
 
             if ((s_y & 1) ^ start_with_green)
             {
@@ -230,17 +256,17 @@ namespace cv { namespace cuda { namespace device
         __device__ void apply(const PtrStepSzb& src, int s_x, int s_y, bool blue_last, bool start_with_green)
         {
             ushort2 patch[3][3];
-            patch[0][1] = ((const ushort2*) src.ptr(s_y - 1))[s_x];
-            patch[0][0] = ((const ushort2*) src.ptr(s_y - 1))[::max(s_x - 1, 0)];
-            patch[0][2] = ((const ushort2*) src.ptr(s_y - 1))[::min(s_x + 1, ((src.cols + 1) >> 1) - 1)];
+            patch[0][1] = loadBayerVector16(src, s_y - 1, s_x);
+            patch[0][0] = loadBayerVector16(src, s_y - 1, ::max(s_x - 1, 0));
+            patch[0][2] = loadBayerVector16(src, s_y - 1, ::min(s_x + 1, ((src.cols + 1) >> 1) - 1));
 
-            patch[1][1] = ((const ushort2*) src.ptr(s_y))[s_x];
-            patch[1][0] = ((const ushort2*) src.ptr(s_y))[::max(s_x - 1, 0)];
-            patch[1][2] = ((const ushort2*) src.ptr(s_y))[::min(s_x + 1, ((src.cols + 1) >> 1) - 1)];
+            patch[1][1] = loadBayerVector16(src, s_y, s_x);
+            patch[1][0] = loadBayerVector16(src, s_y, ::max(s_x - 1, 0));
+            patch[1][2] = loadBayerVector16(src, s_y, ::min(s_x + 1, ((src.cols + 1) >> 1) - 1));
 
-            patch[2][1] = ((const ushort2*) src.ptr(s_y + 1))[s_x];
-            patch[2][0] = ((const ushort2*) src.ptr(s_y + 1))[::max(s_x - 1, 0)];
-            patch[2][2] = ((const ushort2*) src.ptr(s_y + 1))[::min(s_x + 1, ((src.cols + 1) >> 1) - 1)];
+            patch[2][1] = loadBayerVector16(src, s_y + 1, s_x);
+            patch[2][0] = loadBayerVector16(src, s_y + 1, ::max(s_x - 1, 0));
+            patch[2][2] = loadBayerVector16(src, s_y + 1, ::min(s_x + 1, ((src.cols + 1) >> 1) - 1));
 
             if ((s_y & 1) ^ start_with_green)
             {
