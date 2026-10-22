@@ -426,192 +426,175 @@ Mat filterCore(Mat &I, Mat &F, float **wMap, int r=20, int nF=256, int nI=256, M
         mask = Scalar(1);
     }
 
-    // Allocate memory for joint-histogram and BCB
-    int **H = int2D(nI,nF);
-    int *BCB = new int[nF];
+    const double nstripes = (cols >= 256) ? -1. : 1.;
+    parallel_for_(Range(0, cols), [&](const Range& range) {
+        int **H = int2D(nI, nF);
+        int *BCB = new int[nF];
+        int **Hf = int2D(nI, nF);
+        int **Hb = int2D(nI, nF);
+        int *BCBf = new int[nF];
+        int *BCBb = new int[nF];
 
-    // Allocate links for necklace table
-    int **Hf = int2D(nI,nF);//forward link
-    int **Hb = int2D(nI,nF);//backward link
-    int *BCBf = new int[nF];//forward link
-    int *BCBb = new int[nF];//backward link
-
-    // Column Scanning
-    for(int x=0;x<cols;x++)
-    {
-        // Reset histogram and BCB for each column
-        memset(BCB, 0, sizeof(int)*nF);
-        memset(H[0], 0, sizeof(int)*nF*nI);
-        for(int i=0;i<nI;i++)Hf[i][0]=Hb[i][0]=0;
-        BCBf[0]=BCBb[0]=0;
-
-        // Reset cut-point
-        int medianVal = -1;
-
-        // Precompute "x" range and checks boundary
-        int downX = max(0,x-r);
-        int upX = min(cols-1,x+r);
-
-        // Initialize joint-histogram and BCB for the first window
-        int upY = min(rows-1,r);
-        for(int i=0;i<=upY;i++)
+        for (int x = range.start; x < range.end; x++)
         {
-            int *IPtr = I.ptr<int>(i);
-            int *FPtr = F.ptr<int>(i);
-            uchar *maskPtr = mask.ptr<uchar>(i);
+            memset(BCB, 0, sizeof(int) * nF);
+            memset(H[0], 0, sizeof(int) * nF * nI);
+            for (int i = 0; i < nI; i++) Hf[i][0] = Hb[i][0] = 0;
+            BCBf[0] = BCBb[0] = 0;
 
-            for(int j=downX;j<=upX;j++)
+            // Reset cut-point
+            int medianVal = -1;
+
+            int downX = max(0, x - r);
+            int upX = min(cols-1, x + r);
+
+            // Initialize joint-histogram and BCB for the first window
+            int upY = min(rows-1, r);
+            for(int i=0;i<=upY;i++)
             {
-                if(!maskPtr[j])continue;
+                int *IPtr = I.ptr<int>(i);
+                int *FPtr = F.ptr<int>(i);
+                uchar *maskPtr = mask.ptr<uchar>(i);
 
-                int fval = IPtr[j];
-                int *curHist = H[fval];
-                int gval = FPtr[j];
-
-                // Maintain necklace table of joint-histogram
-                if(!curHist[gval] && gval)
+                for(int j=downX;j<=upX;j++)
                 {
-                    int *curHf = Hf[fval];
-                    int *curHb = Hb[fval];
+                    if (!maskPtr[j]) continue;
 
-                    int p1=0,p2=curHf[0];
-                    curHf[p1]=gval;
-                    curHf[gval]=p2;
-                    curHb[p2]=gval;
-                    curHb[gval]=p1;
+                    int fval = IPtr[j];
+                    int *curHist = H[fval];
+                    int gval = FPtr[j];
+
+                    // Maintain necklace table of joint-histogram
+                    if (!curHist[gval] && gval)
+                    {
+                        int *curHf = Hf[fval];
+                        int *curHb = Hb[fval];
+
+                        int p1 = 0, p2 = curHf[0];
+                        curHf[p1] = gval;
+                        curHf[gval] = p2;
+                        curHb[p2] = gval;
+                        curHb[gval] = p1;
+                    }
+
+                    curHist[gval]++;
+                    // Maintain necklace table of BCB
+                    updateBCB(BCB[gval], BCBf, BCBb, gval, -1);
                 }
-
-                curHist[gval]++;
-                // Maintain necklace table of BCB
-                updateBCB(BCB[gval],BCBf,BCBb,gval,-1);
-            }
-        }
-
-        for(int y=0;y<rows;y++)
-        {
-            // Find weighted median with help of BCB and joint-histogram
-            float balanceWeight = 0;
-            int curIndex = F.ptr<int>(y,x)[0];
-            float *fPtr = wMap[curIndex];
-            int &curMedianVal = medianVal;
-
-            // Compute current balance
-            {
-                int i=0;
-                do
-                {
-                    balanceWeight += BCB[i]*fPtr[i];
-                    i=BCBf[i];
-                }while(i);
             }
 
-            // Move cut-point to the left
-            if(balanceWeight >= 0)
+            for (int y = 0; y < rows; y++)
             {
-                for(;balanceWeight >= 0 && curMedianVal > 0; curMedianVal--)
-                {
-                    float curWeight = 0;
-                    int *nextHist = H[curMedianVal];
-                    int *nextHf = Hf[curMedianVal];
+                // Find weighted median with help of BCB and joint-histogram
+                float balanceWeight = 0;
+                int curIndex = F.ptr<int>(y, x)[0];
+                float *fPtr = wMap[curIndex];
+                int &curMedianVal = medianVal;
 
-                    // Compute weight change by shift cut-point
+                // Compute current balance
+                {
                     int i=0;
                     do
                     {
-                        curWeight += (nextHist[i]<<1)*fPtr[i];
-
-                        // Update BCB and maintain the necklace table of BCB
-                        updateBCB(BCB[i],BCBf,BCBb,i,-(nextHist[i]<<1));
-
-                        i=nextHf[i];
+                        balanceWeight += BCB[i]*fPtr[i];
+                        i=BCBf[i];
                     }while(i);
-
-                    balanceWeight -= curWeight;
                 }
-            }
-            // Move cut-point to the right
-            else if(balanceWeight < 0)
-            {
-                for(;balanceWeight < 0 && curMedianVal != nI-1; curMedianVal++)
+
+                // Move cut-point to the left
+                if(balanceWeight >= 0)
                 {
-                    float curWeight = 0;
-                    int *nextHist = H[curMedianVal+1];
-                    int *nextHf = Hf[curMedianVal+1];
-
-                    // Compute weight change by shift cut-point
-                    int i=0;
-                    do
+                    for(;balanceWeight >= 0 && curMedianVal > 0; curMedianVal--)
                     {
-                        curWeight += (nextHist[i]<<1)*fPtr[i];
+                        float curWeight = 0;
+                        int *nextHist = H[curMedianVal];
+                        int *nextHf = Hf[curMedianVal];
+                        int i = 0;
+                        do
+                        {
+                            curWeight += (nextHist[i] << 1) * fPtr[i];
+                            // Update BCB and maintain the necklace table of BCB
+                            updateBCB(BCB[i], BCBf, BCBb, i, -(nextHist[i] << 1));
+                            i = nextHf[i];
+                        } while (i);
 
-                        // Update BCB and maintain the necklace table of BCB
-                        updateBCB(BCB[i],BCBf,BCBb,i,nextHist[i]<<1);
-
-                        i=nextHf[i];
-                    }while(i);
-                    balanceWeight += curWeight;
+                        balanceWeight -= curWeight;
+                    }
                 }
-            }
+                // Move cut-point to the right
+                else if (balanceWeight < 0)
+                {
+                    for(;balanceWeight < 0 && curMedianVal != nI-1; curMedianVal++)
+                    {
+                        float curWeight = 0;
+                        int *nextHist = H[curMedianVal + 1];
+                        int *nextHf = Hf[curMedianVal + 1];
+                        int i = 0;
+                        do
+                        {
+                            curWeight += (nextHist[i] << 1) * fPtr[i];
+                            // Update BCB and maintain the necklace table of BCB
+                            updateBCB(BCB[i], BCBf, BCBb, i, nextHist[i] << 1);
+                            i = nextHf[i];
+                        } while (i);
 
-            // Weighted median is found and written to the output image
-            if(curMedianVal != -1)
-            {
-                if(balanceWeight < 0)
-                    outImg.ptr<int>(y,x)[0] = curMedianVal+1;
-                else
-                    outImg.ptr<int>(y,x)[0] = curMedianVal;
-            }
+                        balanceWeight += curWeight;
+                    }
+                }
 
-            // Update joint-histogram and BCB when local window is shifted.
-            int fval,gval,*curHist;
+                // Weighted median is found and written to the output image
+                if (curMedianVal != -1)
+                {
+                    if (balanceWeight < 0)
+                        outImg.ptr<int>(y, x)[0] = curMedianVal + 1;
+                    else
+                        outImg.ptr<int>(y, x)[0] = curMedianVal;
+                }
 
-            // Add entering pixels into joint-histogram and BCB
-            int rownum = y + r + 1;
-            if(rownum < rows)
-            {
+                int fval, gval, *curHist;
+
+                // Add entering pixels into joint-histogram and BCB
+                int rownum = y + r + 1;
+                if (rownum < rows)
+                {
                     int *inputImgPtr = I.ptr<int>(rownum);
                     int *guideImgPtr = F.ptr<int>(rownum);
                     uchar *maskPtr = mask.ptr<uchar>(rownum);
 
-                    for(int j=downX;j<=upX;j++)
+                    for (int j = downX; j <= upX; j++)
                     {
-                        if(!maskPtr[j])continue;
+                        if (!maskPtr[j]) continue;
 
                         fval = inputImgPtr[j];
                         curHist = H[fval];
                         gval = guideImgPtr[j];
 
-                        // Maintain necklace table of joint-histogram
-                        if(!curHist[gval] && gval)
+                        if (!curHist[gval] && gval)
                         {
                             int *curHf = Hf[fval];
                             int *curHb = Hb[fval];
 
-                            int p1=0,p2=curHf[0];
-                            curHf[gval]=p2;
-                            curHb[gval]=p1;
-                            curHf[p1]=curHb[p2]=gval;
+                            int p1 = 0, p2 = curHf[0];
+                            curHf[gval] = p2;
+                            curHb[gval] = p1;
+                            curHf[p1] = curHb[p2] = gval;
                         }
 
                         curHist[gval]++;
-
-                        // Maintain necklace table of BCB
-                        updateBCB(BCB[gval],BCBf,BCBb,gval,((fval <= medianVal)<<1)-1);
+                        updateBCB(BCB[gval], BCBf, BCBb, gval, ((fval <= medianVal) << 1) - 1);
                     }
                 }
 
-
-                // Delete leaving pixels into joint-histogram and BCB
                 rownum = y - r;
-                if(rownum >= 0)
+                if (rownum >= 0)
                 {
-                    int *inputImgPtr = I.ptr<int>(rownum);
-                    int *guideImgPtr = F.ptr<int>(rownum);
-                    uchar *maskPtr = mask.ptr<uchar>(rownum);
+                    int   *inputImgPtr = I.ptr<int>(rownum);
+                    int   *guideImgPtr = F.ptr<int>(rownum);
+                    uchar *maskPtr     = mask.ptr<uchar>(rownum);
 
-                    for(int j=downX;j<=upX;j++)
+                    for (int j = downX; j <= upX; j++)
                     {
-                        if(!maskPtr[j])continue;
+                        if (!maskPtr[j]) continue;
 
                         fval = inputImgPtr[j];
                         curHist = H[fval];
@@ -619,33 +602,29 @@ Mat filterCore(Mat &I, Mat &F, float **wMap, int r=20, int nF=256, int nI=256, M
 
                         curHist[gval]--;
 
-                        // Maintain necklace table of joint-histogram
-                        if(!curHist[gval] && gval)
+                        if (!curHist[gval] && gval)
                         {
                             int *curHf = Hf[fval];
                             int *curHb = Hb[fval];
 
-                            int p1=curHb[gval],p2=curHf[gval];
-                            curHf[p1]=p2;
-                            curHb[p2]=p1;
+                            int p1 = curHb[gval], p2 = curHf[gval];
+                            curHf[p1] = p2;
+                            curHb[p2] = p1;
                         }
 
-                        // Maintain necklace table of BCB
-                        updateBCB(BCB[gval],BCBf,BCBb,gval,-((fval <= medianVal)<<1)+1);
+                        updateBCB(BCB[gval], BCBf, BCBb, gval, -((fval <= medianVal) << 1) + 1);
                     }
                 }
+            }
         }
-    }
 
-    // Deallocate the memory
-    {
         delete []BCB;
         delete []BCBf;
         delete []BCBb;
         int2D_release(H);
         int2D_release(Hf);
         int2D_release(Hb);
-    }
+    }, nstripes);
 
     // end of the function
     return outImg;
