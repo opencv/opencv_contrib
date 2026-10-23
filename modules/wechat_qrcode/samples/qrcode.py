@@ -17,13 +17,11 @@ else:
 # The model is downloaded to ${CMAKE_BINARY_DIR}/downloads/wechat_qrcode if cmake runs without warnings,
 # otherwise you can download them from https://github.com/WeChatCV/opencv_3rdparty/tree/wechat_qrcode.
 try:
-    detector = cv2.wechat_qrcode_WeChatQRCode(
-        "detect.prototxt", "detect.caffemodel", "sr.prototxt", "sr.caffemodel")
+    detector = cv2.wechat_qrcode_WeChatQRCode("detect.onnx", "sr.onnx")
 except:
     print("---------------------------------------------------------------")
     print("Failed to initialize WeChatQRCode.")
-    print("Please, download 'detect.*' and 'sr.*' from")
-    print("https://github.com/WeChatCV/opencv_3rdparty/tree/wechat_qrcode")
+    print("Please, get the ONNX models 'detect.onnx' and 'sr.onnx'")
     print("and put them into the current directory.")
     print("---------------------------------------------------------------")
     exit(0)
