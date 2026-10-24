@@ -12,6 +12,8 @@
 #include "nldiffusion_functions.h"
 #include "utils.h"
 #include "opencl_kernels_xfeatures2d.hpp"
+#include "opencv2/core/hal/intrin.hpp"
+#include "opencv2/core/utils/tls.hpp"
 
 #include <iostream>
 
@@ -21,6 +23,35 @@ namespace cv
 namespace xfeatures2d
 {
 using namespace std;
+
+/**
+ * @brief Runs body(row_begin, row_end) over horizontal stripes of an image in parallel
+ * @note Filters applied to a row range of a Mat read the real neighbouring rows
+ * (no BORDER_ISOLATED), so per-stripe filtering gives exactly the same result as
+ * filtering the whole image at once.
+ */
+template <typename Body>
+static inline void parallel_for_rows(int rows, const Body& body, int min_stripe = 32)
+{
+  const int nstripes = std::max(1, std::min(rows / min_stripe, getNumThreads() * 4));
+  parallel_for_(Range(0, rows), [&](const Range& r) { body(r.start, r.end); }, nstripes);
+}
+
+/**
+ * @brief Returns a CV_32F header of size sz on the memory of buf, growing buf if needed
+ * @note Reusing big temporaries matters: freshly allocated images are mmap'ed and
+ * page-faulted again on every allocation.
+ */
+static inline Mat scratchMat(Mat& buf, Size sz)
+{
+  const int n = sz.area();
+  if ((int)buf.total() < n)
+    buf.create(1, n, CV_32F);
+  return Mat(sz, CV_32F, buf.ptr<float>());
+}
+
+/// Per-thread temporaries for the stripe-parallel stages
+struct ScratchBuffers { Mat buf[4]; };
 
 /* ************************************************************************* */
 /**
@@ -293,6 +324,145 @@ non_linear_diffusion_step(InputArray Lt_, InputArray Lf_, OutputArray Lstep_, fl
 }
 
 /**
+ * @brief Fused FED step for one row: dst = Lt + step_size * Lstep
+ * @details Same arithmetic as nld_step_scalar_one_lane() followed by add(Lt, Lstep),
+ * but in a single pass and without the intermediate Lstep image.
+ * lt_a/lf_a (row above) is NULL for the top row and lt_b/lf_b (row below) is NULL
+ * for the bottom row. dst must not alias the input rows.
+ */
+static inline void
+nld_step_fused_row(const float* lt_a, const float* lt_c, const float* lt_b,
+                   const float* lf_a, const float* lf_c, const float* lf_b,
+                   float* dst, int width, float step_size)
+{
+  const int cols = width - 2;
+  float step_r = 0.f;
+
+  if (!lt_a || !lt_b) {
+    // top or bottom row: the corners are not updated
+    const float *lt_n = lt_a ? lt_a : lt_b, *lf_n = lf_a ? lf_a : lf_b;
+    dst[0] = lt_c[0] + 0.0f;
+    for (int j = 1; j <= cols; j++) {
+      step_r = (lf_c[j] + lf_c[j + 1])*(lt_c[j + 1] - lt_c[j]) +
+               (lf_c[j] + lf_c[j - 1])*(lt_c[j - 1] - lt_c[j]) +
+               (lf_c[j] + lf_n[j    ])*(lt_n[j    ] - lt_c[j]);
+      dst[j] = lt_c[j] + step_r * step_size;
+    }
+    dst[cols + 1] = lt_c[cols + 1] + 0.0f;
+    return;
+  }
+
+  // The left-most column
+  step_r = (lf_c[0] + lf_c[1])*(lt_c[1] - lt_c[0]) +
+           (lf_c[0] + lf_b[0])*(lt_b[0] - lt_c[0]) +
+           (lf_c[0] + lf_a[0])*(lt_a[0] - lt_c[0]);
+  dst[0] = lt_c[0] + step_r * step_size;
+
+  // The middle columns
+  int j = 1;
+#if (CV_SIMD || CV_SIMD_SCALABLE)
+  const int vlanes = VTraits<v_float32>::vlanes();
+  const v_float32 vstep = vx_setall_f32(step_size);
+  for (; j <= cols + 1 - vlanes; j += vlanes)
+  {
+    v_float32 c_t = vx_load(lt_c + j), c_f = vx_load(lf_c + j);
+    v_float32 r = v_mul(v_add(c_f, vx_load(lf_c + j + 1)), v_sub(vx_load(lt_c + j + 1), c_t));
+    r = v_add(r, v_mul(v_add(c_f, vx_load(lf_c + j - 1)), v_sub(vx_load(lt_c + j - 1), c_t)));
+    r = v_add(r, v_mul(v_add(c_f, vx_load(lf_b + j)), v_sub(vx_load(lt_b + j), c_t)));
+    r = v_add(r, v_mul(v_add(c_f, vx_load(lf_a + j)), v_sub(vx_load(lt_a + j), c_t)));
+    v_store(dst + j, v_add(c_t, v_mul(r, vstep)));
+  }
+#endif
+  for (; j <= cols; j++)
+  {
+    step_r = (lf_c[j] + lf_c[j + 1])*(lt_c[j + 1] - lt_c[j]) +
+             (lf_c[j] + lf_c[j - 1])*(lt_c[j - 1] - lt_c[j]) +
+             (lf_c[j] + lf_b[j    ])*(lt_b[j    ] - lt_c[j]) +
+             (lf_c[j] + lf_a[j    ])*(lt_a[j    ] - lt_c[j]);
+    dst[j] = lt_c[j] + step_r * step_size;
+  }
+
+  // The right-most column
+  const int r = cols + 1;
+  step_r = (lf_c[r] + lf_c[r - 1])*(lt_c[r - 1] - lt_c[r]) +
+           (lf_c[r] + lf_b[r    ])*(lt_b[r    ] - lt_c[r]) +
+           (lf_c[r] + lf_a[r    ])*(lt_a[r    ] - lt_c[r]);
+  dst[r] = lt_c[r] + step_r * step_size;
+}
+
+/**
+ * @brief Performs all the FED steps of one evolution level: Lout = FED(Lstart)
+ * @details Big images are processed in row stripes; each stripe runs all the steps
+ * while it is in cache (temporal blocking), recomputing a halo of one row per
+ * remaining step. Small images (already in cache, but with many steps) are processed
+ * step by step, each step in parallel. Every pixel is computed exactly as in the
+ * original step-by-step scheme.
+ */
+static void
+fed_cycle(const Mat& Lstart, const Mat& Lflow, const std::vector<float>& tsteps, Mat& Lout,
+          TLSData<ScratchBuffers>& scratch, Mat* tmp_buf)
+{
+  CV_INSTRUMENT_REGION();
+
+  const int rows = Lstart.rows, cols = Lstart.cols;
+  const int nsteps = (int)tsteps.size();
+  CV_Assert(nsteps > 0 && rows >= 2 && cols >= 2);
+  Lout.create(Lstart.size(), CV_32F);
+
+  // Stripe height: the halo costs nsteps*(nsteps-1) extra rows per stripe, keep it below ~50%
+  const int min_rows = std::max(32, 2 * nsteps * (nsteps - 1));
+  const int nstripes = std::max(1, std::min(rows / min_rows, std::max(getNumThreads() * 4, rows / 64)));
+  const size_t level_bytes = (size_t)rows * cols * sizeof(float);
+  if (level_bytes < ((size_t)1 << 21) || (nstripes < getNumThreads() && nstripes < 8)) {
+    Mat src = Lstart;
+    for (int s = 0; s < nsteps; s++) {
+      const float step_size = tsteps[s] * 0.5f;
+      Mat dst = s == nsteps - 1 ? Lout : scratchMat(tmp_buf[s & 1], Lstart.size());
+      parallel_for_rows(rows, [&](int y0, int y1) {
+        for (int y = y0; y < y1; y++)
+          nld_step_fused_row(y > 0 ? src.ptr<float>(y - 1) : NULL, src.ptr<float>(y),
+                             y < rows - 1 ? src.ptr<float>(y + 1) : NULL,
+                             y > 0 ? Lflow.ptr<float>(y - 1) : NULL, Lflow.ptr<float>(y),
+                             y < rows - 1 ? Lflow.ptr<float>(y + 1) : NULL,
+                             dst.ptr<float>(y), cols, step_size);
+      }, 8);
+      src = dst;
+    }
+    return;
+  }
+
+  parallel_for_(Range(0, nstripes), [&](const Range& range) {
+    ScratchBuffers *sb = scratch.get();
+    for (int t = range.start; t < range.end; t++) {
+      const int r0 = t * rows / nstripes, r1 = (t + 1) * rows / nstripes;
+      // rows [b0, b1) of the intermediate results are kept in the stripe buffers
+      const int b0 = std::max(0, r0 - nsteps), b1 = std::min(rows, r1 + nsteps);
+      Mat buf[2] = { scratchMat(sb->buf[0], Size(cols, b1 - b0)), scratchMat(sb->buf[1], Size(cols, b1 - b0)) };
+
+      for (int s = 0; s < nsteps; s++) {
+        const float step_size = tsteps[s] * 0.5f;
+        const Mat &src = s == 0 ? Lstart : buf[(s - 1) & 1];
+        const int src_ofs = s == 0 ? 0 : b0;
+        Mat &dst = s == nsteps - 1 ? Lout : buf[s & 1];
+        const int dst_ofs = s == nsteps - 1 ? 0 : b0;
+        // rows still needed by the remaining steps
+        const int lo = std::max(0, r0 - (nsteps - 1 - s)), hi = std::min(rows, r1 + (nsteps - 1 - s));
+        for (int y = lo; y < hi; y++) {
+          nld_step_fused_row(
+            y > 0 ? src.ptr<float>(y - 1 - src_ofs) : NULL,
+            src.ptr<float>(y - src_ofs),
+            y < rows - 1 ? src.ptr<float>(y + 1 - src_ofs) : NULL,
+            y > 0 ? Lflow.ptr<float>(y - 1) : NULL,
+            Lflow.ptr<float>(y),
+            y < rows - 1 ? Lflow.ptr<float>(y + 1) : NULL,
+            dst.ptr<float>(y - dst_ofs), cols, step_size);
+        }
+      }
+    }
+  }, nstripes);
+}
+
+/**
  * @brief This function computes a good empirical value for the k contrast factor
  * given two gradient images, the percentile (0-1), the temporal storage to hold
  * gradient norms and the histogram bins
@@ -520,6 +690,10 @@ convertScalePyramid(const std::vector<Evolution<MatTypeSrc> >& src, std::vector<
  * @brief This method creates the nonlinear scale space for a given image
  * @param image Input image for which the nonlinear scale space needs to be created
  */
+static void
+create_nonlinear_scale_space_cpu(InputArray image, const AKAZEOptions &options,
+  const std::vector<std::vector<float > > &tsteps_evolution, Pyramid &evolution);
+
 void AKAZEFeatures::Create_Nonlinear_Scale_Space(InputArray image)
 {
   if (ocl::isOpenCLActivated() && image.isUMat()) {
@@ -532,7 +706,7 @@ void AKAZEFeatures::Create_Nonlinear_Scale_Space(InputArray image)
     convertScalePyramid(uPyr, evolution_);
   } else {
     // CPU version
-    create_nonlinear_scale_space(image, options_, tsteps_, evolution_);
+    create_nonlinear_scale_space_cpu(image, options_, tsteps_, evolution_);
   }
 }
 
@@ -656,15 +830,355 @@ Compute_Determinant_Hessian_Response(UMatPyramid &evolution) {
 }
 
 /**
- * @brief This method computes the feature detector response for the nonlinear scale space
- * @details CPU version
- * @note We use the Hessian determinant as the feature detector response
+ * @brief One row of the multiscale derivative filters, exploiting their sparsity
+ * @details For scale > 1 the kernels of compute_derivative_kernels() have only three
+ * non-zero taps, at -scale, 0 and +scale. With deriv_x the result is
+ * sepFilter2D(src, DxKx, DxKy) (difference along x, smoothing along y), otherwise
+ * sepFilter2D(src, DyKx, DyKy). Border: BORDER_REFLECT_101, as sepFilter2D.
+ * @note Not bit-exact with sepFilter2D: the sums are done in a different order.
+ * @param buf temporary of at least src.cols + 2*scale floats
  */
-static inline void
-Compute_Determinant_Hessian_Response(Pyramid &evolution) {
-  CV_INSTRUMENT_REGION();
+static void
+sparse_derivative_row(const Mat& src, int y, bool deriv_x, int scale, float* buf, float* dst)
+{
+  const float w = 10.0f / 3.0f;
+  const float a = 1.0f / (2.0f * scale * (w + 2.0f)), b = w * a;
+  const int rows = src.rows, cols = src.cols;
+  const float *up = src.ptr<float>(borderInterpolate(y - scale, rows, BORDER_REFLECT_101));
+  const float *c = src.ptr<float>(y);
+  const float *dn = src.ptr<float>(borderInterpolate(y + scale, rows, BORDER_REFLECT_101));
+  float *v = buf + scale;
 
-  parallel_for_(Range(0, (int)evolution.size()), DeterminantHessianResponse<Mat>(evolution));
+  // vertical pass
+  if (deriv_x)
+    for (int x = 0; x < cols; x++)
+      v[x] = a * (up[x] + dn[x]) + b * c[x];
+  else
+    for (int x = 0; x < cols; x++)
+      v[x] = dn[x] - up[x];
+
+  // horizontal border
+  for (int k = 1; k <= scale; k++) {
+    v[-k] = v[borderInterpolate(-k, cols, BORDER_REFLECT_101)];
+    v[cols - 1 + k] = v[borderInterpolate(cols - 1 + k, cols, BORDER_REFLECT_101)];
+  }
+
+  // horizontal pass
+  if (deriv_x)
+    for (int x = 0; x < cols; x++)
+      dst[x] = v[x + scale] - v[x - scale];
+  else
+    for (int x = 0; x < cols; x++)
+      dst[x] = a * (v[x - scale] + v[x + scale]) + b * v[x];
+}
+
+/**
+ * @brief Computes the multiscale first derivatives Lx, Ly of one level from its smoothed image
+ * @details Same filters as DeterminantHessianResponse<Mat>, in parallel over row stripes.
+ */
+static void
+hessian_first_derivatives(MEvolution &e, const Mat &Lsmooth)
+{
+  Mat DxKx, DxKy, DyKx, DyKy;
+  compute_derivative_kernels(DxKx, DxKy, 1, 0, e.sigma_size);
+  compute_derivative_kernels(DyKx, DyKy, 0, 1, e.sigma_size);
+  e.Lx.create(Lsmooth.size(), CV_32F);
+  e.Ly.create(Lsmooth.size(), CV_32F);
+  if (e.sigma_size > 1) {
+    const int scale = e.sigma_size;
+    parallel_for_rows(Lsmooth.rows, [&](int r0, int r1) {
+      std::vector<float> buf(Lsmooth.cols + 2 * scale);
+      for (int y = r0; y < r1; y++) {
+        sparse_derivative_row(Lsmooth, y, true, scale, buf.data(), e.Lx.ptr<float>(y));
+        sparse_derivative_row(Lsmooth, y, false, scale, buf.data(), e.Ly.ptr<float>(y));
+      }
+    });
+    return;
+  }
+  parallel_for_rows(Lsmooth.rows, [&](int r0, int r1) {
+    const Mat src = Lsmooth.rowRange(r0, r1);
+    Mat Lx = e.Lx.rowRange(r0, r1);
+    Mat Ly = e.Ly.rowRange(r0, r1);
+    sepFilter2D(src, Lx, CV_32F, DxKx, DxKy);
+    sepFilter2D(src, Ly, CV_32F, DyKx, DyKy);
+  });
+}
+
+/**
+ * @brief Computes the detector response Ldet of all levels from their first derivatives
+ * @note We use the Hessian determinant as the feature detector response
+ * @details Same filters as DeterminantHessianResponse<Mat>, but the work is split into
+ * row stripes of all levels, so the large levels of the first octave do not serialize
+ * the computation. The second derivatives are stripe-local temporaries.
+ */
+static void
+hessian_determinants(Pyramid &evolution)
+{
+  struct Stripe { int level, row_begin, row_end; };
+  const int nlevels = (int)evolution.size();
+  std::vector<Mat> DxKx(nlevels), DxKy(nlevels), DyKx(nlevels), DyKy(nlevels);
+  std::vector<Stripe> stripes;
+  const int stripe_rows = 64;
+  for (int i = 0; i < nlevels; i++) {
+    MEvolution &e = evolution[i];
+    CV_Assert(!e.Lx.empty() && !e.Ly.empty());
+    compute_derivative_kernels(DxKx[i], DxKy[i], 1, 0, e.sigma_size);
+    compute_derivative_kernels(DyKx[i], DyKy[i], 0, 1, e.sigma_size);
+    e.Ldet.create(e.Lx.size(), CV_32F);
+    const int rows = e.Lx.rows;
+    const int n = std::max(1, rows / stripe_rows);
+    for (int k = 0; k < n; k++)
+      stripes.push_back({i, k * rows / n, (k + 1) * rows / n});
+  }
+  // biggest stripes first for better load balance
+  std::stable_sort(stripes.begin(), stripes.end(), [&](const Stripe& a, const Stripe& b) {
+    return (size_t)(a.row_end - a.row_begin) * evolution[a.level].Lx.cols >
+           (size_t)(b.row_end - b.row_begin) * evolution[b.level].Lx.cols;
+  });
+
+  TLSData<ScratchBuffers> scratch;
+  parallel_for_(Range(0, (int)stripes.size()), [&](const Range& range) {
+    ScratchBuffers *sb = scratch.get();
+    for (int s = range.start; s < range.end; s++) {
+      const Stripe &st = stripes[s];
+      MEvolution &e = evolution[st.level];
+      const Size sz(e.Lx.cols, st.row_end - st.row_begin);
+      Mat Lxx = scratchMat(sb->buf[0], sz), Lxy = scratchMat(sb->buf[1], sz), Lyy = scratchMat(sb->buf[2], sz);
+      if (e.sigma_size > 1) {
+        const int scale = e.sigma_size;
+        float *buf = scratchMat(sb->buf[3], Size(e.Lx.cols + 2 * scale, 1)).ptr<float>();
+        for (int y = st.row_begin; y < st.row_end; y++) {
+          sparse_derivative_row(e.Lx, y, true, scale, buf, Lxx.ptr<float>(y - st.row_begin));
+          sparse_derivative_row(e.Lx, y, false, scale, buf, Lxy.ptr<float>(y - st.row_begin));
+          sparse_derivative_row(e.Ly, y, false, scale, buf, Lyy.ptr<float>(y - st.row_begin));
+        }
+      }
+      else {
+        const Mat Lx = e.Lx.rowRange(st.row_begin, st.row_end);
+        const Mat Ly = e.Ly.rowRange(st.row_begin, st.row_end);
+        sepFilter2D(Lx, Lxx, CV_32F, DxKx[st.level], DxKy[st.level]);
+        sepFilter2D(Lx, Lxy, CV_32F, DyKx[st.level], DyKy[st.level]);
+        sepFilter2D(Ly, Lyy, CV_32F, DyKx[st.level], DyKy[st.level]);
+      }
+
+      // determinant scaled by sigma, as compute_determinant()
+      const float sigma = (float)(e.sigma_size * e.sigma_size * e.sigma_size * e.sigma_size);
+      const int cols = Lxx.cols;
+      for (int y = 0; y < Lxx.rows; y++) {
+        const float *lxx = Lxx.ptr<float>(y), *lxy = Lxy.ptr<float>(y), *lyy = Lyy.ptr<float>(y);
+        float *ldet = e.Ldet.ptr<float>(st.row_begin + y);
+        int x = 0;
+#if (CV_SIMD || CV_SIMD_SCALABLE)
+        const int vlanes = VTraits<v_float32>::vlanes();
+        const v_float32 vsigma = vx_setall_f32(sigma);
+        for (; x <= cols - vlanes; x += vlanes) {
+          v_float32 vxy = vx_load(lxy + x);
+          v_store(ldet + x, v_mul(v_sub(v_mul(vx_load(lxx + x), vx_load(lyy + x)), v_mul(vxy, vxy)), vsigma));
+        }
+#endif
+        for (; x < cols; x++)
+          ldet[x] = (lxx[x] * lyy[x] - lxy[x] * lxy[x]) * sigma;
+      }
+    }
+  }, (double)stripes.size());
+}
+
+/**
+ * @brief Parallel version of compute_kcontrast() working directly on the input image
+ * @details Smooths the image, computes Scharr gradients and their histogram per
+ * row stripe; gives the same result as the sequential version.
+ */
+static float
+compute_kcontrast_parallel(const Mat& img, float perc, int nbins, Mat& buf0, Mat& buf1)
+{
+  CV_INSTRUMENT_REGION();
+  CV_Assert(nbins > 2);
+  CV_Assert(!img.empty());
+
+  Mat Lsmooth = scratchMat(buf0, img.size());
+  parallel_for_rows(img.rows, [&](int r0, int r1) {
+    Mat dst = Lsmooth.rowRange(r0, r1);
+    GaussianBlur(img.rowRange(r0, r1), dst, Size(5, 5), 1.0f, 1.0f, BORDER_REPLICATE);
+  });
+
+  // square roots of dot product of the inner pixels
+  if (img.rows <= 2 || img.cols <= 2)
+    return 0.03f;
+  Mat modgs = scratchMat(buf1, Size(img.cols - 2, img.rows - 2));
+  Mutex mtx;
+  float hmax = 0.0f;
+  TLSData<ScratchBuffers> scratch;
+  parallel_for_rows(modgs.rows, [&](int r0, int r1) {
+    ScratchBuffers *sb = scratch.get();
+    Mat Lx = scratchMat(sb->buf[0], Size(img.cols, r1 - r0));
+    Mat Ly = scratchMat(sb->buf[1], Size(img.cols, r1 - r0));
+    const Mat src = Lsmooth.rowRange(r0 + 1, r1 + 1);
+    Scharr(src, Lx, CV_32F, 1, 0, 1, 0, BORDER_DEFAULT);
+    Scharr(src, Ly, CV_32F, 0, 1, 1, 0, BORDER_DEFAULT);
+    float lmax = 0.0f;
+    const int cols = modgs.cols;
+    for (int i = 0; i < r1 - r0; i++) {
+      const float *lx = Lx.ptr<float>(i) + 1;
+      const float *ly = Ly.ptr<float>(i) + 1;
+      float *modg = modgs.ptr<float>(r0 + i);
+      int j = 0;
+#if (CV_SIMD || CV_SIMD_SCALABLE)
+      const int vlanes = VTraits<v_float32>::vlanes();
+      v_float32 vmax = vx_setzero_f32();
+      for (; j <= cols - vlanes; j += vlanes) {
+        v_float32 x = vx_load(lx + j), y = vx_load(ly + j);
+        v_float32 d = v_sqrt(v_add(v_mul(x, x), v_mul(y, y)));
+        v_store(modg + j, d);
+        vmax = v_max(vmax, d);
+      }
+      lmax = std::max(lmax, v_reduce_max(vmax));
+#endif
+      for (; j < cols; j++) {
+        float dist = sqrtf(lx[j] * lx[j] + ly[j] * ly[j]);
+        modg[j] = dist;
+        lmax = std::max(lmax, dist);
+      }
+    }
+    AutoLock lock(mtx);
+    hmax = std::max(hmax, lmax);
+  });
+
+  if (hmax == 0.0f)
+    return 0.03f;  // e.g. a blank image
+
+  // Compute the bin numbers: the value range [0, hmax] -> [0, nbins-1] and count up histogram
+  std::vector<int> hist(nbins, 0);
+  parallel_for_rows(modgs.rows, [&](int r0, int r1) {
+    Mat m = modgs.rowRange(r0, r1);
+    m *= (nbins - 1) / hmax;
+    std::vector<int> lhist(nbins, 0);
+    for (int i = 0; i < m.rows; i++) {
+      const float *modg = m.ptr<float>(i);
+      for (int j = 0; j < m.cols; j++)
+        lhist[(int)modg[j]]++;
+    }
+    AutoLock lock(mtx);
+    for (int k = 0; k < nbins; k++)
+      hist[k] += lhist[k];
+  });
+
+  // Now find the perc of the histogram percentile
+  const int total = modgs.cols * modgs.rows;
+  const int nthreshold = (int)((total - hist[0]) * perc);  // Exclude hist[0] as background
+  int nelements = 0;
+  for (int k = 1; k < nbins; k++) {
+    if (nelements >= nthreshold)
+        return (float)hmax * k / nbins;
+
+    nelements += hist[k];
+  }
+
+  return 0.03f;
+}
+
+/**
+ * @brief CPU version of create_nonlinear_scale_space()
+ * @details Produces the same pyramid, but every filtering stage runs in parallel
+ * over row stripes, Scharr derivatives are fused with the diffusivity, and the
+ * FED steps are fused with the update (no Lstep image, no copies of Lt).
+ */
+static void
+create_nonlinear_scale_space_cpu(InputArray image, const AKAZEOptions &options,
+  const std::vector<std::vector<float > > &tsteps_evolution, Pyramid &evolution)
+{
+  CV_INSTRUMENT_REGION();
+  CV_Assert(evolution.size() > 0);
+
+  // convert input to grayscale float image if needed
+  Mat img;
+  {
+    Mat gray = image.getMat();
+    if (gray.channels() > 1)
+      cvtColor(gray, gray, COLOR_BGR2GRAY);
+    if (gray.depth() == CV_8U || gray.depth() == CV_16U) {
+      const double scale = gray.depth() == CV_8U ? 1.0 / 255.0 : 1.0 / 65535.0;
+      img.create(gray.size(), CV_32F);
+      parallel_for_rows(gray.rows, [&](int r0, int r1) {
+        Mat dst = img.rowRange(r0, r1);
+        gray.rowRange(r0, r1).convertTo(dst, CV_32F, scale, 0);
+      });
+    }
+    else {
+      prepareInputImage(gray, img);
+    }
+  }
+
+  // create first level of the evolution
+  MEvolution &e0 = evolution[0];
+  const int ksize = getGaussianKernelSize(options.soffset);
+  // Lt of the first level is its smoothed image (it is never modified)
+  e0.Lt.create(img.size(), CV_32F);
+  parallel_for_rows(img.rows, [&](int r0, int r1) {
+    Mat dst = e0.Lt.rowRange(r0, r1);
+    GaussianBlur(img.rowRange(r0, r1), dst, Size(ksize, ksize), options.soffset, options.soffset, BORDER_REPLICATE);
+  });
+  // The first derivatives of each level are computed as soon as its smoothed image
+  // is ready, so the smoothed images need not be kept in the pyramid
+  hessian_first_derivatives(e0, e0.Lt);
+
+  if (evolution.size() == 1) {
+    // we don't need to compute kcontrast factor
+    hessian_determinants(evolution);
+    return;
+  }
+
+  // compute the kcontrast factor
+  // buffers reused by all levels (the first level is the biggest one)
+  Mat Lflow_buf, Ltmp_buf[2], Lsmooth_buf;
+  float kcontrast = compute_kcontrast_parallel(img, options.kcontrast_percentile, options.kcontrast_nbins,
+                                               Ltmp_buf[0], Ltmp_buf[1]);
+  img.release();
+  TLSData<ScratchBuffers> scratch;
+
+  // Now generate the rest of evolution levels
+  for (size_t i = 1; i < evolution.size(); i++) {
+    MEvolution &e = evolution[i];
+    const int rows = e.size.height;
+
+    // Lt before diffusion: the previous level, or half of it on a new octave
+    Mat Lstart;
+    if (e.octave > evolution[i - 1].octave) {
+      resize(evolution[i - 1].Lt, Lstart, e.size, 0, 0, INTER_AREA);
+      kcontrast *= 0.75f;
+    }
+    else {
+      Lstart = evolution[i - 1].Lt;
+    }
+
+    Mat Lsmooth = scratchMat(Lsmooth_buf, e.size);
+    parallel_for_rows(rows, [&](int r0, int r1) {
+      Mat dst = Lsmooth.rowRange(r0, r1);
+      GaussianBlur(Lstart.rowRange(r0, r1), dst, Size(5, 5), 1.0f, 1.0f, BORDER_REPLICATE);
+    });
+
+    // Compute the Gaussian derivatives Lx and Ly and the conductivity equation
+    Mat Lflow = scratchMat(Lflow_buf, e.size);
+    parallel_for_rows(rows, [&](int r0, int r1) {
+      ScratchBuffers *sb = scratch.get();
+      Mat Lx = scratchMat(sb->buf[0], Size(e.size.width, r1 - r0));
+      Mat Ly = scratchMat(sb->buf[1], Size(e.size.width, r1 - r0));
+      const Mat src = Lsmooth.rowRange(r0, r1);
+      Scharr(src, Lx, CV_32F, 1, 0, 1.0, 0, BORDER_DEFAULT);
+      Scharr(src, Ly, CV_32F, 0, 1, 1.0, 0, BORDER_DEFAULT);
+      Mat dst = Lflow.rowRange(r0, r1);
+      compute_diffusivity(Lx, Ly, dst, kcontrast, options.diffusivity);
+    });
+    hessian_first_derivatives(e, Lsmooth);
+
+    // Perform Fast Explicit Diffusion on Lt
+    const std::vector<float> &tsteps = tsteps_evolution[i - 1];
+    if (tsteps.empty())
+      e.Lt = Lstart.clone();
+    else
+      fed_cycle(Lstart, Lflow, tsteps, e.Lt, scratch, Ltmp_buf);
+  }
+
+  hessian_determinants(evolution);
 }
 
 /* ************************************************************************* */
@@ -679,8 +1193,9 @@ void AKAZEFeatures::Feature_Detection(std::vector<KeyPoint>& kpts)
 
   kpts.clear();
   std::vector<Mat> keypoints_by_layers;
-  Find_Scale_Space_Extrema(keypoints_by_layers);
-  Do_Subpixel_Refinement(keypoints_by_layers, kpts);
+  std::vector<std::vector<int> > candidates_by_layers;
+  Find_Scale_Space_Extrema(keypoints_by_layers, candidates_by_layers);
+  Do_Subpixel_Refinement(keypoints_by_layers, candidates_by_layers, kpts);
   Compute_Keypoints_Orientation(kpts);
 }
 
@@ -723,8 +1238,8 @@ class FindKeypointsSameScale : public ParallelLoopBody
 {
 public:
     explicit FindKeypointsSameScale(const Pyramid& ev,
-      std::vector<Mat>& kpts, float dthreshold)
-    : evolution_(&ev), keypoints_by_layers_(&kpts), dthreshold_(dthreshold)
+      std::vector<Mat>& kpts, std::vector<std::vector<int> >& candidates, float dthreshold)
+    : evolution_(&ev), keypoints_by_layers_(&kpts), candidates_by_layers_(&candidates), dthreshold_(dthreshold)
   {}
 
   void operator()(const Range& range) const CV_OVERRIDE
@@ -733,6 +1248,8 @@ public:
     {
       const MEvolution &e = (*evolution_)[i];
       Mat &kpts = (*keypoints_by_layers_)[i];
+      std::vector<int> &candidates = (*candidates_by_layers_)[i];
+      candidates.clear();
       // this mask will hold positions of keypoints in this level
       kpts = Mat::zeros(e.Ldet.size(), CV_8UC1);
 
@@ -772,57 +1289,83 @@ public:
           }
 
           kpts.at<uchar>(y, x) = 1; // we have a new keypoint
+          candidates.push_back(y * e.Ldet.cols + x);
         }
 
         prev = curr;
         curr = next;
         next += e.Ldet.cols;
       }
+
+      // keep the positions (in raster order) of the keypoints that survived
+      candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
+                                      [mask](int idx) { return mask[idx] == 0; }),
+                       candidates.end());
     }
   }
 
 private:
   const Pyramid*  evolution_;
   std::vector<Mat>* keypoints_by_layers_;
+  std::vector<std::vector<int> >* candidates_by_layers_;
   float dthreshold_; ///< Detector response threshold to accept point
 };
 
 /**
- * @brief This method finds extrema in the nonlinear scale space
- * @param keypoints_by_layers Output vectors of detected keypoints; one vector for each evolution level
+ * @brief Keeps the candidates whose position is still set in the mask
  */
-void AKAZEFeatures::Find_Scale_Space_Extrema(std::vector<Mat>& keypoints_by_layers)
+static inline void
+filter_candidates(const std::vector<int>& candidates, const Mat& mask, std::vector<int>& dst)
+{
+  const uchar *m = mask.ptr<uchar>();
+  dst.clear();
+  for (size_t k = 0; k < candidates.size(); k++)
+    if (m[candidates[k]])
+      dst.push_back(candidates[k]);
+}
+
+/**
+ * @brief This method finds extrema in the nonlinear scale space
+ * @param keypoints_by_layers Output masks of detected keypoints; one mask for each evolution level
+ * @param candidates_by_layers Output positions of the keypoints in raster order; one vector for each evolution level
+ * @details The comparisons between adjacent levels are done in parallel. This is
+ * equivalent to the sequential sweeps: in the upward sweep the step for level i only
+ * reads/writes the mask of level i-1 and iterates the keypoints of level i, which
+ * are not modified before this step (only step i+1 modifies them). The same holds
+ * for the downward sweep, iterating over the keypoints that survived the upward sweep.
+ */
+void AKAZEFeatures::Find_Scale_Space_Extrema(std::vector<Mat>& keypoints_by_layers,
+                                             std::vector<std::vector<int> >& candidates_by_layers)
 {
   CV_INSTRUMENT_REGION();
 
-  keypoints_by_layers.resize(evolution_.size());
+  const int nlevels = (int)evolution_.size();
+  keypoints_by_layers.resize(nlevels);
+  candidates_by_layers.resize(nlevels);
 
   // find points in the same level
-  parallel_for_(Range(0, (int)evolution_.size()),
-    FindKeypointsSameScale(evolution_, keypoints_by_layers, options_.dthreshold));
+  parallel_for_(Range(0, nlevels),
+    FindKeypointsSameScale(evolution_, keypoints_by_layers, candidates_by_layers, options_.dthreshold));
 
   // Filter points with the lower scale level
-  for (size_t i = 1; i < keypoints_by_layers.size(); i++) {
-    // constants for this level
-    const Mat &keypoints = keypoints_by_layers[i];
-    const uchar *const kpts = keypoints_by_layers[i].ptr<uchar>();
-    uchar *const kpts_prev = keypoints_by_layers[i-1].ptr<uchar>();
-    const float *const ldet = evolution_[i].Ldet.ptr<float>();
-    const float *const ldet_prev = evolution_[i-1].Ldet.ptr<float>();
-    // ratios are just powers of 2
-    const int diff_ratio = (int)evolution_[i].octave_ratio / (int)evolution_[i-1].octave_ratio;
-    const int search_radius = evolution_[i].sigma_size * diff_ratio; // size of keypoint in this level
+  parallel_for_(Range(1, nlevels), [&](const Range& range) {
+    for (int i = range.start; i < range.end; i++) {
+      // constants for this level
+      const std::vector<int> &candidates = candidates_by_layers[i];
+      const int cols = keypoints_by_layers[i].cols;
+      uchar *const kpts_prev = keypoints_by_layers[i-1].ptr<uchar>();
+      const float *const ldet = evolution_[i].Ldet.ptr<float>();
+      const float *const ldet_prev = evolution_[i-1].Ldet.ptr<float>();
+      // ratios are just powers of 2
+      const int diff_ratio = (int)evolution_[i].octave_ratio / (int)evolution_[i-1].octave_ratio;
+      const int search_radius = evolution_[i].sigma_size * diff_ratio; // size of keypoint in this level
 
-    size_t j = 0;
-    for (int y = 0; y < keypoints.rows; y++) {
-      for (int x = 0; x < keypoints.cols; x++, j++) {
-        if (kpts[j] == 0) {
-          continue; // skip non-keypoints
-        }
+      for (size_t k = 0; k < candidates.size(); k++) {
+        const int j = candidates[k];
         int idx = 0;
         // project point to lower scale layer
-        const int p_x = x * diff_ratio;
-        const int p_y = y * diff_ratio;
+        const int p_x = (j % cols) * diff_ratio;
+        const int p_y = (j / cols) * diff_ratio;
         if (find_neighbor_point(p_x, p_y, keypoints_by_layers[i-1], search_radius, idx)) {
           if (ldet[j] > ldet_prev[idx]) {
             kpts_prev[idx] = 0;  // clear keypoint in lower layer
@@ -831,30 +1374,34 @@ void AKAZEFeatures::Find_Scale_Space_Extrema(std::vector<Mat>& keypoints_by_laye
         }
       }
     }
-  }
+  });
+
+  // Keypoints that survived the upward sweep
+  std::vector<std::vector<int> > survivors(nlevels);
+  parallel_for_(Range(0, nlevels), [&](const Range& range) {
+    for (int i = range.start; i < range.end; i++)
+      filter_candidates(candidates_by_layers[i], keypoints_by_layers[i], survivors[i]);
+  });
 
   // Now filter points with the upper scale level (the other direction)
-  for (int i = (int)keypoints_by_layers.size() - 2; i >= 0; i--) {
-    // constants for this level
-    const Mat &keypoints = keypoints_by_layers[i];
-    const uchar *const kpts = keypoints_by_layers[i].ptr<uchar>();
-    uchar *const kpts_next = keypoints_by_layers[i+1].ptr<uchar>();
-    const float *const ldet = evolution_[i].Ldet.ptr<float>();
-    const float *const ldet_next = evolution_[i+1].Ldet.ptr<float>();
-    // ratios are just powers of 2, i+1 ratio is always greater or equal to i
-    const int diff_ratio = (int)evolution_[i+1].octave_ratio / (int)evolution_[i].octave_ratio;
-    const int search_radius = evolution_[i+1].sigma_size; // size of keypoints in upper level
+  parallel_for_(Range(0, nlevels - 1), [&](const Range& range) {
+    for (int i = range.start; i < range.end; i++) {
+      // constants for this level
+      const std::vector<int> &candidates = survivors[i];
+      const int cols = keypoints_by_layers[i].cols;
+      uchar *const kpts_next = keypoints_by_layers[i+1].ptr<uchar>();
+      const float *const ldet = evolution_[i].Ldet.ptr<float>();
+      const float *const ldet_next = evolution_[i+1].Ldet.ptr<float>();
+      // ratios are just powers of 2, i+1 ratio is always greater or equal to i
+      const int diff_ratio = (int)evolution_[i+1].octave_ratio / (int)evolution_[i].octave_ratio;
+      const int search_radius = evolution_[i+1].sigma_size; // size of keypoints in upper level
 
-    size_t j = 0;
-    for (int y = 0; y < keypoints.rows; y++) {
-      for (int x = 0; x < keypoints.cols; x++, j++) {
-        if (kpts[j] == 0) {
-          continue; // skip non-keypoints
-        }
+      for (size_t k = 0; k < candidates.size(); k++) {
+        const int j = candidates[k];
         int idx = 0;
         // project point to upper scale layer
-        const int p_x = x / diff_ratio;
-        const int p_y = y / diff_ratio;
+        const int p_x = (j % cols) / diff_ratio;
+        const int p_y = (j / cols) / diff_ratio;
         if (find_neighbor_point(p_x, p_y, keypoints_by_layers[i+1], search_radius, idx)) {
           if (ldet[j] > ldet_next[idx]) {
             kpts_next[idx] = 0;  // clear keypoint in upper layer
@@ -862,34 +1409,45 @@ void AKAZEFeatures::Find_Scale_Space_Extrema(std::vector<Mat>& keypoints_by_laye
         }
       }
     }
-  }
+  });
+
+  // Final keypoints of each level
+  parallel_for_(Range(0, nlevels), [&](const Range& range) {
+    for (int i = range.start; i < range.end; i++)
+      filter_candidates(survivors[i], keypoints_by_layers[i], candidates_by_layers[i]);
+  });
 }
 
 /* ************************************************************************* */
 /**
  * @brief This method performs subpixel refinement of the detected keypoints
- * @param keypoints_by_layers Input vectors of detected keypoints, sorted by evolution levels
+ * @param keypoints_by_layers Input masks of detected keypoints, sorted by evolution levels
+ * @param candidates_by_layers Input positions of the detected keypoints, sorted by evolution levels
  * @param kpts Output vector of the final refined keypoints
  */
 void AKAZEFeatures::Do_Subpixel_Refinement(
-  std::vector<Mat>& keypoints_by_layers, std::vector<KeyPoint>& output_keypoints)
+  std::vector<Mat>& keypoints_by_layers, std::vector<std::vector<int> >& candidates_by_layers,
+  std::vector<KeyPoint>& output_keypoints)
 {
   CV_INSTRUMENT_REGION();
 
-  for (size_t i = 0; i < keypoints_by_layers.size(); i++) {
+  const int nlevels = (int)keypoints_by_layers.size();
+  std::vector<std::vector<KeyPoint> > refined(nlevels);
+
+  parallel_for_(Range(0, nlevels), [&](const Range& range) {
+   for (int i = range.start; i < range.end; i++) {
     const MEvolution &e = evolution_[i];
     const float * const ldet = e.Ldet.ptr<float>();
     const float ratio = e.octave_ratio;
     const int cols = e.Ldet.cols;
-    const Mat& keypoints = keypoints_by_layers[i];
-    const uchar *const kpts = keypoints.ptr<uchar>();
+    const std::vector<int> &candidates = candidates_by_layers[i];
+    std::vector<KeyPoint> &level_keypoints = refined[i];
+    level_keypoints.reserve(candidates.size());
 
-    size_t j = 0;
-    for (int y = 0; y < keypoints.rows; y++) {
-      for (int x = 0; x < keypoints.cols; x++, j++) {
-        if (kpts[j] == 0) {
-          continue; // skip non-keypoints
-        }
+    for (size_t k = 0; k < candidates.size(); k++) {
+        const int j = candidates[k];
+        const int x = j % cols;
+        const int y = j / cols;
 
         // create a new keypoint
         KeyPoint kp;
@@ -931,11 +1489,19 @@ void AKAZEFeatures::Do_Subpixel_Refinement(
         kp.angle = 0.0;
         kp.size *= 2.0f; // In OpenCV the size of a keypoint is the diameter
 
-        // Push the refined keypoint to the final storage
-        output_keypoints.push_back(kp);
-      }
+        // Push the refined keypoint to the level storage
+        level_keypoints.push_back(kp);
     }
-  }
+   }
+  });
+
+  // Concatenate the levels in order
+  size_t total = output_keypoints.size();
+  for (int i = 0; i < nlevels; i++)
+    total += refined[i].size();
+  output_keypoints.reserve(total);
+  for (int i = 0; i < nlevels; i++)
+    output_keypoints.insert(output_keypoints.end(), refined[i].begin(), refined[i].end());
 }
 
 /* ************************************************************************* */
@@ -1130,8 +1696,10 @@ public:
   }
 
   void Get_MLDB_Full_Descriptor(const KeyPoint& kpt, unsigned char* desc, int desc_size) const;
-  void MLDB_Fill_Values(float* values, int sample_step, int level,
+  void MLDB_Sample_Grid(float* grid, uchar* valid, int grid_min, int grid_size, int level,
                         float xf, float yf, float co, float si, float scale) const;
+  void MLDB_Fill_Values(float* values, int sample_step, const float* grid, const uchar* valid,
+                        int grid_min, int grid_size) const;
   void MLDB_Binary_Comparisons(float* values, unsigned char* desc,
                                int count, int& dpos) const;
 
@@ -1853,11 +2421,18 @@ void Upright_MLDB_Full_Descriptor_Invoker::Get_Upright_MLDB_Full_Descriptor(cons
   CV_Assert(divUp(dcount1, 8) == desc_size);
 }
 
-void MLDB_Full_Descriptor_Invoker::MLDB_Fill_Values(float* values, int sample_step, const int level,
-                                                    float xf, float yf, float co, float si, float scale) const
+/**
+ * @brief Samples the rotated pattern grid of a keypoint once for all three M-LDB grids
+ * @details The 2x2, 3x3 and 4x4 grids all sample the same rotated points (k, l) with
+ * k, l in [grid_min, grid_min + grid_size). For each point this stores the channel
+ * values (Lt, then the rotated derivatives or the gradient magnitude) at
+ * grid[((k - grid_min) * grid_size + (l - grid_min)) * chan], and whether it is inside the image.
+ */
+void MLDB_Full_Descriptor_Invoker::MLDB_Sample_Grid(float* grid, uchar* valid, int grid_min, int grid_size,
+                                                    const int level, float xf, float yf, float co, float si,
+                                                    float scale) const
 {
     const Pyramid& evolution = *evolution_;
-    int pattern_size = options_->descriptor_pattern_size;
     int chan = options_->descriptor_channels;
     const Mat Lx = evolution[level].Lx;
     const Mat Ly = evolution[level].Ly;
@@ -1867,6 +2442,45 @@ void MLDB_Full_Descriptor_Invoker::MLDB_Fill_Values(float* values, int sample_st
     CV_Assert(size == Lx.size());
     CV_Assert(size == Ly.size());
 
+    int pos = 0;
+    for (int k = grid_min; k < grid_min + grid_size; k++) {
+        for (int l = grid_min; l < grid_min + grid_size; l++, pos++) {
+            float sample_y = yf + (l*co * scale + k*si*scale);
+            float sample_x = xf + (-l*si * scale + k*co*scale);
+
+            int y1 = cvRound(sample_y);
+            int x1 = cvRound(sample_x);
+
+            valid[pos] = !(y1 < 0 || y1 >= Lt.rows || x1 < 0 || x1 >= Lt.cols);
+            if (!valid[pos])
+                continue; // Boundaries
+
+            float *g = grid + pos * chan;
+            g[0] = Lt.at<float>(y1, x1);
+
+            if(chan > 1) {
+                float rx = Lx.at<float>(y1, x1);
+                float ry = Ly.at<float>(y1, x1);
+                if (chan == 2) {
+                  g[1] = sqrtf(rx*rx + ry*ry);
+                }
+                else {
+                  float rry = rx*co + ry*si;
+                  float rrx = -rx*si + ry*co;
+                  g[1] = rrx;
+                  g[2] = rry;
+                }
+            }
+        }
+    }
+}
+
+void MLDB_Full_Descriptor_Invoker::MLDB_Fill_Values(float* values, int sample_step, const float* grid,
+                                                    const uchar* valid, int grid_min, int grid_size) const
+{
+    int pattern_size = options_->descriptor_pattern_size;
+    int chan = options_->descriptor_channels;
+
     int valpos = 0;
     for (int i = -pattern_size; i < pattern_size; i += sample_step) {
         for (int j = -pattern_size; j < pattern_size; j += sample_step) {
@@ -1874,31 +2488,18 @@ void MLDB_Full_Descriptor_Invoker::MLDB_Fill_Values(float* values, int sample_st
 
             int nsamples = 0;
             for (int k = i; k < i + sample_step; k++) {
+              const int row = (k - grid_min) * grid_size - grid_min;
               for (int l = j; l < j + sample_step; l++) {
-                float sample_y = yf + (l*co * scale + k*si*scale);
-                float sample_x = xf + (-l*si * scale + k*co*scale);
-
-                int y1 = cvRound(sample_y);
-                int x1 = cvRound(sample_x);
-
-                if (y1 < 0 || y1 >= Lt.rows || x1 < 0 || x1 >= Lt.cols)
+                const int pos = row + l;
+                if (!valid[pos])
                     continue; // Boundaries
 
-                float ri = Lt.at<float>(y1, x1);
-                di += ri;
-
-                if(chan > 1) {
-                    float rx = Lx.at<float>(y1, x1);
-                    float ry = Ly.at<float>(y1, x1);
-                    if (chan == 2) {
-                      dx += sqrtf(rx*rx + ry*ry);
-                    }
-                    else {
-                      float rry = rx*co + ry*si;
-                      float rrx = -rx*si + ry*co;
-                      dx += rrx;
-                      dy += rry;
-                    }
+                const float *g = grid + pos * chan;
+                di += g[0];
+                if (chan > 1) {
+                    dx += g[1];
+                    if (chan > 2)
+                      dy += g[2];
                 }
                 nsamples++;
               }
@@ -1932,17 +2533,29 @@ void MLDB_Full_Descriptor_Invoker::MLDB_Binary_Comparisons(float* values, unsign
         ivalues[i] = CV_TOGGLE_FLT(ivalues[i]);
     }
 
+    // bits are accumulated in a register and OR-ed to desc 64 at a time;
+    // bit dpos goes to desc[dpos >> 3] at (dpos & 7), as one bit at a time
+    int base = dpos & ~7;
+    int nbits = dpos - base;
+    uint64 acc = 0;
     for(int pos = 0; pos < chan; pos++) {
         for (int i = 0; i < count; i++) {
             int ival = ivalues[chan * i + pos];
             for (int j = i + 1; j < count; j++) {
-                if (ival > ivalues[chan * j + pos]) {
-                  desc[dpos >> 3] |= (1 << (dpos & 7));
+                acc |= (uint64)(ival > ivalues[chan * j + pos]) << nbits;
+                if (++nbits == 64) {
+                    for (int b = 0; b < 8; b++)
+                        desc[(base >> 3) + b] |= (uchar)(acc >> (8 * b));
+                    base += 64;
+                    nbits = 0;
+                    acc = 0;
                 }
-                dpos++;
             }
         }
     }
+    for (int b = 0; b < (nbits + 7) / 8; b++)
+        desc[(base >> 3) + b] |= (uchar)(acc >> (8 * b));
+    dpos = base + nbits;
 }
 
 /* ************************************************************************* */
@@ -1977,11 +2590,25 @@ void MLDB_Full_Descriptor_Invoker::Get_MLDB_Full_Descriptor(const KeyPoint& kpt,
 
   memset(desc, 0, desc_size);
 
+  // all the grids sample points of the same rotated lattice: sample it once
+  int grid_max = pattern_size - 1;
+  for (int lvl = 0; lvl < 3; lvl++) {
+      int last = -pattern_size;
+      while (last + sample_step[lvl] < pattern_size)
+          last += sample_step[lvl];
+      grid_max = std::max(grid_max, last + sample_step[lvl] - 1);
+  }
+  const int grid_min = -pattern_size;
+  const int grid_size = grid_max - grid_min + 1;
+  AutoBuffer<float, 32 * 32 * max_channels> grid(grid_size * grid_size * max_channels);
+  AutoBuffer<uchar, 32 * 32> valid(grid_size * grid_size);
+  MLDB_Sample_Grid(grid.data(), valid.data(), grid_min, grid_size, kpt.class_id, xf, yf, co, si, scale);
+
   int dpos = 0;
   for(int lvl = 0; lvl < 3; lvl++)
   {
       int val_count = (lvl + 2) * (lvl + 2);
-      MLDB_Fill_Values(values, sample_step[lvl], kpt.class_id, xf, yf, co, si, scale);
+      MLDB_Fill_Values(values, sample_step[lvl], grid.data(), valid.data(), grid_min, grid_size);
       MLDB_Binary_Comparisons(values, desc, val_count, dpos);
   }
 

@@ -24,6 +24,7 @@
 
 #include "../precomp.hpp"
 #include "nldiffusion_functions.h"
+#include "opencv2/core/hal/intrin.hpp"
 #include <iostream>
 
 // Namespaces
@@ -138,7 +139,17 @@ void pm_g2(InputArray _Lx, InputArray _Ly, OutputArray _dst, float k) {
         const float *Lx_row = Lx.ptr<float>(y);
         const float *Ly_row = Ly.ptr<float>(y);
         float* dst_row = dst.ptr<float>(y);
-        for(int x = 0; x < sz.width; x++) {
+        int x = 0;
+#if (CV_SIMD || CV_SIMD_SCALABLE)
+        const int vlanes = VTraits<v_float32>::vlanes();
+        const v_float32 vone = vx_setall_f32(1.0f), vk2inv = vx_setall_f32(k2inv);
+        for(; x <= sz.width - vlanes; x += vlanes) {
+            v_float32 lx = vx_load(Lx_row + x), ly = vx_load(Ly_row + x);
+            v_float32 m = v_mul(v_add(v_mul(lx, lx), v_mul(ly, ly)), vk2inv);
+            v_store(dst_row + x, v_div(vone, v_add(vone, m)));
+        }
+#endif
+        for(; x < sz.width; x++) {
             dst_row[x] = 1.0f / (1.0f + ((Lx_row[x] * Lx_row[x] + Ly_row[x] * Ly_row[x]) * k2inv));
         }
     }

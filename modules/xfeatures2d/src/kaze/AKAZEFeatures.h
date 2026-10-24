@@ -92,9 +92,10 @@ private:
 
   /// Scale Space methods
   void Allocate_Memory_Evolution();
-  void Find_Scale_Space_Extrema(std::vector<Mat>& keypoints_by_layers);
+  void Find_Scale_Space_Extrema(std::vector<Mat>& keypoints_by_layers,
+    std::vector<std::vector<int> >& candidates_by_layers);
   void Do_Subpixel_Refinement(std::vector<Mat>& keypoints_by_layers,
-    std::vector<KeyPoint>& kpts);
+    std::vector<std::vector<int> >& candidates_by_layers, std::vector<KeyPoint>& kpts);
 
   /// Feature description methods
   void Compute_Keypoints_Orientation(std::vector<cv::KeyPoint>& kpts) const;
