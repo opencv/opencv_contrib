@@ -12,7 +12,6 @@ if(CMAKE_VERSION VERSION_GREATER "3.11")
 endif()
 
 # need to change
-set(wechat_qrcode_commit_hash "a8b69ccc738421293254aec5ddb38bd523503252")
 set(hash_detect_caffemodel "238e2b2d6f3c18d6c3a30de0c31e23cf")
 set(hash_detect_prototxt "6fb4976b32695f9f5c6305c19f12537d")
 set(hash_sr_caffemodel "cbfcd60361a73beb8c583eea7e8e6664")
