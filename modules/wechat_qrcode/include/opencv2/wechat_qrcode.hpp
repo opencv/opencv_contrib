@@ -25,11 +25,15 @@ class CV_EXPORTS_W WeChatQRCode {
 public:
     /**
      * @brief Initialize the WeChatQRCode.
-     * It includes two CNN-based models in ONNX format:
+     * It can use two CNN-based models in ONNX format:
      * a detector model and a super resolution model.
+     * Both are optional and independent: if a path is empty (the default),
+     * the corresponding CNN is not used and the traditional (non-CNN) path is taken instead.
+     * A non-empty path must point to an existing file, otherwise an exception is thrown.
      *
-     * @param detector_model_path onnx model file path for the detector
+     * @param detector_model_path onnx model file path for the detector (empty: no CNN detector)
      * @param super_resolution_model_path onnx model file path for the super resolution model
+     * (empty: no CNN super resolution)
      */
     CV_WRAP WeChatQRCode(const std::string& detector_model_path = "",
                          const std::string& super_resolution_model_path = "");
