@@ -14,19 +14,22 @@ else:
 
 # For python API generator, it follows the template: {module_name}_{class_name},
 # so it is a little weird.
-# The model is downloaded to ${CMAKE_BINARY_DIR}/downloads/wechat_qrcode if cmake runs without warnings,
-# otherwise you can download them from https://github.com/WeChatCV/opencv_3rdparty/tree/wechat_qrcode.
+# Provide paths to the detector and super-resolution ONNX models.
+# Download links are provided in the error message below.
 try:
     detector = cv2.wechat_qrcode_WeChatQRCode(
-        "detect.prototxt", "detect.caffemodel", "sr.prototxt", "sr.caffemodel")
+        "detect.onnx", "sr.onnx")
+
 except:
     print("---------------------------------------------------------------")
     print("Failed to initialize WeChatQRCode.")
-    print("Please, download 'detect.*' and 'sr.*' from")
-    print("https://github.com/WeChatCV/opencv_3rdparty/tree/wechat_qrcode")
-    print("and put them into the current directory.")
+    print("Please download the ONNX models from:")
+    print("Detector: https://github.com/omrope79/opencv-test-models/releases/download/v1.1.0/detect.onnx")
+    print("Super-resolution: https://github.com/omrope79/opencv-test-models/releases/download/v1.1.0/sr.onnx")
+    print("Ensure the model paths passed to WeChatQRCode are correct.")
     print("---------------------------------------------------------------")
     exit(0)
+
 
 prevstr = ""
 
