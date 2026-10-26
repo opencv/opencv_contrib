@@ -19,6 +19,7 @@ public:
     SuperScale(){};
     ~SuperScale(){};
     int init(const std::string &onnx_path);
+    int init(const char* model_buffer, size_t model_len);
     Mat processImageScale(const Mat &src, float scale, const bool &use_sr, int sr_max_size = 160);
 
 private:

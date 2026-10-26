@@ -14,6 +14,11 @@ int SSDDetector::init(const string& onnx_path) {
     return 0;
 }
 
+int SSDDetector::init(const char* model_buffer, size_t model_len) {
+    net_ = dnn::readNetFromONNX(model_buffer, model_len);
+    return 0;
+}
+
 vector<Mat> SSDDetector::forward(Mat img, const int target_width, const int target_height) {
     int img_w = img.cols;
     int img_h = img.rows;
