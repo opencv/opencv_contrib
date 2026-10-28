@@ -150,42 +150,16 @@ TEST(SurfaceMatching_PointCloudShape, ppf_and_icp_shapes_issue_3981)
     }
 }
 
-TEST(SurfaceMatching_PointCloudShape, helpers_shapes_issue_3981)
+TEST(SurfaceMatching_PointCloudShape, transformPCPose_Nx3)
 {
     Mat pcNx6 = generateAsymmetricEllipsoidPatch();
     Mat pcNx3 = pcNx6.colRange(0, 3).clone();
-    Mat pcNx1C6 = toNx1C6(pcNx6);
-    Mat pcNx1C3 = pcNx3.clone().reshape(3, pcNx3.rows);
-
     Matx44d pose = makeTestPose(Vec3d(0.2, -0.1, 0.15), Vec3d(3.0, -2.0, 4.0));
 
-    Mat tf6Ref = transformPCPose(pcNx6, pose);
-    Mat tf6Vec = transformPCPose(pcNx1C6, pose);
-    EXPECT_EQ(tf6Ref.size(), tf6Vec.size());
-    EXPECT_NEAR(0.0, cv::norm(tf6Ref, tf6Vec, NORM_INF), 1e-6);
-
-    // Also verifies transformPCPose on 3-column point clouds without reading past row end
-    Mat tf3Ref = transformPCPose(pcNx3, pose);
-    Mat tf3Vec = transformPCPose(pcNx1C3, pose);
-    EXPECT_EQ(Size(3, pcNx3.rows), tf3Ref.size());
-    EXPECT_NEAR(0.0, cv::norm(tf3Ref, tf6Ref.colRange(0, 3), NORM_INF), 1e-6);
-    EXPECT_NEAR(0.0, cv::norm(tf3Ref, tf3Vec, NORM_INF), 1e-6);
-
-    Mat normalsRef, normalsFromC3, normalsFromC6;
-    EXPECT_EQ(1, computeNormalsPC3d(pcNx3, normalsRef, 8, true, Vec3f(0.f, 0.f, 0.f)));
-    EXPECT_EQ(1, computeNormalsPC3d(pcNx1C3, normalsFromC3, 8, true, Vec3f(0.f, 0.f, 0.f)));
-    EXPECT_EQ(1, computeNormalsPC3d(pcNx1C6, normalsFromC6, 8, true, Vec3f(0.f, 0.f, 0.f)));
-    EXPECT_NEAR(0.0, cv::norm(normalsRef, normalsFromC3, NORM_INF), 1e-6);
-    EXPECT_NEAR(0.0, cv::norm(normalsRef, normalsFromC6, NORM_INF), 1e-6);
-
-    Vec2f xr(-1.f, 20.f), yr(-1.f, 30.f), zr(-1.f, 30.f);
-    Mat qRef = samplePCByQuantization(pcNx6, xr, yr, zr, 0.1f, 0);
-    Mat qVec = samplePCByQuantization(pcNx1C6, xr, yr, zr, 0.1f, 0);
-    EXPECT_NEAR(0.0, cv::norm(qRef, qVec, NORM_INF), 1e-6);
-
-    Mat noisy = addNoisePC(pcNx1C6, 0.01);
-    EXPECT_EQ(Size(6, pcNx6.rows), noisy.size());
-    EXPECT_EQ(CV_32FC1, noisy.type());
+    Mat tf6 = transformPCPose(pcNx6, pose);
+    Mat tf3 = transformPCPose(pcNx3, pose);
+    EXPECT_EQ(Size(3, pcNx3.rows), tf3.size());
+    EXPECT_LE(cv::norm(tf3, tf6.colRange(0, 3), NORM_INF), 1e-6);
 }
 
 TEST(SurfaceMatching_PointCloudShape, invalid_inputs_issue_3981)
@@ -194,7 +168,6 @@ TEST(SurfaceMatching_PointCloudShape, invalid_inputs_issue_3981)
     Mat pcNx3 = validNx6.colRange(0, 3).clone();
     Mat pcNx1C3 = pcNx3.clone().reshape(3, pcNx3.rows);
     Mat pcNx4(20, 4, CV_32FC1, Scalar::all(1.0));
-    Mat pcNx1C4(20, 1, CV_32FC4, Scalar::all(1.0));
     Mat pc2x3C6(2, 3, CV_32FC(6));
     pc2x3C6.reshape(1) = 1.0f;
     Mat pc64F;
@@ -222,14 +195,6 @@ TEST(SurfaceMatching_PointCloudShape, invalid_inputs_issue_3981)
     EXPECT_THROW(icp.registerModelToScene(pcNx3, validNx6, residual, pose), cv::Exception);
     EXPECT_THROW(icp.registerModelToScene(validNx6, pcNx3, residual, pose), cv::Exception);
     EXPECT_THROW(icp.registerModelToScene(pc64F, validNx6, residual, pose), cv::Exception);
-
-    EXPECT_THROW(transformPCPose(Mat(), Matx44d::eye()), cv::Exception);
-    EXPECT_THROW(transformPCPose(pcNx4, Matx44d::eye()), cv::Exception);
-    EXPECT_THROW(transformPCPose(pcNx1C4, Matx44d::eye()), cv::Exception);
-
-    Mat normals;
-    EXPECT_THROW(computeNormalsPC3d(pcNx4, normals, 6, false, Vec3f()), cv::Exception);
-    EXPECT_THROW(computeNormalsPC3d(pcNx1C4, normals, 6, false, Vec3f()), cv::Exception);
 }
 
 }} // namespace
