@@ -149,7 +149,6 @@ Mat loadPLYSimple(const char* fileName, int withNormals)
 
 void writePLY(Mat PC, const char* FileName)
 {
-  PC = normalizePointCloud(PC, true);
   std::ofstream outFile( FileName );
 
   if ( !outFile.is_open() )
@@ -199,7 +198,6 @@ void writePLY(Mat PC, const char* FileName)
 
 void writePLYVisibleNormals(Mat PC, const char* FileName)
 {
-  PC = normalizePointCloud(PC, true);
   std::ofstream outFile(FileName);
 
   if (!outFile.is_open())
@@ -310,8 +308,6 @@ void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances, const
 // This is much faster than sample_pc_octree
 Mat samplePCByQuantization(Mat pc, Vec2f& xrange, Vec2f& yrange, Vec2f& zrange, float sampleStep, int weightByCenter)
 {
-  pc = normalizePointCloud(pc);
-  CV_CheckGT(sampleStep, 0.0f, "");
   std::vector< std::vector<int> > map;
 
   int numSamplesDim = (int)(1.0/sampleStep);
@@ -571,7 +567,6 @@ Mat transPCCoeff(Mat pc, float scale, float Cx, float Cy, float Cz, float MinVal
 
 Mat transformPCPose(Mat pc, const Matx44d& Pose)
 {
-  pc = normalizePointCloud(pc, true);
   Mat pct = Mat(pc.rows, pc.cols, CV_32F);
 
   Matx33d R;
@@ -660,7 +655,6 @@ void getRandomPose(Matx44d& Pose)
 
 Mat addNoisePC(Mat pc, double scale)
 {
-  pc = normalizePointCloud(pc, true);
   Mat randT = genRandomMat(pc.rows,pc.cols,0,scale,CV_32FC1);
   return randT + pc;
 }
@@ -707,15 +701,18 @@ int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, co
 {
   int i;
 
-  Mat pcNorm = normalizePointCloud(PC, true, cv::Error::BadImageSize);
-  CV_CheckGT(NumNeighbors, 0, "");
+  if (PC.cols!=3 && PC.cols!=6) // 3d data is expected
+  {
+    //return -1;
+    CV_Error(cv::Error::BadImageSize, "PC should have 3 or 6 elements in its columns");
+  }
 
-  PCNormals.create(pcNorm.rows, 6, CV_32F);
+  PCNormals.create(PC.rows, 6, CV_32F);
   Mat PCInput = PCNormals.colRange(0, 3);
-  Mat Distances(pcNorm.rows, NumNeighbors, CV_32F);
-  Mat Indices(pcNorm.rows, NumNeighbors, CV_32S);
+  Mat Distances(PC.rows, NumNeighbors, CV_32F);
+  Mat Indices(PC.rows, NumNeighbors, CV_32S);
 
-  pcNorm.rowRange(0, pcNorm.rows).colRange(0, 3).copyTo(PCNormals.rowRange(0, pcNorm.rows).colRange(0, 3));
+  PC.rowRange(0, PC.rows).colRange(0, 3).copyTo(PCNormals.rowRange(0, PC.rows).colRange(0, 3));
 
   void* flannIndex = indexPCFlann(PCInput);
 
@@ -726,7 +723,7 @@ int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, co
 #if defined _OPENMP
 #pragma omp parallel for
 #endif
-  for (i=0; i<pcNorm.rows; i++)
+  for (i=0; i<PC.rows; i++)
   {
     Matx33d C;
     Vec3d mu;

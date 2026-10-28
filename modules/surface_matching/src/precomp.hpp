@@ -70,47 +70,19 @@ namespace cv
 namespace ppf_match_3d
 {
 
-static inline Mat normalizePointCloud(const Mat& pc, bool allow3Cols = false, int errCode = Error::StsBadSize)
+// Accepts NxC (C >= 6) CV_32FC1, Nx1/1xN CV_32FC6 (a (N,1,6) NumPy array) and {N,1,6}/{1,N,6} CV_32FC1,
+// returns a CV_32FC1 header with one point per row (copy only for a non-continuous multi-channel or 3D input).
+static inline Mat normalizePointCloud(const Mat& pc)
 {
-  CV_CheckFalse(pc.empty(), "Point cloud must not be empty");
-  CV_CheckTypeEQ(pc.depth(), CV_32F, "Point cloud must have CV_32F depth");
-
   if (pc.dims == 2 && pc.channels() == 1)
   {
-    if (pc.cols != 6 && !(allow3Cols && pc.cols == 3))
-      CV_Error(errCode, allow3Cols
-          ? "Point cloud must have 3 or 6 elements per point"
-          : "Point cloud must have 6 elements per point (x, y, z, nx, ny, nz)");
+    CV_CheckTypeEQ(pc.type(), CV_32FC1, "Point cloud must be CV_32F");
+    CV_Check(pc.cols, pc.rows > 0 && pc.cols >= 6, "Point cloud must be Nx6 (x, y, z, nx, ny, nz)");
     return pc;
   }
-
-  if (pc.dims == 2 && (pc.cols == 1 || pc.rows == 1))
-  {
-    const int ch = pc.channels();
-    if (ch != 6 && !(allow3Cols && ch == 3))
-      CV_Error(errCode, allow3Cols
-          ? "Point cloud must have 3 or 6 elements per point"
-          : "Point cloud must have 6 elements per point (x, y, z, nx, ny, nz)");
-    const int numPoints = pc.rows * pc.cols;
-    Mat cont = pc.isContinuous() ? pc : pc.clone();
-    return cont.reshape(1, numPoints);
-  }
-
-  if (pc.dims == 3 && pc.channels() == 1 && (pc.size[0] == 1 || pc.size[1] == 1))
-  {
-    const int elemCols = pc.size[2];
-    if (elemCols != 6 && !(allow3Cols && elemCols == 3))
-      CV_Error(errCode, allow3Cols
-          ? "Point cloud must have 3 or 6 elements per point"
-          : "Point cloud must have 6 elements per point (x, y, z, nx, ny, nz)");
-    const int numPoints = pc.size[0] * pc.size[1];
-    Mat cont = pc.isContinuous() ? pc : pc.clone();
-    return cont.reshape(1, numPoints);
-  }
-
-  CV_Error(errCode, allow3Cols
-      ? "Point cloud must be Nx3/Nx6 (CV_32FC1) or Nx1/1xN with 3 or 6 channels"
-      : "Point cloud must be Nx6 (CV_32FC1) or Nx1/1xN with 6 channels");
+  const int n = pc.checkVector(6, CV_32F, false);
+  CV_Check(n, n > 0, "Point cloud must be Nx6 CV_32FC1 or Nx1/1xN CV_32FC6 (x, y, z, nx, ny, nz)");
+  return (pc.isContinuous() ? pc : pc.clone()).reshape(1, n);
 }
 
 } // namespace ppf_match_3d
