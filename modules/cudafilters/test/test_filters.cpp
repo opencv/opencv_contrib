@@ -669,6 +669,56 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, Dilate, testing::Combine(
     WHOLE_SUBMAT));
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
+// Erode and Dilate with a large square kernel
+
+PARAM_TEST_CASE(MorphSquareKernel, cv::cuda::DeviceInfo, MatType, KSize)
+{
+    cv::cuda::DeviceInfo devInfo;
+    int type;
+    cv::Size ksize;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        type = GET_PARAM(1);
+        ksize = GET_PARAM(2);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(MorphSquareKernel, Accuracy)
+{
+    cv::Mat src = randomMat(cv::Size(128, 128), type);
+
+    cv::Mat rectKernel = cv::Mat::ones(ksize, CV_8U);
+    cv::Mat cornerlessKernel = rectKernel.clone();
+    cornerlessKernel.at<uchar>(0, 0) = 0; // not rectangular, so each iteration is a separate NPP call
+
+    for (int op = cv::MORPH_ERODE; op <= cv::MORPH_DILATE; ++op)
+    {
+        for (int iterations = 1; iterations <= 2; ++iterations)
+        {
+            const cv::Mat& kernel = iterations == 1 ? rectKernel : cornerlessKernel;
+            cv::Ptr<cv::cuda::Filter> filter = cv::cuda::createMorphologyFilter(op, src.type(), kernel, cv::Point(-1, -1), iterations);
+
+            cv::cuda::GpuMat dst;
+            filter->apply(loadMat(src), dst);
+
+            cv::Mat dst_gold;
+            cv::morphologyEx(src, dst_gold, op, kernel, cv::Point(-1, -1), iterations);
+
+            EXPECT_MAT_NEAR(getInnerROI(dst_gold, ksize * iterations), getInnerROI(dst, ksize * iterations), 0.0);
+        }
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Filters, MorphSquareKernel, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(MatType(CV_8UC1), MatType(CV_8UC4), MatType(CV_32FC1)),
+    testing::Values(KSize(cv::Size(5, 5)), KSize(cv::Size(7, 7)), KSize(cv::Size(9, 9)))));
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
 // MorphEx
 
 CV_ENUM(MorphOp, MORPH_OPEN, MORPH_CLOSE, MORPH_GRADIENT, MORPH_TOPHAT, MORPH_BLACKHAT)
