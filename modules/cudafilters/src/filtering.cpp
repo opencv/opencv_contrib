@@ -614,7 +614,6 @@ namespace
         nppMorfFilter32f_t func32f_;
 
         GpuMat srcBorder_;
-        GpuMat buf_;
     };
 
     MorphologyFilter::MorphologyFilter(int op, int srcType, InputArray _kernel, Point anchor, int iterations) :
@@ -696,13 +695,6 @@ namespace
 
         GpuMat srcRoi = srcBorder_(Rect(ksize.width, ksize.height, src.cols, src.rows));
 
-        GpuMat bufRoi;
-        if (iters_ > 1)
-        {
-            ensureSizeIsEnough(srcBorder_.size(), type_, buf_);
-            bufRoi = buf_(Rect(ksize.width, ksize.height, src.cols, src.rows));
-        }
-
         _dst.create(src.size(), src.type());
         GpuMat dst = _dst.getGpuMat();
 
@@ -733,12 +725,12 @@ namespace
 
             for(int i = 1; i < iters_; ++i)
             {
-                cuda::copyMakeBorder(dst, buf_, ksize.height, ksize.height, ksize.width, ksize.width, BORDER_DEFAULT, Scalar(), _stream);
+                cuda::copyMakeBorder(dst, srcBorder_, ksize.height, ksize.height, ksize.width, ksize.width, BORDER_DEFAULT, Scalar(), _stream);
 #if USE_NPP_STREAM_CTX
-                nppSafeCall( func8u_(bufRoi.ptr<Npp8u>(), static_cast<int>(bufRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
+                nppSafeCall( func8u_(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
                                      oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor, h) );
 #else
-                nppSafeCall(func8u_(bufRoi.ptr<Npp8u>(), static_cast<int>(bufRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
+                nppSafeCall(func8u_(srcRoi.ptr<Npp8u>(), static_cast<int>(srcRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
                     oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor));
 #endif
             }
@@ -754,13 +746,13 @@ namespace
 #endif
             for(int i = 1; i < iters_; ++i)
             {
-                cuda::copyMakeBorder(dst, buf_, ksize.height, ksize.height, ksize.width, ksize.width, BORDER_DEFAULT, Scalar(), _stream);
+                cuda::copyMakeBorder(dst, srcBorder_, ksize.height, ksize.height, ksize.width, ksize.width, BORDER_DEFAULT, Scalar(), _stream);
 
 #if USE_NPP_STREAM_CTX
-                nppSafeCall( func32f_(bufRoi.ptr<Npp32f>(), static_cast<int>(bufRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+                nppSafeCall( func32f_(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
                                       oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor, h) );
 #else
-                nppSafeCall(func32f_(bufRoi.ptr<Npp32f>(), static_cast<int>(bufRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+                nppSafeCall(func32f_(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
                     oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor));
 #endif
             }
