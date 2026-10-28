@@ -6,8 +6,20 @@
 
 #include "test_precomp.hpp"
 
-#ifdef HAVE_OPENGL
 namespace opencv_test { namespace {
+
+// integrate() before any warp field nodes exist used to crash with uninitialized Voxel::n
+TEST(DynamicFusion, firstFrameDoesNotCrashBeforeWarpNodesExist)
+{
+    Ptr<kinfu::Params> params = kinfu::Params::coarseParams();
+
+    Mat depth(params->frameSize, CV_16U, Scalar(static_cast<int>(1.5f * params->depthFactor)));
+
+    Ptr<dynafu::DynaFu> df = dynafu::DynaFu::create(params);
+    ASSERT_NO_THROW(df->update(depth));
+}
+
+#ifdef HAVE_OPENGL
 
 static std::vector<std::string> readDepth(std::string fileList)
 {
@@ -124,6 +136,6 @@ TEST(DynamicFusion, DISABLED)
     CV_UNUSED(flyTest);
 }
 
-}} // namespace
+#endif // HAVE_OPENGL
 
-#endif
+}} // namespace
