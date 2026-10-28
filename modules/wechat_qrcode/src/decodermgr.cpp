@@ -24,6 +24,10 @@ int DecoderMgr::decodeImage(cv::Mat src, bool use_nn_detector, vector<string>& r
     if (width <= 20 || height <= 20)
         return -1;  // image data is not enough for providing reliable results
 
+    CV_CheckTypeEQ(src.type(), CV_8UC1, "");
+    if (!src.isContinuous()) {
+        src = src.clone();
+    }
     std::vector<uint8_t> scaled_img_data(src.data, src.data + width * height);
     zxing::ArrayRef<uint8_t> scaled_img_zx =
         zxing::ArrayRef<uint8_t>(new zxing::Array<uint8_t>(scaled_img_data));
