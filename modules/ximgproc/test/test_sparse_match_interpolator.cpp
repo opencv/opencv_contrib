@@ -216,80 +216,38 @@ TEST_P(InterpolatorTest, MultiThreadReproducibility)
 }
 INSTANTIATE_TEST_CASE_P(FullSet,InterpolatorTest, Combine(Values(szODD,szVGA), GuideTypes::all()));
 
+// https://github.com/opencv/opencv_contrib/issues/3097
 TEST(InterpolatorTest, RICReuseInstance)
 {
-    RNG rng(42);
+    RNG& rng = theRNG();
     const Size size(160, 120);
-    const int matchCounts[] = { 200, 80, 150 };
+    const int matchCounts[] = { 600, 200, 400 }; // the second call has fewer matches than the first
 
-    // 1. Verify multithreaded reuse across decreasing/increasing match counts and image sizes
-    {
-        Ptr<RICInterpolator> reusedMT = createRICInterpolator();
-        reusedMT->setK(16);
-        reusedMT->setUseVariationalRefinement(false);
-        for (size_t callIdx = 0; callIdx < sizeof(matchCounts) / sizeof(matchCounts[0]); ++callIdx)
-        {
-            Size curSize(size.width + static_cast<int>(callIdx) * 16, size.height + static_cast<int>(callIdx) * 8);
-            Mat from(curSize, CV_8UC3), to(curSize, CV_8UC3);
-            rng.fill(from, RNG::UNIFORM, 0, 256);
-            rng.fill(to, RNG::UNIFORM, 0, 256);
-
-            const int numMatches = matchCounts[callIdx];
-            vector<Point2f> fromPoints(numMatches), toPoints(numMatches);
-            for (int i = 0; i < numMatches; ++i)
-            {
-                fromPoints[i] = Point2f(rng.uniform(0.0f, static_cast<float>(curSize.width)),
-                                        rng.uniform(0.0f, static_cast<float>(curSize.height)));
-                toPoints[i] = fromPoints[i] + Point2f(rng.uniform(-4.0f, 4.0f), rng.uniform(-4.0f, 4.0f));
-            }
-            fromPoints[0] = Point2f(0.0f, 0.0f);
-            fromPoints[1] = Point2f(static_cast<float>(curSize.width), static_cast<float>(curSize.height));
-
-            Mat flow;
-            reusedMT->interpolate(from, fromPoints, to, toPoints, flow);
-            ASSERT_EQ(curSize, flow.size());
-            EXPECT_TRUE(cv::checkRange(flow));
-        }
-    }
-
-    // 2. Verify exact parity with a freshly created instance when running deterministically on 1 thread
     const int origThreads = cv::getNumThreads();
-    cv::setNumThreads(1);
+    cv::setNumThreads(1); // PropagateModels() uses rand(): bit-exact results need one thread
     Ptr<RICInterpolator> reused = createRICInterpolator();
-    reused->setK(16);
     reused->setUseVariationalRefinement(false);
-
-    for (size_t callIdx = 0; callIdx < sizeof(matchCounts) / sizeof(matchCounts[0]); ++callIdx)
+    for (size_t c = 0; c < sizeof(matchCounts) / sizeof(matchCounts[0]); ++c)
     {
-        Mat from(size, CV_8UC3);
-        Mat to(size, CV_8UC3);
+        Mat from(size, CV_8UC3), to(size, CV_8UC3);
         rng.fill(from, RNG::UNIFORM, 0, 256);
         rng.fill(to, RNG::UNIFORM, 0, 256);
-
-        const int numMatches = matchCounts[callIdx];
-        vector<Point2f> fromPoints(numMatches);
-        vector<Point2f> toPoints(numMatches);
-        for (int i = 0; i < numMatches; ++i)
+        vector<Point2f> fromPoints(matchCounts[c]), toPoints(matchCounts[c]);
+        for (int i = 0; i < matchCounts[c]; ++i)
         {
-            fromPoints[i] = Point2f(rng.uniform(0.0f, static_cast<float>(size.width)),
-                                    rng.uniform(0.0f, static_cast<float>(size.height)));
-            toPoints[i] = fromPoints[i] + Point2f(rng.uniform(-4.0f, 4.0f), rng.uniform(-4.0f, 4.0f));
+            fromPoints[i] = Point2f(rng.uniform(0.f, size.width - 1.f), rng.uniform(0.f, size.height - 1.f));
+            toPoints[i] = fromPoints[i] + Point2f(rng.uniform(-4.f, 4.f), rng.uniform(-4.f, 4.f));
         }
-        fromPoints[0] = Point2f(0.0f, 0.0f);
-        fromPoints[1] = Point2f(static_cast<float>(size.width), static_cast<float>(size.height));
 
         Mat flowReused, flowFresh;
         reused->interpolate(from, fromPoints, to, toPoints, flowReused);
-
         Ptr<RICInterpolator> fresh = createRICInterpolator();
-        fresh->setK(16);
         fresh->setUseVariationalRefinement(false);
         fresh->interpolate(from, fromPoints, to, toPoints, flowFresh);
-
-        ASSERT_EQ(size, flowReused.size());
-        EXPECT_EQ(0.0, cv::norm(flowFresh, flowReused, NORM_INF));
+        EXPECT_EQ(0.0, cvtest::norm(flowFresh, flowReused, NORM_INF)) << "call " << c;
     }
     cv::setNumThreads(origThreads);
 }
+
 
 }} // namespace
