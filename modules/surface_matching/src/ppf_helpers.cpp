@@ -149,6 +149,7 @@ Mat loadPLYSimple(const char* fileName, int withNormals)
 
 void writePLY(Mat PC, const char* FileName)
 {
+  PC = normalizePointCloud(PC, true);
   std::ofstream outFile( FileName );
 
   if ( !outFile.is_open() )
@@ -198,6 +199,7 @@ void writePLY(Mat PC, const char* FileName)
 
 void writePLYVisibleNormals(Mat PC, const char* FileName)
 {
+  PC = normalizePointCloud(PC, true);
   std::ofstream outFile(FileName);
 
   if (!outFile.is_open())
@@ -308,6 +310,8 @@ void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances, const
 // This is much faster than sample_pc_octree
 Mat samplePCByQuantization(Mat pc, Vec2f& xrange, Vec2f& yrange, Vec2f& zrange, float sampleStep, int weightByCenter)
 {
+  pc = normalizePointCloud(pc);
+  CV_CheckGT(sampleStep, 0.0f, "");
   std::vector< std::vector<int> > map;
 
   int numSamplesDim = (int)(1.0/sampleStep);
@@ -567,6 +571,7 @@ Mat transPCCoeff(Mat pc, float scale, float Cx, float Cy, float Cz, float MinVal
 
 Mat transformPCPose(Mat pc, const Matx44d& Pose)
 {
+  pc = normalizePointCloud(pc, true);
   Mat pct = Mat(pc.rows, pc.cols, CV_32F);
 
   Matx33d R;
@@ -579,7 +584,6 @@ Mat transformPCPose(Mat pc, const Matx44d& Pose)
   for (int i=0; i<pc.rows; i++)
   {
     const float *pcData = pc.ptr<float>(i);
-    const Vec3f n1(&pcData[3]);
 
     Vec4d p = Pose * Vec4d(pcData[0], pcData[1], pcData[2], 1);
     Vec3d p2(p.val);
@@ -594,6 +598,7 @@ Mat transformPCPose(Mat pc, const Matx44d& Pose)
     // then rotate them as well
     if (pc.cols == 6)
     {
+      const Vec3f n1(&pcData[3]);
       Vec3d n(n1), n2;
 
       n2 = R * n;
@@ -655,6 +660,7 @@ void getRandomPose(Matx44d& Pose)
 
 Mat addNoisePC(Mat pc, double scale)
 {
+  pc = normalizePointCloud(pc, true);
   Mat randT = genRandomMat(pc.rows,pc.cols,0,scale,CV_32FC1);
   return randT + pc;
 }
@@ -701,18 +707,15 @@ int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, co
 {
   int i;
 
-  if (PC.cols!=3 && PC.cols!=6) // 3d data is expected
-  {
-    //return -1;
-    CV_Error(cv::Error::BadImageSize, "PC should have 3 or 6 elements in its columns");
-  }
+  Mat pcNorm = normalizePointCloud(PC, true, cv::Error::BadImageSize);
+  CV_CheckGT(NumNeighbors, 0, "");
 
-  PCNormals.create(PC.rows, 6, CV_32F);
+  PCNormals.create(pcNorm.rows, 6, CV_32F);
   Mat PCInput = PCNormals.colRange(0, 3);
-  Mat Distances(PC.rows, NumNeighbors, CV_32F);
-  Mat Indices(PC.rows, NumNeighbors, CV_32S);
+  Mat Distances(pcNorm.rows, NumNeighbors, CV_32F);
+  Mat Indices(pcNorm.rows, NumNeighbors, CV_32S);
 
-  PC.rowRange(0, PC.rows).colRange(0, 3).copyTo(PCNormals.rowRange(0, PC.rows).colRange(0, 3));
+  pcNorm.rowRange(0, pcNorm.rows).colRange(0, 3).copyTo(PCNormals.rowRange(0, pcNorm.rows).colRange(0, 3));
 
   void* flannIndex = indexPCFlann(PCInput);
 
@@ -723,7 +726,7 @@ int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, co
 #if defined _OPENMP
 #pragma omp parallel for
 #endif
-  for (i=0; i<PC.rows; i++)
+  for (i=0; i<pcNorm.rows; i++)
   {
     Matx33d C;
     Vec3d mu;
