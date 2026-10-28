@@ -1624,7 +1624,7 @@ void RICInterpolatorImpl::findSupportMatches(vector<int> & srcIds, int srcCnt, i
     fill(outSupportDis.begin(), outSupportDis.end(), -1.f); // -1
 
     int allNodeCnt = matNN.rows;
-    MinHeap H(allNodeCnt); // min-heap
+    MinHeap H(allNodeCnt * matNN.cols + 1); // a node is pushed again each time its distance drops
     vector<float> currDis(allNodeCnt);
 
     for (int i = 0; i < srcCnt; i++)
@@ -1815,6 +1815,10 @@ float RICInterpolatorImpl::HypothesisEvaluation(const Mat & inModel, const int *
     float cost = 0;
     for (int k = 0; k < matCnt; k++) {
         int matId = matNodes[k];
+        if (matId < 0) { // support slot left empty by findSupportMatches()
+            outInLier.at<int>(k) = 0;
+            continue;
+        }
         const SparseMatch & p = inputMatches[matId];
         float x1 = p.reference_image_pos.x;
         float y1 = p.reference_image_pos.y;
@@ -1847,6 +1851,8 @@ float RICInterpolatorImpl::HypothesisEvaluation(const Mat & inModel, const int *
 
 int RICInterpolatorImpl::HypothesisGeneration(int* matNodes, int matCnt, const vector<SparseMatch> & inputMatches, Mat & outModel)
 {
+    while (matCnt > 0 && matNodes[matCnt - 1] < 0) // empty support slots are at the end
+        matCnt--;
     if (matCnt < 3)
     {
         return -1;
