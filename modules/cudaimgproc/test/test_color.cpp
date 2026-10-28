@@ -2429,17 +2429,14 @@ CUDA_TEST_P(Demosaicing, BayerGR2BGR)
 
 CUDA_TEST_P(Demosaicing, Bayer2GRAY)
 {
-    if (useRoi)
-        return;
-
     const int codes[4] = { cv::COLOR_BayerBG2GRAY, cv::COLOR_BayerGB2GRAY, cv::COLOR_BayerRG2GRAY, cv::COLOR_BayerGR2GRAY };
     cv::Mat src = randomMat(cv::Size(128, 128), CV_8UC1);
 
     for (int i = 0; i < 4; ++i)
     {
         cv::cuda::GpuMat dst_demosaic, dst_cvt;
-        cv::cuda::demosaicing(loadMat(src, useRoi), dst_demosaic, codes[i]);
-        cv::cuda::cvtColor(loadMat(src, useRoi), dst_cvt, codes[i]);
+        cv::cuda::demosaicing(loadMat(src), dst_demosaic, codes[i]);
+        cv::cuda::cvtColor(loadMat(src), dst_cvt, codes[i]);
 
         EXPECT_MAT_NEAR(dst_cvt, dst_demosaic, 0);
     }
