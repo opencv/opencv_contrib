@@ -455,17 +455,6 @@ TEST_P(Objdetect_QRCode_Easy_Multi, regression) {
 std::string qrcode_model_path[] = {"", "dnn/wechat_2021-01"};
 INSTANTIATE_TEST_CASE_P(/**/, Objdetect_QRCode_Easy_Multi, testing::ValuesIn(qrcode_model_path));
 
-TEST(Objdetect_QRCode_bug, issue_3478) {
-    auto detector = wechat_qrcode::WeChatQRCode();
-    std::string image_path = findDataFile("qrcode/issue_3478.png");
-    Mat src = imread(image_path, IMREAD_GRAYSCALE);
-    ASSERT_FALSE(src.empty()) << "Can't read image: " << image_path;
-    std::vector<std::string> outs = detector.detectAndDecode(src);
-    ASSERT_EQ(1, (int) outs.size());
-    ASSERT_EQ(16, (int) outs[0].size());
-    ASSERT_EQ("KFCVW50         ", outs[0]);
-}
-
 TEST(Objdetect_QRCode_bug, issue_3816_non_continuous) {
     const std::string expect_msg = "OpenCV_non_continuous_step_3816";
     QRCodeEncoder::Params params;
@@ -508,6 +497,17 @@ TEST(Objdetect_QRCode_bug, issue_3816_non_continuous) {
     EXPECT_EQ(expect_msg, resRoi[0]);
     ASSERT_EQ(ptsCont.size(), ptsRoi.size());
     EXPECT_EQ(0.0, cv::norm(ptsCont[0], ptsRoi[0], NORM_INF));
+}
+
+TEST(Objdetect_QRCode_bug, issue_3478) {
+    auto detector = wechat_qrcode::WeChatQRCode();
+    std::string image_path = findDataFile("qrcode/issue_3478.png");
+    Mat src = imread(image_path, IMREAD_GRAYSCALE);
+    ASSERT_FALSE(src.empty()) << "Can't read image: " << image_path;
+    std::vector<std::string> outs = detector.detectAndDecode(src);
+    ASSERT_EQ(1, (int) outs.size());
+    ASSERT_EQ(16, (int) outs[0].size());
+    ASSERT_EQ("KFCVW50         ", outs[0]);
 }
 
 }  // namespace
