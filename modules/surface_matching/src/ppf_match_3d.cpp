@@ -202,11 +202,12 @@ PPF3DDetector::~PPF3DDetector()
 // TODO: Check all step sizes to be positive
 void PPF3DDetector::trainModel(const Mat &PC)
 {
-  CV_Assert(PC.type() == CV_32F || PC.type() == CV_32FC1);
+  Mat pcNorm = normalizePointCloud(PC);
+  clearTrainingModels();
 
   // compute bbox
   Vec2f xRange, yRange, zRange;
-  computeBboxStd(PC, xRange, yRange, zRange);
+  computeBboxStd(pcNorm, xRange, yRange, zRange);
 
   // compute sampling step from diameter of bbox
   float dx = xRange[1] - xRange[0];
@@ -216,7 +217,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
 
   float distanceStep = (float)(diameter * sampling_step_relative);
 
-  Mat sampled = samplePCByQuantization(PC, xRange, yRange, zRange, (float)sampling_step_relative,0);
+  Mat sampled = samplePCByQuantization(pcNorm, xRange, yRange, zRange, (float)sampling_step_relative,0);
 
   int size = sampled.rows*sampled.rows;
 
@@ -414,7 +415,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
     throw cv::Exception(cv::Error::StsError, "The model is not trained. Cannot match without training", __FUNCTION__, __FILE__, __LINE__);
   }
 
-  CV_Assert(pc.type() == CV_32F || pc.type() == CV_32FC1);
+  Mat pcNorm = normalizePointCloud(pc);
   CV_Assert(relativeSceneSampleStep<=1 && relativeSceneSampleStep>0);
 
   scene_sample_step = (int)(1.0/relativeSceneSampleStep);
@@ -428,7 +429,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
 
   // compute bbox
   Vec2f xRange, yRange, zRange;
-  computeBboxStd(pc, xRange, yRange, zRange);
+  computeBboxStd(pcNorm, xRange, yRange, zRange);
 
   // sample the point cloud
   /*float dx = xRange[1] - xRange[0];
@@ -436,7 +437,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
   float dz = zRange[1] - zRange[0];
   float diameter = sqrt ( dx * dx + dy * dy + dz * dz );
   float distanceSampleStep = diameter * RelativeSceneDistance;*/
-  Mat sampled = samplePCByQuantization(pc, xRange, yRange, zRange, (float)relativeSceneDistance, 0);
+  Mat sampled = samplePCByQuantization(pcNorm, xRange, yRange, zRange, (float)relativeSceneDistance, 0);
 
   // allocate the accumulator : Moved this to the inside of the loop
   /*#if !defined (_OPENMP)
