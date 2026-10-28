@@ -2122,11 +2122,11 @@ void cv::cuda::demosaicing(InputArray _src, OutputArray _dst, int code, int dcn,
     switch (code)
     {
     case cv::COLOR_BayerBG2GRAY: case cv::COLOR_BayerGB2GRAY: case cv::COLOR_BayerRG2GRAY: case cv::COLOR_BayerGR2GRAY:
-        bayer_to_gray(_src, _dst, code == cv::COLOR_BayerBG2GRAY || code == cv::COLOR_BayerGB2GRAY, code == cv::COLOR_BayerGB2GRAY || code == cv::COLOR_BayerGR2GRAY, stream);
+        bayer_to_gray(_src, _dst, code == cv::COLOR_BayerRG2GRAY || code == cv::COLOR_BayerGR2GRAY, code == cv::COLOR_BayerGB2GRAY || code == cv::COLOR_BayerGR2GRAY, stream);
         break;
 
     case cv::COLOR_BayerBG2BGR: case cv::COLOR_BayerGB2BGR: case cv::COLOR_BayerRG2BGR: case cv::COLOR_BayerGR2BGR:
-        bayer_to_BGR(_src, _dst, dcn, code == cv::COLOR_BayerBG2BGR || code == cv::COLOR_BayerGB2BGR, code == cv::COLOR_BayerGB2BGR || code == cv::COLOR_BayerGR2BGR, stream);
+        bayer_to_BGR(_src, _dst, dcn, code == cv::COLOR_BayerRG2BGR || code == cv::COLOR_BayerGR2BGR, code == cv::COLOR_BayerGB2BGR || code == cv::COLOR_BayerGR2BGR, stream);
         break;
 
     case COLOR_BayerBG2BGR_MHT: case COLOR_BayerGB2BGR_MHT: case COLOR_BayerRG2BGR_MHT: case COLOR_BayerGR2BGR_MHT:
@@ -2149,8 +2149,8 @@ void cv::cuda::demosaicing(InputArray _src, OutputArray _dst, int code, int dcn,
         Point ofs;
         src.locateROI(wholeSize, ofs);
 
-        const int2 firstRed = make_int2(code == COLOR_BayerRG2BGR_MHT || code == COLOR_BayerGB2BGR_MHT ? 0 : 1,
-                                        code == COLOR_BayerRG2BGR_MHT || code == COLOR_BayerGR2BGR_MHT ? 0 : 1);
+        const int2 firstRed = make_int2(code == COLOR_BayerBG2BGR_MHT || code == COLOR_BayerGR2BGR_MHT ? 0 : 1,
+                                        code == COLOR_BayerBG2BGR_MHT || code == COLOR_BayerGB2BGR_MHT ? 0 : 1);
 
         if (dcn == 3) {
             if (depth == CV_8U) {
@@ -2188,8 +2188,8 @@ void cv::cuda::demosaicing(InputArray _src, OutputArray _dst, int code, int dcn,
         Point ofs;
         src.locateROI(wholeSize, ofs);
 
-        const int2 firstRed = make_int2(code == COLOR_BayerRG2BGR_MHT || code == COLOR_BayerGB2BGR_MHT ? 0 : 1,
-                                        code == COLOR_BayerRG2BGR_MHT || code == COLOR_BayerGR2BGR_MHT ? 0 : 1);
+        const int2 firstRed = make_int2(code == COLOR_BayerBG2GRAY_MHT || code == COLOR_BayerGR2GRAY_MHT ? 0 : 1,
+                                        code == COLOR_BayerBG2GRAY_MHT || code == COLOR_BayerGB2GRAY_MHT ? 0 : 1);
 
         if (depth == CV_8U) {
             PtrStepSzb srcWhole(wholeSize.height, wholeSize.width, src.datastart, src.step);
