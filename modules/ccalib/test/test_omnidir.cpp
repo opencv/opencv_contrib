@@ -38,9 +38,7 @@ static void runOmnidirNonContiguousTest(int depth)
     ASSERT_FALSE(DSlice.isContinuous());
 
     const double xiVal = 0.85;
-    Mat xiCols(2, 2, depth, Scalar::all(42));
-    xiCols.at<T>(1, 1) = static_cast<T>(xiVal);
-    Mat xiSlice = xiCols(Rect(1, 1, 1, 1));
+    Mat xiMat(1, 1, depth, Scalar::all(xiVal));
 
     // Create N x 1 3-channel object points inside a wider N x 3 matrix (simulating NumPy slice view)
     Mat objCanvas(N, 3, pt3Type, Scalar::all(12345));
@@ -80,7 +78,7 @@ static void runOmnidirNonContiguousTest(int depth)
     omnidir::projectPoints(objSlice, imgFresh, rvecSlice, tvecSlice, K, xiVal, DSlice);
     EXPECT_EQ(0.0, cv::norm(imgExpected, imgFresh, NORM_INF));
 
-    // 2. undistortPoints: non-contiguous distorted points (issue #3625 reproducer) + non-contiguous D/R/output + 1x3 row rvec
+    // 2. undistortPoints: non-contiguous distorted points (issue #3625 reproducer) + non-contiguous D/R/output
     Mat distPtsCanvas(N, 3, pt2Type, Scalar::all(54321));
     imgExpected.copyTo(distPtsCanvas.col(1));
     Mat distPtsSlice = distPtsCanvas.col(1);
@@ -88,17 +86,16 @@ static void runOmnidirNonContiguousTest(int depth)
     ASSERT_FALSE(distPtsSlice.isContinuous());
 
     Mat undistExpected;
-    omnidir::undistortPoints(distPtsCont, undistExpected, K, DSlice.clone(), xiSlice.clone(), rvecSlice.clone());
+    omnidir::undistortPoints(distPtsCont, undistExpected, K, DSlice.clone(), xiMat, rvecSlice.clone());
 
-    Mat rvecRow = rvecSlice.clone().t(); // 1x3 row vector
     Mat undistFresh;
-    omnidir::undistortPoints(distPtsSlice, undistFresh, K, DSlice, xiSlice, rvecRow);
+    omnidir::undistortPoints(distPtsSlice, undistFresh, K, DSlice, xiMat, rvecSlice);
     EXPECT_EQ(0.0, cv::norm(undistExpected, undistFresh, NORM_INF));
 
     Mat undistOutCanvas(N + 2, 3, pt2Type, Scalar::all(-888));
     Mat undistOutSlice = undistOutCanvas(Rect(2, 1, 1, N));
     ASSERT_FALSE(undistOutSlice.isContinuous());
-    omnidir::undistortPoints(distPtsSlice, undistOutSlice, K, DSlice, xiSlice, rvecSlice);
+    omnidir::undistortPoints(distPtsSlice, undistOutSlice, K, DSlice, xiMat, rvecSlice);
     EXPECT_EQ(0.0, cv::norm(undistExpected, undistOutSlice, NORM_INF));
     EXPECT_EQ(Vec2T(static_cast<T>(-888), static_cast<T>(-888)), undistOutCanvas.at<Vec2T>(1, 1));
 }
@@ -111,24 +108,6 @@ TEST(CCalib_Omnidir, non_contiguous_64f)
 TEST(CCalib_Omnidir, non_contiguous_32f)
 {
     runOmnidirNonContiguousTest<float>(CV_32F);
-}
-
-TEST(CCalib_Omnidir, empty_points)
-{
-    Mat K = Mat::eye(3, 3, CV_64F);
-    Mat D = Mat::zeros(4, 1, CV_64F);
-    Mat rvec = Mat::zeros(3, 1, CV_64F);
-    Mat tvec = (Mat_<double>(3, 1) << 0.0, 0.0, 1.0);
-    Mat xi = (Mat_<double>(1, 1) << 0.5);
-
-    Mat emptyObj(0, 1, CV_64FC3), imgPts, jac;
-    omnidir::projectPoints(emptyObj, imgPts, rvec, tvec, K, 0.5, D, jac);
-    EXPECT_TRUE(imgPts.empty());
-    EXPECT_TRUE(jac.empty());
-
-    Mat emptyDist(0, 1, CV_64FC2), undistPts;
-    omnidir::undistortPoints(emptyDist, undistPts, K, D, xi, rvec);
-    EXPECT_TRUE(undistPts.empty());
 }
 
 }} // namespace

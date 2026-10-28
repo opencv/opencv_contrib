@@ -92,23 +92,14 @@ void cv::omnidir::projectPoints(InputArray objectPoints, OutputArray imagePoints
 {
 
     CV_Assert(objectPoints.type() == CV_64FC3 || objectPoints.type() == CV_32FC3);
-    CV_Assert((rvec.depth() == CV_64F || rvec.depth() == CV_32F) && rvec.total() * rvec.channels() == 3);
-    CV_Assert((tvec.depth() == CV_64F || tvec.depth() == CV_32F) && tvec.total() * tvec.channels() == 3);
+    CV_Assert((rvec.depth() == CV_64F || rvec.depth() == CV_32F) && rvec.total() == 3);
+    CV_Assert((tvec.depth() == CV_64F || tvec.depth() == CV_32F) && tvec.total() == 3);
     CV_Assert((K.type() == CV_64F || K.type() == CV_32F) && K.size() == Size(3,3));
-    CV_Assert((D.depth() == CV_64F || D.depth() == CV_32F) && D.total() * D.channels() == 4);
+    CV_Assert((D.type() == CV_64F || D.type() == CV_32F) && D.total() == 4);
 
     imagePoints.create(objectPoints.size(), CV_MAKETYPE(objectPoints.depth(), 2));
 
     int n = (int)objectPoints.total();
-    if (n == 0)
-    {
-        if (jacobian.needed())
-        {
-            int nvars = 2+2+1+4+3+3+1;
-            jacobian.create(0, nvars, CV_64F);
-        }
-        return;
-    }
 
     Mat rvecMat = getContinuousMat(rvec);
     Mat tvecMat = getContinuousMat(tvec);
@@ -166,7 +157,7 @@ void cv::omnidir::projectPoints(InputArray objectPoints, OutputArray imagePoints
     for (int i = 0; i < n; i++)
     {
         // convert to camera coordinate
-        Vec3d Xw = objMat.depth() == CV_32F ? (Vec3d)Xw_allf[i] : Xw_alld[i];
+        Vec3d Xw = objectPoints.depth() == CV_32F ? (Vec3d)Xw_allf[i] : Xw_alld[i];
 
         Vec3d Xc = (Vec3d)(R*Xw + T);
 
@@ -189,7 +180,7 @@ void cv::omnidir::projectPoints(InputArray objectPoints, OutputArray imagePoints
         final[0] = f[0]*xd[0]+s*xd[1]+c[0];
         final[1] = f[1]*xd[1]+c[1];
 
-        if (objMat.depth() == CV_32F)
+        if (objectPoints.depth() == CV_32F)
         {
             xpf[i] = final;
         }
@@ -282,15 +273,11 @@ void cv::omnidir::undistortPoints( InputArray distorted, OutputArray undistorted
     CV_Assert(distorted.type() == CV_64FC2 || distorted.type() == CV_32FC2);
     CV_Assert(R.empty() || (!R.empty() && (R.size() == Size(3, 3) || R.total() * R.channels() == 3)
         && (R.depth() == CV_64F || R.depth() == CV_32F)));
-    CV_Assert((D.depth() == CV_64F || D.depth() == CV_32F) && D.total() * D.channels() == 4);
+    CV_Assert((D.depth() == CV_64F || D.depth() == CV_32F) && D.total() == 4);
     CV_Assert(K.size() == Size(3, 3) && (K.depth() == CV_64F || K.depth() == CV_32F));
     CV_Assert(xi.total() == 1 && (xi.depth() == CV_64F || xi.depth() == CV_32F));
 
     undistorted.create(distorted.size(), distorted.type());
-
-    int n = (int)distorted.total();
-    if (n == 0)
-        return;
 
     cv::Vec2d f, c;
     double s = 0.0;
@@ -314,14 +301,13 @@ void cv::omnidir::undistortPoints( InputArray distorted, OutputArray undistorted
     Vec2d k = Vec2d(kp[0], kp[1]);
     Vec2d p = Vec2d(kp[2], kp[3]);
 
-    Mat xiMat = getContinuousMat(xi);
-    double _xi = xiMat.depth() == CV_32F ? (double)*xiMat.ptr<float>() : *xiMat.ptr<double>();
+    double _xi = xi.depth() == CV_32F ? (double)*xi.getMat().ptr<float>() : *xi.getMat().ptr<double>();
     cv::Matx33d RR = cv::Matx33d::eye();
     // R is om
     if(!R.empty() && R.total()*R.channels() == 3)
     {
         cv::Vec3d rvec;
-        getContinuousMat(R).reshape(1, 3).convertTo(rvec, CV_64F);
+        R.getMat().convertTo(rvec, CV_64F);
         cv::Rodrigues(rvec, RR);
     }
     else if (!R.empty() && R.size() == Size(3,3))
@@ -339,9 +325,10 @@ void cv::omnidir::undistortPoints( InputArray distorted, OutputArray undistorted
     cv::Vec2d *dstd = undistBuf.ptr<cv::Vec2d>();
     cv::Vec2f *dstf = undistBuf.ptr<cv::Vec2f>();
 
+    int n = (int)distorted.total();
     for (int i = 0; i < n; i++)
     {
-        Vec2d pi = distMat.depth() == CV_32F ? (Vec2d)srcf[i]:(Vec2d)srcd[i];    // image point
+        Vec2d pi = distorted.depth() == CV_32F ? (Vec2d)srcf[i]:(Vec2d)srcd[i];    // image point
         Vec2d pp((pi[0]*f[1]-c[0]*f[1]-s*(pi[1]-c[1]))/(f[0]*f[1]), (pi[1]-c[1])/f[1]); //plane
         Vec2d pu = pp;    // points without distortion
 
@@ -370,11 +357,11 @@ void cv::omnidir::undistortPoints( InputArray distorted, OutputArray undistorted
 
         // reproject to camera plane
         Vec3d ppu = Vec3d(Xs[0]/Xs[2], Xs[1]/Xs[2], 1.0);
-        if (undistBuf.depth() == CV_32F)
+        if (undistorted.depth() == CV_32F)
         {
             dstf[i] = Vec2f((float)ppu[0], (float)ppu[1]);
         }
-        else if (undistBuf.depth() == CV_64F)
+        else if (undistorted.depth() == CV_64F)
         {
             dstd[i] = Vec2d(ppu[0], ppu[1]);
         }
@@ -394,8 +381,8 @@ void cv::omnidir::initUndistortRectifyMap(InputArray K, InputArray D, InputArray
     map1.create( size, m1type <= 0 ? CV_16SC2 : m1type );
     map2.create( size, map1.type() == CV_16SC2 ? CV_16UC1 : CV_32F );
 
-    CV_Assert((K.depth() == CV_32F || K.depth() == CV_64F) && (D.empty() || D.depth() == CV_32F || D.depth() == CV_64F));
-    CV_Assert(K.size() == Size(3, 3) && (D.empty() || D.total() * D.channels() == 4));
+    CV_Assert((K.depth() == CV_32F || K.depth() == CV_64F) && (D.depth() == CV_32F || D.depth() == CV_64F));
+    CV_Assert(K.size() == Size(3, 3) && (D.empty() || D.total() == 4));
     CV_Assert(P.empty()|| (P.depth() == CV_32F || P.depth() == CV_64F));
     CV_Assert(P.empty() || P.size() == Size(3, 3) || P.size() == Size(4, 3));
     CV_Assert(R.empty() || (R.depth() == CV_32F || R.depth() == CV_64F));
@@ -427,15 +414,14 @@ void cv::omnidir::initUndistortRectifyMap(InputArray K, InputArray D, InputArray
         Mat DMat = getContinuousMat(D);
         kp = DMat.depth() == CV_32F ? (Vec4d)*DMat.ptr<Vec4f>(): *DMat.ptr<Vec4d>();
     }
-    Mat xiMat = getContinuousMat(xi);
-    double _xi = xiMat.depth() == CV_32F ? (double)*xiMat.ptr<float>() : *xiMat.ptr<double>();
+    double _xi = xi.depth() == CV_32F ? (double)*xi.getMat().ptr<float>() : *xi.getMat().ptr<double>();
     Vec2d k = Vec2d(kp[0], kp[1]);
     Vec2d p = Vec2d(kp[2], kp[3]);
     cv::Matx33d RR  = cv::Matx33d::eye();
     if (!R.empty() && R.total() * R.channels() == 3)
     {
         cv::Vec3d rvec;
-        getContinuousMat(R).reshape(1, 3).convertTo(rvec, CV_64F);
+        R.getMat().convertTo(rvec, CV_64F);
         cv::Rodrigues(rvec, RR);
     }
     else if (!R.empty() && R.size() == Size(3, 3))
