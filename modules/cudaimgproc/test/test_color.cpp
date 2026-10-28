@@ -2361,11 +2361,15 @@ CUDA_TEST_P(Demosaicing, BayerBG2BGR)
     ASSERT_FALSE(img.empty()) << "Can't load input image";
 
     cv::Mat_<uchar> src;
-    mosaic(img, src, cv::Point(1, 1));
+    mosaic(img, src, cv::Point(0, 0));
 
     cv::cuda::GpuMat dst;
     cv::cuda::demosaicing(loadMat(src), dst, cv::COLOR_BayerBG2BGR);
 
+    cv::Mat dst_gold;
+    cv::demosaicing(src, dst_gold, cv::COLOR_BayerBG2BGR);
+
+    EXPECT_MAT_NEAR(dst_gold(cv::Rect(1, 1, dst.cols - 2, dst.rows - 2)), dst(cv::Rect(1, 1, dst.cols - 2, dst.rows - 2)), 0);
     EXPECT_MAT_SIMILAR(img, dst, 2e-2);
 }
 
@@ -2375,11 +2379,15 @@ CUDA_TEST_P(Demosaicing, BayerGB2BGR)
     ASSERT_FALSE(img.empty()) << "Can't load input image";
 
     cv::Mat_<uchar> src;
-    mosaic(img, src, cv::Point(0, 1));
+    mosaic(img, src, cv::Point(1, 0));
 
     cv::cuda::GpuMat dst;
     cv::cuda::demosaicing(loadMat(src), dst, cv::COLOR_BayerGB2BGR);
 
+    cv::Mat dst_gold;
+    cv::demosaicing(src, dst_gold, cv::COLOR_BayerGB2BGR);
+
+    EXPECT_MAT_NEAR(dst_gold(cv::Rect(1, 1, dst.cols - 2, dst.rows - 2)), dst(cv::Rect(1, 1, dst.cols - 2, dst.rows - 2)), 0);
     EXPECT_MAT_SIMILAR(img, dst, 2e-2);
 }
 
@@ -2389,11 +2397,15 @@ CUDA_TEST_P(Demosaicing, BayerRG2BGR)
     ASSERT_FALSE(img.empty()) << "Can't load input image";
 
     cv::Mat_<uchar> src;
-    mosaic(img, src, cv::Point(0, 0));
+    mosaic(img, src, cv::Point(1, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::demosaicing(loadMat(src), dst, cv::COLOR_BayerRG2BGR);
 
+    cv::Mat dst_gold;
+    cv::demosaicing(src, dst_gold, cv::COLOR_BayerRG2BGR);
+
+    EXPECT_MAT_NEAR(dst_gold(cv::Rect(1, 1, dst.cols - 2, dst.rows - 2)), dst(cv::Rect(1, 1, dst.cols - 2, dst.rows - 2)), 0);
     EXPECT_MAT_SIMILAR(img, dst, 2e-2);
 }
 
@@ -2403,12 +2415,31 @@ CUDA_TEST_P(Demosaicing, BayerGR2BGR)
     ASSERT_FALSE(img.empty()) << "Can't load input image";
 
     cv::Mat_<uchar> src;
-    mosaic(img, src, cv::Point(1, 0));
+    mosaic(img, src, cv::Point(0, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::demosaicing(loadMat(src), dst, cv::COLOR_BayerGR2BGR);
 
+    cv::Mat dst_gold;
+    cv::demosaicing(src, dst_gold, cv::COLOR_BayerGR2BGR);
+
+    EXPECT_MAT_NEAR(dst_gold(cv::Rect(1, 1, dst.cols - 2, dst.rows - 2)), dst(cv::Rect(1, 1, dst.cols - 2, dst.rows - 2)), 0);
     EXPECT_MAT_SIMILAR(img, dst, 2e-2);
+}
+
+CUDA_TEST_P(Demosaicing, Bayer2GRAY)
+{
+    const int codes[4] = { cv::COLOR_BayerBG2GRAY, cv::COLOR_BayerGB2GRAY, cv::COLOR_BayerRG2GRAY, cv::COLOR_BayerGR2GRAY };
+    cv::Mat src = randomMat(cv::Size(128, 128), CV_8UC1);
+
+    for (int i = 0; i < 4; ++i)
+    {
+        cv::cuda::GpuMat dst_demosaic, dst_cvt;
+        cv::cuda::demosaicing(loadMat(src), dst_demosaic, codes[i]);
+        cv::cuda::cvtColor(loadMat(src), dst_cvt, codes[i]);
+
+        EXPECT_MAT_NEAR(dst_cvt, dst_demosaic, 0);
+    }
 }
 
 CUDA_TEST_P(Demosaicing, BayerBG2BGR_MHT)
@@ -2417,7 +2448,7 @@ CUDA_TEST_P(Demosaicing, BayerBG2BGR_MHT)
     ASSERT_FALSE(img.empty()) << "Can't load input image";
 
     cv::Mat_<uchar> src;
-    mosaic(img, src, cv::Point(1, 1));
+    mosaic(img, src, cv::Point(0, 0));
 
     cv::cuda::GpuMat dst;
     cv::cuda::demosaicing(loadMat(src, useRoi), dst, cv::cuda::COLOR_BayerBG2BGR_MHT);
@@ -2431,7 +2462,7 @@ CUDA_TEST_P(Demosaicing, BayerGB2BGR_MHT)
     ASSERT_FALSE(img.empty()) << "Can't load input image";
 
     cv::Mat_<uchar> src;
-    mosaic(img, src, cv::Point(0, 1));
+    mosaic(img, src, cv::Point(1, 0));
 
     cv::cuda::GpuMat dst;
     cv::cuda::demosaicing(loadMat(src, useRoi), dst, cv::cuda::COLOR_BayerGB2BGR_MHT);
@@ -2445,7 +2476,7 @@ CUDA_TEST_P(Demosaicing, BayerRG2BGR_MHT)
     ASSERT_FALSE(img.empty()) << "Can't load input image";
 
     cv::Mat_<uchar> src;
-    mosaic(img, src, cv::Point(0, 0));
+    mosaic(img, src, cv::Point(1, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::demosaicing(loadMat(src, useRoi), dst, cv::cuda::COLOR_BayerRG2BGR_MHT);
@@ -2459,11 +2490,39 @@ CUDA_TEST_P(Demosaicing, BayerGR2BGR_MHT)
     ASSERT_FALSE(img.empty()) << "Can't load input image";
 
     cv::Mat_<uchar> src;
-    mosaic(img, src, cv::Point(1, 0));
+    mosaic(img, src, cv::Point(0, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::demosaicing(loadMat(src, useRoi), dst, cv::cuda::COLOR_BayerGR2BGR_MHT);
     EXPECT_MAT_SIMILAR(img, dst, 5e-3);
+}
+
+CUDA_TEST_P(Demosaicing, Bayer2GRAY_MHT)
+{
+    cv::Mat img = readImage("stereobm/aloe-L.png");
+    ASSERT_FALSE(img.empty()) << "Can't load input image";
+
+    cv::Mat gray_gold;
+    cv::cvtColor(img, gray_gold, cv::COLOR_BGR2GRAY);
+
+    const cv::Point firstReds[4] = { cv::Point(0, 0), cv::Point(1, 0), cv::Point(1, 1), cv::Point(0, 1) };
+    const int codes[4] = {
+        cv::cuda::COLOR_BayerBG2GRAY_MHT,
+        cv::cuda::COLOR_BayerGB2GRAY_MHT,
+        cv::cuda::COLOR_BayerRG2GRAY_MHT,
+        cv::cuda::COLOR_BayerGR2GRAY_MHT
+    };
+
+    for (int i = 0; i < 4; ++i)
+    {
+        cv::Mat_<uchar> src;
+        mosaic(img, src, firstReds[i]);
+
+        cv::cuda::GpuMat dst;
+        cv::cuda::demosaicing(loadMat(src, useRoi), dst, codes[i]);
+
+        EXPECT_MAT_SIMILAR(gray_gold, dst, 5e-3);
+    }
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, Demosaicing, testing::Combine(ALL_DEVICES, WHOLE_SUBMAT));
