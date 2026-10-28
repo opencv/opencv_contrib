@@ -700,7 +700,6 @@ namespace
         if (iters_ > 1)
         {
             ensureSizeIsEnough(srcBorder_.size(), type_, buf_);
-            buf_.setTo(Scalar::all(0), _stream);
             bufRoi = buf_(Rect(ksize.width, ksize.height, src.cols, src.rows));
         }
 
@@ -734,7 +733,7 @@ namespace
 
             for(int i = 1; i < iters_; ++i)
             {
-                dst.copyTo(bufRoi, _stream);
+                cuda::copyMakeBorder(dst, buf_, ksize.height, ksize.height, ksize.width, ksize.width, BORDER_DEFAULT, Scalar(), _stream);
 #if USE_NPP_STREAM_CTX
                 nppSafeCall( func8u_(bufRoi.ptr<Npp8u>(), static_cast<int>(bufRoi.step), dst.ptr<Npp8u>(), static_cast<int>(dst.step),
                                      oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor, h) );
@@ -755,13 +754,13 @@ namespace
 #endif
             for(int i = 1; i < iters_; ++i)
             {
-                dst.copyTo(bufRoi, _stream);
+                cuda::copyMakeBorder(dst, buf_, ksize.height, ksize.height, ksize.width, ksize.width, BORDER_DEFAULT, Scalar(), _stream);
 
 #if USE_NPP_STREAM_CTX
                 nppSafeCall( func32f_(bufRoi.ptr<Npp32f>(), static_cast<int>(bufRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
                                       oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor, h) );
 #else
-                nppSafeCall(func32f_(srcRoi.ptr<Npp32f>(), static_cast<int>(srcRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
+                nppSafeCall(func32f_(bufRoi.ptr<Npp32f>(), static_cast<int>(bufRoi.step), dst.ptr<Npp32f>(), static_cast<int>(dst.step),
                     oSizeROI, kernel_.ptr<Npp8u>(), oMaskSize, oAnchor));
 #endif
             }
