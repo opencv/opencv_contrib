@@ -245,13 +245,15 @@ static hashtable_int* getHashtable(int* data, size_t length, int numMaxElement)
 // source point clouds are assumed to contain their normals
 int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residual, Matx44d& pose)
 {
-  int n = srcPC.rows;
+  Mat srcNorm = normalizePointCloud(srcPC);
+  Mat dstNorm = normalizePointCloud(dstPC);
+  int n = srcNorm.rows;
   CV_CheckGT(n, 0, "");
 
   const bool useRobustReject = m_rejectionScale>0;
 
-  Mat srcTemp = srcPC.clone();
-  Mat dstTemp = dstPC.clone();
+  Mat srcTemp = srcNorm.clone();
+  Mat dstTemp = dstNorm.clone();
   Vec3d meanSrc, meanDst;
   computeMeanCols(srcTemp, meanSrc);
   computeMeanCols(dstTemp, meanDst);
@@ -469,14 +471,16 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
 // source point clouds are assumed to contain their normals
 int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Pose3DPtr>& poses)
 {
+  Mat srcNorm = normalizePointCloud(srcPC);
+  Mat dstNorm = normalizePointCloud(dstPC);
   #if defined _OPENMP
   #pragma omp parallel for
   #endif
   for (int i=0; i<(int)poses.size(); i++)
   {
     Matx44d poseICP = Matx44d::eye();
-    Mat srcTemp = transformPCPose(srcPC, poses[i]->pose);
-    registerModelToScene(srcTemp, dstPC, poses[i]->residual, poseICP);
+    Mat srcTemp = transformPCPose(srcNorm, poses[i]->pose);
+    registerModelToScene(srcTemp, dstNorm, poses[i]->residual, poseICP);
     poses[i]->appendPose(poseICP);
   }
   return 0;
