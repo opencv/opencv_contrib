@@ -158,6 +158,37 @@ TEST(InterpolatorTest, RICReferenceAccuracy)
     EXPECT_LE(cv::norm(res_flow, ref_flow, NORM_L1) , MAX_MEAN_DIF*res_flow.total());
 }
 
+TEST(InterpolatorTest, RICFewerMatchesThanSupportCount)
+{
+    RNG& rng = theRNG();
+    const Size size(160, 120);
+    const int matchCounts[] = { 40, 80, 120 }; // fewer than the default getSuperpixelNNCnt() of 150
+
+    const int origThreads = cv::getNumThreads();
+    cv::setNumThreads(1); // PropagateModels() uses rand(): bit-exact results need one thread
+    for (size_t c = 0; c < sizeof(matchCounts) / sizeof(matchCounts[0]); ++c)
+    {
+        Mat from(size, CV_8UC3), to(size, CV_8UC3);
+        rng.fill(from, RNG::UNIFORM, 0, 256);
+        rng.fill(to, RNG::UNIFORM, 0, 256);
+        vector<Point2f> fromPoints(matchCounts[c]), toPoints(matchCounts[c]);
+        for (int i = 0; i < matchCounts[c]; ++i)
+        {
+            fromPoints[i] = Point2f(rng.uniform(0.f, size.width - 1.f), rng.uniform(0.f, size.height - 1.f));
+            toPoints[i] = fromPoints[i] + Point2f(rng.uniform(-4.f, 4.f), rng.uniform(-4.f, 4.f));
+        }
+
+        Mat flowDefault, flowExact;
+        Ptr<RICInterpolator> interpolator = createRICInterpolator();
+        interpolator->interpolate(from, fromPoints, to, toPoints, flowDefault);
+        interpolator = createRICInterpolator();
+        interpolator->setSuperpixelNNCnt(matchCounts[c]);
+        interpolator->interpolate(from, fromPoints, to, toPoints, flowExact);
+        EXPECT_EQ(0.0, cvtest::norm(flowExact, flowDefault, NORM_INF)) << matchCounts[c] << " matches";
+    }
+    cv::setNumThreads(origThreads);
+}
+
 TEST_P(InterpolatorTest, MultiThreadReproducibility)
 {
     if (cv::getNumberOfCPUs() == 1)
