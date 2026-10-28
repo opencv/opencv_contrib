@@ -1033,6 +1033,7 @@ struct ComputeDescriptorsInvoker : ParallelLoopBody
     {
       x_off = _roi->x;
       x_end = _roi->x + _roi->width;
+      y_off = _roi->y;
       image = _image;
       layers = _layers;
       th_q_no = _th_q_no;
@@ -1050,7 +1051,7 @@ struct ComputeDescriptorsInvoker : ParallelLoopBody
       {
         for( int x = x_off; x < x_end; x++ )
         {
-          index = y*image->cols + x;
+          index = (y - y_off)*(x_end - x_off) + (x - x_off);
           orientation = 0;
           if( !orientation_map->empty() )
               orientation = (int) orientation_map->at<ushort>( y, x );
@@ -1065,6 +1066,7 @@ struct ComputeDescriptorsInvoker : ParallelLoopBody
 
     int th_q_no;
     int x_off, x_end;
+    int y_off;
     std::vector<Mat>* layers;
     Mat *descriptors;
     Mat *orientation_map;
