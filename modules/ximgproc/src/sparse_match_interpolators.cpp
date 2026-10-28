@@ -1166,14 +1166,15 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     for (unsigned int i = 0; i < matches_vector.size(); i++)
     {
         const SparseMatch & p = matches_vector[i];
-        Point pos(static_cast<int>(p.reference_image_pos.x), static_cast<int>(p.reference_image_pos.y));
+        Point pos(std::min(std::max(static_cast<int>(p.reference_image_pos.x), 0), src_size.width - 1),
+                  std::min(std::max(static_cast<int>(p.reference_image_pos.y), 0), src_size.height - 1));
         labels.at<int>(pos) = i;
         matDistanceMap.at<float>(pos) = costMap.at<float>(pos);
     }
 
     geodesicDistanceTransform(matDistanceMap, costMap);
 
-    g.resize(match_num);
+    g.assign(match_num, vector<node>());
     buildGraph(matDistanceMap, costMap);
     parallel_for_(Range(0, getNumThreads()), [&](const Range & range)
     {
@@ -1228,8 +1229,8 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     for (int i = 0; i < spCnt; i++)
     {
         Point pos = static_cast<Point>(spPos.at<Point2f>(i) + Point2f(0.5f,0.5f));
-        pos.x = MIN(labels.cols - 1, pos.x);
-        pos.y = MIN(labels.rows - 1, pos.y);
+        pos.x = std::min(std::max(pos.x, 0), labels.cols - 1);
+        pos.y = std::min(std::max(pos.y, 0), labels.rows - 1);
         srcMatchIds[i] = labels.at<int>(pos);
     }
 
@@ -1313,6 +1314,7 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     }
     dst.copyTo(dense_flow.getMat());
     costMap.release();
+    g.clear();
 }
 
 void RICInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_map)
@@ -1421,7 +1423,7 @@ void RICInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
     int h = labels.rows;
     int w = labels.cols;
 #define CHK_GD(cur_dist,cur_label,cur_cost,prev_dist,prev_label,prev_cost,coef)\
-    if(cur_label!=prev_label)\
+    if(cur_label!=prev_label && cur_label>=0 && prev_label>=0)\
     {\
         d = prev_dist + cur_dist + coef*(cur_cost+prev_cost);\
         found = false;\
