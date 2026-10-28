@@ -2425,6 +2425,26 @@ CUDA_TEST_P(Demosaicing, BayerBG2BGR_MHT)
     EXPECT_MAT_SIMILAR(img, dst, 5e-3);
 }
 
+CUDA_TEST_P(Demosaicing, MHT_16U)
+{
+    cv::Mat src = randomMat(cv::Size(127, 95), CV_16UC1, 0, 65536);
+
+    // pixels whose 5x5 neighbourhood lies inside src
+    const cv::Rect inner(2, 2, src.cols - 4, src.rows - 4);
+
+    const int codes[3] = { cv::cuda::COLOR_BayerBG2BGR_MHT, cv::cuda::COLOR_BayerBG2BGR_MHT, cv::cuda::COLOR_BayerBG2GRAY_MHT };
+    const int dcns[3] = { 3, 4, 1 };
+
+    for (int i = 0; i < 3; ++i)
+    {
+        cv::cuda::GpuMat dst, dst_gold;
+        cv::cuda::demosaicing(loadMat(src, useRoi), dst, codes[i], dcns[i]);
+        cv::cuda::demosaicing(loadMat(src), dst_gold, codes[i], dcns[i]);
+
+        EXPECT_MAT_NEAR(cv::Mat(dst_gold)(inner), cv::Mat(dst)(inner), 0.0);
+    }
+}
+
 CUDA_TEST_P(Demosaicing, BayerGB2BGR_MHT)
 {
     cv::Mat img = readImage("stereobm/aloe-L.png");
