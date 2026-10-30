@@ -408,7 +408,7 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
     if (srcImage.type() == CV_8UC1)
     {
         if (params.Sigma < 1.0)
-            smoothImage = srcImage;
+            smoothImage = srcImage.clone(); // must not alias the caller's input: the PFmode path and detectEllipses() blur into smoothImage in place
         else if (params.Sigma == 1.0)
             GaussianBlur(srcImage, smoothImage, Size(5, 5), params.Sigma);
         else
