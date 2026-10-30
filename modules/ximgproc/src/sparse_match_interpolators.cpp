@@ -1173,7 +1173,7 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
 
     geodesicDistanceTransform(matDistanceMap, costMap);
 
-    g.resize(match_num);
+    g.assign(match_num, vector<node>());
     buildGraph(matDistanceMap, costMap);
     parallel_for_(Range(0, getNumThreads()), [&](const Range & range)
     {
