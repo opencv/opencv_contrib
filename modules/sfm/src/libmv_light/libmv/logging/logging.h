@@ -21,7 +21,11 @@
 #ifndef LIBMV_LOGGING_LOGGING_H
 #define LIBMV_LOGGING_LOGGING_H
 
+#if NGLOG_FOUND
+#include <ng-log/logging.h>
+#else
 #include <glog/logging.h>
+#endif
 
 
 #if defined _MSC_VER && _MSC_VER < 1900
