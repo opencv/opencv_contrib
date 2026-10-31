@@ -2291,6 +2291,63 @@ INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, CvtColor, testing::Combine(
     testing::Values(MatDepth(CV_8U), MatDepth(CV_16U), MatDepth(CV_32F)),
     WHOLE_SUBMAT));
 
+struct BayerRoi : testing::TestWithParam<cv::cuda::DeviceInfo>
+{
+    virtual void SetUp()
+    {
+        cv::cuda::setDevice(GetParam().deviceID());
+    }
+};
+
+CUDA_TEST_P(BayerRoi, ArbitraryOffsetAndWidth)
+{
+    const int height = 11;
+
+    for (int depth = CV_8U; depth <= CV_16U; depth += CV_16U - CV_8U)
+    {
+        const int maxOffset = depth == CV_8U ? 4 : 3;
+        const int maxWidth = depth == CV_8U ? 15 : 13;
+        const double maxValue = depth == CV_8U ? 256.0 : 65536.0;
+
+        for (int width = 13; width <= maxWidth; ++width)
+        {
+            const cv::Mat src = randomMat(cv::Size(width, height), depth, 0.0, maxValue);
+
+            for (int xOffset = 0; xOffset <= maxOffset; ++xOffset)
+            {
+                for (int rightMargin = 0; rightMargin <= 5; rightMargin += 5)
+                {
+                    SCOPED_TRACE(cv::format("depth=%d, width=%d, xOffset=%d, rightMargin=%d",
+                                            depth, width, xOffset, rightMargin));
+
+                    const cv::Rect roi(xOffset, 2, width, height);
+                    const cv::Size parentSize(xOffset + width + rightMargin, height + 4);
+                    cv::Mat parent1(parentSize, depth, cv::Scalar::all(0));
+                    cv::Mat parent2(parentSize, depth, cv::Scalar::all(maxValue - 1));
+                    src.copyTo(parent1(roi));
+                    src.copyTo(parent2(roi));
+
+                    cv::cuda::GpuMat d_parent1(parent1);
+                    cv::cuda::GpuMat d_parent2(parent2);
+                    cv::cuda::GpuMat d_dst1, d_dst2;
+                    cv::cuda::cvtColor(d_parent1(roi), d_dst1, cv::COLOR_BayerBG2BGR);
+                    cv::cuda::cvtColor(d_parent2(roi), d_dst2, cv::COLOR_BayerBG2BGR);
+
+                    // Pixels outside the ROI must not affect any output pixel.
+                    EXPECT_MAT_NEAR(d_dst1, d_dst2, 0.0);
+
+                    cv::Mat dstGold;
+                    cv::cvtColor(src, dstGold, cv::COLOR_BayerBG2BGR);
+                    const cv::Rect inner(1, 1, width - 2, height - 2);
+                    EXPECT_MAT_NEAR(dstGold(inner), d_dst1(inner), 0.0);
+                }
+            }
+        }
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, BayerRoi, ALL_DEVICES);
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Demosaicing
 
