@@ -1862,38 +1862,29 @@ GAPI_FLUID_KERNEL(GFluidCmpLT, cv::gapi::core::GCmpLT, false)
 //
 //---------------------
 
+// NB: the scalar is applied per-channel, as cv::compare(Mat, Scalar) does:
+// channel c of every pixel is compared with s[c].
 template<typename DST, typename SRC, typename SCALAR=double>
-static void run_cmp(DST out[], const SRC in[], int length, Compare compare, SCALAR s)
+static void run_cmp(DST out[], const SRC in[], int length, int chan, Compare compare, const SCALAR s[])
 {
+#define CMP_LOOP(OP)                                     \
+    for (int l = 0; l < length; l += chan)               \
+        for (int c = 0; c < chan; c++)                   \
+            out[l + c] = in[l + c] OP s[c] ? 255 : 0
+
     switch (compare)
     {
-    case CMP_EQ:
-        for (int l=0; l < length; l++)
-            out[l] = in[l] == s? 255: 0;
-        break;
-    case CMP_NE:
-        for (int l=0; l < length; l++)
-            out[l] = in[l] != s? 255: 0;
-        break;
-    case CMP_GE:
-        for (int l=0; l < length; l++)
-            out[l] = in[l] >= s? 255: 0;
-        break;
-    case CMP_LE:
-        for (int l=0; l < length; l++)
-            out[l] = in[l] <= s? 255: 0;
-        break;
-    case CMP_GT:
-        for (int l=0; l < length; l++)
-            out[l] = in[l] > s? 255: 0;
-        break;
-    case CMP_LT:
-        for (int l=0; l < length; l++)
-            out[l] = in[l] < s? 255: 0;
-        break;
+    case CMP_EQ: CMP_LOOP(==); break;
+    case CMP_NE: CMP_LOOP(!=); break;
+    case CMP_GE: CMP_LOOP(>=); break;
+    case CMP_LE: CMP_LOOP(<=); break;
+    case CMP_GT: CMP_LOOP(> ); break;
+    case CMP_LT: CMP_LOOP(< ); break;
     default:
         CV_Error(cv::Error::StsBadArg, "unsupported compare operation");
     }
+
+#undef CMP_LOOP
 }
 
 template<typename DST, typename SRC>
@@ -1906,17 +1897,25 @@ static void run_cmp(Buffer &dst, const View &src, Compare compare, const cv::Sca
 
     int width = dst.length();
     int chan  = dst.meta().chan;
+    GAPI_Assert(chan >= 1 && chan <= 4);
 
     int length = width * chan;
 
-    // compute faster if scalar rounds to SRC
-    double d =                   scalar[0]  ;
-    SRC    s = static_cast<SRC>( scalar[0] );
+    // compute faster if every used scalar component rounds to SRC exactly
+    double d[4] = {0, 0, 0, 0};
+    SRC    s[4] = {0, 0, 0, 0};
+    bool exact = true;
+    for (int c = 0; c < chan; c++)
+    {
+        d[c] = scalar[c];
+        s[c] = static_cast<SRC>(scalar[c]);
+        exact = exact && (s[c] == d[c]);
+    }
 
-    if (s == d)
-        run_cmp(out, in, length, compare, s);
+    if (exact)
+        run_cmp(out, in, length, chan, compare, s);
     else
-        run_cmp(out, in, length, compare, d);
+        run_cmp(out, in, length, chan, compare, d);
 }
 
 GAPI_FLUID_KERNEL(GFluidCmpEQScalar, cv::gapi::core::GCmpEQScalar, false)
