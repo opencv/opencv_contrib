@@ -136,7 +136,7 @@ TEST(InterpolatorTest, RICSameResultOnAnyNumberOfThreads)
     {
         Mat flow;
         createRICInterpolator()->interpolate(src, from_points, src1, to_points, flow);
-        // the threads may add floats in another order: allow rounding noise, not a different model
+        // the flows still differ by about 5e-6 pixel: allow that, but not a different model
         EXPECT_LE(cv::norm(flow, flowOneThread, NORM_INF), 0.01) << "run " << run;
     }
     cv::setNumThreads(origThreads);
