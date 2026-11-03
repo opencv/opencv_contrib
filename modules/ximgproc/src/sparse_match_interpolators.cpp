@@ -1701,10 +1701,11 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
         }
     }
     );
-    parallel_for_(Range(0, iterCnt), [&](const Range& range)
+    // Each pass improves the models the previous pass left in outModels, inLierFlag and bestCost,
+    // and all passes share tmpModel and tmpInlierFlag, so the passes must run one after another.
     {
         vector<int> vFlags(spCnt);
-        for (int iter = range.start; iter < range.end; iter++)
+        for (int iter = 0; iter < iterCnt; iter++)
         {
             fill(vFlags.begin(), vFlags.end(), 0);
 
@@ -1759,7 +1760,6 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
             }
         }
     }
-    );
     // refinement
     if (refine_models)
     {

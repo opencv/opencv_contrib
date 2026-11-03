@@ -103,6 +103,45 @@ TEST(InterpolatorTest, ReferenceAccuracy)
 
 }
 
+// https://github.com/opencv/opencv_contrib/issues/4260
+TEST(InterpolatorTest, RICSameResultOnAnyNumberOfThreads)
+{
+    if (cv::getNumberOfCPUs() == 1)
+        return;
+
+    string dir = getDataDir() + "cv/sparse_match_interpolator";
+    Mat src = imread(getDataDir() + "cv/optflow/RubberWhale1.png", IMREAD_COLOR);
+    Mat src1 = imread(getDataDir() + "cv/optflow/RubberWhale2.png", IMREAD_COLOR);
+    ASSERT_FALSE(src.empty());
+    ASSERT_FALSE(src1.empty());
+
+    std::ifstream file((dir + "/RubberWhale_sparse_matches.txt").c_str());
+    float from_x, from_y, to_x, to_y;
+    vector<Point2f> from_points;
+    vector<Point2f> to_points;
+    while (file >> from_x >> from_y >> to_x >> to_y)
+    {
+        from_points.push_back(Point2f(from_x, from_y));
+        to_points.push_back(Point2f(to_x, to_y));
+    }
+    ASSERT_FALSE(from_points.empty());
+
+    const int origThreads = cv::getNumThreads();
+    Mat flowOneThread;
+    cv::setNumThreads(1);
+    createRICInterpolator()->interpolate(src, from_points, src1, to_points, flowOneThread);
+
+    cv::setNumThreads(4);
+    for (int run = 0; run < 3; ++run)
+    {
+        Mat flow;
+        createRICInterpolator()->interpolate(src, from_points, src1, to_points, flow);
+        // the flows still differ by about 5e-6 pixel: allow that, but not a different model
+        EXPECT_LE(cv::norm(flow, flowOneThread, NORM_INF), 0.01) << "run " << run;
+    }
+    cv::setNumThreads(origThreads);
+}
+
 TEST(InterpolatorTest, RICReferenceAccuracy)
 {
     double MAX_DIF = 6.0;
