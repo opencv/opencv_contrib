@@ -23,6 +23,11 @@ ve_gray = OpenCV.cvtColor(ve, OpenCV.COLOR_RGB2GRAY)
 # Shape check
 @test size(ve_gray)[1] == 1 && size(img_gray)[1] == 1
 
+clahe_img = rand(UInt8, 1, 64, 64)
+clahe = OpenCV.createCLAHE()
+clahe_result = OpenCV.apply(clahe, clahe_img)
+@test size(clahe_result) == size(clahe_img)
+@test eltype(clahe_result) == UInt8
 
 
 print("imgproc test passed\n")
