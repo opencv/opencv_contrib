@@ -41,6 +41,7 @@
 #include <opencv2/sfm/io.hpp>
 #include <opencv2/sfm/numeric.hpp>
 #include <opencv2/sfm/projection.hpp>
+#include <opencv2/sfm/rpc.hpp>
 #include <opencv2/sfm/triangulation.hpp>
 #if CERES_FOUND
 #include <opencv2/sfm/reconstruct.hpp>
