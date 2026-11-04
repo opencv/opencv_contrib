@@ -38,5 +38,4 @@ namespace opencv_test { namespace {
         }
     }
 
-
 }} // namespace
