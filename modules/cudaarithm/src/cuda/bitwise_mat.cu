@@ -77,7 +77,14 @@ void cv::cuda::bitwise_not(InputArray _src, OutputArray _dst, InputArray _mask, 
     {
         const int bcols = (int) (src.cols * src.elemSize());
 
-        if ((bcols & 3) == 0)
+        // the wider paths reinterpret whole rows, so on top of bcols every
+        // operand needs an aligned data pointer, which a ROI offset can
+        // break, and an aligned step, which createContinuous() can break
+        const size_t align = static_cast<size_t>(bcols)
+                           | reinterpret_cast<size_t>(src.data) | src.step
+                           | reinterpret_cast<size_t>(dst.data) | dst.step;
+
+        if ((align & 3) == 0)
         {
             const int vcols = bcols >> 2;
 
@@ -86,7 +93,7 @@ void cv::cuda::bitwise_not(InputArray _src, OutputArray _dst, InputArray _mask, 
 
             gridTransformUnary(vsrc, vdst, bit_not<uint>(), stream);
         }
-        else if ((bcols & 1) == 0)
+        else if ((align & 1) == 0)
         {
             const int vcols = bcols >> 1;
 
@@ -181,7 +188,15 @@ void bitMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat& m
     {
         const int bcols = (int) (src1.cols * src1.elemSize());
 
-        if ((bcols & 3) == 0)
+        // the wider paths reinterpret whole rows, so on top of bcols every
+        // operand needs an aligned data pointer, which a ROI offset can
+        // break, and an aligned step, which createContinuous() can break
+        const size_t align = static_cast<size_t>(bcols)
+                           | reinterpret_cast<size_t>(src1.data) | src1.step
+                           | reinterpret_cast<size_t>(src2.data) | src2.step
+                           | reinterpret_cast<size_t>(dst.data) | dst.step;
+
+        if ((align & 3) == 0)
         {
             const int vcols = bcols >> 2;
 
@@ -191,7 +206,7 @@ void bitMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat& m
 
             funcs32[op](vsrc1, vsrc2, vdst, GpuMat(), stream);
         }
-        else if ((bcols & 1) == 0)
+        else if ((align & 1) == 0)
         {
             const int vcols = bcols >> 1;
 
