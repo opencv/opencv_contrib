@@ -44,6 +44,8 @@
 
 #ifdef HAVE_CUDA
 
+#include <thread>
+
 namespace opencv_test { namespace {
 
 //////////////////////////////////////////////////////////////////////////////
@@ -118,44 +120,123 @@ CUDA_TEST_P(GEMM, Accuracy)
     }
 }
 
-CUDA_TEST_P(GEMM, AsyncStreamHandleReuse)
-{
-    if (CV_MAT_DEPTH(type) == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
-        return;
-    if (type == CV_64FC2 && flags != 0)
-        return;
-
-    cv::Mat src1 = randomMat(size, type, -10.0, 10.0);
-    cv::Mat src2 = randomMat(size, type, -10.0, 10.0);
-    cv::Mat src3 = randomMat(size, type, -10.0, 10.0);
-    double alpha = randomDouble(-10.0, 10.0);
-    double beta = randomDouble(-10.0, 10.0);
-
-    cv::cuda::Stream stream;
-    cv::cuda::GpuMat d_src1 = loadMat(src1, useRoi);
-    cv::cuda::GpuMat d_src2 = loadMat(src2, useRoi);
-    cv::cuda::GpuMat d_src3 = loadMat(src3, useRoi);
-    cv::cuda::GpuMat dst1 = createMat(size, type, useRoi);
-    cv::cuda::GpuMat dst2 = createMat(size, type, useRoi);
-
-    cv::cuda::gemm(d_src1, d_src2, alpha, d_src3, beta, dst1, flags, stream);
-    cv::cuda::gemm(d_src1, d_src2, alpha, d_src3, beta, dst2, flags, stream);
-    stream.waitForCompletion();
-
-    cv::Mat dst_gold;
-    cv::gemm(src1, src2, alpha, src3, beta, dst_gold, flags);
-
-    const double eps = CV_MAT_DEPTH(type) == CV_32F ? 1e-1 : 1e-10;
-    EXPECT_MAT_NEAR(dst_gold, dst1, eps);
-    EXPECT_MAT_NEAR(dst_gold, dst2, eps);
-}
-
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, GEMM, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     testing::Values(MatType(CV_32FC1), MatType(CV_32FC2), MatType(CV_64FC1), MatType(CV_64FC2)),
     ALL_GEMM_FLAGS,
     WHOLE_SUBMAT));
+
+PARAM_TEST_CASE(GEMMHandleLifecycle, cv::cuda::DeviceInfo)
+{
+    cv::cuda::DeviceInfo devInfo;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(GEMMHandleLifecycle, StreamDestroyNullSyncAndWorkerThread)
+{
+    const cv::Size sz(64, 64);
+    cv::Mat src1 = randomMat(sz, CV_32FC1, -5.0, 5.0);
+    cv::Mat src2 = randomMat(sz, CV_32FC1, -5.0, 5.0);
+    cv::Mat src3 = randomMat(sz, CV_32FC1, -5.0, 5.0);
+    cv::Mat dst_gold;
+    cv::gemm(src1, src2, 1.5, src3, -0.5, dst_gold, 0);
+
+    cv::cuda::GpuMat d_src1 = loadMat(src1);
+    cv::cuda::GpuMat d_src2 = loadMat(src2);
+    cv::cuda::GpuMat d_src3 = loadMat(src3);
+    cv::cuda::GpuMat d_dst1, d_dst2, d_dst3;
+
+    // 1. Scoped non-null stream: handle must not retain a destroyed cudaStream_t
+    {
+        cv::cuda::Stream stream;
+        cv::cuda::gemm(d_src1, d_src2, 1.5, d_src3, -0.5, d_dst1, 0, stream);
+        cv::cuda::gemm(d_src1, d_src2, 1.5, d_src3, -0.5, d_dst2, 0, stream);
+        stream.waitForCompletion();
+    }
+    EXPECT_MAT_NEAR(dst_gold, d_dst1, 1e-1);
+    EXPECT_MAT_NEAR(dst_gold, d_dst2, 1e-1);
+
+    // 2. Subsequent Stream::Null() call after stream destruction
+    cv::cuda::gemm(d_src1, d_src2, 1.5, d_src3, -0.5, d_dst3, 0);
+    EXPECT_MAT_NEAR(dst_gold, d_dst3, 1e-1);
+
+    // 3. Worker std::thread creation and teardown
+    cv::Mat worker_out;
+    const int dev_id = devInfo.deviceID();
+    std::thread worker([&]() {
+        cv::cuda::setDevice(dev_id);
+        cv::cuda::GpuMat w_dst;
+        cv::cuda::gemm(d_src1, d_src2, 1.5, d_src3, -0.5, w_dst, 0);
+        w_dst.download(worker_out);
+    });
+    worker.join();
+    EXPECT_MAT_NEAR(dst_gold, worker_out, 1e-1);
+}
+
+CUDA_TEST_P(GEMMHandleLifecycle, ResetDeviceAndMultiGpu)
+{
+    const cv::Size sz(48, 48);
+    cv::Mat src1 = randomMat(sz, CV_32FC1, -5.0, 5.0);
+    cv::Mat src2 = randomMat(sz, CV_32FC1, -5.0, 5.0);
+    cv::Mat dst_gold;
+    cv::gemm(src1, src2, 1.0, cv::Mat(), 0.0, dst_gold, 0);
+
+    // Pre-reset gemm (all GpuMats scoped so ~GpuMat() runs before resetDevice())
+    {
+        cv::cuda::GpuMat d_a = loadMat(src1);
+        cv::cuda::GpuMat d_b = loadMat(src2);
+        cv::cuda::GpuMat d_c;
+        cv::cuda::gemm(d_a, d_b, 1.0, cv::noArray(), 0.0, d_c, 0);
+        EXPECT_MAT_NEAR(dst_gold, d_c, 1e-1);
+    }
+
+    cv::cuda::resetDevice();
+    cv::cuda::setDevice(devInfo.deviceID());
+
+    // Post-reset gemm must detect stale context and recreate handle cleanly
+    {
+        cv::cuda::GpuMat d_a = loadMat(src1);
+        cv::cuda::GpuMat d_b = loadMat(src2);
+        cv::cuda::GpuMat d_c;
+        cv::cuda::gemm(d_a, d_b, 1.0, cv::noArray(), 0.0, d_c, 0);
+        EXPECT_MAT_NEAR(dst_gold, d_c, 1e-1);
+    }
+
+    // Multi-GPU ping-pong on same thread if >= 2 CUDA devices exist
+    const int num_devs = cv::cuda::getCudaEnabledDeviceCount();
+    if (num_devs >= 2)
+    {
+        const int other_dev = (devInfo.deviceID() + 1) % num_devs;
+        cv::cuda::DeviceInfo other_info(other_dev);
+        if (other_info.isCompatible())
+        {
+            cv::cuda::setDevice(other_dev);
+            {
+                cv::cuda::GpuMat d_a = loadMat(src1);
+                cv::cuda::GpuMat d_b = loadMat(src2);
+                cv::cuda::GpuMat d_c;
+                cv::cuda::gemm(d_a, d_b, 1.0, cv::noArray(), 0.0, d_c, 0);
+                EXPECT_MAT_NEAR(dst_gold, d_c, 1e-1);
+            }
+            cv::cuda::setDevice(devInfo.deviceID());
+            {
+                cv::cuda::GpuMat d_a = loadMat(src1);
+                cv::cuda::GpuMat d_b = loadMat(src2);
+                cv::cuda::GpuMat d_c;
+                cv::cuda::gemm(d_a, d_b, 1.0, cv::noArray(), 0.0, d_c, 0);
+                EXPECT_MAT_NEAR(dst_gold, d_c, 1e-1);
+            }
+        }
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, GEMMHandleLifecycle, ALL_DEVICES);
 
 ////////////////////////////////////////////////////////////////////////////
 // MulSpectrums

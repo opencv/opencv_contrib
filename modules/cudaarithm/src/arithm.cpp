@@ -89,6 +89,13 @@ namespace
 }
 
 #ifdef HAVE_CUBLAS
+#include <cstdlib>
+#include <vector>
+#if defined(_WIN32)
+#  include <malloc.h>
+#endif
+#include "opencv2/core/utils/tls.hpp"
+
     namespace
     {
         const ErrorEntry cublas_errors[] =
@@ -119,43 +126,166 @@ namespace
 
     namespace
     {
+        // Dedicated 64 KB page-aligned host allocation registered with the active CUDA context.
+        // Unlike device pointers (which can suffer ABA reuse after cudaDeviceReset), this private
+        // host address is owned by the thread's pool and becomes unregistered immediately if the
+        // device context is reset.
+        enum { kContextProbeSize = 65536 };
+
+        static void* allocContextProbe()
+        {
+        #if defined(_WIN32)
+            return _aligned_malloc(kContextProbeSize, kContextProbeSize);
+        #else
+            void* ptr = nullptr;
+            if (posix_memalign(&ptr, kContextProbeSize, kContextProbeSize) != 0)
+                return nullptr;
+            return ptr;
+        #endif
+        }
+
+        static void freeContextProbe(void* ptr)
+        {
+            if (!ptr)
+                return;
+        #if defined(_WIN32)
+            _aligned_free(ptr);
+        #else
+            std::free(ptr);
+        #endif
+        }
+
+        static bool isContextProbeRegistered(const void* probe)
+        {
+            if (!probe)
+                return false;
+            cudaPointerAttributes attr = {};
+            const cudaError_t err = cudaPointerGetAttributes(&attr, probe);
+            if (err != cudaSuccess)
+            {
+                cudaGetLastError();
+                return false;
+            }
+        #if CUDART_VERSION >= 10000
+            return attr.type == cudaMemoryTypeHost;
+        #else
+            return attr.memoryType == cudaMemoryTypeHost;
+        #endif
+        }
+
         struct CublasHandlePool
         {
-            cublasHandle_t handle = nullptr;
-            int device_id = -1;
+            struct DeviceEntry
+            {
+                cublasHandle_t handle = nullptr;
+                void* probe = nullptr;
+                bool probe_registered = false;
+            };
+
+            std::vector<DeviceEntry> entries;
 
             ~CublasHandlePool()
             {
-                if (handle != nullptr)
+                int prev_device = -1;
+                const cudaError_t init_err = cudaGetDevice(&prev_device);
+                const bool runtime_alive = (init_err == cudaSuccess);
+                if (!runtime_alive && init_err != cudaErrorCudartUnloading)
+                    cudaGetLastError();
+
+                for (size_t dev = 0; dev < entries.size(); ++dev)
                 {
-                    cublasDestroy_v2(handle);
-                    handle = nullptr;
+                    DeviceEntry& entry = entries[dev];
+                    if (runtime_alive && (entry.handle != nullptr || entry.probe_registered))
+                    {
+                        if (cudaSetDevice(static_cast<int>(dev)) == cudaSuccess)
+                        {
+                            const bool ctx_alive = !entry.probe_registered || isContextProbeRegistered(entry.probe);
+                            if (ctx_alive)
+                            {
+                                if (entry.handle != nullptr)
+                                    cublasDestroy_v2(entry.handle);
+                                if (entry.probe_registered && entry.probe != nullptr)
+                                    cudaHostUnregister(entry.probe);
+                            }
+                        }
+                        else
+                        {
+                            cudaGetLastError();
+                        }
+                    }
+                    entry.handle = nullptr;
+                    entry.probe_registered = false;
+                    freeContextProbe(entry.probe);
+                    entry.probe = nullptr;
+                }
+
+                if (runtime_alive && prev_device >= 0)
+                {
+                    if (cudaSetDevice(prev_device) != cudaSuccess)
+                        cudaGetLastError();
                 }
             }
 
-            cublasHandle_t get(bool force_recreate = false)
+            cublasHandle_t get()
             {
                 const int current_device = cv::cuda::getDevice();
-                if (handle != nullptr && (force_recreate || device_id != current_device))
+                CV_Assert( current_device >= 0 );
+
+                if (static_cast<size_t>(current_device) >= entries.size())
+                    entries.resize(static_cast<size_t>(current_device) + 1);
+
+                DeviceEntry& entry = entries[static_cast<size_t>(current_device)];
+
+                if (entry.handle != nullptr && entry.probe_registered && !isContextProbeRegistered(entry.probe))
                 {
-                    cublasDestroy_v2(handle);
-                    handle = nullptr;
-                    device_id = -1;
+                    // Primary context on current_device was reset (e.g. cv::cuda::resetDevice()).
+                    // Drop the stale handle without calling cublasDestroy_v2 on the new context.
+                    entry.handle = nullptr;
+                    entry.probe_registered = false;
                 }
-                if (handle == nullptr)
+
+                if (entry.handle == nullptr)
                 {
-                    cublasSafeCall( cublasCreate_v2(&handle) );
-                    device_id = current_device;
+                    if (entry.probe == nullptr)
+                        entry.probe = allocContextProbe();
+
+                    if (entry.probe != nullptr && !entry.probe_registered)
+                    {
+                        if (cudaHostRegister(entry.probe, kContextProbeSize, cudaHostRegisterDefault) == cudaSuccess)
+                            entry.probe_registered = true;
+                        else
+                            cudaGetLastError();
+                    }
+
+                    cublasSafeCall( cublasCreate_v2(&entry.handle) );
                 }
-                return handle;
+
+                return entry.handle;
             }
         };
 
-        static cublasHandle_t getCublasHandle(bool force_recreate = false)
+        static cv::TLSData<CublasHandlePool>& getCublasHandlePoolTLS()
         {
-            thread_local CublasHandlePool pool;
-            return pool.get(force_recreate);
+            static cv::TLSData<CublasHandlePool>* const instance = new cv::TLSData<CublasHandlePool>();
+            return *instance;
         }
+
+        static cublasHandle_t getCublasHandle()
+        {
+            return getCublasHandlePoolTLS().getRef().get();
+        }
+
+        struct CublasStreamGuard
+        {
+            cublasHandle_t handle;
+            bool restore_default;
+
+            ~CublasStreamGuard()
+            {
+                if (restore_default)
+                    cublasSetStream_v2(handle, NULL);
+            }
+        };
     }
 #endif // HAVE_CUBLAS
 
@@ -264,13 +394,10 @@ void cv::cuda::gemm(InputArray _src1, InputArray _src2, double alpha, InputArray
         }
     }
 
-    cublasHandle_t handle = getCublasHandle();
     const cudaStream_t cuStream = StreamAccessor::getStream(stream);
-    if (cublasSetStream_v2(handle, cuStream) != CUBLAS_STATUS_SUCCESS)
-    {
-        handle = getCublasHandle(true);
-        cublasSafeCall( cublasSetStream_v2(handle, cuStream) );
-    }
+    cublasHandle_t handle = getCublasHandle();
+    cublasSafeCall( cublasSetStream_v2(handle, cuStream) );
+    CublasStreamGuard stream_guard{ handle, cuStream != 0 };
 
     cublasSafeCall( cublasSetPointerMode_v2(handle, CUBLAS_POINTER_MODE_HOST) );
 
@@ -324,6 +451,9 @@ void cv::cuda::gemm(InputArray _src1, InputArray _src2, double alpha, InputArray
             dst.ptr<cuDoubleComplex>(), static_cast<int>(dst.step / sizeof(cuDoubleComplex))) );
         break;
     }
+
+    if (cuStream == 0 && _dst.kind() == _InputArray::CUDA_GPU_MAT)
+        cudaSafeCall( cudaDeviceSynchronize() );
 
     syncOutput(dst, _dst, stream);
 #endif
