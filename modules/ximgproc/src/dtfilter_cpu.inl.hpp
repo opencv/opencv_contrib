@@ -39,7 +39,7 @@
 #include "precomp.hpp"
 #include "edgeaware_filters_common.hpp"
 #include <limits>
-
+#include "opencv2/core/hal/intrin.hpp"
 namespace cv
 {
 namespace ximgproc
@@ -392,10 +392,14 @@ DTFilterCPU::FilterRF_horPass<WorkVec>::FilterRF_horPass(Mat& res_, Mat& alphaD_
 template <typename WorkVec>
 void DTFilterCPU::FilterRF_horPass<WorkVec>::operator()(const Range& range) const
 {
-    for (int i = range.start; i < range.end; i++)
+    const int resRowStep = (int)(res.step    / sizeof(WorkVec));
+    const int alphaRowStep = (int)(alphaD.step / sizeof(DistType));
+    const int cols = res.cols;
+    WorkVec *dstLine = res.ptr<WorkVec>(range.start);
+    DistType *adLine  = alphaD.ptr<DistType>(range.start);
+
+    for (int i = range.start; i < range.end; i++, dstLine += resRowStep, adLine += alphaRowStep)
     {
-        WorkVec     *dstLine = res.ptr<WorkVec>(i);
-        DistType    *adLine  = alphaD.ptr<DistType>(i);
         int j;
 
         if (iteration > 1)
@@ -403,16 +407,31 @@ void DTFilterCPU::FilterRF_horPass<WorkVec>::operator()(const Range& range) cons
             for (j = res.cols - 2; j >= 0; j--)
                 adLine[j] *= adLine[j];
         }
-
-        for (j = 1; j < res.cols; j++)
+        j = 1;
+    #if CV_ENABLE_UNROLLED
+        for (; j <= cols - 4; j += 4)
         {
-            dstLine[j] += adLine[j-1] * (dstLine[j-1] - dstLine[j]);
+            dstLine[j] += adLine[j - 1] * (dstLine[j - 1] - dstLine[j]);
+            dstLine[j + 1] += adLine[j] * (dstLine[j] - dstLine[j + 1]);
+            dstLine[j + 2] += adLine[j + 1] * (dstLine[j + 1] - dstLine[j + 2]);
+            dstLine[j + 3] += adLine[j + 2] * (dstLine[j + 2] - dstLine[j + 3]);
         }
+    #endif
+        for (; j < cols; j++)
+            dstLine[j] += adLine[j - 1] * (dstLine[j - 1] - dstLine[j]);
 
-        for (j = res.cols - 2; j >= 0; j--)
+        j = cols - 2;
+    #if CV_ENABLE_UNROLLED
+        for (; j >= 3; j -= 4)
         {
-            dstLine[j] += adLine[j] * (dstLine[j+1] - dstLine[j]);
+            dstLine[j] += adLine[j] * (dstLine[j + 1] - dstLine[j]);
+            dstLine[j - 1] += adLine[j - 1] * (dstLine[j] - dstLine[j - 1]);
+            dstLine[j - 2] += adLine[j - 2] * (dstLine[j - 1] - dstLine[j - 2]);
+            dstLine[j - 3] += adLine[j - 3] * (dstLine[j - 2] - dstLine[j - 3]);
         }
+    #endif
+        for (; j >= 0; j--)
+            dstLine[j] += adLine[j] * (dstLine[j + 1] - dstLine[j]);
     }
 }
 
@@ -425,6 +444,40 @@ DTFilterCPU::FilterRF_vertPass<WorkVec>::FilterRF_vertPass(Mat& res_, Mat& alpha
     CV_DbgAssert(res.type() == traits::Type<WorkVec>::value && res.size() == res.size());
 }
 
+template <typename WorkVec, typename DistType>
+struct RFPassHelper
+{
+    static void run(WorkVec* curRow, const WorkVec* prevRow, const DistType* adRow, const Range& rcols)
+    {
+        for (int j = rcols.start; j < rcols.end; j++)
+            curRow[j] += adRow[j] * (prevRow[j] - curRow[j]);
+    }
+};
+
+template <>
+struct RFPassHelper<Vec<float, 1>, float>
+{
+    static void run(Vec<float, 1>* curRow, const Vec<float, 1>* prevRow, const float* adRow, const Range& rcols)
+    {
+        float* cur        = reinterpret_cast<float*>(curRow);
+        const float* prev = reinterpret_cast<const float*>(prevRow);
+        int j = rcols.start;
+    #if CV_SIMD
+        const int step    = VTraits<v_float32>::vlanes();
+        const int simdEnd = rcols.start + ((rcols.end - rcols.start) / step) * step;
+        for (; j < simdEnd; j += step)
+        {
+            v_float32 vcur  = vx_load(cur  + j);
+            v_float32 vprev = vx_load(prev + j);
+            v_float32 vad   = vx_load(adRow + j);
+            v_store(cur + j, v_muladd(vad, v_sub(vprev, vcur), vcur));
+        }
+        vx_cleanup();
+    #endif
+        for (; j < rcols.end; j++)
+            cur[j] += adRow[j] * (prev[j] - cur[j]);
+    }
+};
 
 template <typename WorkVec>
 void DTFilterCPU::FilterRF_vertPass<WorkVec>::operator()(const Range& range) const
@@ -447,10 +500,7 @@ void DTFilterCPU::FilterRF_vertPass<WorkVec>::operator()(const Range& range) con
                 adRow[j] *= adRow[j];
         }
 
-        for (int j = rcols.start; j < rcols.end; j++)
-        {
-            curRow[j] += adRow[j] * (prevRow[j] - curRow[j]);
-        }
+        RFPassHelper<WorkVec, DistType>::run(curRow, prevRow, adRow, rcols);
     }
 
     for (int i = res.rows - 2; i >= 0; i--)
@@ -459,10 +509,7 @@ void DTFilterCPU::FilterRF_vertPass<WorkVec>::operator()(const Range& range) con
         WorkVec     *curRow  = res.ptr<WorkVec>(i);
         DistType    *adRow   = alphaD.ptr<DistType>(i);
 
-        for (int j = rcols.start; j < rcols.end; j++)
-        {
-            curRow[j] += adRow[j] * (prevRow[j] - curRow[j]);
-        }
+        RFPassHelper<WorkVec, DistType>::run(curRow, prevRow, adRow, rcols);
     }
 }
 
