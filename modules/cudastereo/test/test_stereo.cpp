@@ -1221,6 +1221,74 @@ CUDA_TEST_P(StereoSGM, StreamForkJoinSynchronization)
     main_stream.waitForCompletion();
 }
 
+CUDA_TEST_P(StereoSGM, InvalidPenalties)
+{
+    cv::cuda::GpuMat d_left(64, 64, CV_8UC1, cv::Scalar::all(0));
+    cv::cuda::GpuMat d_right(64, 64, CV_8UC1, cv::Scalar::all(0));
+    cv::cuda::GpuMat d_disp;
+
+    // P2 >= 224 overflows uint8_t path aggregation cost (31-bit census + P2 > 255), as in #3904
+    Ptr<cv::cuda::StereoSGM> sgm_overflow = cv::cuda::createStereoSGM(0, 64, 384, 1536, 5, cv::cuda::StereoSGM::MODE_HH4);
+    EXPECT_THROW(sgm_overflow->compute(d_left, d_right, d_disp), cv::Exception);
+
+    // P1 >= P2 is invalid
+    Ptr<cv::cuda::StereoSGM> sgm_order = cv::cuda::createStereoSGM(0, 64, 120, 100, 5, cv::cuda::StereoSGM::MODE_HH4);
+    EXPECT_THROW(sgm_order->compute(d_left, d_right, d_disp), cv::Exception);
+
+    // Non-positive P1 is invalid
+    Ptr<cv::cuda::StereoSGM> sgm_nonpos = cv::cuda::createStereoSGM(0, 64, 0, 120, 5, cv::cuda::StereoSGM::MODE_HH4);
+    EXPECT_THROW(sgm_nonpos->compute(d_left, d_right, d_disp), cv::Exception);
+}
+
+CUDA_TEST_P(StereoSGM, SubpixelToggle)
+{
+    cv::Mat left_image  = readImage("stereobm/aloe-L.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat right_image = readImage("stereobm/aloe-R.png", cv::IMREAD_GRAYSCALE);
+
+    ASSERT_FALSE(left_image.empty());
+    ASSERT_FALSE(right_image.empty());
+
+    const int min_disp = 0;
+    const int ndisp = 128;
+    Ptr<cv::cuda::StereoSGM> sgm = cv::cuda::createStereoSGM(min_disp, ndisp, 10, 120, 5, cv::cuda::StereoSGM::MODE_HH4);
+    EXPECT_TRUE(sgm->getSubpixel());
+
+    cv::cuda::GpuMat d_left(left_image), d_right(right_image);
+    cv::cuda::GpuMat d_disp_subpixel, d_disp_int;
+
+    sgm->compute(d_left, d_right, d_disp_subpixel);
+
+    sgm->setSubpixel(false);
+    EXPECT_FALSE(sgm->getSubpixel());
+    sgm->compute(d_left, d_right, d_disp_int);
+
+    cv::Mat disp_subpixel(d_disp_subpixel);
+    cv::Mat disp_int(d_disp_int);
+
+    const int16_t invalid_int = static_cast<int16_t>(min_disp - 1);
+    const int16_t invalid_sub = static_cast<int16_t>((min_disp - 1) * cv::StereoMatcher::DISP_SCALE);
+
+    bool has_fractional_bits = false;
+    for (int y = 0; y < disp_int.rows; ++y)
+    {
+        for (int x = 0; x < disp_int.cols; ++x)
+        {
+            const int16_t v_int = disp_int.at<int16_t>(y, x);
+            const int16_t v_sub = disp_subpixel.at<int16_t>(y, x);
+            if (v_int != invalid_int)
+            {
+                EXPECT_GE(v_int, min_disp);
+                EXPECT_LT(v_int, min_disp + ndisp);
+            }
+            if (v_sub != invalid_sub && (v_sub & (cv::StereoMatcher::DISP_SCALE - 1)) != 0)
+            {
+                has_fractional_bits = true;
+            }
+        }
+    }
+    EXPECT_TRUE(has_fractional_bits);
+}
+
 INSTANTIATE_TEST_CASE_P(CUDA_Stereo, StereoSGM, ALL_DEVICES);
 
 }} // namespace

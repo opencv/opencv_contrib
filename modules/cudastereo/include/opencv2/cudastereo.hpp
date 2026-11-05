@@ -263,7 +263,8 @@ public:
     @param left Left 8-bit or 16-bit unsigned single-channel image.
     @param right Right image of the same size and the same type as the left one.
     @param disparity Output disparity map. It has the same size as the input images.
-    StereoSGM computes 16-bit fixed-point disparity map (where each disparity value has 4 fractional bits).
+    StereoSGM computes 16-bit fixed-point disparity map (where each disparity value has 4 fractional bits)
+    when subpixel refinement is enabled (default), or 16-bit integer disparity values when disabled via setSubpixel(false).
     */
     CV_WRAP virtual void compute(InputArray left, InputArray right, OutputArray disparity) CV_OVERRIDE = 0;
 
@@ -272,14 +273,19 @@ public:
     @sa compute
     */
     CV_WRAP_AS(compute_with_stream) virtual void compute(InputArray left, InputArray right, OutputArray disparity, Stream& stream) = 0;
+
+    //! Returns true if subpixel quadratic interpolation is enabled (default: true).
+    CV_WRAP virtual bool getSubpixel() const = 0;
+    //! Enables or disables subpixel disparity refinement (4 fractional bits, DISP_SCALE = 16).
+    CV_WRAP virtual void setSubpixel(bool subpixel) = 0;
 };
 
 /** @brief Creates StereoSGM object.
 
 @param minDisparity Minimum possible disparity value. Normally, it is zero but sometimes rectification algorithms can shift images, so this parameter needs to be adjusted accordingly.
 @param numDisparities Maximum disparity minus minimum disparity. The value must be 64, 128 or 256.
-@param P1 The first parameter controlling the disparity smoothness.This parameter is used for the case of slanted surfaces (not fronto parallel).
-@param P2 The second parameter controlling the disparity smoothness.This parameter is used for "solving" the depth discontinuities problem.
+@param P1 The first parameter controlling the disparity smoothness. This parameter is used for the case of slanted surfaces (not fronto parallel). Because StereoSGM uses a 9x7 Center-Symmetric Census Transform (max local Hamming distance 31) and 8-bit path aggregation, P1 and P2 must satisfy `0 < P1 < P2 < 224`.
+@param P2 The second parameter controlling the disparity smoothness. This parameter is used for "solving" the depth discontinuities problem. Must satisfy `0 < P1 < P2 < 224`.
 @param uniquenessRatio Margin in percentage by which the best (minimum) computed cost function
 value should "win" the second best value to consider the found match correct. Normally, a value
 within the 5-15 range is good enough.

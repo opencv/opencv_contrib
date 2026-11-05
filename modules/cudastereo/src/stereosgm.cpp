@@ -27,7 +27,9 @@ struct StereoSGMParams
     int P2;
     int uniquenessRatio;
     int mode;
-    StereoSGMParams(int minDisparity = 0, int numDisparities = 128, int P1 = 10, int P2 = 120, int uniquenessRatio = 5, int mode = StereoSGM::MODE_HH4) : minDisparity(minDisparity), numDisparities(numDisparities), P1(P1), P2(P2), uniquenessRatio(uniquenessRatio), mode(mode) {}
+    bool subpixel;
+    StereoSGMParams(int minDisparity = 0, int numDisparities = 128, int P1 = 10, int P2 = 120, int uniquenessRatio = 5, int mode = StereoSGM::MODE_HH4)
+        : minDisparity(minDisparity), numDisparities(numDisparities), P1(P1), P2(P2), uniquenessRatio(uniquenessRatio), mode(mode), subpixel(true) {}
 };
 
 class StereoSGMImpl CV_FINAL : public StereoSGM
@@ -71,6 +73,9 @@ public:
     int getPreFilterCap() const CV_OVERRIDE { return -1; }
     void setPreFilterCap(int /*preFilterCap*/) CV_OVERRIDE {}
 
+    bool getSubpixel() const CV_OVERRIDE { return params.subpixel; }
+    void setSubpixel(bool subpixel) CV_OVERRIDE { params.subpixel = subpixel; }
+
 private:
     StereoSGMParams params;
     device::stereosgm::path_aggregation::PathAggregation pathAggregation;
@@ -104,6 +109,14 @@ void StereoSGMImpl::compute(InputArray _left, InputArray _right, OutputArray _di
     {
         CV_Error(Error::StsBadArg, "Unsupported mode");
     }
+    if (params.P1 <= 0 || params.P2 <= 0 || params.P1 >= params.P2 || params.P2 >= 224)
+    {
+        CV_Error(Error::StsOutOfRange, "P1 and P2 must satisfy 0 < P1 < P2 < 224");
+    }
+    if (params.uniquenessRatio < 0 || params.uniquenessRatio > 100)
+    {
+        CV_Error(Error::StsOutOfRange, "uniquenessRatio must be in the range [0, 100]");
+    }
     const unsigned int num_paths = params.mode == MODE_HH4 ? 4 : 8;
 
     CV_Assert(left.type() == CV_8UC1 || left.type() == CV_16UC1);
@@ -126,15 +139,15 @@ void StereoSGMImpl::compute(InputArray _left, InputArray _right, OutputArray _di
     {
     case 64:
         pathAggregation.operator()<64>(censused_left, censused_right, aggregated, params.mode, params.P1, params.P2, params.minDisparity, _stream);
-        winner_takes_all::winnerTakesAll<64>(aggregated, left_disp_tmp, right_disp_tmp, (float)(100 - params.uniquenessRatio) / 100, true, params.mode, _stream);
+        winner_takes_all::winnerTakesAll<64>(aggregated, left_disp_tmp, right_disp_tmp, (float)(100 - params.uniquenessRatio) / 100, params.subpixel, params.mode, _stream);
         break;
     case 128:
         pathAggregation.operator()<128>(censused_left, censused_right, aggregated, params.mode, params.P1, params.P2, params.minDisparity, _stream);
-        winner_takes_all::winnerTakesAll<128>(aggregated, left_disp_tmp, right_disp_tmp, (float)(100 - params.uniquenessRatio) / 100, true, params.mode, _stream);
+        winner_takes_all::winnerTakesAll<128>(aggregated, left_disp_tmp, right_disp_tmp, (float)(100 - params.uniquenessRatio) / 100, params.subpixel, params.mode, _stream);
         break;
     case 256:
         pathAggregation.operator()<256>(censused_left, censused_right, aggregated, params.mode, params.P1, params.P2, params.minDisparity, _stream);
-        winner_takes_all::winnerTakesAll<256>(aggregated, left_disp_tmp, right_disp_tmp, (float)(100 - params.uniquenessRatio) / 100, true, params.mode, _stream);
+        winner_takes_all::winnerTakesAll<256>(aggregated, left_disp_tmp, right_disp_tmp, (float)(100 - params.uniquenessRatio) / 100, params.subpixel, params.mode, _stream);
         break;
     default:
         CV_Error(Error::StsBadArg, "Unsupported num of disparities");
@@ -142,8 +155,8 @@ void StereoSGMImpl::compute(InputArray _left, InputArray _right, OutputArray _di
 
     median_filter::medianFilter(left_disp_tmp, left_disp, _stream);
     median_filter::medianFilter(right_disp_tmp, right_disp, _stream);
-    check_consistency::checkConsistency(left_disp, right_disp, left, true, _stream);
-    correct_disparity_range::correctDisparityRange(left_disp, true, params.minDisparity, _stream);
+    check_consistency::checkConsistency(left_disp, right_disp, left, params.subpixel, _stream);
+    correct_disparity_range::correctDisparityRange(left_disp, params.subpixel, params.minDisparity, _stream);
 }
 } // anonymous namespace
 

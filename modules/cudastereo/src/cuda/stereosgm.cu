@@ -451,6 +451,10 @@ __global__ void census_transform_kernel(
                 }
                 dest(y, x) = f;
             }
+            else if (0 <= x && x < src.cols && 0 <= y && y < src.rows)
+            {
+                dest(y, x) = 0;
+            }
         }
         __syncthreads();
     }
