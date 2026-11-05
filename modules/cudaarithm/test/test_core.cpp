@@ -236,13 +236,13 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Split, testing::Combine(
 ////////////////////////////////////////////////////////////////////////////////
 // MergeSplitEdgeCases
 
-PARAM_TEST_CASE(MergeSplitEdgeCases, cv::cuda::DeviceInfo)
+struct MergeSplitEdgeCases : testing::TestWithParam<cv::cuda::DeviceInfo>
 {
     cv::cuda::DeviceInfo devInfo;
 
     virtual void SetUp()
     {
-        devInfo = GET_PARAM(0);
+        devInfo = GetParam();
         cv::cuda::setDevice(devInfo.deviceID());
     }
 };
