@@ -135,6 +135,11 @@ TEST(CV_Face_FacemarkLBF, test_workflow) {
     EXPECT_TRUE(rects.size()>0);
     EXPECT_TRUE(facemark->fit(image, rects, facial_points));
     EXPECT_TRUE(facial_points[0].size()>0);
+
+    size_t nonzero = 0;
+    for (size_t i = 0; i < facial_points[0].size(); i++)
+        if (facial_points[0][i] != Point2f(0, 0)) nonzero++;
+    EXPECT_EQ(nonzero, facial_points[0].size());
 }
 
 }} // namespace

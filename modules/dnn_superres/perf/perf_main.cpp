@@ -4,4 +4,4 @@
 
 #include "perf_precomp.hpp"
 
-CV_PERF_TEST_MAIN( dnn_superres )
+CV_PERF_TEST_MAIN( dnn_superres, cvtest::addDataSearchEnv("OPENCV_DNN_TEST_DATA_PATH") )

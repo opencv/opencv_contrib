@@ -90,7 +90,7 @@ OCL_TEST_P(HOG, GetDescriptors)
 
     Mat cpu_desc(cpu_descriptors), gpu_desc(gpu_descriptors);
 
-    EXPECT_MAT_SIMILAR(cpu_desc, gpu_desc, 1e-1);
+    EXPECT_MAT_SIMILAR(cpu_desc.t(), gpu_desc.t(), 1e-1);
 }
 
 OCL_TEST_P(HOG, SVMDetector)

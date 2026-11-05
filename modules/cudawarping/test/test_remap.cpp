@@ -183,6 +183,12 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, Remap, testing::Combine(
 class RemapOutOfScope : public  Remap {};
 CUDA_TEST_P(RemapOutOfScope, Regression_18224)
 {
+    // cpu remap modified in main opencv
+    if (interpolation == cv::INTER_LINEAR && (type == CV_8UC1 || type == CV_8UC3 || type == CV_8UC4))
+    {
+        throw SkipTestException("CPU implementation diverged with CUDA impl for INTER_LINEAR case");
+    }
+
     cv::Mat src = randomMat(size, type);
     cv::cuda::GpuMat dst = createMat(xmap.size(), type, useRoi);
     randu(xmap, NPP_MAX_32S, NPP_MAXABS_32F);

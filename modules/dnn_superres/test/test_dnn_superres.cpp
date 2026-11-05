@@ -24,9 +24,9 @@ void runSingleModel(std::string algorithm, int scale, std::string model_filename
     Mat img = imread(path);
     ASSERT_FALSE(img.empty()) << "Test image can't be loaded: " << path;
 
-    std::string pb_path = cvtest::findDataFile(DNN_SUPERRES_DIR + "/" + model_filename);
+    std::string onnx_path = cvtest::findDataFile(DNN_SUPERRES_DIR + "/" + model_filename);
 
-    dnn_sr->readModel(pb_path);
+    dnn_sr->readModel(onnx_path);
 
     dnn_sr->setModel(algorithm, scale);
 
@@ -76,7 +76,7 @@ void runMultiModel(std::string algorithm, int scale, std::string model_filename,
     Mat img = imread(path);
     ASSERT_FALSE(img.empty()) << "Test image can't be loaded: " << path;
 
-    std::string pb_path = cvtest::findDataFile("models/onnx/" + model_filename);
+    std::string pb_path = cvtest::findDataFile("dnn/onnx/models/" + model_filename);
 
     dnn_sr->readModel(pb_path);
 

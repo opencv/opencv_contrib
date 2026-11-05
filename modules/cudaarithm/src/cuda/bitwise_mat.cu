@@ -76,8 +76,10 @@ void cv::cuda::bitwise_not(InputArray _src, OutputArray _dst, InputArray _mask, 
     if (mask.empty())
     {
         const int bcols = (int) (src.cols * src.elemSize());
+        const intptr_t srcptr = reinterpret_cast<intptr_t>(src.data);
+        const intptr_t dstptr = reinterpret_cast<intptr_t>(dst.data);
 
-        if ((bcols & 3) == 0)
+        if ((bcols & 3) == 0 && (srcptr & 3) == 0 && (dstptr & 3) == 0)
         {
             const int vcols = bcols >> 2;
 
@@ -86,7 +88,7 @@ void cv::cuda::bitwise_not(InputArray _src, OutputArray _dst, InputArray _mask, 
 
             gridTransformUnary(vsrc, vdst, bit_not<uint>(), stream);
         }
-        else if ((bcols & 1) == 0)
+        else if ((bcols & 1) == 0 && (srcptr & 1) == 0 && (dstptr & 1) == 0)
         {
             const int vcols = bcols >> 1;
 
@@ -180,8 +182,11 @@ void bitMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat& m
     if (mask.empty())
     {
         const int bcols = (int) (src1.cols * src1.elemSize());
+        const intptr_t src1ptr = reinterpret_cast<intptr_t>(src1.data);
+        const intptr_t src2ptr = reinterpret_cast<intptr_t>(src2.data);
+        const intptr_t dstptr = reinterpret_cast<intptr_t>(dst.data);
 
-        if ((bcols & 3) == 0)
+        if ((bcols & 3) == 0 && (src1ptr & 3) == 0 && (src2ptr & 3) == 0 && (dstptr & 3) == 0)
         {
             const int vcols = bcols >> 2;
 
@@ -191,7 +196,7 @@ void bitMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat& m
 
             funcs32[op](vsrc1, vsrc2, vdst, GpuMat(), stream);
         }
-        else if ((bcols & 1) == 0)
+        else if ((bcols & 1) == 0 && (src1ptr & 1) == 0 && (src2ptr & 1) == 0 && (dstptr & 1) == 0)
         {
             const int vcols = bcols >> 1;
 

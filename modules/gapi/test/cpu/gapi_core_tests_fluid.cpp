@@ -134,18 +134,8 @@ INSTANTIATE_TEST_CASE_P(CompareTestFluid, CmpTest,
                                 Values(CV_8U),
                                 Values(CORE_FLUID),
                                 Values(CMP_EQ, CMP_GE, CMP_NE, CMP_GT, CMP_LT, CMP_LE),
-                                Values(false),
+                                testing::Bool(),
                                 Values(AbsExact().to_compare_obj())));
-
-// FIXME: solve comparison error to unite with the test above
-INSTANTIATE_TEST_CASE_P(CompareTestFluidScalar, CmpTest,
-                        Combine(Values(CV_8UC3, CV_8UC1, CV_16SC1, CV_32FC1),
-                                ValuesIn(in_sizes),
-                                Values(CV_8U),
-                                Values(CORE_FLUID),
-                                Values(CMP_EQ, CMP_GE, CMP_NE, CMP_GT, CMP_LT, CMP_LE),
-                                Values(true),
-                                Values(AbsSimilarPoints(1, 0.01).to_compare_obj())));
 
 INSTANTIATE_TEST_CASE_P(AddWeightedTestFluid, AddWeightedTest,
                         Combine(Values(CV_8UC1, CV_16UC1, CV_16SC1),

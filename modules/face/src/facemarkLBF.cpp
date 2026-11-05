@@ -393,9 +393,9 @@ static void _copyVector2Output(std::vector< std::vector< Point2f > > &vec, Outpu
     }
     else if (out.kind() == _OutputArray::STD_VECTOR_VECTOR) {
         for (unsigned int i = 0; i < vec.size(); i++) {
-            out.create(68, 1, CV_32FC2, i);
+            out.create((int)vec[i].size(), 1, CV_32FC2, i);
             Mat m = out.getMat(i);
-            Mat(Mat(vec[i]).t()).copyTo(m);
+            Mat(vec[i]).reshape(2, 1).copyTo(m);
         }
     }
     else {

@@ -12,11 +12,11 @@ namespace opencv_test { namespace {
 
 typedef perf::TestBaseWithParam<tuple<tuple<string,string,int>, string> > dnn_superres;
 
-#define MODEL testing::Values(tuple<string,string,int> {"espcn","ESPCN_x2.onnx",2}, \
-                                tuple<string,string,int> {"lapsrn","LapSRN_x4.onnx",4})
+// lapsrn inference fails after conversion to ONNX
+// BUG https://github.com/opencv/opencv_contrib/issues/4263
+#define MODEL testing::Values(tuple<string,string,int> {"espcn","cv/dnn_superres/ESPCN_x2.onnx",2})
+                           //, tuple<string,string,int> {"lapsrn","dnn/onnx/models/LapSRN_x4.onnx",4})
 #define IMAGES testing::Values("cv/dnn_superres/butterfly.png", "cv/shared/baboon.png", "cv/shared/lena.png")
-
-const string TEST_DIR = "cv/dnn_superres";
 
 PERF_TEST_P(dnn_superres, upsample, testing::Combine(MODEL, IMAGES))
 {
@@ -27,7 +27,7 @@ PERF_TEST_P(dnn_superres, upsample, testing::Combine(MODEL, IMAGES))
     string model_filename = get<1>(model);
     int scale = get<2>(model);
 
-    string model_path = cvtest::findDataFile(TEST_DIR + "/" + model_filename);
+    string model_path = cvtest::findDataFile(model_filename);
     string image_path = cvtest::findDataFile(image_name);
 
     DnnSuperResImpl sr;
