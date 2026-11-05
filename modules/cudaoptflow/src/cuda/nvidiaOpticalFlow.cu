@@ -6,7 +6,11 @@
 //M*/
 #if !defined CUDA_DISABLER
 
+#ifdef __HIP_PLATFORM_AMD__
+#include <hip/hip_runtime.h>
+#else
 #include <cuda_runtime.h>
+#endif
 #include <stdio.h>
 
 typedef unsigned char   uint8_t;

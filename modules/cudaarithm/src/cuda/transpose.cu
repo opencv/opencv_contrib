@@ -68,6 +68,9 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
 
     if (elemSize == 1)
     {
+#ifdef __HIP_PLATFORM_AMD__
+        gridTranspose(globPtr<uchar>(src), globPtr<uchar>(dst), stream);
+#else
         NppStreamHandler h(StreamAccessor::getStream(stream));
 
         NppiSize sz;
@@ -84,6 +87,7 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
 
         if (!stream)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
+#endif
     }
     else if (elemSize == 4)
     {

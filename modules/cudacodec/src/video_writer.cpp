@@ -48,8 +48,17 @@ using namespace cv::cuda;
 
 #if !defined(HAVE_NVCUVENC)
 
-Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const Codec, const double, const ColorFormat, const Ptr<EncoderCallback>, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
-Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const Codec, const double, const ColorFormat, const EncoderParams&, const Ptr<EncoderCallback>, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
+#ifdef __HIP_PLATFORM_AMD__
+#define OPENCV_CUDACODEC_NO_ENCODER CV_Error(Error::StsNotImplemented, \
+    "cudacodec hardware video encoding is not available on ROCm: there is no " \
+    "ROCm-native encoder. Use the FFmpeg videoio backend (cv::VideoWriter with " \
+    "CAP_FFMPEG) with the AMF encoders h264_amf / hevc_amf / av1_amf instead.")
+#else
+#define OPENCV_CUDACODEC_NO_ENCODER throw_no_cuda()
+#endif
+
+Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const Codec, const double, const ColorFormat, const Ptr<EncoderCallback>, const cv::cuda::Stream&) { OPENCV_CUDACODEC_NO_ENCODER; return Ptr<cv::cudacodec::VideoWriter>(); }
+Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const Codec, const double, const ColorFormat, const EncoderParams&, const Ptr<EncoderCallback>, const cv::cuda::Stream&) { OPENCV_CUDACODEC_NO_ENCODER; return Ptr<cv::cudacodec::VideoWriter>(); }
 
 #else // !defined HAVE_NVCUVENC
 

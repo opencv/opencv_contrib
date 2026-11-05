@@ -336,6 +336,35 @@ void cv::cuda::bitwise_xor(InputArray src1, InputArray src2, OutputArray dst, In
 //////////////////////////////////////////////////////////////////////////////
 // shift
 
+#ifdef __HIP_PLATFORM_AMD__
+
+namespace cv { namespace cuda { namespace detail {
+    void lshiftHip(const GpuMat& src, Scalar_<int> val, GpuMat& dst, cudaStream_t stream);
+    void rshiftHip(const GpuMat& src, Scalar_<int> val, GpuMat& dst, cudaStream_t stream);
+}}}
+
+void cv::cuda::rshift(InputArray _src, Scalar_<int> val, OutputArray _dst, Stream& stream)
+{
+    GpuMat src = getInputMat(_src, stream);
+    CV_Assert( src.depth() < CV_32F );
+    CV_Assert( src.channels() == 1 || src.channels() == 3 || src.channels() == 4 );
+    GpuMat dst = getOutputMat(_dst, src.size(), src.type(), stream);
+    cv::cuda::detail::rshiftHip(src, val, dst, StreamAccessor::getStream(stream));
+    syncOutput(dst, _dst, stream);
+}
+
+void cv::cuda::lshift(InputArray _src, Scalar_<int> val, OutputArray _dst, Stream& stream)
+{
+    GpuMat src = getInputMat(_src, stream);
+    CV_Assert( src.depth() == CV_8U || src.depth() == CV_16U || src.depth() == CV_32S );
+    CV_Assert( src.channels() == 1 || src.channels() == 3 || src.channels() == 4 );
+    GpuMat dst = getOutputMat(_dst, src.size(), src.type(), stream);
+    cv::cuda::detail::lshiftHip(src, val, dst, StreamAccessor::getStream(stream));
+    syncOutput(dst, _dst, stream);
+}
+
+#else
+
 namespace
 {
     template <int DEPTH, int cn> struct NppShiftFunc
@@ -470,6 +499,8 @@ void cv::cuda::lshift(InputArray _src, Scalar_<int> val, OutputArray _dst, Strea
     syncOutput(dst, _dst, stream);
 }
 
+#endif // __HIP_PLATFORM_AMD__
+
 //////////////////////////////////////////////////////////////////////////////
 // Minimum and maximum operations
 
@@ -497,7 +528,34 @@ void cv::cuda::max(InputArray src1, InputArray src2, OutputArray dst, Stream& st
 }
 
 ////////////////////////////////////////////////////////////////////////
-// NPP magnitide
+// magnitude (interleaved-complex, single input)
+
+#ifdef __HIP_PLATFORM_AMD__
+
+namespace cv { namespace cuda { namespace detail {
+    void magnitudeHip(const GpuMat& src, GpuMat& dst, Stream& stream);
+    void magnitudeSqrHip(const GpuMat& src, GpuMat& dst, Stream& stream);
+}}}
+
+void cv::cuda::magnitude(InputArray _src, OutputArray _dst, Stream& stream)
+{
+    GpuMat src = getInputMat(_src, stream);
+    CV_Assert(src.type() == CV_32FC2);
+    GpuMat dst = getOutputMat(_dst, src.size(), CV_32FC1, stream);
+    cv::cuda::detail::magnitudeHip(src, dst, stream);
+    syncOutput(dst, _dst, stream);
+}
+
+void cv::cuda::magnitudeSqr(InputArray _src, OutputArray _dst, Stream& stream)
+{
+    GpuMat src = getInputMat(_src, stream);
+    CV_Assert(src.type() == CV_32FC2);
+    GpuMat dst = getOutputMat(_dst, src.size(), CV_32FC1, stream);
+    cv::cuda::detail::magnitudeSqrHip(src, dst, stream);
+    syncOutput(dst, _dst, stream);
+}
+
+#else
 
 namespace
 {
@@ -557,5 +615,7 @@ void cv::cuda::magnitudeSqr(InputArray _src, OutputArray _dst, Stream& stream)
 
     syncOutput(dst, _dst, stream);
 }
+
+#endif // __HIP_PLATFORM_AMD__
 
 #endif

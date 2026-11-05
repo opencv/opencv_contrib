@@ -116,6 +116,242 @@ CUDA_TEST_P(HistEven, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, HistEven, testing::Combine(
     ALL_DEVICES, testing::ValuesIn(hist_size_to_roi_offset_params)));
 
+namespace
+{
+    // Reference range histogram over half-open bins [levels[i], levels[i+1]),
+    // the last boundary exclusive; matches NPP and the HIP range kernel.
+    template <typename T, typename L>
+    void rangeHistGold(const cv::Mat& src, int channel, const std::vector<L>& levels, cv::Mat& out)
+    {
+        const int bins = (int)levels.size() - 1;
+        out = cv::Mat::zeros(1, bins, CV_32S);
+        int* h = out.ptr<int>();
+        const int cn = src.channels();
+        for (int y = 0; y < src.rows; ++y)
+        {
+            const T* row = src.ptr<T>(y);
+            for (int x = 0; x < src.cols; ++x)
+            {
+                const L v = (L)row[x * cn + channel];
+                if (v < levels[0] || v >= levels[bins])
+                    continue;
+                int lo = 0, hi = bins;
+                while (hi - lo > 1)
+                {
+                    const int mid = (lo + hi) >> 1;
+                    if (v < levels[mid]) hi = mid; else lo = mid;
+                }
+                h[lo]++;
+            }
+        }
+    }
+
+    std::vector<int> evenLevels32s(int nLevels, int lower, int upper)
+    {
+        std::vector<int> lv(nLevels);
+        const double range = (double)(upper - lower);
+        for (int i = 0; i < nLevels; ++i)
+            lv[i] = lower + cvRound(range * i / (nLevels - 1));
+        return lv;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// HistEven16 (16U / 16S single channel)
+
+PARAM_TEST_CASE(HistEven16, cv::cuda::DeviceInfo, MatDepth)
+{
+    cv::cuda::DeviceInfo devInfo;
+    int depth;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        depth = GET_PARAM(1);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(HistEven16, Accuracy)
+{
+    const cv::Size size(257, 130);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1), 0, 4096);
+
+    const int hbins = 50;
+    const int lower = 100;
+    const int upper = 3500;
+
+    cv::cuda::GpuMat hist;
+    cv::cuda::histEven(loadMat(src), hist, hbins, lower, upper);
+
+    // NPP's histEven snaps bin boundaries to the integer evenLevels layout, so
+    // the reference is a range histogram over those boundaries, not the float
+    // bin edges cv::calcHist would use.
+    std::vector<int> levels = evenLevels32s(hbins + 1, lower, upper);
+    cv::Mat gold;
+    if (depth == CV_16U) rangeHistGold<ushort, int>(src, 0, levels, gold);
+    else                 rangeHistGold<short,  int>(src, 0, levels, gold);
+
+    EXPECT_MAT_NEAR(gold, hist, 0.0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, HistEven16, testing::Combine(
+    ALL_DEVICES, testing::Values(MatDepth(CV_16U), MatDepth(CV_16S))));
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// HistEven4 (4-channel)
+
+PARAM_TEST_CASE(HistEven4, cv::cuda::DeviceInfo, MatDepth)
+{
+    cv::cuda::DeviceInfo devInfo;
+    int depth;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        depth = GET_PARAM(1);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(HistEven4, Accuracy)
+{
+    const cv::Size size(200, 150);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 4), 0, depth == CV_8U ? 256 : 4096);
+
+    int histSize[4] = {20, 30, 40, 10};
+    int lower[4] = {0, 50, 100, 10};
+    int upper[4] = {depth == CV_8U ? 256 : 4000, 3000, 3500, 2000};
+
+    cv::cuda::GpuMat hist[4];
+    cv::cuda::histEven(loadMat(src), hist, histSize, lower, upper);
+
+    for (int c = 0; c < 4; ++c)
+    {
+        std::vector<int> levels = evenLevels32s(histSize[c] + 1, lower[c], upper[c]);
+        cv::Mat gold;
+        if (depth == CV_8U)       rangeHistGold<uchar,  int>(src, c, levels, gold);
+        else if (depth == CV_16U) rangeHistGold<ushort, int>(src, c, levels, gold);
+        else                      rangeHistGold<short,  int>(src, c, levels, gold);
+        EXPECT_MAT_NEAR(gold, hist[c], 0.0);
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, HistEven4, testing::Combine(
+    ALL_DEVICES, testing::Values(MatDepth(CV_8U), MatDepth(CV_16U), MatDepth(CV_16S))));
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// HistRange (single channel, all depths)
+
+PARAM_TEST_CASE(HistRange, cv::cuda::DeviceInfo, MatDepth)
+{
+    cv::cuda::DeviceInfo devInfo;
+    int depth;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        depth = GET_PARAM(1);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(HistRange, Accuracy)
+{
+    const cv::Size size(220, 160);
+    const bool isF = depth == CV_32F;
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1), 0, isF ? 1.0 : (depth == CV_8U ? 256 : 4000));
+
+    cv::cuda::GpuMat hist;
+    cv::Mat gold;
+    if (isF)
+    {
+        std::vector<float> lv = {0.0f, 0.1f, 0.25f, 0.4f, 0.55f, 0.7f, 0.85f, 1.0f};
+        cv::Mat levels(1, (int)lv.size(), CV_32FC1, lv.data());
+        cv::cuda::histRange(loadMat(src), hist, loadMat(levels));
+        rangeHistGold<float, float>(src, 0, lv, gold);
+    }
+    else
+    {
+        std::vector<int> lv = {0, 30, 70, 130, 200, 280, 400, 600, 900, 1500, 4000};
+        cv::Mat levels(1, (int)lv.size(), CV_32SC1, lv.data());
+        cv::cuda::histRange(loadMat(src), hist, loadMat(levels));
+        if (depth == CV_8U)
+        {
+            std::vector<int> lv8 = {0, 30, 70, 130, 200, 255};
+            cv::Mat levels8(1, (int)lv8.size(), CV_32SC1, lv8.data());
+            cv::cuda::histRange(loadMat(src), hist, loadMat(levels8));
+            rangeHistGold<uchar, int>(src, 0, lv8, gold);
+        }
+        else if (depth == CV_16U)
+            rangeHistGold<ushort, int>(src, 0, lv, gold);
+        else
+            rangeHistGold<short, int>(src, 0, lv, gold);
+    }
+
+    EXPECT_MAT_NEAR(gold, hist, 0.0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, HistRange, testing::Combine(
+    ALL_DEVICES, testing::Values(MatDepth(CV_8U), MatDepth(CV_16U), MatDepth(CV_16S), MatDepth(CV_32F))));
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// HistRange4 (4-channel)
+
+PARAM_TEST_CASE(HistRange4, cv::cuda::DeviceInfo, MatDepth)
+{
+    cv::cuda::DeviceInfo devInfo;
+    int depth;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        depth = GET_PARAM(1);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(HistRange4, Accuracy)
+{
+    const cv::Size size(180, 140);
+    const bool isF = depth == CV_32F;
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 4), 0, isF ? 1.0 : (depth == CV_8U ? 256 : 4000));
+
+    cv::cuda::GpuMat hist[4];
+    cv::Mat levels[4];
+    cv::cuda::GpuMat dLevels[4];
+
+    std::vector<float> lvF = {0.0f, 0.2f, 0.45f, 0.7f, 1.0f};
+    std::vector<int> lvI = {0, 40, 100, 220, 400, 700, 1200, 4000};
+    std::vector<int> lvI8 = {0, 40, 100, 180, 255};
+
+    for (int c = 0; c < 4; ++c)
+    {
+        if (isF)
+            levels[c] = cv::Mat(1, (int)lvF.size(), CV_32FC1, lvF.data()).clone();
+        else if (depth == CV_8U)
+            levels[c] = cv::Mat(1, (int)lvI8.size(), CV_32SC1, lvI8.data()).clone();
+        else
+            levels[c] = cv::Mat(1, (int)lvI.size(), CV_32SC1, lvI.data()).clone();
+        dLevels[c] = loadMat(levels[c]);
+    }
+
+    cv::cuda::histRange(loadMat(src), hist, dLevels);
+
+    for (int c = 0; c < 4; ++c)
+    {
+        cv::Mat gold;
+        if (isF)                  rangeHistGold<float,  float>(src, c, lvF, gold);
+        else if (depth == CV_8U)  rangeHistGold<uchar,  int>(src, c, lvI8, gold);
+        else if (depth == CV_16U) rangeHistGold<ushort, int>(src, c, lvI, gold);
+        else                      rangeHistGold<short,  int>(src, c, lvI, gold);
+        EXPECT_MAT_NEAR(gold, hist[c], 0.0);
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, HistRange4, testing::Combine(
+    ALL_DEVICES, testing::Values(MatDepth(CV_8U), MatDepth(CV_16U), MatDepth(CV_16S), MatDepth(CV_32F))));
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // CalcHist
 

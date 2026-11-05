@@ -72,6 +72,19 @@ namespace cv { namespace cuda {
 
         template <int cn, typename Depth>
         void MHCdemosaic(PtrStepSz<Depth> src, int2 sourceOffset, PtrStepSz<Depth> dst, int2 firstRed, cudaStream_t stream);
+
+#ifdef __HIP_PLATFORM_AMD__
+        namespace color_hip
+        {
+            void swapChannels_gpu(PtrStepSzb image, const int dstOrder[4], hipStream_t stream);
+            void gamma_gpu(PtrStepSzb img, int cn, bool forward, hipStream_t stream);
+            void alphaPremul_gpu(PtrStepSzb src, PtrStepSzb dst, int depth, hipStream_t stream);
+        }
+        namespace alpha_hip
+        {
+            void alphaComp_gpu(PtrStepSzb img1, PtrStepSzb img2, PtrStepSzb dst, int depth, int op, hipStream_t stream);
+        }
+#endif
     }
 }}
 
@@ -1825,6 +1838,11 @@ namespace
         GpuMat dst = _dst.getGpuMat();
 
         cudaStream_t stream = StreamAccessor::getStream(_stream);
+#ifdef __HIP_PLATFORM_AMD__
+        device::color_hip::alphaPremul_gpu(src, dst, src.depth(), stream);
+        if (stream == 0)
+            cudaSafeCall( cudaDeviceSynchronize() );
+#else
         NppStreamHandler h(stream);
 
         NppiSize oSizeROI;
@@ -1845,6 +1863,7 @@ namespace
 
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
+#endif // __HIP_PLATFORM_AMD__
     #endif
     }
 
@@ -2217,6 +2236,11 @@ void cv::cuda::swapChannels(InputOutputArray _image, const int dstOrder[4], Stre
     CV_Assert( image.type() == CV_8UC4 );
 
     cudaStream_t stream = StreamAccessor::getStream(_stream);
+#ifdef __HIP_PLATFORM_AMD__
+    device::color_hip::swapChannels_gpu(image, dstOrder, stream);
+    if (stream == 0)
+        cudaSafeCall( cudaDeviceSynchronize() );
+#else
     NppStreamHandler h(stream);
 
     NppiSize sz;
@@ -2231,6 +2255,7 @@ void cv::cuda::swapChannels(InputOutputArray _image, const int dstOrder[4], Stre
 
     if (stream == 0)
         cudaSafeCall( cudaDeviceSynchronize() );
+#endif // __HIP_PLATFORM_AMD__
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2238,12 +2263,23 @@ void cv::cuda::swapChannels(InputOutputArray _image, const int dstOrder[4], Stre
 
 void cv::cuda::gammaCorrection(InputArray _src, OutputArray _dst, bool forward, Stream& _stream)
 {
-#if (CUDA_VERSION < 5000)
+#if !defined(__HIP_PLATFORM_AMD__) && (CUDA_VERSION < 5000)
     CV_UNUSED(_src);
     CV_UNUSED(_dst);
     CV_UNUSED(forward);
     CV_UNUSED(stream);
     CV_Error(Error::StsNotImplemented, "This function works only with CUDA 5.0 or higher");
+#elif defined(__HIP_PLATFORM_AMD__)
+    GpuMat src = _src.getGpuMat();
+    CV_Assert( src.type() == CV_8UC3 || src.type() == CV_8UC4 );
+    _dst.create(src.size(), src.type());
+    GpuMat dst = _dst.getGpuMat();
+    cudaStream_t stream = StreamAccessor::getStream(_stream);
+    if (dst.data != src.data)
+        src.copyTo(dst, _stream);
+    device::color_hip::gamma_gpu(dst, src.channels(), forward, stream);
+    if (stream == 0)
+        cudaSafeCall(cudaDeviceSynchronize());
 #else
 #if USE_NPP_STREAM_CTX
     typedef NppStatus (*func_t)(const Npp8u* pSrc, int nSrcStep, Npp8u* pDst, int nDstStep, NppiSize oSizeROI, NppStreamContext ctx);
@@ -2309,6 +2345,28 @@ void cv::cuda::gammaCorrection(InputArray _src, OutputArray _dst, bool forward, 
 ////////////////////////////////////////////////////////////////////////
 // alphaComp
 
+#ifdef __HIP_PLATFORM_AMD__
+// NPP's nppiAlphaComp_*_AC4R has no ROCm analogue; the 13 Porter-Duff operators
+// are reproduced by a direct HIP kernel (cuda/alpha_comp_hip.cu) faithful to
+// NPP's published compositing algebra.
+void cv::cuda::alphaComp(InputArray _img1, InputArray _img2, OutputArray _dst, int alpha_op, Stream& stream)
+{
+    GpuMat img1 = _img1.getGpuMat();
+    GpuMat img2 = _img2.getGpuMat();
+
+    CV_Assert( img1.type() == CV_8UC4 || img1.type() == CV_16UC4 || img1.type() == CV_32SC4 || img1.type() == CV_32FC4 );
+    CV_Assert( img1.size() == img2.size() && img1.type() == img2.type() );
+    CV_Assert( alpha_op >= ALPHA_OVER && alpha_op <= ALPHA_PREMUL );
+
+    _dst.create(img1.size(), img1.type());
+    GpuMat dst = _dst.getGpuMat();
+
+    cudaStream_t s = StreamAccessor::getStream(stream);
+    device::alpha_hip::alphaComp_gpu(img1, img2, dst, img1.depth(), alpha_op, s);
+    if (s == 0)
+        cudaSafeCall(cudaDeviceSynchronize());
+}
+#else
 namespace
 {
     template <int DEPTH> struct NppAlphaCompFunc
@@ -2399,5 +2457,6 @@ void cv::cuda::alphaComp(InputArray _img1, InputArray _img2, OutputArray _dst, i
 
     func(img1, img2, dst, npp_alpha_ops[alpha_op], StreamAccessor::getStream(stream));
 }
+#endif // __HIP_PLATFORM_AMD__
 
 #endif /* !defined (HAVE_CUDA) */

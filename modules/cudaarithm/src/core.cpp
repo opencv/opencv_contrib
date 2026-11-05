@@ -64,6 +64,48 @@ void cv::cuda::copyMakeBorder(InputArray, OutputArray, int, int, int, int, int, 
 ////////////////////////////////////////////////////////////////////////
 // flip
 
+#ifdef __HIP_PLATFORM_AMD__
+
+namespace cv { namespace cuda { namespace detail {
+    void flipHip(const GpuMat& src, GpuMat& dst, int flipCode, cudaStream_t stream);
+}}}
+
+void cv::cuda::flip(InputArray _src, OutputArray _dst, int flipCode, Stream& stream)
+{
+    GpuMat src = getInputMat(_src, stream);
+
+    CV_Assert(src.depth() == CV_8U || src.depth() == CV_16U || src.depth() == CV_32S || src.depth() == CV_32F);
+    CV_Assert(src.channels() == 1 || src.channels() == 3 || src.channels() == 4);
+
+    _dst.create(src.size(), src.type());
+    GpuMat dst = getOutputMat(_dst, src.size(), src.type(), stream);
+    bool isInplace = (src.data == dst.data);
+    bool isSizeOdd = (src.cols & 1) == 1 || (src.rows & 1) == 1;
+    if (isInplace && isSizeOdd)
+        CV_Error(Error::BadROISize, "In-place version of flip only accepts even width/height");
+
+    cudaStream_t cudaStream = StreamAccessor::getStream(stream);
+
+    if (!isInplace)
+    {
+        cv::cuda::detail::flipHip(src, dst, flipCode, cudaStream);
+    }
+    else
+    {
+        // The mirror kernel reads and writes distinct elements, but reading and
+        // writing the same buffer in one pass would race; flip through a scratch
+        // copy and write the result back.
+        BufferPool pool(stream);
+        GpuMat tmp = pool.getBuffer(src.size(), src.type());
+        cv::cuda::detail::flipHip(src, tmp, flipCode, cudaStream);
+        tmp.copyTo(dst, stream);
+    }
+
+    syncOutput(dst, _dst, stream);
+}
+
+#else
+
 namespace
 {
     template<int DEPTH> struct NppTypeTraits;
@@ -212,5 +254,7 @@ void cv::cuda::flip(InputArray _src, OutputArray _dst, int flipCode, Stream& str
 
     syncOutput(dst, _dst, stream);
 }
+
+#endif // __HIP_PLATFORM_AMD__
 
 #endif /* !defined (HAVE_CUDA) */

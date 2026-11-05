@@ -51,7 +51,11 @@
 #include "../warp/reduce.hpp"
 #include "detail/reduce.hpp"
 #include "detail/reduce_key_val.hpp"
+#if defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__)
+#include <hip/hip_runtime_api.h>
+#else
 #include <cuda_runtime_api.h>
+#endif
 
 namespace cv { namespace cudev {
 

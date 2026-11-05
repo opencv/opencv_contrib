@@ -41,7 +41,11 @@
 //M*/
 
 #include <stdio.h>
+#if defined(__HIP_PLATFORM_AMD__)
+#include <hip/hip_runtime.h>
+#else
 #include <cuda_runtime.h>
+#endif
 
 #include "opencv2/core/cuda/common.hpp"
 

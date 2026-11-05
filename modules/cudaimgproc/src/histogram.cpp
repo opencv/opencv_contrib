@@ -292,6 +292,7 @@ cv::Ptr<cv::cuda::CLAHE> cv::cuda::createCLAHE(double clipLimit, cv::Size tileGr
 ////////////////////////////////////////////////////////////////////////
 // NPP Histogram
 
+#ifndef __HIP_PLATFORM_AMD__
 namespace
 {
 #if (NPP_VERSION >= 12205)
@@ -564,6 +565,7 @@ namespace
         }
     };
 }
+#endif // !__HIP_PLATFORM_AMD__
 
 void cv::cuda::evenLevels(OutputArray _levels, int nLevels, int lowerLevel, int upperLevel, Stream& stream)
 {
@@ -577,7 +579,18 @@ void cv::cuda::evenLevels(OutputArray _levels, int nLevels, int lowerLevel, int 
     else
         host_levels = _levels.getMat();
 
+#ifdef __HIP_PLATFORM_AMD__
+    // nppiEvenLevelsHost_32s lays out nLevels uniform boundaries spanning
+    // [lowerLevel, upperLevel] with integer rounding; reproduce it directly.
+    {
+        int* lv = host_levels.ptr<int>();
+        const double range = (double)(upperLevel - lowerLevel);
+        for (int i = 0; i < nLevels; ++i)
+            lv[i] = lowerLevel + cvRound(range * i / (nLevels - 1));
+    }
+#else
     nppSafeCall( nppiEvenLevelsHost_32s(host_levels.ptr<Npp32s>(), nLevels, lowerLevel, upperLevel) );
+#endif
 
     if (kind == _InputArray::CUDA_GPU_MAT)
         _levels.getGpuMatRef().upload(host_levels, stream);
@@ -587,6 +600,33 @@ namespace hist
 {
     void histEven8u(PtrStepSzb src, int* hist, int binCount, int lowerLevel, int upperLevel, const int offsetX, cudaStream_t stream);
 }
+
+#ifdef __HIP_PLATFORM_AMD__
+namespace cv { namespace cuda { namespace device { namespace hist_hip
+{
+    void histRange_c1(PtrStepSzb src, int depth, const void* levels, int nLevels, int* hist, cudaStream_t stream);
+    void histRange_c4(PtrStepSzb src, int depth, const void* const levels[4], const int nLevels[4], int* const hist[4], cudaStream_t stream);
+}}}}
+
+namespace
+{
+    // Materialise the nLevels uniform integer boundaries NPP's evenLevels lays
+    // out over [lowerLevel, upperLevel], then upload to the device. Matches
+    // cv::cuda::evenLevels / nppiEvenLevelsHost_32s exactly so histEven shares
+    // the histRange bin-edge definition.
+    void uploadEvenLevels32s(GpuMat& dLevels, int nLevels, int lowerLevel, int upperLevel)
+    {
+        Mat host(1, nLevels, CV_32SC1);
+        int* lv = host.ptr<int>();
+        const double range = (double)(upperLevel - lowerLevel);
+        for (int i = 0; i < nLevels; ++i)
+            lv[i] = lowerLevel + cvRound(range * i / (nLevels - 1));
+        // Synchronous upload: a pageable async H2D copy would race the local
+        // host buffer's destruction at function return.
+        dLevels.upload(host);
+    }
+}
+#endif // __HIP_PLATFORM_AMD__
 
 namespace
 {
@@ -602,6 +642,32 @@ namespace
 
 void cv::cuda::histEven(InputArray _src, OutputArray hist, int histSize, int lowerLevel, int upperLevel, Stream& stream)
 {
+    GpuMat src = _src.getGpuMat();
+
+    if (src.depth() == CV_8U && deviceSupports(FEATURE_SET_COMPUTE_30))
+    {
+        histEven8u(src, hist.getGpuMatRef(), histSize, lowerLevel, upperLevel, StreamAccessor::getStream(stream));
+        return;
+    }
+
+    CV_Assert( src.type() == CV_8UC1 || src.type() == CV_16UC1 || src.type() == CV_16SC1 );
+
+#ifdef __HIP_PLATFORM_AMD__
+    // The 8U path above runs the custom histEven8u kernel; 16U/16S route through
+    // the range-histogram kernel over NPP-spaced even level boundaries.
+    {
+        const int nLevels = histSize + 1;
+
+        GpuMat dLevels;
+        uploadEvenLevels32s(dLevels, nLevels, lowerLevel, upperLevel);
+
+        hist.create(1, histSize, CV_32S);
+        GpuMat dHist = hist.getGpuMat();
+
+        device::hist_hip::histRange_c1(src, src.depth(), dLevels.ptr<int>(), nLevels,
+                                       dHist.ptr<int>(), StreamAccessor::getStream(stream));
+    }
+#else
     typedef void (*hist_t)(const GpuMat& src, OutputArray hist, int levels, int lowerLevel, int upperLevel, Stream& stream);
     static const hist_t hist_callers[] =
     {
@@ -618,21 +684,34 @@ void cv::cuda::histEven(InputArray _src, OutputArray hist, int histSize, int low
 #endif
     };
 
-    GpuMat src = _src.getGpuMat();
-
-    if (src.depth() == CV_8U && deviceSupports(FEATURE_SET_COMPUTE_30))
-    {
-        histEven8u(src, hist.getGpuMatRef(), histSize, lowerLevel, upperLevel, StreamAccessor::getStream(stream));
-        return;
-    }
-
-    CV_Assert( src.type() == CV_8UC1 || src.type() == CV_16UC1 || src.type() == CV_16SC1 );
-
     hist_callers[src.depth()](src, hist, histSize, lowerLevel, upperLevel, stream);
+#endif // __HIP_PLATFORM_AMD__
 }
 
 void cv::cuda::histEven(InputArray _src, GpuMat hist[4], int histSize[4], int lowerLevel[4], int upperLevel[4], Stream& stream)
 {
+#ifdef __HIP_PLATFORM_AMD__
+    {
+        GpuMat src = _src.getGpuMat();
+        CV_Assert( src.type() == CV_8UC4 || src.type() == CV_16UC4 || src.type() == CV_16SC4 );
+
+        GpuMat dLevels[4];
+        const void* pLevels[4];
+        int nLevels[4];
+        int* pHist[4];
+        for (int c = 0; c < 4; ++c)
+        {
+            nLevels[c] = histSize[c] + 1;
+            uploadEvenLevels32s(dLevels[c], nLevels[c], lowerLevel[c], upperLevel[c]);
+            pLevels[c] = dLevels[c].ptr<int>();
+            hist[c].create(1, histSize[c], CV_32S);
+            pHist[c] = hist[c].ptr<int>();
+        }
+
+        device::hist_hip::histRange_c4(src, src.depth(), pLevels, nLevels, pHist,
+                                       StreamAccessor::getStream(stream));
+    }
+#else
     typedef void (*hist_t)(const GpuMat& src, GpuMat hist[4], int levels[4], int lowerLevel[4], int upperLevel[4], Stream& stream);
     static const hist_t hist_callers[] =
     {
@@ -654,10 +733,28 @@ void cv::cuda::histEven(InputArray _src, GpuMat hist[4], int histSize[4], int lo
     CV_Assert( src.type() == CV_8UC4 || src.type() == CV_16UC4 || src.type() == CV_16SC4 );
 
     hist_callers[src.depth()](src, hist, histSize, lowerLevel, upperLevel, stream);
+#endif // __HIP_PLATFORM_AMD__
 }
 
 void cv::cuda::histRange(InputArray _src, OutputArray hist, InputArray _levels, Stream& stream)
 {
+#ifdef __HIP_PLATFORM_AMD__
+    {
+        GpuMat src = _src.getGpuMat();
+        GpuMat levels = _levels.getGpuMat();
+
+        CV_Assert( src.type() == CV_8UC1 || src.type() == CV_16UC1 || src.type() == CV_16SC1 || src.type() == CV_32FC1 );
+
+        const int levelType = (src.depth() == CV_32F) ? CV_32FC1 : CV_32SC1;
+        CV_Assert( levels.type() == levelType && levels.rows == 1 );
+
+        hist.create(1, levels.cols - 1, CV_32S);
+        GpuMat dHist = hist.getGpuMat();
+
+        device::hist_hip::histRange_c1(src, src.depth(), levels.ptr(), levels.cols,
+                                       dHist.ptr<int>(), StreamAccessor::getStream(stream));
+    }
+#else
     typedef void (*hist_t)(const GpuMat& src, OutputArray hist, const GpuMat& levels, Stream& stream);
     static const hist_t hist_callers[] =
     {
@@ -684,10 +781,34 @@ void cv::cuda::histRange(InputArray _src, OutputArray hist, InputArray _levels, 
     CV_Assert( src.type() == CV_8UC1 || src.type() == CV_16UC1 || src.type() == CV_16SC1 || src.type() == CV_32FC1 );
 
     hist_callers[src.depth()](src, hist, levels, stream);
+#endif // __HIP_PLATFORM_AMD__
 }
 
 void cv::cuda::histRange(InputArray _src, GpuMat hist[4], const GpuMat levels[4], Stream& stream)
 {
+#ifdef __HIP_PLATFORM_AMD__
+    {
+        GpuMat src = _src.getGpuMat();
+        CV_Assert( src.type() == CV_8UC4 || src.type() == CV_16UC4 || src.type() == CV_16SC4 || src.type() == CV_32FC4 );
+
+        const int levelType = (src.depth() == CV_32F) ? CV_32FC1 : CV_32SC1;
+
+        const void* pLevels[4];
+        int nLevels[4];
+        int* pHist[4];
+        for (int c = 0; c < 4; ++c)
+        {
+            CV_Assert( levels[c].type() == levelType && levels[c].rows == 1 );
+            pLevels[c] = levels[c].ptr();
+            nLevels[c] = levels[c].cols;
+            hist[c].create(1, levels[c].cols - 1, CV_32S);
+            pHist[c] = hist[c].ptr<int>();
+        }
+
+        device::hist_hip::histRange_c4(src, src.depth(), pLevels, nLevels, pHist,
+                                       StreamAccessor::getStream(stream));
+    }
+#else
     typedef void (*hist_t)(const GpuMat& src, GpuMat hist[4], const GpuMat levels[4], Stream& stream);
     static const hist_t hist_callers[] =
     {
@@ -713,6 +834,7 @@ void cv::cuda::histRange(InputArray _src, GpuMat hist[4], const GpuMat levels[4]
     CV_Assert( src.type() == CV_8UC4 || src.type() == CV_16UC4 || src.type() == CV_16SC4 || src.type() == CV_32FC4 );
 
     hist_callers[src.depth()](src, hist, levels, stream);
+#endif // __HIP_PLATFORM_AMD__
 }
 
 #endif /* !defined (HAVE_CUDA) */
