@@ -25,8 +25,7 @@ int main(int argc, char* argv[]) {
         cout << "    Usage: " << argv[0] << " <input_image>" << endl;
         return 0;
     }
-    // The model is downloaded to ${CMAKE_BINARY_DIR}/downloads/wechat_qrcode if cmake runs without warnings,
-    // otherwise you can download them from https://github.com/WeChatCV/opencv_3rdparty/tree/wechat_qrcode.
+    // This sample runs without the CNN models (empty model paths), using only the traditional detector.
     Ptr<wechat_qrcode::WeChatQRCode> detector;
 
     try {

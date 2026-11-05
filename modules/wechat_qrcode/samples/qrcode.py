@@ -14,8 +14,13 @@ else:
 
 # For python API generator, it follows the template: {module_name}_{class_name},
 # so it is a little weird.
-# ONNX models: detect.onnx and sr.onnx
-# available in opencv_extra/testdata/dnn/wechat_2021-01/.
+
+# Since OpenCV 5.0, the WeChat QR code models are in ONNX format
+# (detect.onnx and sr.onnx). The Caffe models (*.prototxt, *.caffemodel)
+# used by OpenCV 4.x are no longer supported.
+#
+# ONNX models are available in:
+# opencv_extra/testdata/dnn/wechat_2021-01/
 try:
     detector = cv2.wechat_qrcode_WeChatQRCode(
         "detect.onnx", "sr.onnx")
