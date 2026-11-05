@@ -181,3 +181,25 @@ TYPED_TEST(SplitTest, C4)
 {
     SplitTest<TypeParam>::test_c4();
 }
+
+TEST(SplitMergeLargeRows, GridYOverflow)
+{
+    const Size size(3, 65536 * 8 + 13);
+
+    Mat src = randomMat(size, CV_8UC3);
+    GpuMat_<uchar3> d_src(src);
+
+    GpuMat_<uchar> d_ch0, d_ch1, d_ch2;
+    gridSplit(d_src, tie(d_ch0, d_ch1, d_ch2));
+
+    std::vector<Mat> gold_ch;
+    cv::split(src, gold_ch);
+    ASSERT_MAT_NEAR(gold_ch[0], d_ch0, 0.0);
+    ASSERT_MAT_NEAR(gold_ch[1], d_ch1, 0.0);
+    ASSERT_MAT_NEAR(gold_ch[2], d_ch2, 0.0);
+
+    std::array<GlobPtrSz<uchar>, 3> d_srcs = {globPtr(d_ch0), globPtr(d_ch1), globPtr(d_ch2)};
+    GpuMat_<uchar3> d_merged;
+    gridMerge(d_srcs, d_merged);
+    ASSERT_MAT_NEAR(src, d_merged, 0.0);
+}
