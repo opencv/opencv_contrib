@@ -46,6 +46,7 @@
 #ifndef OPENCV_CUDEV_GRID_REDUCE_DETAIL_HPP
 #define OPENCV_CUDEV_GRID_REDUCE_DETAIL_HPP
 
+#include <algorithm>
 #include "../../common.hpp"
 #include "../../util/tuple.hpp"
 #include "../../util/saturate_cast.hpp"
@@ -392,17 +393,19 @@ namespace grid_reduce_detail
     __global__ void reduce(const SrcPtr src, ResType* result, const MaskPtr mask, const int rows, const int cols)
     {
         const int x0 = blockIdx.x * blockDim.x * PATCH_X + threadIdx.x;
-        const int y0 = blockIdx.y * blockDim.y * PATCH_Y + threadIdx.y;
 
         Reductor reductor;
 
-        for (int i = 0, y = y0; i < PATCH_Y && y < rows; ++i, y += blockDim.y)
+        for (int y0 = blockIdx.y * blockDim.y * PATCH_Y + threadIdx.y; y0 < rows; y0 += blockDim.y * PATCH_Y * gridDim.y)
         {
-            for (int j = 0, x = x0; j < PATCH_X && x < cols; ++j, x += blockDim.x)
+            for (int i = 0, y = y0; i < PATCH_Y && y < rows; ++i, y += blockDim.y)
             {
-                if (mask(y, x))
+                for (int j = 0, x = x0; j < PATCH_X && x < cols; ++j, x += blockDim.x)
                 {
-                    reductor.reduceVal(src(y, x));
+                    if (mask(y, x))
+                    {
+                        reductor.reduceVal(src(y, x));
+                    }
                 }
             }
         }
@@ -416,7 +419,7 @@ namespace grid_reduce_detail
     __host__ void reduce(const SrcPtr& src, ResType* result, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x * Policy::patch_size_x), divUp(rows, block.y * Policy::patch_size_y));
+        const dim3 grid(divUp(cols, block.x * Policy::patch_size_x), std::min(divUp(rows, block.y * Policy::patch_size_y), 65535));
 
         reduce<Reductor, Policy::block_size_x * Policy::block_size_y, Policy::patch_size_x, Policy::patch_size_y><<<grid, block, 0, stream>>>(src, result, mask, rows, cols);
         CV_CUDEV_SAFE_CALL( cudaGetLastError() );
