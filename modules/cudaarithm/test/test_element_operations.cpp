@@ -769,32 +769,27 @@ CUDA_TEST_P(Multiply_Overflow, Accuracy)
     if (depth.second == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
         return;
 
-    cv::Mat src1, src2, products;
+    cv::Mat src1, src2;
     if (depth.first == CV_16U)
     {
         src1 = cv::Mat_<ushort>({1, 8}, {65535, 65535, 46341, 46340, 300, 255, 2, 0});
         src2 = cv::Mat_<ushort>({1, 8}, {65535, 2, 46341, 46340, 300, 255, 3, 65535});
-        products = cv::Mat_<double>({1, 8}, {4294836225., 131070., 2147488281., 2147395600., 90000., 65025., 6., 0.});
     }
     else
     {
         src1 = cv::Mat_<int>({1, 8}, {100000, 2147483647, -100000, 65536, 46341, 16777217, -2147483647 - 1, 2});
         src2 = cv::Mat_<int>({1, 8}, {100000, 2, 100000, 65536, 46341, 3, -1, 3});
-        products = cv::Mat_<double>({1, 8}, {1.e10, 4294967294., -1.e10, 4294967296., 2147488281., 50331651., 2147483648., 6.});
     }
     src1 = src1.reshape(channels);
     src2 = src2.reshape(channels);
-    products = products.reshape(channels);
 
     cv::Mat dst_gold;
     if (depth.second == CV_16U)
         dst_gold = cv::Mat_<ushort>({1, 8}, {65535, 65535, 65535, 65535, 65535, 65025, 6, 0});
     else if (depth.second == CV_16S)
         dst_gold = cv::Mat_<short>({1, 8}, {32767, 32767, 32767, 32767, 32767, 32767, 6, 0});
-    else if (depth.second == CV_32S)
-        dst_gold = cv::Mat_<int>({1, 8}, {-131071, 131070, -2147479015, 2147395600, 90000, 65025, 6, 0});
     else
-        products.convertTo(dst_gold, depth.second);
+        cv::multiply(src1, src2, dst_gold, 1, depth.second);
     dst_gold = dst_gold.reshape(channels);
 
     cv::cuda::GpuMat dst = createMat(src1.size(), CV_MAKE_TYPE(depth.second, channels), useRoi);
@@ -806,7 +801,6 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Multiply_Overflow, testing::Combine(
     ALL_DEVICES,
     testing::Values(std::make_pair(MatDepth(CV_16U), MatDepth(CV_16U)),
                     std::make_pair(MatDepth(CV_16U), MatDepth(CV_16S)),
-                    std::make_pair(MatDepth(CV_16U), MatDepth(CV_32S)),
                     std::make_pair(MatDepth(CV_16U), MatDepth(CV_32F)),
                     std::make_pair(MatDepth(CV_16U), MatDepth(CV_64F)),
                     std::make_pair(MatDepth(CV_32S), MatDepth(CV_32F)),

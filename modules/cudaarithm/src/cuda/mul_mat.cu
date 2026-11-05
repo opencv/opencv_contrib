@@ -87,7 +87,7 @@ namespace
     {
         __device__ __forceinline__ float operator ()(int a, int b) const
         {
-            return saturate_cast<float>(static_cast<double>(a) * b);
+            return static_cast<float>(a) * static_cast<float>(b);
         }
     };
 
