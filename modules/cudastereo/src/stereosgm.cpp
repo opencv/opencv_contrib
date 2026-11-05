@@ -109,9 +109,9 @@ void StereoSGMImpl::compute(InputArray _left, InputArray _right, OutputArray _di
     {
         CV_Error(Error::StsBadArg, "Unsupported mode");
     }
-    if (params.P1 <= 0 || params.P2 <= 0 || params.P1 >= params.P2 || params.P2 >= 224)
+    if (params.P1 <= 0 || params.P2 <= 0 || params.P1 >= params.P2 || params.P2 > 224)
     {
-        CV_Error(Error::StsOutOfRange, "P1 and P2 must satisfy 0 < P1 < P2 < 224");
+        CV_Error(Error::StsOutOfRange, "P1 and P2 must satisfy 0 < P1 < P2 <= 224");
     }
     if (params.uniquenessRatio < 0 || params.uniquenessRatio > 100)
     {

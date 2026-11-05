@@ -1227,7 +1227,14 @@ CUDA_TEST_P(StereoSGM, InvalidPenalties)
     cv::cuda::GpuMat d_right(64, 64, CV_8UC1, cv::Scalar::all(0));
     cv::cuda::GpuMat d_disp;
 
-    // P2 >= 224 overflows uint8_t path aggregation cost (31-bit census + P2 > 255), as in #3904
+    // P2 == 224 is the maximum valid penalty (31-bit census max cost 31 + 224 == 255 <= UINT8_MAX)
+    Ptr<cv::cuda::StereoSGM> sgm_max_valid = cv::cuda::createStereoSGM(0, 64, 10, 224, 5, cv::cuda::StereoSGM::MODE_HH4);
+    EXPECT_NO_THROW(sgm_max_valid->compute(d_left, d_right, d_disp));
+
+    // P2 > 224 overflows uint8_t path aggregation cost (31 + 225 == 256), including CPU StereoSGBM defaults (#3904)
+    Ptr<cv::cuda::StereoSGM> sgm_edge_overflow = cv::cuda::createStereoSGM(0, 64, 10, 225, 5, cv::cuda::StereoSGM::MODE_HH4);
+    EXPECT_THROW(sgm_edge_overflow->compute(d_left, d_right, d_disp), cv::Exception);
+
     Ptr<cv::cuda::StereoSGM> sgm_overflow = cv::cuda::createStereoSGM(0, 64, 384, 1536, 5, cv::cuda::StereoSGM::MODE_HH4);
     EXPECT_THROW(sgm_overflow->compute(d_left, d_right, d_disp), cv::Exception);
 
@@ -1238,15 +1245,24 @@ CUDA_TEST_P(StereoSGM, InvalidPenalties)
     // Non-positive P1 is invalid
     Ptr<cv::cuda::StereoSGM> sgm_nonpos = cv::cuda::createStereoSGM(0, 64, 0, 120, 5, cv::cuda::StereoSGM::MODE_HH4);
     EXPECT_THROW(sgm_nonpos->compute(d_left, d_right, d_disp), cv::Exception);
+
+    // Out-of-range uniquenessRatio is invalid
+    Ptr<cv::cuda::StereoSGM> sgm_uniq = cv::cuda::createStereoSGM(0, 64, 10, 120, 101, cv::cuda::StereoSGM::MODE_HH4);
+    EXPECT_THROW(sgm_uniq->compute(d_left, d_right, d_disp), cv::Exception);
 }
 
 CUDA_TEST_P(StereoSGM, SubpixelToggle)
 {
-    cv::Mat left_image  = readImage("stereobm/aloe-L.png", cv::IMREAD_GRAYSCALE);
-    cv::Mat right_image = readImage("stereobm/aloe-R.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat left_full  = readImage("stereobm/aloe-L.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat right_full = readImage("stereobm/aloe-R.png", cv::IMREAD_GRAYSCALE);
 
-    ASSERT_FALSE(left_image.empty());
-    ASSERT_FALSE(right_image.empty());
+    ASSERT_FALSE(left_full.empty());
+    ASSERT_FALSE(right_full.empty());
+
+    // Crop by 1 column if even so width is odd, exercising odd-width tail handling in medianFilter
+    const int odd_cols = (left_full.cols % 2 == 1) ? left_full.cols : (left_full.cols - 1);
+    cv::Mat left_image  = left_full(cv::Rect(0, 0, odd_cols, left_full.rows)).clone();
+    cv::Mat right_image = right_full(cv::Rect(0, 0, odd_cols, right_full.rows)).clone();
 
     const int min_disp = 0;
     const int ndisp = 128;
@@ -1254,16 +1270,16 @@ CUDA_TEST_P(StereoSGM, SubpixelToggle)
     EXPECT_TRUE(sgm->getSubpixel());
 
     cv::cuda::GpuMat d_left(left_image), d_right(right_image);
-    cv::cuda::GpuMat d_disp_subpixel, d_disp_int;
+    cv::cuda::GpuMat d_disp;
 
-    sgm->compute(d_left, d_right, d_disp_subpixel);
+    sgm->compute(d_left, d_right, d_disp);
+    cv::Mat disp_subpixel(d_disp);
 
+    // Reuse the same d_disp buffer when disabling subpixel to verify all border pixels are overwritten
     sgm->setSubpixel(false);
     EXPECT_FALSE(sgm->getSubpixel());
-    sgm->compute(d_left, d_right, d_disp_int);
-
-    cv::Mat disp_subpixel(d_disp_subpixel);
-    cv::Mat disp_int(d_disp_int);
+    sgm->compute(d_left, d_right, d_disp);
+    cv::Mat disp_int(d_disp);
 
     const int16_t invalid_int = static_cast<int16_t>(min_disp - 1);
     const int16_t invalid_sub = static_cast<int16_t>((min_disp - 1) * cv::StereoMatcher::DISP_SCALE);

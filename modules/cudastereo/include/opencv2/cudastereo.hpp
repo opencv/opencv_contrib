@@ -284,8 +284,8 @@ public:
 
 @param minDisparity Minimum possible disparity value. Normally, it is zero but sometimes rectification algorithms can shift images, so this parameter needs to be adjusted accordingly.
 @param numDisparities Maximum disparity minus minimum disparity. The value must be 64, 128 or 256.
-@param P1 The first parameter controlling the disparity smoothness. This parameter is used for the case of slanted surfaces (not fronto parallel). Because StereoSGM uses a 9x7 Center-Symmetric Census Transform (max local Hamming distance 31) and 8-bit path aggregation, P1 and P2 must satisfy `0 < P1 < P2 < 224`.
-@param P2 The second parameter controlling the disparity smoothness. This parameter is used for "solving" the depth discontinuities problem. Must satisfy `0 < P1 < P2 < 224`.
+@param P1 The first parameter controlling the disparity smoothness. This parameter is used for the case of slanted surfaces (not fronto parallel). Because StereoSGM uses a 9x7 Center-Symmetric Census Transform (max local Hamming distance 31) and 8-bit path aggregation, P1 and P2 must satisfy `0 < P1 < P2 <= 224`.
+@param P2 The second parameter controlling the disparity smoothness. This parameter is used for "solving" the depth discontinuities problem. Must satisfy `0 < P1 < P2 <= 224`.
 @param uniquenessRatio Margin in percentage by which the best (minimum) computed cost function
 value should "win" the second best value to consider the found match correct. Normally, a value
 within the 5-15 range is good enough.

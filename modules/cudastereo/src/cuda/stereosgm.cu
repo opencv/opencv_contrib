@@ -1431,7 +1431,10 @@ __device__ inline uint32_t compute_disparity_subpixel(uint32_t disp, uint32_t co
         const int right = smem[disp + 1];
         const int numer = left - right;
         const int denom = left - 2 * cost + right;
-        subp += ((numer << StereoSGBM::DISP_SHIFT) + denom) / (2 * denom);
+        if (denom != 0)
+        {
+            subp += ((numer << StereoSGBM::DISP_SHIFT) + denom) / (2 * denom);
+        }
     }
     return subp;
 }
@@ -1739,8 +1742,14 @@ __global__ void median_kernel_3x3_8u(const PtrStepSz<uint8_t> src, PtrStep<uint8
 {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x < RADIUS || x >= src.cols - RADIUS || y < RADIUS || y >= src.rows - RADIUS)
+    if (x >= src.cols || y >= src.rows)
         return;
+
+    if (x < RADIUS || x >= src.cols - RADIUS || y < RADIUS || y >= src.rows - RADIUS)
+    {
+        dst(y, x) = src(y, x);
+        return;
+    }
 
     uint8_t buf[KSIZE_SQ];
     for (int i = 0; i < KSIZE_SQ; i++)
@@ -1755,8 +1764,14 @@ __global__ void median_kernel_3x3_16u(const PtrStepSz<uint16_t> src, PtrStep<uin
 {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x < RADIUS || x >= src.cols - RADIUS || y < RADIUS || y >= src.rows - RADIUS)
+    if (x >= src.cols || y >= src.rows)
         return;
+
+    if (x < RADIUS || x >= src.cols - RADIUS || y < RADIUS || y >= src.rows - RADIUS)
+    {
+        dst(y, x) = src(y, x);
+        return;
+    }
 
     uint16_t buf[KSIZE_SQ];
     for (int i = 0; i < KSIZE_SQ; i++)
@@ -1772,8 +1787,15 @@ __global__ void median_kernel_3x3_8u_v4(const PtrStepSz<uint8_t> src, PtrStep<ui
     const int x_4 = 4 * (blockIdx.x * blockDim.x + threadIdx.x);
     const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (y < RADIUS || y >= src.rows - RADIUS)
+    if (x_4 >= src.cols || y >= src.rows)
         return;
+
+    if (y < RADIUS || y >= src.rows - RADIUS)
+    {
+        for (int x = x_4; x < ::min(x_4 + 4, src.cols); x++)
+            dst(y, x) = src(y, x);
+        return;
+    }
 
     uint32_t buf[KSIZE_SQ];
     if (x_4 >= 4 && x_4 + 7 < src.cols)
@@ -1803,30 +1825,24 @@ __global__ void median_kernel_3x3_8u_v4(const PtrStepSz<uint8_t> src, PtrStep<ui
 
         *((uint32_t*)&dst(y, x_4)) = buf[KSIZE_SQ / 2];
     }
-    else if (x_4 == 0)
+    else
     {
-        for (int x = RADIUS; x < 4; x++)
+        for (int x = x_4; x < ::min(x_4 + 4, src.cols); x++)
         {
-            uint8_t* buf_u8 = (uint8_t*)buf;
-            for (int i = 0; i < KSIZE_SQ; i++)
-                buf_u8[i] = src(y - RADIUS + i / KSIZE, x - RADIUS + i % KSIZE);
+            if (x < RADIUS || x >= src.cols - RADIUS)
+            {
+                dst(y, x) = src(y, x);
+            }
+            else
+            {
+                uint8_t* buf_u8 = (uint8_t*)buf;
+                for (int i = 0; i < KSIZE_SQ; i++)
+                    buf_u8[i] = src(y - RADIUS + i / KSIZE, x - RADIUS + i % KSIZE);
 
-            median_selection_network_9(buf_u8);
+                median_selection_network_9(buf_u8);
 
-            dst(y, x) = buf_u8[KSIZE_SQ / 2];
-        }
-    }
-    else if (x_4 < src.cols)
-    {
-        for (int x = x_4; x < ::min(x_4 + 4, src.cols - RADIUS); x++)
-        {
-            uint8_t* buf_u8 = (uint8_t*)buf;
-            for (int i = 0; i < KSIZE_SQ; i++)
-                buf_u8[i] = src(y - RADIUS + i / KSIZE, x - RADIUS + i % KSIZE);
-
-            median_selection_network_9(buf_u8);
-
-            dst(y, x) = buf_u8[KSIZE_SQ / 2];
+                dst(y, x) = buf_u8[KSIZE_SQ / 2];
+            }
         }
     }
 }
@@ -1836,8 +1852,15 @@ __global__ void median_kernel_3x3_16u_v2(const PtrStepSz<uint16_t> src, PtrStep<
     const int x_2 = 2 * (blockIdx.x * blockDim.x + threadIdx.x);
     const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (y < RADIUS || y >= src.rows - RADIUS)
+    if (x_2 >= src.cols || y >= src.rows)
         return;
+
+    if (y < RADIUS || y >= src.rows - RADIUS)
+    {
+        for (int x = x_2; x < ::min(x_2 + 2, src.cols); x++)
+            dst(y, x) = src(y, x);
+        return;
+    }
 
     uint32_t buf[KSIZE_SQ];
     if (x_2 >= 2 && x_2 + 3 < src.cols)
@@ -1867,30 +1890,24 @@ __global__ void median_kernel_3x3_16u_v2(const PtrStepSz<uint16_t> src, PtrStep<
 
         *((uint32_t*)&dst(y, x_2)) = buf[KSIZE_SQ / 2];
     }
-    else if (x_2 == 0)
+    else
     {
-        for (int x = RADIUS; x < 2; x++)
+        for (int x = x_2; x < ::min(x_2 + 2, src.cols); x++)
         {
-            uint8_t* buf_u8 = (uint8_t*)buf;
-            for (int i = 0; i < KSIZE_SQ; i++)
-                buf_u8[i] = src(y - RADIUS + i / KSIZE, x - RADIUS + i % KSIZE);
+            if (x < RADIUS || x >= src.cols - RADIUS)
+            {
+                dst(y, x) = src(y, x);
+            }
+            else
+            {
+                uint16_t* buf_u16 = (uint16_t*)buf;
+                for (int i = 0; i < KSIZE_SQ; i++)
+                    buf_u16[i] = src(y - RADIUS + i / KSIZE, x - RADIUS + i % KSIZE);
 
-            median_selection_network_9(buf_u8);
+                median_selection_network_9(buf_u16);
 
-            dst(y, x) = buf_u8[KSIZE_SQ / 2];
-        }
-    }
-    else if (x_2 < src.cols)
-    {
-        for (int x = x_2; x < ::min(x_2 + 2, src.cols - RADIUS); x++)
-        {
-            uint8_t* buf_u8 = (uint8_t*)buf;
-            for (int i = 0; i < KSIZE_SQ; i++)
-                buf_u8[i] = src(y - RADIUS + i / KSIZE, x - RADIUS + i % KSIZE);
-
-            median_selection_network_9(buf_u8);
-
-            dst(y, x) = buf_u8[KSIZE_SQ / 2];
+                dst(y, x) = buf_u16[KSIZE_SQ / 2];
+            }
         }
     }
 }
@@ -1901,12 +1918,19 @@ void median_filter(const PtrStepSz<T> d_src, PtrStep<T> d_dst, Stream& _stream);
 template <>
 void median_filter<uint8_t>(const PtrStepSz<uint8_t> d_src, PtrStep<uint8_t> d_dst, Stream& _stream)
 {
-    cudaStream_t stream = cv::cuda::StreamAccessor::getStream(_stream);
+    if (d_src.rows <= 0 || d_src.cols <= 0)
+        return;
 
-    if ((d_src.step / sizeof(uint8_t)) % 4 == 0)
+    cudaStream_t stream = cv::cuda::StreamAccessor::getStream(_stream);
+    const bool aligned_v4 = (reinterpret_cast<size_t>(d_src.data) % 4 == 0)
+        && (d_src.step % 4 == 0)
+        && (reinterpret_cast<size_t>(d_dst.data) % 4 == 0)
+        && (d_dst.step % 4 == 0);
+
+    if (aligned_v4)
     {
         const dim3 block(BLOCK_X, BLOCK_Y);
-        const dim3 grid(cudev::divUp(d_src.cols / 4, block.x), cudev::divUp(d_src.rows, block.y));
+        const dim3 grid(cudev::divUp(cudev::divUp(d_src.cols, 4), block.x), cudev::divUp(d_src.rows, block.y));
         median_kernel_3x3_8u_v4<<<grid, block, 0, stream>>>(d_src, d_dst);
     }
     else
@@ -1922,12 +1946,19 @@ void median_filter<uint8_t>(const PtrStepSz<uint8_t> d_src, PtrStep<uint8_t> d_d
 template <>
 void median_filter(const PtrStepSz<uint16_t> d_src, PtrStep<uint16_t> d_dst, Stream& _stream)
 {
-    cudaStream_t stream = cv::cuda::StreamAccessor::getStream(_stream);
+    if (d_src.rows <= 0 || d_src.cols <= 0)
+        return;
 
-    if ((d_src.step / sizeof(uint16_t)) % 2 == 0)
+    cudaStream_t stream = cv::cuda::StreamAccessor::getStream(_stream);
+    const bool aligned_v2 = (reinterpret_cast<size_t>(d_src.data) % 4 == 0)
+        && (d_src.step % 4 == 0)
+        && (reinterpret_cast<size_t>(d_dst.data) % 4 == 0)
+        && (d_dst.step % 4 == 0);
+
+    if (aligned_v2)
     {
         const dim3 block(BLOCK_X, BLOCK_Y);
-        const dim3 grid(cudev::divUp(d_src.cols / 2, block.x), cudev::divUp(d_src.rows, block.y));
+        const dim3 grid(cudev::divUp(cudev::divUp(d_src.cols, 2), block.x), cudev::divUp(d_src.rows, block.y));
         median_kernel_3x3_16u_v2<<<grid, block, 0, stream>>>(d_src, d_dst);
     }
     else

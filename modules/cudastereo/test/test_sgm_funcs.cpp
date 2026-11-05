@@ -379,7 +379,9 @@ namespace opencv_test { namespace {
                         const int right = v[best_disp + 1].first;
                         const int numer = left - right;
                         const int denom = left - 2 * best_cost + right;
-                        ans += ((numer << StereoMatcher::DISP_SHIFT) + denom) / (2 * denom);
+                        if (denom != 0) {
+                            ans += ((numer << StereoMatcher::DISP_SHIFT) + denom) / (2 * denom);
+                        }
                     }
                 }
                 for (const auto& p : v) {
