@@ -46,6 +46,7 @@
 #include <thrust/remove.h>
 #include <thrust/functional.h>
 #include <thrust/tuple.h>
+#include <thrust/iterator/zip_iterator.h>
 #include "opencv2/core/cuda/common.hpp"
 
 namespace cv { namespace cuda { namespace device { namespace globmotion {
