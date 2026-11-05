@@ -980,6 +980,61 @@ int CV_StereoMatchingTest::compareROI(const Rect& calcROI, const Rect& validROI)
 
 //----------------------------------- StereoSGM test -----------------------------------------------------
 
+TEST(CudaStereo_StereoSGM, SubpixelSwitch)
+{
+    const cv::Mat left = readImage("stereobm/aloe-L.png", cv::IMREAD_GRAYSCALE);
+    const cv::Mat right = readImage("stereobm/aloe-R.png", cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(left.empty());
+    ASSERT_FALSE(right.empty());
+    const cv::cuda::GpuMat d_left(left), d_right(right);
+
+    const int scale = cv::StereoMatcher::DISP_SCALE;
+    for (int ndisp : {64, 128, 256})
+    {
+        for (int min_disp : {0, 3})
+        {
+            SCOPED_TRACE(cv::format("ndisp=%d min_disp=%d", ndisp, min_disp));
+            cv::Ptr<cv::cuda::StereoSGM> sgm = cv::cuda::createStereoSGM(min_disp, ndisp);
+            EXPECT_TRUE(sgm->getSubpixel());
+
+            cv::cuda::GpuMat d_disp;
+            cv::Mat disp_sub, disp_int;
+            sgm->compute(d_left, d_right, d_disp);
+            d_disp.download(disp_sub);
+
+            sgm->setSubpixel(false);
+            EXPECT_FALSE(sgm->getSubpixel());
+            sgm->compute(d_left, d_right, d_disp);
+            d_disp.download(disp_int);
+
+            // Both modes pick the same best disparity, so the two maps must agree. Pixels
+            // whose census window leaves the image hold no real match and are not compared.
+            const int margin = 4;
+            int valid_sub = 0, valid_int = 0, fractional = 0, out_of_range = 0, far_apart = 0;
+            for (int y = margin; y < left.rows - margin; ++y)
+            {
+                for (int x = margin; x < left.cols - margin; ++x)
+                {
+                    const int v_sub = disp_sub.at<short>(y, x);
+                    const int v_int = disp_int.at<short>(y, x);
+                    const bool is_valid_sub = v_sub != (min_disp - 1) * scale;
+                    const bool is_valid_int = v_int != min_disp - 1;
+                    valid_sub += is_valid_sub;
+                    valid_int += is_valid_int;
+                    fractional += is_valid_sub && v_sub % scale != 0;
+                    out_of_range += is_valid_int && (v_int < min_disp || v_int >= min_disp + ndisp);
+                    far_apart += is_valid_sub && is_valid_int && std::abs(v_sub - v_int * scale) > scale;
+                }
+            }
+            EXPECT_GT(valid_sub, left.rows * left.cols / 2);
+            EXPECT_GT(fractional, valid_sub / 2);
+            EXPECT_EQ(out_of_range, 0);
+            EXPECT_EQ(far_apart, 0);
+            EXPECT_LE(std::abs(valid_sub - valid_int), valid_sub / 100);
+        }
+    }
+}
+
 class CV_Cuda_StereoSGMTest : public CV_StereoMatchingTest
 {
 public:
@@ -1095,7 +1150,7 @@ CUDA_TEST_P(StereoSGM_NonAligned, ConsistencyCheckCoversWholeImage)
     d_disp.download(disp);
 
     // Sentinel emitted by correctDisparityRange for INVALID_DISP pixels
-    // (subpixel = true is hard-wired in stereosgm.cpp):
+    // (subpixel is on by default):
     //     invalid_disp_scaled = (min_disp - 1) * DISP_SCALE
     const int16_t invalid_sentinel = static_cast<int16_t>(
         (min_disp - 1) * cv::StereoMatcher::DISP_SCALE);

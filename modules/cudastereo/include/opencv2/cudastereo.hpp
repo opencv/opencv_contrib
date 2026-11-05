@@ -264,6 +264,7 @@ public:
     @param right Right image of the same size and the same type as the left one.
     @param disparity Output disparity map. It has the same size as the input images.
     StereoSGM computes 16-bit fixed-point disparity map (where each disparity value has 4 fractional bits).
+    After setSubpixel(false) the values are whole disparities, with no fractional bits.
     */
     CV_WRAP virtual void compute(InputArray left, InputArray right, OutputArray disparity) CV_OVERRIDE = 0;
 
@@ -272,6 +273,11 @@ public:
     @sa compute
     */
     CV_WRAP_AS(compute_with_stream) virtual void compute(InputArray left, InputArray right, OutputArray disparity, Stream& stream) = 0;
+
+    //! Returns true if disparities are refined to 4 fractional bits, which is the default.
+    CV_WRAP virtual bool getSubpixel() const = 0;
+    //! Turns the refinement to 4 fractional bits on or off.
+    CV_WRAP virtual void setSubpixel(bool subpixel) = 0;
 };
 
 /** @brief Creates StereoSGM object.
