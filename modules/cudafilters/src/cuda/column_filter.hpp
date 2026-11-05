@@ -203,6 +203,57 @@ namespace column_filter
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
     }
+
+    template <typename T, typename D, typename B>
+    __global__ void linearColumnFilterArbitrary(const PtrStepSz<T> src, PtrStep<D> dst, const float* kernel, const int ksize, const int anchor, const B brd)
+    {
+        const int x = blockIdx.x * blockDim.x + threadIdx.x;
+        if (x >= src.cols)
+            return;
+
+        typedef typename TypeVec<float, VecTraits<T>::cn>::vec_type sum_t;
+
+        const T* src_col = src.ptr() + x;
+
+        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < src.rows; y += blockDim.y * gridDim.y)
+        {
+            const int y0 = y - anchor;
+            sum_t sum = VecTraits<sum_t>::all(0);
+
+            if (y0 >= 0 && y0 + ksize <= src.rows)
+            {
+                for (int k = 0; k < ksize; ++k)
+                    sum = sum + saturate_cast<sum_t>(src(y0 + k, x)) * kernel[k];
+            }
+            else
+            {
+                for (int k = 0; k < ksize; ++k)
+                    sum = sum + saturate_cast<sum_t>(brd.at(y0 + k, src_col, src.step)) * kernel[k];
+            }
+
+            dst(y, x) = saturate_cast<D>(sum);
+        }
+    }
+
+    template <typename T, typename D, template<typename> class B>
+    void callerArbitrary(PtrStepSz<T> src, PtrStepSz<D> dst, const float* kernel, int ksize, int anchor, int cc, cudaStream_t stream)
+    {
+        const int BLOCK_DIM_X = 32;
+        const int BLOCK_DIM_Y = (cc >= 20) ? 8 : 4;
+
+        DeviceInfo devInfo;
+        const int maxGridY = devInfo.maxGridSize()[1];
+        const dim3 block(BLOCK_DIM_X, BLOCK_DIM_Y);
+        const dim3 grid(divUp(src.cols, BLOCK_DIM_X), std::min(divUp(src.rows, BLOCK_DIM_Y), maxGridY));
+
+        B<T> brd(src.rows);
+
+        linearColumnFilterArbitrary<T, D><<<grid, block, 0, stream>>>(src, dst, kernel, ksize, anchor, brd);
+        cudaSafeCall( cudaGetLastError() );
+
+        if (stream == 0)
+            cudaSafeCall( cudaDeviceSynchronize() );
+    }
 }
 
 namespace filter
@@ -210,6 +261,23 @@ namespace filter
     template <typename T, typename D>
     void linearColumn(PtrStepSzb src, PtrStepSzb dst, const float* kernel, int ksize, int anchor, int brd_type, int cc, cudaStream_t stream)
     {
+        if (ksize > MAX_KERNEL_SIZE)
+        {
+            typedef void (*arbitrary_caller_t)(PtrStepSz<T> src, PtrStepSz<D> dst, const float* kernel, int ksize, int anchor, int cc, cudaStream_t stream);
+
+            static const arbitrary_caller_t arbitrary_callers[5] =
+            {
+                column_filter::callerArbitrary<T, D, BrdColConstant>,
+                column_filter::callerArbitrary<T, D, BrdColReplicate>,
+                column_filter::callerArbitrary<T, D, BrdColReflect>,
+                column_filter::callerArbitrary<T, D, BrdColWrap>,
+                column_filter::callerArbitrary<T, D, BrdColReflect101>
+            };
+
+            arbitrary_callers[brd_type]((PtrStepSz<T>)src, (PtrStepSz<D>)dst, kernel, ksize, anchor, cc, stream);
+            return;
+        }
+
         typedef void (*caller_t)(PtrStepSz<T> src, PtrStepSz<D> dst, const float* kernel, int anchor, int cc, cudaStream_t stream);
 
         static const caller_t callers[5][33] =
