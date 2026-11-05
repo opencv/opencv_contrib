@@ -20,6 +20,7 @@ public:
     SSDDetector(){};
     ~SSDDetector(){};
     int init(const std::string& onnx_path);
+    int init(const char* model_buffer, size_t model_len);
     std::vector<Mat> forward(Mat img, const int target_width, const int target_height);
 
 private:
