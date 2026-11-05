@@ -123,4 +123,3 @@ TEST(PyrUp, GridYOverflow)
 
     ASSERT_MAT_NEAR(dst_gold, dst, 1.0);
 }
-
