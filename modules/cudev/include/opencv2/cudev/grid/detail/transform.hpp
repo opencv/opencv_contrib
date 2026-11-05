@@ -46,6 +46,7 @@
 #ifndef OPENCV_CUDEV_GRID_TRANSFORM_DETAIL_HPP
 #define OPENCV_CUDEV_GRID_TRANSFORM_DETAIL_HPP
 
+#include <algorithm>
 #include "../../common.hpp"
 #include "../../util/tuple.hpp"
 #include "../../util/saturate_cast.hpp"
@@ -162,8 +163,11 @@ namespace grid_transform_detail
         if (x >= cols)
             return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             if (mask(y, x))
                 dst(y, x) = saturate_cast<DstType>(op(src(y, x)));
         }
@@ -176,8 +180,11 @@ namespace grid_transform_detail
         if (x >= cols)
             return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             if (mask(y, x))
                 dst(y, x) = saturate_cast<DstType>(op(src1(y, x), src2(y, x)));
         }
@@ -194,8 +201,11 @@ namespace grid_transform_detail
         if (x >= cols)
             return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             if (mask(y, x))
             {
                 dst1(y, x) = saturate_cast<DstType1>(op1(src1(y, x), src2(y, x)));
@@ -214,9 +224,14 @@ namespace grid_transform_detail
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
         const int x_shifted = x * SHIFT;
+        if (x_shifted >= cols)
+            return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             const SrcType* src = src_.row(y);
             DstType* dst = dst_.row(y);
 
@@ -246,9 +261,14 @@ namespace grid_transform_detail
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
         const int x_shifted = x * SHIFT;
+        if (x_shifted >= cols)
+            return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             const SrcType1* src1 = src1_.row(y);
             const SrcType2* src2 = src2_.row(y);
             DstType* dst = dst_.row(y);
@@ -286,9 +306,14 @@ namespace grid_transform_detail
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
         const int x_shifted = x * SHIFT;
+        if (x_shifted >= cols)
+            return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             const SrcType1* src1 = src1_.row(y);
             const SrcType2* src2 = src2_.row(y);
             DstType1* dst1 = dst1_.row(y);
@@ -325,6 +350,9 @@ namespace grid_transform_detail
         template <class SrcPtr, typename DstType, class UnOp, class MaskPtr>
         __host__ static void call(const SrcPtr& src, const GlobPtr<DstType>& dst, const UnOp& op, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
+            if (rows <= 0 || cols <= 0)
+                return;
+
             const dim3 block(Policy::block_size_x, Policy::block_size_y);
             const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
@@ -338,6 +366,9 @@ namespace grid_transform_detail
         template <class SrcPtr1, class SrcPtr2, typename DstType, class BinOp, class MaskPtr>
         __host__ static void call(const SrcPtr1& src1, const SrcPtr2& src2, const GlobPtr<DstType>& dst, const BinOp& op, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
+            if (rows <= 0 || cols <= 0)
+                return;
+
             const dim3 block(Policy::block_size_x, Policy::block_size_y);
             const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
@@ -352,6 +383,9 @@ namespace grid_transform_detail
         __host__ static void call(const SrcPtr1& src1, const SrcPtr2& src2, const GlobPtr<DstType1>& dst1, const GlobPtr<DstType2>& dst2,
                                   const BinOp1& op1, const BinOp2& op2, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
+            if (rows <= 0 || cols <= 0)
+                return;
+
             const dim3 block(Policy::block_size_x, Policy::block_size_y);
             const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
@@ -379,6 +413,9 @@ namespace grid_transform_detail
         template <typename SrcType, typename DstType, class UnOp, class MaskPtr>
         __host__ static void call(const GlobPtr<SrcType>& src, const GlobPtr<DstType>& dst, const UnOp& op, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
+            if (rows <= 0 || cols <= 0)
+                return;
+
             if (Policy::shift == 1 ||
                 !isAligned(src.data, Policy::shift * sizeof(SrcType)) || !isAligned(src.step, Policy::shift * sizeof(SrcType)) ||
                 !isAligned(dst.data, Policy::shift * sizeof(DstType)) || !isAligned(dst.step, Policy::shift * sizeof(DstType)))
@@ -400,6 +437,9 @@ namespace grid_transform_detail
         template <typename SrcType1, typename SrcType2, typename DstType, class BinOp, class MaskPtr>
         __host__ static void call(const GlobPtr<SrcType1>& src1, const GlobPtr<SrcType2>& src2, const GlobPtr<DstType>& dst, const BinOp& op, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
+            if (rows <= 0 || cols <= 0)
+                return;
+
             if (Policy::shift == 1 ||
                 !isAligned(src1.data, Policy::shift * sizeof(SrcType1)) || !isAligned(src1.step, Policy::shift * sizeof(SrcType1)) ||
                 !isAligned(src2.data, Policy::shift * sizeof(SrcType2)) || !isAligned(src2.step, Policy::shift * sizeof(SrcType2)) ||
@@ -424,6 +464,9 @@ namespace grid_transform_detail
                                   const GlobPtr<DstType1>& dst1, const GlobPtr<DstType2>& dst2,
                                   const BinOp1& op1, const BinOp2& op2, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
+            if (rows <= 0 || cols <= 0)
+                return;
+
             if (Policy::shift == 1 ||
                 !isAligned(src1.data, Policy::shift * sizeof(SrcType1))  || !isAligned(src1.step, Policy::shift * sizeof(SrcType1)) ||
                 !isAligned(src2.data, Policy::shift * sizeof(SrcType2))  || !isAligned(src2.step, Policy::shift * sizeof(SrcType2)) ||
@@ -516,8 +559,11 @@ namespace grid_transform_detail
         if (x >= cols)
             return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             if (!mask(y, x))
                 continue;
 
@@ -530,6 +576,9 @@ namespace grid_transform_detail
     template <class Policy, class SrcPtrTuple, class DstPtrTuple, class OpTuple, class MaskPtr>
     __host__ void transform_tuple(const SrcPtrTuple& src, const DstPtrTuple& dst, const OpTuple& op, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
+        if (rows <= 0 || cols <= 0)
+            return;
+
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
         const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 

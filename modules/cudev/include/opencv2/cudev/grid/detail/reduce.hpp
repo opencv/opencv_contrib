@@ -396,10 +396,17 @@ namespace grid_reduce_detail
 
         Reductor reductor;
 
-        for (int y0 = blockIdx.y * blockDim.y * PATCH_Y + threadIdx.y; y0 < rows; y0 += blockDim.y * PATCH_Y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * PATCH_Y * gridDim.y;
+        for (uint uy0 = blockIdx.y * blockDim.y * PATCH_Y + threadIdx.y; uy0 < urows; uy0 += y_stride)
         {
-            for (int i = 0, y = y0; i < PATCH_Y && y < rows; ++i, y += blockDim.y)
+            for (int i = 0; i < PATCH_Y; ++i)
             {
+                const uint uy = uy0 + static_cast<uint>(i) * blockDim.y;
+                if (uy >= urows)
+                    break;
+
+                const int y = static_cast<int>(uy);
                 for (int j = 0, x = x0; j < PATCH_X && x < cols; ++j, x += blockDim.x)
                 {
                     if (mask(y, x))
@@ -418,6 +425,9 @@ namespace grid_reduce_detail
     template <class Reductor, class Policy, class SrcPtr, typename ResType, class MaskPtr>
     __host__ void reduce(const SrcPtr& src, ResType* result, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
+        if (rows <= 0 || cols <= 0)
+            return;
+
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
         const dim3 grid(divUp(cols, block.x * Policy::patch_size_x), std::min(divUp(rows, block.y * Policy::patch_size_y), 65535));
 

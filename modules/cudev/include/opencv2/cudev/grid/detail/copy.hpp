@@ -46,6 +46,7 @@
 #ifndef OPENCV_CUDEV_GRID_COPY_DETAIL_HPP
 #define OPENCV_CUDEV_GRID_COPY_DETAIL_HPP
 
+#include <algorithm>
 #include "../../common.hpp"
 #include "../../util/tuple.hpp"
 #include "../../util/saturate_cast.hpp"
@@ -63,8 +64,11 @@ namespace grid_copy_detail
         if (x >= cols)
             return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             if (mask(y, x))
                 dst(y, x) = saturate_cast<DstType>(src(y, x));
         }
@@ -73,6 +77,9 @@ namespace grid_copy_detail
     template <class Policy, class SrcPtr, typename DstType, class MaskPtr>
     __host__ void copy(const SrcPtr& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
+        if (rows <= 0 || cols <= 0)
+            return;
+
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
         const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
@@ -110,8 +117,11 @@ namespace grid_copy_detail
         if (x >= cols)
             return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             if (mask(y, x))
                 Unroll<tuple_size<SrcPtrTuple>::value>::copy(src, dst, y, x);
         }
@@ -120,6 +130,9 @@ namespace grid_copy_detail
     template <class Policy, class SrcPtrTuple, class DstPtrTuple, class MaskPtr>
     __host__ void copy_tuple(const SrcPtrTuple& src, const DstPtrTuple& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
+        if (rows <= 0 || cols <= 0)
+            return;
+
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
         const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 

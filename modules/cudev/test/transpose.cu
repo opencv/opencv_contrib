@@ -79,3 +79,51 @@ TEST(Transpose, _32fc3)
 
     ASSERT_MAT_NEAR(dst_gold, dst, 0.0);
 }
+
+namespace {
+struct TransposePolicy32x8
+{
+    enum {
+        tile_dim    = 32,
+        block_dim_y = 8
+    };
+};
+}
+
+TEST(Transpose, GridYOverflow)
+{
+    // DefaultTransposePolicy uses tile_dim = 16; divUp(1048600, 16) = 65538 > 65535
+    const Size size(4, 1048600);
+
+    Mat src = randomMat(size, CV_8UC1);
+
+    GpuMat d_src_raw, d_dst_raw;
+    createContinuous(size, CV_8UC1, d_src_raw);
+    createContinuous(size.width, size.height, CV_8UC1, d_dst_raw);
+    d_src_raw.upload(src);
+
+    GpuMat_<uchar> d_src(d_src_raw);
+    GpuMat_<uchar> dst(d_dst_raw);
+    gridTranspose(d_src, dst);
+
+    Mat dst_gold;
+    cv::transpose(src, dst_gold);
+
+    ASSERT_MAT_NEAR(dst_gold, dst, 0.0);
+}
+
+TEST(Transpose, CustomTilePolicy)
+{
+    const Size size(70, 100);
+
+    Mat src = randomMat(size, CV_32FC1);
+    GpuMat_<float> d_src(src);
+    GpuMat_<float> dst;
+    gridTranspose_<TransposePolicy32x8>(d_src, dst);
+
+    Mat dst_gold;
+    cv::transpose(src, dst_gold);
+
+    ASSERT_MAT_NEAR(dst_gold, dst, 0.0);
+}
+
