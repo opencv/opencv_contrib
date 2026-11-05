@@ -1404,6 +1404,23 @@ CUDA_TEST_P(AbsDiff, Array)
     }
 }
 
+CUDA_TEST_P(AbsDiff, IntMin)
+{
+    if (depth != CV_32S)
+        return;
+
+    cv::Mat src1 = (cv::Mat_<int>(1, 2) << std::numeric_limits<int>::min(), 0);
+    cv::Mat src2 = (cv::Mat_<int>(1, 2) << 0, std::numeric_limits<int>::min());
+
+    cv::Mat expected = (cv::Mat_<int>(1, 2) << std::numeric_limits<int>::max(),
+                                                   std::numeric_limits<int>::max());
+
+    cv::cuda::GpuMat dst;
+    cv::cuda::absdiff(loadMat(src1), loadMat(src2), dst);
+
+    EXPECT_MAT_NEAR(expected, dst, 0.0);
+}
+
 CUDA_TEST_P(AbsDiff, Scalar)
 {
     cv::Mat src = randomMat(size, depth);

@@ -49,6 +49,7 @@
 #else
 
 #include "opencv2/cudev.hpp"
+#include <climits>
 
 using namespace cv::cudev;
 
@@ -74,6 +75,16 @@ namespace
         __device__ __forceinline__ T operator ()(T a, T b) const
         {
             return saturate_cast<T>(_abs(a - b));
+        }
+    };
+
+    template <> struct AbsDiffOp1<int> : binary_function<int, int, int>
+    {
+        __device__ __forceinline__ int operator ()(int a, int b) const
+        {
+            const long long diff = static_cast<long long>(a) - static_cast<long long>(b);
+            const long long absDiff = diff < 0 ? -diff : diff;
+            return static_cast<int>(absDiff > INT_MAX ? INT_MAX : absDiff);
         }
     };
 
