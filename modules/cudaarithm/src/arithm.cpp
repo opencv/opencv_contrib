@@ -116,6 +116,47 @@ namespace
     }
 
     #define cublasSafeCall(expr)  ___cublasSafeCall(expr, __FILE__, __LINE__, CV_Func)
+
+    namespace
+    {
+        struct CublasHandlePool
+        {
+            cublasHandle_t handle = nullptr;
+            int device_id = -1;
+
+            ~CublasHandlePool()
+            {
+                if (handle != nullptr)
+                {
+                    cublasDestroy_v2(handle);
+                    handle = nullptr;
+                }
+            }
+
+            cublasHandle_t get(bool force_recreate = false)
+            {
+                const int current_device = cv::cuda::getDevice();
+                if (handle != nullptr && (force_recreate || device_id != current_device))
+                {
+                    cublasDestroy_v2(handle);
+                    handle = nullptr;
+                    device_id = -1;
+                }
+                if (handle == nullptr)
+                {
+                    cublasSafeCall( cublasCreate_v2(&handle) );
+                    device_id = current_device;
+                }
+                return handle;
+            }
+        };
+
+        static cublasHandle_t getCublasHandle(bool force_recreate = false)
+        {
+            thread_local CublasHandlePool pool;
+            return pool.get(force_recreate);
+        }
+    }
 #endif // HAVE_CUBLAS
 
 #ifdef HAVE_CUFFT
@@ -223,10 +264,13 @@ void cv::cuda::gemm(InputArray _src1, InputArray _src2, double alpha, InputArray
         }
     }
 
-    cublasHandle_t handle;
-    cublasSafeCall( cublasCreate_v2(&handle) );
-
-    cublasSafeCall( cublasSetStream_v2(handle, StreamAccessor::getStream(stream)) );
+    cublasHandle_t handle = getCublasHandle();
+    const cudaStream_t cuStream = StreamAccessor::getStream(stream);
+    if (cublasSetStream_v2(handle, cuStream) != CUBLAS_STATUS_SUCCESS)
+    {
+        handle = getCublasHandle(true);
+        cublasSafeCall( cublasSetStream_v2(handle, cuStream) );
+    }
 
     cublasSafeCall( cublasSetPointerMode_v2(handle, CUBLAS_POINTER_MODE_HOST) );
 
@@ -280,8 +324,6 @@ void cv::cuda::gemm(InputArray _src1, InputArray _src2, double alpha, InputArray
             dst.ptr<cuDoubleComplex>(), static_cast<int>(dst.step / sizeof(cuDoubleComplex))) );
         break;
     }
-
-    cublasSafeCall( cublasDestroy_v2(handle) );
 
     syncOutput(dst, _dst, stream);
 #endif

@@ -118,6 +118,38 @@ CUDA_TEST_P(GEMM, Accuracy)
     }
 }
 
+CUDA_TEST_P(GEMM, AsyncStreamHandleReuse)
+{
+    if (CV_MAT_DEPTH(type) == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
+        return;
+    if (type == CV_64FC2 && flags != 0)
+        return;
+
+    cv::Mat src1 = randomMat(size, type, -10.0, 10.0);
+    cv::Mat src2 = randomMat(size, type, -10.0, 10.0);
+    cv::Mat src3 = randomMat(size, type, -10.0, 10.0);
+    double alpha = randomDouble(-10.0, 10.0);
+    double beta = randomDouble(-10.0, 10.0);
+
+    cv::cuda::Stream stream;
+    cv::cuda::GpuMat d_src1 = loadMat(src1, useRoi);
+    cv::cuda::GpuMat d_src2 = loadMat(src2, useRoi);
+    cv::cuda::GpuMat d_src3 = loadMat(src3, useRoi);
+    cv::cuda::GpuMat dst1 = createMat(size, type, useRoi);
+    cv::cuda::GpuMat dst2 = createMat(size, type, useRoi);
+
+    cv::cuda::gemm(d_src1, d_src2, alpha, d_src3, beta, dst1, flags, stream);
+    cv::cuda::gemm(d_src1, d_src2, alpha, d_src3, beta, dst2, flags, stream);
+    stream.waitForCompletion();
+
+    cv::Mat dst_gold;
+    cv::gemm(src1, src2, alpha, src3, beta, dst_gold, flags);
+
+    const double eps = CV_MAT_DEPTH(type) == CV_32F ? 1e-1 : 1e-10;
+    EXPECT_MAT_NEAR(dst_gold, dst1, eps);
+    EXPECT_MAT_NEAR(dst_gold, dst2, eps);
+}
+
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, GEMM, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
