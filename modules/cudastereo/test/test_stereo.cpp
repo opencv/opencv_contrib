@@ -1135,5 +1135,42 @@ INSTANTIATE_TEST_CASE_P(CUDA_Stereo, StereoSGM_NonAligned, testing::Combine(
     testing::Values(cv::Size(648, 488), cv::Size(320, 248)),
     testing::Values(cv::cuda::StereoSGM::MODE_HH4, cv::cuda::StereoSGM::MODE_HH)));
 
+PARAM_TEST_CASE(StereoSGM_AggregatedBufferLayout, cv::cuda::DeviceInfo, cv::Size)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(StereoSGM_AggregatedBufferLayout, MaxDisparityHH)
+{
+    cv::Mat left_cpu(size, CV_8UC1);
+    cv::Mat right_cpu(size, CV_8UC1);
+    cv::RNG& rng = cv::theRNG();
+    rng.fill(left_cpu,  cv::RNG::UNIFORM, 0, 256);
+    rng.fill(right_cpu, cv::RNG::UNIFORM, 0, 256);
+
+    cv::cuda::GpuMat d_left, d_right, d_disp;
+    d_left.upload(left_cpu);
+    d_right.upload(right_cpu);
+
+    cv::Ptr<cv::StereoMatcher> sgm = cv::cuda::createStereoSGM(
+        0, 256, 10, 120, 5, cv::cuda::StereoSGM::MODE_HH);
+    sgm->compute(d_left, d_right, d_disp);
+
+    EXPECT_EQ(d_disp.size(), size);
+    EXPECT_EQ(d_disp.type(), CV_16SC1);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Stereo, StereoSGM_AggregatedBufferLayout, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(cv::Size(320, 32))));
+
 }} // namespace
 #endif // HAVE_CUDA

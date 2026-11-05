@@ -1342,11 +1342,11 @@ void PathAggregation::operator() (const GpuMat& left, const GpuMat& right, GpuMa
 
     const Size size = left.size();
     const int buffer_step = size.width * size.height * static_cast<int>(MAX_DISPARITY);
-    CV_Assert(dest.rows == 1 && buffer_step * num_paths == dest.cols);
+    CV_Assert(dest.rows == num_paths && dest.cols == buffer_step);
 
     for (int i = 0; i < num_paths; ++i)
     {
-        subs[i] = dest.colRange(i * buffer_step, (i + 1) * buffer_step);
+        subs[i] = dest.row(i);
     }
 
     vertical::aggregateUp2DownPath<MAX_DISPARITY>(left, right, subs[0], p1, p2, min_disp, streams[0]);
@@ -1447,12 +1447,10 @@ __global__ void winner_takes_all_kernel(
         ? REDUCTION_PER_THREAD
         : ACCUMULATION_INTERVAL;
 
-    const unsigned int cost_step = MAX_DISPARITY * width * height;
     const unsigned int warp_id = cudev::Warp::warpId();
     const unsigned int lane_id = cudev::Warp::laneId();
 
     const unsigned int y = blockIdx.x * WARPS_PER_BLOCK + warp_id;
-    const PtrStep<uint8_t> src{ (uint8_t*)&_src(0, y * MAX_DISPARITY * width), height * width * MAX_DISPARITY * NUM_PATHS };
     PtrStep<int16_t> left_dest{ _left_dest.ptr(y), _left_dest.step };
     PtrStep<int16_t> right_dest{ _right_dest.ptr(y), _right_dest.step };
 
@@ -1492,7 +1490,7 @@ __global__ void winner_takes_all_kernel(
                     {
                         uint32_t load_buffer[ACCUMULATION_PER_THREAD];
                         load_uint8_vector<ACCUMULATION_PER_THREAD>(
-                            load_buffer, &src(0, p * cost_step + offset));
+                            load_buffer, &_src(p, y * MAX_DISPARITY * width + offset));
                         for (unsigned int i = 0; i < ACCUMULATION_PER_THREAD; ++i)
                         {
                             sum[i] += load_buffer[i];
@@ -1583,7 +1581,7 @@ void winnerTakesAll(const GpuMat& src, GpuMat& left, GpuMat& right, float unique
 {
     cv::Size size = left.size();
     int num_paths = mode == StereoSGBM::MODE_HH4 ? 4 : 8;
-    CV_Assert(src.rows == 1 && src.cols == size.width * size.height * static_cast<int>(MAX_DISPARITY) * num_paths);
+    CV_Assert(src.rows == num_paths && src.cols == size.width * size.height * static_cast<int>(MAX_DISPARITY));
     CV_Assert(size == right.size());
     CV_Assert(left.type() == right.type());
     CV_Assert(src.type() == CV_8UC1);

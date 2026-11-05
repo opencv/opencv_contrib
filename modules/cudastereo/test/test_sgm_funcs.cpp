@@ -359,9 +359,8 @@ namespace opencv_test { namespace {
                 for (int k = 0; k < disparity; ++k) {
                     int cost_sum = 0;
                     for (int p = 0; p < num_paths; ++p) {
-                        cost_sum += static_cast<int>(src.at<uint8_t>(0,
-                            p * disparity * width * height +
-                                i * disparity * width +
+                        cost_sum += static_cast<int>(src.at<uint8_t>(p,
+                            i * disparity * width +
                                 j * disparity +
                                 k));
                     }
@@ -418,7 +417,7 @@ namespace opencv_test { namespace {
     CUDA_TEST_P(StereoSGM_WinnerTakesAll, RandomLeft)
     {
         int num_paths = mode == cv::cuda::StereoSGM::MODE_HH4 ? 4 : 8;
-        cv::Mat aggregated = randomMat(cv::Size(size.width * size.height * DISPARITY * num_paths, 1), CV_8UC1, 0.0, 32.0);
+        cv::Mat aggregated = randomMat(cv::Size(size.width * size.height * DISPARITY, num_paths), CV_8UC1, 0.0, 32.0);
         cv::Mat dst_gold;
         winner_takes_all_left(aggregated, dst_gold, size.width, size.height, DISPARITY, num_paths, 0.95f, subpixel);
 
