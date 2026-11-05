@@ -55,12 +55,36 @@ namespace
     IMPLEMENT_PARAM_CLASS(Deriv_Y, int)
     IMPLEMENT_PARAM_CLASS(Iterations, int)
     IMPLEMENT_PARAM_CLASS(KernelSize, int)
+    IMPLEMENT_PARAM_CLASS(GaussianSigma, double)
 
     cv::Mat getInnerROI(cv::InputArray m_, cv::Size ksize)
     {
         cv::Mat m = getMat(m_);
         cv::Rect roi(ksize.width, ksize.height, m.cols - 2 * ksize.width, m.rows - 2 * ksize.height);
         return m(roi);
+    }
+
+    cv::Mat makeStructuredMat(cv::Size size, int type)
+    {
+        const int cn = CV_MAT_CN(type);
+        cv::Mat noise = randomMat(size, type, 0.0, 64.0);
+        cv::Mat ramp(size, CV_32FC1);
+        for (int y = 0; y < size.height; ++y)
+        {
+            float* row = ramp.ptr<float>(y);
+            const float fy = size.height > 1 ? (float)y / (float)(size.height - 1) : 0.0f;
+            for (int x = 0; x < size.width; ++x)
+            {
+                const float fx = size.width > 1 ? (float)x / (float)(size.width - 1) : 0.0f;
+                row[x] = 150.0f * fx + 35.0f * fy;
+            }
+        }
+        std::vector<cv::Mat> ch(cn, ramp);
+        cv::Mat merged, typed;
+        cv::merge(ch, merged);
+        merged.convertTo(typed, type);
+        cv::add(noise, typed, noise);
+        return noise;
     }
 }
 
@@ -273,14 +297,87 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilter, testing::Combine(
                     KSize(cv::Size(15, 15)),
                     KSize(cv::Size(17, 17)),
                     KSize(cv::Size(23, 15)),
-                    KSize(cv::Size(31, 3)),
-                    KSize(cv::Size(33, 33)),
-                    KSize(cv::Size(65, 33))),
+                    KSize(cv::Size(31, 3))),
     testing::Values(Anchor(cv::Point(-1, -1)), Anchor(cv::Point(0, 0)), Anchor(cv::Point(2, 2))),
     testing::Values(BorderType(cv::BORDER_REFLECT101),
                     BorderType(cv::BORDER_REPLICATE),
                     BorderType(cv::BORDER_CONSTANT),
                     BorderType(cv::BORDER_REFLECT)),
+    WHOLE_SUBMAT));
+
+PARAM_TEST_CASE(SeparableLinearFilterLargeKSize, cv::cuda::DeviceInfo, cv::Size, MatDepth, Channels, KSize, Anchor, BorderType, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int depth;
+    int cn;
+    cv::Size ksize;
+    cv::Point anchor;
+    int borderType;
+    bool useRoi;
+
+    int type;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        depth = GET_PARAM(2);
+        cn = GET_PARAM(3);
+        ksize = GET_PARAM(4);
+        anchor = GET_PARAM(5);
+        borderType = GET_PARAM(6);
+        useRoi = GET_PARAM(7);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+
+        type = CV_MAKE_TYPE(depth, cn);
+    }
+};
+
+CUDA_TEST_P(SeparableLinearFilterLargeKSize, Accuracy)
+{
+    cv::Mat src = makeStructuredMat(size, type);
+    cv::Mat rowKernel = randomMat(cv::Size(ksize.width, 1), CV_32FC1, 0.05, 1.0);
+    rowKernel /= cv::sum(rowKernel)[0];
+    cv::Mat columnKernel = randomMat(cv::Size(ksize.height, 1), CV_32FC1, 0.05, 1.0);
+    columnKernel /= cv::sum(columnKernel)[0];
+
+    cv::Ptr<cv::cuda::Filter> filter = cv::cuda::createSeparableLinearFilter(src.type(), -1, rowKernel, columnKernel, anchor, borderType);
+
+    cv::cuda::GpuMat dst = createMat(size, type, useRoi);
+    filter->apply(loadMat(src, useRoi), dst);
+
+    cv::Mat dst_gold;
+    if (borderType == cv::BORDER_WRAP)
+    {
+        const int ax = anchor.x < 0 ? ksize.width / 2 : anchor.x;
+        const int ay = anchor.y < 0 ? ksize.height / 2 : anchor.y;
+        cv::Mat srcPadded, dstPadded;
+        cv::copyMakeBorder(src, srcPadded, ay, ksize.height - 1 - ay, ax, ksize.width - 1 - ax, cv::BORDER_WRAP);
+        cv::sepFilter2D(srcPadded, dstPadded, -1, rowKernel, columnKernel, cv::Point(ax, ay), 0, cv::BORDER_CONSTANT);
+        dst_gold = dstPadded(cv::Rect(ax, ay, size.width, size.height)).clone();
+    }
+    else
+    {
+        cv::sepFilter2D(src, dst_gold, -1, rowKernel, columnKernel, anchor, 0, borderType);
+    }
+
+    EXPECT_MAT_NEAR(dst_gold, dst, src.depth() < CV_32F ? 1.0 : 1e-3);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilterLargeKSize, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(cv::Size(256, 256), cv::Size(48, 32)),
+    testing::Values(MatDepth(CV_8U), MatDepth(CV_16S), MatDepth(CV_32F)),
+    testing::Values(Channels(1), Channels(4)),
+    testing::Values(KSize(cv::Size(33, 33)), KSize(cv::Size(65, 15)), KSize(cv::Size(133, 65))),
+    testing::Values(Anchor(cv::Point(-1, -1)), Anchor(cv::Point(7, 11))),
+    testing::Values(BorderType(cv::BORDER_REFLECT101),
+                    BorderType(cv::BORDER_REPLICATE),
+                    BorderType(cv::BORDER_CONSTANT),
+                    BorderType(cv::BORDER_REFLECT),
+                    BorderType(cv::BORDER_WRAP)),
     WHOLE_SUBMAT));
 
 PARAM_TEST_CASE(SeparableLinearFilterWithEmptyKernels, cv::cuda::DeviceInfo, MatDepth, Channels, MatDepth, bool, bool, bool)
@@ -685,25 +782,91 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, GaussianBlur, testing::Combine(
                     KSize(cv::Size(25, 25)),
                     KSize(cv::Size(27, 27)),
                     KSize(cv::Size(29, 29)),
-                    KSize(cv::Size(31, 31)),
-                    KSize(cv::Size(33, 33)),
-                    KSize(cv::Size(65, 65))),
+                    KSize(cv::Size(31, 31))),
     testing::Values(BorderType(cv::BORDER_REFLECT101),
                     BorderType(cv::BORDER_REPLICATE),
                     BorderType(cv::BORDER_CONSTANT),
                     BorderType(cv::BORDER_REFLECT)),
     WHOLE_SUBMAT));
 
-INSTANTIATE_TEST_CASE_P(CUDA_Filters_LargeKSize, GaussianBlur, testing::Combine(
+PARAM_TEST_CASE(GaussianBlurLargeKSize, cv::cuda::DeviceInfo, cv::Size, MatDepth, Channels, KSize, GaussianSigma, BorderType, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int depth;
+    int cn;
+    cv::Size ksize;
+    double sigma;
+    int borderType;
+    bool useRoi;
+
+    int type;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        depth = GET_PARAM(2);
+        cn = GET_PARAM(3);
+        ksize = GET_PARAM(4);
+        sigma = GET_PARAM(5);
+        borderType = GET_PARAM(6);
+        useRoi = GET_PARAM(7);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+
+        type = CV_MAKE_TYPE(depth, cn);
+    }
+};
+
+CUDA_TEST_P(GaussianBlurLargeKSize, Accuracy)
+{
+    if (ksize.width <= 0 && sigma <= 0.0)
+        return;
+
+    cv::Mat src = makeStructuredMat(size, type);
+
+    cv::Ptr<cv::cuda::Filter> gauss = cv::cuda::createGaussianFilter(src.type(), -1, ksize, sigma, sigma, borderType);
+
+    cv::cuda::GpuMat dst = createMat(size, type, useRoi);
+    gauss->apply(loadMat(src, useRoi), dst);
+
+    cv::Mat dst_gold;
+    if (borderType == cv::BORDER_WRAP)
+    {
+        cv::Size effKSize = ksize;
+        const int factor = depth == CV_8U ? 3 : 4;
+        if (effKSize.width <= 0)
+            effKSize.width = cvRound(sigma * factor * 2 + 1) | 1;
+        if (effKSize.height <= 0)
+            effKSize.height = cvRound(sigma * factor * 2 + 1) | 1;
+        const int ax = effKSize.width / 2;
+        const int ay = effKSize.height / 2;
+        cv::Mat srcPadded, dstPadded;
+        cv::copyMakeBorder(src, srcPadded, ay, effKSize.height - 1 - ay, ax, effKSize.width - 1 - ax, cv::BORDER_WRAP);
+        cv::GaussianBlur(srcPadded, dstPadded, effKSize, sigma, sigma, cv::BORDER_CONSTANT);
+        dst_gold = dstPadded(cv::Rect(ax, ay, size.width, size.height)).clone();
+    }
+    else
+    {
+        cv::GaussianBlur(src, dst_gold, ksize, sigma, sigma, borderType);
+    }
+
+    EXPECT_MAT_NEAR(dst_gold, dst, src.depth() < CV_32F ? 4.0 : 1e-3);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Filters, GaussianBlurLargeKSize, testing::Combine(
     ALL_DEVICES,
-    testing::Values(cv::Size(256, 256)),
-    testing::Values(MatDepth(CV_8U), MatDepth(CV_32F)),
+    testing::Values(cv::Size(256, 256), cv::Size(48, 32)),
+    testing::Values(MatDepth(CV_8U), MatDepth(CV_16U), MatDepth(CV_32F)),
     testing::Values(Channels(1), Channels(4)),
-    testing::Values(KSize(cv::Size(133, 133))),
+    testing::Values(KSize(cv::Size(65, 65)), KSize(cv::Size(133, 133)), KSize(cv::Size(0, 0))),
+    testing::Values(GaussianSigma(0.0), GaussianSigma(22.0)),
     testing::Values(BorderType(cv::BORDER_REFLECT101),
                     BorderType(cv::BORDER_REPLICATE),
                     BorderType(cv::BORDER_CONSTANT),
-                    BorderType(cv::BORDER_REFLECT)),
+                    BorderType(cv::BORDER_REFLECT),
+                    BorderType(cv::BORDER_WRAP)),
     WHOLE_SUBMAT));
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

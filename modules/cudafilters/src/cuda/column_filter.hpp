@@ -204,51 +204,96 @@ namespace column_filter
             cudaSafeCall( cudaDeviceSynchronize() );
     }
 
-    template <typename T, typename D, typename B>
-    __global__ void linearColumnFilterArbitrary(const PtrStepSz<T> src, PtrStep<D> dst, const float* kernel, const int ksize, const int anchor, const B brd)
+    template <int BRD_TYPE>
+    __device__ __forceinline__ int borderIdx(int p, int len)
     {
-        const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        if (x >= src.cols)
+        if (BRD_TYPE == cv::BORDER_REPLICATE)
+            return p < 0 ? 0 : (p >= len ? len - 1 : p);
+
+        if (BRD_TYPE == cv::BORDER_WRAP)
+        {
+            p %= len;
+            if (p < 0)
+                p += len;
+            return p;
+        }
+
+        if (len == 1)
+            return 0;
+
+        if (BRD_TYPE == cv::BORDER_REFLECT)
+        {
+            const int period = 2 * len;
+            p %= period;
+            if (p < 0)
+                p += period;
+            if (p >= len)
+                p = period - 1 - p;
+            return p;
+        }
+
+        // cv::BORDER_REFLECT101
+        const int period = 2 * (len - 1);
+        p %= period;
+        if (p < 0)
+            p += period;
+        if (p >= len)
+            p = period - p;
+        return p;
+    }
+
+    template <typename T, typename D, int BRD_TYPE>
+    __global__ void linearColumnFilterArbitrary(const PtrStepSz<T> src, PtrStep<D> dst, const float* kernel, const int ksize, const int anchor)
+    {
+        const unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
+        if (x >= (unsigned int)src.cols)
             return;
 
         typedef typename TypeVec<float, VecTraits<T>::cn>::vec_type sum_t;
 
-        const T* src_col = src.ptr() + x;
-
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < src.rows; y += blockDim.y * gridDim.y)
+        const unsigned int stride_y = blockDim.y * gridDim.y;
+        for (unsigned int y = blockIdx.y * blockDim.y + threadIdx.y; y < (unsigned int)src.rows; y += stride_y)
         {
-            const int y0 = y - anchor;
+            const int y0 = (int)y - anchor;
+            const int k_start = ::max(0, ::min(ksize, -y0));
+            const int k_end = ::max(k_start, ::min(ksize, src.rows - y0));
+
             sum_t sum = VecTraits<sum_t>::all(0);
 
-            if (y0 >= 0 && y0 + ksize <= src.rows)
+            if (BRD_TYPE != cv::BORDER_CONSTANT)
             {
-                for (int k = 0; k < ksize; ++k)
-                    sum = sum + saturate_cast<sum_t>(src(y0 + k, x)) * kernel[k];
-            }
-            else
-            {
-                for (int k = 0; k < ksize; ++k)
-                    sum = sum + saturate_cast<sum_t>(brd.at(y0 + k, src_col, src.step)) * kernel[k];
+                for (int k = 0; k < k_start; ++k)
+                    sum = sum + saturate_cast<sum_t>(src(borderIdx<BRD_TYPE>(y0 + k, src.rows), (int)x)) * kernel[k];
             }
 
-            dst(y, x) = saturate_cast<D>(sum);
+            for (int k = k_start; k < k_end; ++k)
+                sum = sum + saturate_cast<sum_t>(src(y0 + k, (int)x)) * kernel[k];
+
+            if (BRD_TYPE != cv::BORDER_CONSTANT)
+            {
+                for (int k = k_end; k < ksize; ++k)
+                    sum = sum + saturate_cast<sum_t>(src(borderIdx<BRD_TYPE>(y0 + k, src.rows), (int)x)) * kernel[k];
+            }
+
+            dst((int)y, (int)x) = saturate_cast<D>(sum);
         }
     }
 
-    template <typename T, typename D, template<typename> class B>
+    template <typename T, typename D, int BRD_TYPE>
     void callerArbitrary(PtrStepSz<T> src, PtrStepSz<D> dst, const float* kernel, int ksize, int anchor, int cc, cudaStream_t stream)
     {
+        if (src.rows <= 0 || src.cols <= 0)
+            return;
+
         const int BLOCK_DIM_X = 32;
         const int BLOCK_DIM_Y = (cc >= 20) ? 8 : 4;
 
         DeviceInfo devInfo;
-        const int maxGridY = devInfo.maxGridSize()[1];
+        const int maxGridY = std::min(devInfo.maxGridSize()[1], 65535);
         const dim3 block(BLOCK_DIM_X, BLOCK_DIM_Y);
         const dim3 grid(divUp(src.cols, BLOCK_DIM_X), std::min(divUp(src.rows, BLOCK_DIM_Y), maxGridY));
 
-        B<T> brd(src.rows);
-
-        linearColumnFilterArbitrary<T, D><<<grid, block, 0, stream>>>(src, dst, kernel, ksize, anchor, brd);
+        linearColumnFilterArbitrary<T, D, BRD_TYPE><<<grid, block, 0, stream>>>(src, dst, kernel, ksize, anchor);
         cudaSafeCall( cudaGetLastError() );
 
         if (stream == 0)
@@ -267,11 +312,11 @@ namespace filter
 
             static const arbitrary_caller_t arbitrary_callers[5] =
             {
-                column_filter::callerArbitrary<T, D, BrdColConstant>,
-                column_filter::callerArbitrary<T, D, BrdColReplicate>,
-                column_filter::callerArbitrary<T, D, BrdColReflect>,
-                column_filter::callerArbitrary<T, D, BrdColWrap>,
-                column_filter::callerArbitrary<T, D, BrdColReflect101>
+                column_filter::callerArbitrary<T, D, cv::BORDER_CONSTANT>,
+                column_filter::callerArbitrary<T, D, cv::BORDER_REPLICATE>,
+                column_filter::callerArbitrary<T, D, cv::BORDER_REFLECT>,
+                column_filter::callerArbitrary<T, D, cv::BORDER_WRAP>,
+                column_filter::callerArbitrary<T, D, cv::BORDER_REFLECT101>
             };
 
             arbitrary_callers[brd_type]((PtrStepSz<T>)src, (PtrStepSz<D>)dst, kernel, ksize, anchor, cc, stream);
