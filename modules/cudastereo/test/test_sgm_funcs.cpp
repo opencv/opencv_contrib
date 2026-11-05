@@ -525,6 +525,42 @@ namespace opencv_test { namespace {
         EXPECT_EQ(0, cvtest::norm(disp_after_big, disp, NORM_INF));
     }
 
+    CUDA_TEST_P(StereoSGM_Edges, OutputNotAligned)
+    {
+        cv::Mat left, right;
+        makeShiftedPair(size, 20, left, right);
+        const cv::cuda::GpuMat d_left(left), d_right(right);
+
+        cv::Ptr<cv::cuda::StereoSGM> sgm = cv::cuda::createStereoSGM(0, 64);
+        cv::cuda::GpuMat d_disp;
+        sgm->compute(d_left, d_right, d_disp);
+        cv::Mat disp;
+        d_disp.download(disp);
+
+        const short old_value = 1234;
+        cv::cuda::GpuMat d_old(size.height + 32, size.width + 32, CV_16SC1, cv::Scalar::all(old_value));
+
+        // The output starts at an odd column of a larger image
+        const cv::Rect roi(3, 5, size.width, size.height);
+        cv::cuda::GpuMat d_old_roi = d_old(roi);
+        ASSERT_NE(0u, reinterpret_cast<size_t>(d_old_roi.data) % 4);
+        sgm->compute(d_left, d_right, d_old_roi);
+        cv::Mat old;
+        d_old.download(old);
+        EXPECT_EQ(0, cvtest::norm(old(roi), disp, NORM_INF));
+        old(roi).setTo(old_value);
+        EXPECT_EQ(0, cvtest::norm(old, cv::Mat(old.size(), old.type(), cv::Scalar::all(old_value)), NORM_INF));
+
+        // The output rows are an odd number of pixels apart
+        const size_t step = (size.width + (size.width % 2 == 0 ? 1 : 2)) * sizeof(short);
+        cv::cuda::GpuMat d_stepped(size.height, size.width, CV_16SC1, d_old.data, step);
+        ASSERT_NE(0u, d_stepped.step % 4);
+        sgm->compute(d_left, d_right, d_stepped);
+        cv::Mat stepped;
+        d_stepped.download(stepped);
+        EXPECT_EQ(0, cvtest::norm(stepped, disp, NORM_INF));
+    }
+
     // Widths: odd and even, and odd with cols / 2 a whole number of median blocks.
     INSTANTIATE_TEST_CASE_P(CUDA_StereoSGM_funcs, StereoSGM_Edges, testing::Combine(
         ALL_DEVICES,
