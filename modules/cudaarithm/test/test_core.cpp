@@ -100,15 +100,56 @@ CUDA_TEST_P(Merge, Accuracy)
         cv::Mat dst_gold;
         cv::merge(src, dst_gold);
 
-        EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
+        ASSERT_EQ(dst_gold.type(), dst.type());
+        ASSERT_EQ(dst_gold.size(), dst.size());
+        if (channels <= 4)
+        {
+            EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
+        }
+        else
+        {
+            cv::Mat h_dst(dst);
+            EXPECT_MAT_NEAR(dst_gold.reshape(1), h_dst.reshape(1), 0.0);
+        }
     }
+}
+
+CUDA_TEST_P(Merge, MultiChannelInputs)
+{
+    if (depth == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
+        return;
+
+    cv::Mat src0 = randomMat(size, CV_MAKE_TYPE(depth, 3));
+    cv::Mat src1 = randomMat(size, CV_MAKE_TYPE(depth, 1));
+    cv::Mat src2 = randomMat(size, CV_MAKE_TYPE(depth, 2));
+
+    std::vector<cv::Mat> src;
+    src.push_back(src0);
+    src.push_back(src1);
+    if (channels > 4)
+        src.push_back(src2);
+
+    std::vector<cv::cuda::GpuMat> d_src;
+    for (size_t i = 0; i < src.size(); ++i)
+        d_src.push_back(loadMat(src[i], useRoi));
+
+    cv::cuda::GpuMat dst;
+    cv::cuda::merge(d_src, dst);
+
+    cv::Mat dst_gold;
+    cv::merge(src, dst_gold);
+
+    ASSERT_EQ(dst_gold.type(), dst.type());
+    ASSERT_EQ(dst_gold.size(), dst.size());
+    cv::Mat h_dst(dst);
+    EXPECT_MAT_NEAR(dst_gold.reshape(1), h_dst.reshape(1), 0.0);
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Merge, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     ALL_DEPTH,
-    testing::Values(1, 2, 3, 4),
+    testing::Values(1, 2, 3, 4, 6),
     WHOLE_SUBMAT));
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -140,7 +181,18 @@ PARAM_TEST_CASE(Split, cv::cuda::DeviceInfo, cv::Size, MatDepth, Channels, UseRo
 
 CUDA_TEST_P(Split, Accuracy)
 {
-    cv::Mat src = randomMat(size, type);
+    cv::Mat src;
+    if (channels <= 4)
+    {
+        src = randomMat(size, type);
+    }
+    else
+    {
+        std::vector<cv::Mat> planes(channels);
+        for (int i = 0; i < channels; ++i)
+            planes[i] = randomMat(size, CV_MAKE_TYPE(depth, 1));
+        cv::merge(planes, src);
+    }
 
     if (depth == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
     {
@@ -175,7 +227,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Split, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     ALL_DEPTH,
-    testing::Values(1, 2, 3, 4),
+    testing::Values(1, 2, 3, 4, 6),
     WHOLE_SUBMAT));
 
 ////////////////////////////////////////////////////////////////////////////////

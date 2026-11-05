@@ -48,6 +48,7 @@
 
 #else
 
+#include <algorithm>
 #include "opencv2/cudaarithm.hpp"
 #include "opencv2/cudev.hpp"
 #include "opencv2/core/private.cuda.hpp"
@@ -96,26 +97,78 @@ namespace
         }
     };
 
+    template <typename T>
+    __global__ void mergeChannelsKernel(const GlobPtr<T> src, GlobPtr<T> dst, int rows, int cols, int src_cn, int dst_cn, int dst_ch_offset)
+    {
+        const int x = blockIdx.x * blockDim.x + threadIdx.x;
+        if (x >= cols)
+            return;
+
+        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        {
+            const T* src_row = src.row(y) + x * src_cn;
+            T* dst_row = dst.row(y) + x * dst_cn + dst_ch_offset;
+            for (int c = 0; c < src_cn; ++c)
+                dst_row[c] = src_row[c];
+        }
+    }
+
+    template <typename T> struct MergeChannelsFunc
+    {
+        static void call(const GpuMat* src, size_t n, GpuMat& dst, Stream& stream)
+        {
+            const int rows = dst.rows;
+            const int cols = dst.cols;
+            if (rows == 0 || cols == 0)
+                return;
+
+            const int dst_cn = dst.channels();
+            const dim3 block(DefaultMergePolicy::block_size_x, DefaultMergePolicy::block_size_y);
+            const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
+            cudaStream_t cuStream = StreamAccessor::getStream(stream);
+
+            int ch_offset = 0;
+            for (size_t i = 0; i < n; ++i)
+            {
+                const int src_cn = src[i].channels();
+                mergeChannelsKernel<T><<<grid, block, 0, cuStream>>>(
+                    globPtr<T>(src[i]), globPtr<T>(dst), rows, cols, src_cn, dst_cn, ch_offset);
+                CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+                ch_offset += src_cn;
+            }
+
+            if (cuStream == 0)
+                CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
+        }
+    };
+
     void mergeImpl(const GpuMat* src, size_t n, cv::OutputArray _dst, Stream& stream)
     {
         CV_Assert( src != 0 );
-        CV_Assert( n > 0 && n <= 4 );
+        CV_Assert( n > 0 );
 
         const int depth = src[0].depth();
         const cv::Size size = src[0].size();
 
+        int total_channels = 0;
+        bool all_single_channel = true;
         for (size_t i = 0; i < n; ++i)
         {
             CV_Assert( src[i].size() == size );
             CV_Assert( src[i].depth() == depth );
-            CV_Assert( src[i].channels() == 1 );
+            CV_Assert( src[i].channels() > 0 );
+            if (src[i].channels() != 1)
+                all_single_channel = false;
+            total_channels += src[i].channels();
         }
+
+        CV_Assert( total_channels <= CV_CN_MAX );
 
         if (n == 1)
         {
             src[0].copyTo(_dst, stream);
         }
-        else
+        else if (all_single_channel && total_channels <= 4)
         {
             typedef void (*func_t)(const GpuMat* src, GpuMat& dst, Stream& stream);
             static const func_t funcs[3][5] =
@@ -125,16 +178,37 @@ namespace
                 {MergeFunc<4, uchar>::call, MergeFunc<4, ushort>::call, MergeFunc<4, int>::call, 0, MergeFunc<4, double>::call}
             };
 
-            const int channels = static_cast<int>(n);
+            GpuMat dst = getOutputMat(_dst, size, CV_MAKE_TYPE(depth, total_channels), stream);
 
-            GpuMat dst = getOutputMat(_dst, size, CV_MAKE_TYPE(depth, channels), stream);
-
-            const func_t func = funcs[channels - 2][CV_ELEM_SIZE(depth) / 2];
+            const func_t func = funcs[total_channels - 2][CV_ELEM_SIZE(depth) / 2];
 
             if (func == 0)
                 CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported channel count or data type");
 
             func(src, dst, stream);
+
+            syncOutput(dst, _dst, stream);
+        }
+        else
+        {
+            typedef void (*func_t)(const GpuMat* src, size_t n, GpuMat& dst, Stream& stream);
+            static const func_t funcs[5] =
+            {
+                MergeChannelsFunc<uchar>::call,
+                MergeChannelsFunc<ushort>::call,
+                MergeChannelsFunc<int>::call,
+                0,
+                MergeChannelsFunc<double>::call
+            };
+
+            GpuMat dst = getOutputMat(_dst, size, CV_MAKE_TYPE(depth, total_channels), stream);
+
+            const func_t func = funcs[CV_ELEM_SIZE(depth) / 2];
+
+            if (func == 0)
+                CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported channel count or data type");
+
+            func(src, n, dst, stream);
 
             syncOutput(dst, _dst, stream);
         }
@@ -149,7 +223,7 @@ void cv::cuda::merge(const GpuMat* src, size_t n, OutputArray dst, Stream& strea
 
 void cv::cuda::merge(const std::vector<GpuMat>& src, OutputArray dst, Stream& stream)
 {
-    mergeImpl(&src[0], src.size(), dst, stream);
+    mergeImpl(src.empty() ? 0 : &src[0], src.size(), dst, stream);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -198,6 +272,45 @@ namespace
         }
     };
 
+    template <typename T>
+    __global__ void splitChannelKernel(const GlobPtr<T> src, GlobPtr<T> dst, int rows, int cols, int src_cn, int ch)
+    {
+        const int x = blockIdx.x * blockDim.x + threadIdx.x;
+        if (x >= cols)
+            return;
+
+        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        {
+            dst.row(y)[x] = src.row(y)[x * src_cn + ch];
+        }
+    }
+
+    template <typename T> struct SplitChannelsFunc
+    {
+        static void call(const GpuMat& src, GpuMat* dst, Stream& stream)
+        {
+            const int rows = src.rows;
+            const int cols = src.cols;
+            if (rows == 0 || cols == 0)
+                return;
+
+            const int src_cn = src.channels();
+            const dim3 block(DefaultSplitPolicy::block_size_x, DefaultSplitPolicy::block_size_y);
+            const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
+            cudaStream_t cuStream = StreamAccessor::getStream(stream);
+
+            for (int c = 0; c < src_cn; ++c)
+            {
+                splitChannelKernel<T><<<grid, block, 0, cuStream>>>(
+                    globPtr<T>(src), globPtr<T>(dst[c]), rows, cols, src_cn, c);
+                CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            }
+
+            if (cuStream == 0)
+                CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
+        }
+    };
+
     void splitImpl(const GpuMat& src, GpuMat* dst, Stream& stream)
     {
         typedef void (*func_t)(const GpuMat& src, GpuMat* dst, Stream& stream);
@@ -213,7 +326,7 @@ namespace
         const int depth = src.depth();
         const int channels = src.channels();
 
-        CV_Assert( channels <= 4 );
+        CV_Assert( channels <= CV_CN_MAX );
 
         if (channels == 0)
             return;
@@ -227,12 +340,34 @@ namespace
         for (int i = 0; i < channels; ++i)
             dst[i].create(src.size(), depth);
 
-        const func_t func = funcs[channels - 2][CV_ELEM_SIZE(depth) / 2];
+        if (channels <= 4)
+        {
+            const func_t func = funcs[channels - 2][CV_ELEM_SIZE(depth) / 2];
 
-        if (func == 0)
-            CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported channel count or data type");
+            if (func == 0)
+                CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported channel count or data type");
 
-        func(src, dst, stream);
+            func(src, dst, stream);
+        }
+        else
+        {
+            typedef void (*multi_func_t)(const GpuMat& src, GpuMat* dst, Stream& stream);
+            static const multi_func_t multi_funcs[5] =
+            {
+                SplitChannelsFunc<uchar>::call,
+                SplitChannelsFunc<ushort>::call,
+                SplitChannelsFunc<int>::call,
+                0,
+                SplitChannelsFunc<double>::call
+            };
+
+            const multi_func_t func = multi_funcs[CV_ELEM_SIZE(depth) / 2];
+
+            if (func == 0)
+                CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported channel count or data type");
+
+            func(src, dst, stream);
+        }
     }
 }
 
