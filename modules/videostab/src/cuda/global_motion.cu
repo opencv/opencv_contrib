@@ -67,7 +67,7 @@ int compactPoints(int N, float *points0, float *points1, const uchar *mask)
     return (int)(thrust::remove_if(thrust::make_zip_iterator(thrust::make_tuple(dpoints0, dpoints1)),
                              thrust::make_zip_iterator(thrust::make_tuple(dpoints0 + N, dpoints1 + N)),
                              dmask, is_zero())
-           - thrust::make_zip_iterator(make_tuple(dpoints0, dpoints1)));
+           - thrust::make_zip_iterator(thrust::make_tuple(dpoints0, dpoints1)));
 }
 
 
