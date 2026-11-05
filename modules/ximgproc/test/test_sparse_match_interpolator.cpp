@@ -3,6 +3,10 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 #include "opencv2/ximgproc/sparse_match_interpolator.hpp"
+#ifndef OPENCV_DISABLE_THREAD_SUPPORT
+#include <atomic>
+#include <thread>
+#endif
 
 namespace opencv_test { namespace {
 
@@ -141,6 +145,43 @@ TEST(InterpolatorTest, RICSameResultOnAnyNumberOfThreads)
     }
     cv::setNumThreads(origThreads);
 }
+
+#ifndef OPENCV_DISABLE_THREAD_SUPPORT
+// A rand() call anywhere in the process must not change the flow.
+TEST(InterpolatorTest, RICResultDoesNotDependOnRand)
+{
+    string dir = getDataDir() + "cv/sparse_match_interpolator";
+    Mat src = imread(getDataDir() + "cv/optflow/RubberWhale1.png", IMREAD_COLOR);
+    Mat src1 = imread(getDataDir() + "cv/optflow/RubberWhale2.png", IMREAD_COLOR);
+    ASSERT_FALSE(src.empty());
+    ASSERT_FALSE(src1.empty());
+
+    std::ifstream file((dir + "/RubberWhale_sparse_matches.txt").c_str());
+    float from_x, from_y, to_x, to_y;
+    vector<Point2f> from_points;
+    vector<Point2f> to_points;
+    while (file >> from_x >> from_y >> to_x >> to_y)
+    {
+        from_points.push_back(Point2f(from_x, from_y));
+        to_points.push_back(Point2f(to_x, to_y));
+    }
+    ASSERT_FALSE(from_points.empty());
+
+    const int origThreads = cv::getNumThreads();
+    cv::setNumThreads(1);
+    Mat flow, flowWithOtherRandCalls;
+    createRICInterpolator()->interpolate(src, from_points, src1, to_points, flow);
+
+    std::atomic<bool> stop(false);
+    std::thread other([&stop]() { while (!stop) rand(); });
+    createRICInterpolator()->interpolate(src, from_points, src1, to_points, flowWithOtherRandCalls);
+    stop = true;
+    other.join();
+    cv::setNumThreads(origThreads);
+
+    EXPECT_EQ(cv::norm(flow, flowWithOtherRandCalls, NORM_INF), 0.0);
+}
+#endif
 
 TEST(InterpolatorTest, RICReferenceAccuracy)
 {
