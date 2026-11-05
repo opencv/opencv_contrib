@@ -148,3 +148,25 @@ TYPED_TEST(CvFp16Test, GpuMat)
 {
     CvFp16Test<TypeParam>::test_gpumat();
 }
+
+TEST(CvtLargeRows, GridYOverflow)
+{
+    // 65536 * 8 + 13 rows exceeds the CUDA 2D grid.y limit (65535) when block.y == 8
+    const Size size(3, 65536 * 8 + 13);
+
+    Mat src = randomMat(size, CV_8UC1);
+    GpuMat_<uchar> d_src(src);
+
+    GpuMat d_cvt;
+    d_src.convertTo(d_cvt, CV_32F, 2.0, -10.0);
+
+    Mat cvt_gold;
+    src.convertTo(cvt_gold, CV_32F, 2.0, -10.0);
+    EXPECT_MAT_NEAR(cvt_gold, d_cvt, 0.0);
+
+    GpuMat_<uchar> d_expr = cvt_<uchar>(cvt_<float>(d_src) * 2.0f - 10.0f);
+
+    Mat expr_gold;
+    src.convertTo(expr_gold, CV_8U, 2.0, -10.0);
+    EXPECT_MAT_NEAR(expr_gold, d_expr, 0.0);
+}

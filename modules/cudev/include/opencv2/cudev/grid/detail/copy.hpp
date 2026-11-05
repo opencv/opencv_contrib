@@ -60,19 +60,21 @@ namespace grid_copy_detail
     __global__ void copy(const SrcPtr src, GlobPtr<DstType> dst, const MaskPtr mask, const int rows, const int cols)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-        if (x >= cols || y >= rows || !mask(y, x))
+        if (x >= cols)
             return;
 
-        dst(y, x) = saturate_cast<DstType>(src(y, x));
+        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        {
+            if (mask(y, x))
+                dst(y, x) = saturate_cast<DstType>(src(y, x));
+        }
     }
 
     template <class Policy, class SrcPtr, typename DstType, class MaskPtr>
     __host__ void copy(const SrcPtr& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x), divUp(rows, block.y));
+        const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
         copy<<<grid, block, 0, stream>>>(src, dst, mask, rows, cols);
         CV_CUDEV_SAFE_CALL( cudaGetLastError() );
@@ -105,19 +107,21 @@ namespace grid_copy_detail
     __global__ void copy_tuple(const SrcPtrTuple src, DstPtrTuple dst, const MaskPtr mask, const int rows, const int cols)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-        if (x >= cols || y >= rows || !mask(y, x))
+        if (x >= cols)
             return;
 
-        Unroll<tuple_size<SrcPtrTuple>::value>::copy(src, dst, y, x);
+        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        {
+            if (mask(y, x))
+                Unroll<tuple_size<SrcPtrTuple>::value>::copy(src, dst, y, x);
+        }
     }
 
     template <class Policy, class SrcPtrTuple, class DstPtrTuple, class MaskPtr>
     __host__ void copy_tuple(const SrcPtrTuple& src, const DstPtrTuple& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x), divUp(rows, block.y));
+        const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
         copy_tuple<<<grid, block, 0, stream>>>(src, dst, mask, rows, cols);
         CV_CUDEV_SAFE_CALL( cudaGetLastError() );

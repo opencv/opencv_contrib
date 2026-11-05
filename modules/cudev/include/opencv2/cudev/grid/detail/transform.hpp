@@ -159,24 +159,28 @@ namespace grid_transform_detail
     __global__ void transformSimple(const SrcPtr src, GlobPtr<DstType> dst, const UnOp op, const MaskPtr mask, const int rows, const int cols)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-        if (x >= cols || y >= rows || !mask(y, x))
+        if (x >= cols)
             return;
 
-        dst(y, x) = saturate_cast<DstType>(op(src(y, x)));
+        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        {
+            if (mask(y, x))
+                dst(y, x) = saturate_cast<DstType>(op(src(y, x)));
+        }
     }
 
     template <class SrcPtr1, class SrcPtr2, typename DstType, class BinOp, class MaskPtr>
     __global__ void transformSimple(const SrcPtr1 src1, const SrcPtr2 src2, GlobPtr<DstType> dst, const BinOp op, const MaskPtr mask, const int rows, const int cols)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-        if (x >= cols || y >= rows || !mask(y, x))
+        if (x >= cols)
             return;
 
-        dst(y, x) = saturate_cast<DstType>(op(src1(y, x), src2(y, x)));
+        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        {
+            if (mask(y, x))
+                dst(y, x) = saturate_cast<DstType>(op(src1(y, x), src2(y, x)));
+        }
     }
 
     // transformSimple, 2 outputs
@@ -187,13 +191,17 @@ namespace grid_transform_detail
                                     const BinOp1 op1, const BinOp2 op2, const MaskPtr mask, const int rows, const int cols)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-        if (x >= cols || y >= rows || !mask(y, x))
+        if (x >= cols)
             return;
 
-        dst1(y, x) = saturate_cast<DstType1>(op1(src1(y, x), src2(y, x)));
-        dst2(y, x) = saturate_cast<DstType2>(op2(src1(y, x), src2(y, x)));
+        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        {
+            if (mask(y, x))
+            {
+                dst1(y, x) = saturate_cast<DstType1>(op1(src1(y, x), src2(y, x)));
+                dst2(y, x) = saturate_cast<DstType2>(op2(src1(y, x), src2(y, x)));
+            }
+        }
     }
 
     // transformSmart
@@ -205,10 +213,9 @@ namespace grid_transform_detail
         typedef typename MakeVec<DstType, SHIFT>::type write_type;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
         const int x_shifted = x * SHIFT;
 
-        if (y < rows)
+        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
         {
             const SrcType* src = src_.row(y);
             DstType* dst = dst_.row(y);
@@ -238,10 +245,9 @@ namespace grid_transform_detail
         typedef typename MakeVec<DstType, SHIFT>::type write_type;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
         const int x_shifted = x * SHIFT;
 
-        if (y < rows)
+        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
         {
             const SrcType1* src1 = src1_.row(y);
             const SrcType2* src2 = src2_.row(y);
@@ -279,10 +285,9 @@ namespace grid_transform_detail
         typedef typename MakeVec<DstType2, SHIFT>::type write_type2;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
         const int x_shifted = x * SHIFT;
 
-        if (y < rows)
+        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
         {
             const SrcType1* src1 = src1_.row(y);
             const SrcType2* src2 = src2_.row(y);
@@ -321,7 +326,7 @@ namespace grid_transform_detail
         __host__ static void call(const SrcPtr& src, const GlobPtr<DstType>& dst, const UnOp& op, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
             const dim3 block(Policy::block_size_x, Policy::block_size_y);
-            const dim3 grid(divUp(cols, block.x), divUp(rows, block.y));
+            const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
             transformSimple<<<grid, block, 0, stream>>>(src, dst, op, mask, rows, cols);
             CV_CUDEV_SAFE_CALL( cudaGetLastError() );
@@ -334,7 +339,7 @@ namespace grid_transform_detail
         __host__ static void call(const SrcPtr1& src1, const SrcPtr2& src2, const GlobPtr<DstType>& dst, const BinOp& op, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
             const dim3 block(Policy::block_size_x, Policy::block_size_y);
-            const dim3 grid(divUp(cols, block.x), divUp(rows, block.y));
+            const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
             transformSimple<<<grid, block, 0, stream>>>(src1, src2, dst, op, mask, rows, cols);
             CV_CUDEV_SAFE_CALL( cudaGetLastError() );
@@ -348,7 +353,7 @@ namespace grid_transform_detail
                                   const BinOp1& op1, const BinOp2& op2, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
             const dim3 block(Policy::block_size_x, Policy::block_size_y);
-            const dim3 grid(divUp(cols, block.x), divUp(rows, block.y));
+            const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
             transformSimple<<<grid, block, 0, stream>>>(src1, src2, dst1, dst2, op1, op2, mask, rows, cols);
             CV_CUDEV_SAFE_CALL( cudaGetLastError() );
@@ -383,7 +388,7 @@ namespace grid_transform_detail
             }
 
             const dim3 block(Policy::block_size_x, Policy::block_size_y);
-            const dim3 grid(divUp(cols, block.x * Policy::shift), divUp(rows, block.y));
+            const dim3 grid(divUp(cols, block.x * Policy::shift), std::min(divUp(rows, block.y), 65535));
 
             transformSmart<Policy::shift><<<grid, block, 0, stream>>>(src, dst, op, mask, rows, cols);
             CV_CUDEV_SAFE_CALL( cudaGetLastError() );
@@ -405,7 +410,7 @@ namespace grid_transform_detail
             }
 
             const dim3 block(Policy::block_size_x, Policy::block_size_y);
-            const dim3 grid(divUp(cols, block.x * Policy::shift), divUp(rows, block.y));
+            const dim3 grid(divUp(cols, block.x * Policy::shift), std::min(divUp(rows, block.y), 65535));
 
             transformSmart<Policy::shift><<<grid, block, 0, stream>>>(src1, src2, dst, op, mask, rows, cols);
             CV_CUDEV_SAFE_CALL( cudaGetLastError() );
@@ -431,7 +436,7 @@ namespace grid_transform_detail
             }
 
             const dim3 block(Policy::block_size_x, Policy::block_size_y);
-            const dim3 grid(divUp(cols, block.x * Policy::shift), divUp(rows, block.y));
+            const dim3 grid(divUp(cols, block.x * Policy::shift), std::min(divUp(rows, block.y), 65535));
 
             transformSmart<Policy::shift><<<grid, block, 0, stream>>>(src1, src2, dst1, dst2, op1, op2, mask, rows, cols);
             CV_CUDEV_SAFE_CALL( cudaGetLastError() );
@@ -508,21 +513,25 @@ namespace grid_transform_detail
     __global__ void transform_tuple(const SrcPtr src, DstPtrTuple dst, const OpTuple op, const MaskPtr mask, const int rows, const int cols)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-        if (x >= cols || y >= rows || !mask(y, x))
+        if (x >= cols)
             return;
 
-        typename PtrTraits<SrcPtr>::value_type srcVal = src(y, x);
+        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        {
+            if (!mask(y, x))
+                continue;
 
-        Unroll<tuple_size<DstPtrTuple>::value>::transform(srcVal, dst, op, y, x);
+            typename PtrTraits<SrcPtr>::value_type srcVal = src(y, x);
+
+            Unroll<tuple_size<DstPtrTuple>::value>::transform(srcVal, dst, op, y, x);
+        }
     }
 
     template <class Policy, class SrcPtrTuple, class DstPtrTuple, class OpTuple, class MaskPtr>
     __host__ void transform_tuple(const SrcPtrTuple& src, const DstPtrTuple& dst, const OpTuple& op, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x), divUp(rows, block.y));
+        const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
         transform_tuple<<<grid, block, 0, stream>>>(src, dst, op, mask, rows, cols);
         CV_CUDEV_SAFE_CALL( cudaGetLastError() );
