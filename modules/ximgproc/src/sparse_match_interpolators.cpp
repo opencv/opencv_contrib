@@ -946,7 +946,7 @@ protected:
     int PropagateModels(int spCnt, Mat & spNN, vector<int> & supportMatchIds, vector<float> & supportMatchDis, int supportCnt,
         const vector<SparseMatch> &inputMatches, Mat & outModels);
     float HypothesisEvaluation(const Mat & inModel, const int * matNodes, const float * matDis, int matCnt, const vector<SparseMatch> & inputMatches, Mat & outInLier);
-    int HypothesisGeneration(int* matNodes, int matCnt, const vector<SparseMatch> & inputMatches, Mat & outModel);
+    int HypothesisGeneration(int* matNodes, int matCnt, const vector<SparseMatch> & inputMatches, RNG & rng, Mat & outModel);
 
 public:
     void setCostMap(const Mat & _costMap) CV_OVERRIDE { _costMap.copyTo(costMap); }
@@ -1676,7 +1676,7 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
 {
     int iterCnt = model_iter;
 
-    srand(0);
+    RNG rng(0);
 
     Mat inLierFlag(spCnt, supportCnt, CV_32SC1);
     Mat tmpInlierFlag(1, supportCnt, CV_32SC1);
@@ -1739,7 +1739,7 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
                 // random test
                 int testCnt = 1;
                 for (int i = 0; i < testCnt; i++) {
-                    if (HypothesisGeneration(&supportMatchIds[idx * supportCnt], supportCnt, inputMatches, tmpModel) == 0)
+                    if (HypothesisGeneration(&supportMatchIds[idx * supportCnt], supportCnt, inputMatches, rng, tmpModel) == 0)
                     {
                         float cost = HypothesisEvaluation(
                             tmpModel,
@@ -1845,7 +1845,7 @@ float RICInterpolatorImpl::HypothesisEvaluation(const Mat & inModel, const int *
     return cost;
 }
 
-int RICInterpolatorImpl::HypothesisGeneration(int* matNodes, int matCnt, const vector<SparseMatch> & inputMatches, Mat & outModel)
+int RICInterpolatorImpl::HypothesisGeneration(int* matNodes, int matCnt, const vector<SparseMatch> & inputMatches, RNG & rng, Mat & outModel)
 {
     if (matCnt < 3)
     {
@@ -1862,7 +1862,7 @@ int RICInterpolatorImpl::HypothesisGeneration(int* matNodes, int matCnt, const v
         pick_data = false;
         // pick 3 group of points randomly
         for (int k = 0; k < 3; k++) {
-            int matId = matNodes[rand() % matCnt];
+            int matId = matNodes[rng.uniform(0, matCnt)];
             const SparseMatch & p = inputMatches[matId];
             p1[2 * k] = p.reference_image_pos.x;
             p1[2 * k + 1] = p.reference_image_pos.y;
