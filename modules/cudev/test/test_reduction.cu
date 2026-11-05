@@ -317,14 +317,16 @@ TEST(SumLargeRows, GridYOverflow)
 {
     const Size size(2, 2100000);
 
-    Mat src(size, CV_8UC1, Scalar::all(1));
+    Mat src = randomMat(size, CV_8UC1, 0, 100);
 
-    GpuMat_<uchar> d_src(src);
+    GpuMat d_raw;
+    createContinuous(size, CV_8UC1, d_raw);
+    d_raw.upload(src);
+    GpuMat_<uchar> d_src(d_raw);
 
-    GpuMat_<int> dst = countNonZero_(d_src);
+    GpuMat_<int> dst = sum_(d_src);
     int res = 0;
     dst.download(_OutputArray(&res, 1));
 
-    ASSERT_EQ(size.width * size.height, res);
+    ASSERT_EQ(static_cast<int>(cv::sum(src)[0]), res);
 }
-

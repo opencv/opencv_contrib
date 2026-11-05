@@ -151,8 +151,9 @@ TYPED_TEST(CvFp16Test, GpuMat)
 
 TEST(CvtLargeRows, GridYOverflow)
 {
-    // 65536 * 8 + 13 rows exceeds the CUDA 2D grid.y limit (65535) when block.y == 8
-    const Size size(3, 65536 * 8 + 13);
+    // 65536 * 8 + 13 rows exceeds the CUDA 2D grid.y limit (65535) when block.y == 8;
+    // width 7 >= 4 exercises transformSmart's OpUnroller<4> path plus unaligned tail columns.
+    const Size size(7, 65536 * 8 + 13);
 
     Mat src = randomMat(size, CV_8UC1);
     GpuMat_<uchar> d_src(src);
@@ -169,4 +170,8 @@ TEST(CvtLargeRows, GridYOverflow)
     Mat expr_gold;
     src.convertTo(expr_gold, CV_8U, 2.0, -10.0);
     EXPECT_MAT_NEAR(expr_gold, d_expr, 0.0);
+
+    GpuMat_<uchar> d_copy;
+    gridCopy(d_src, d_copy);
+    EXPECT_MAT_NEAR(src, d_copy, 0.0);
 }

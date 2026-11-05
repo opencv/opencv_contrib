@@ -46,6 +46,7 @@
 #ifndef OPENCV_CUDEV_GRID_PYR_UP_DETAIL_HPP
 #define OPENCV_CUDEV_GRID_PYR_UP_DETAIL_HPP
 
+#include <algorithm>
 #include "../../common.hpp"
 #include "../../util/vec_traits.hpp"
 #include "../../util/saturate_cast.hpp"
@@ -65,99 +66,110 @@ namespace pyramids_detail
         typedef typename LargerType<float, src_elem_type>::type work_elem_type;
         typedef typename MakeVec<work_elem_type, VecTraits<src_type>::cn>::type work_type;
 
-        const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
         __shared__ work_type s_srcPatch[10][10];
         __shared__ work_type s_dstPatch[20][16];
 
-        if (threadIdx.x < 10 && threadIdx.y < 10)
-        {
-            int srcx = static_cast<int>((blockIdx.x * blockDim.x) / 2 + threadIdx.x) - 1;
-            int srcy = static_cast<int>((blockIdx.y * blockDim.y) / 2 + threadIdx.y) - 1;
-
-            srcx = ::abs(srcx);
-            srcx = ::min(src_cols - 1, srcx);
-
-            srcy = ::abs(srcy);
-            srcy = ::min(src_rows - 1, srcy);
-
-            s_srcPatch[threadIdx.y][threadIdx.x] = saturate_cast<work_type>(src(srcy, srcx));
-        }
-
-        __syncthreads();
-
-        work_type sum = VecTraits<work_type>::all(0);
-
+        const int x = blockIdx.x * blockDim.x + threadIdx.x;
         const int evenFlag = static_cast<int>((threadIdx.x & 1) == 0);
         const int oddFlag  = static_cast<int>((threadIdx.x & 1) != 0);
         const bool eveny = ((threadIdx.y & 1) == 0);
         const int tidx = threadIdx.x;
-
-        if (eveny)
-        {
-            sum = sum + (evenFlag * 0.0625f) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx - 2) >> 1)];
-            sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx - 1) >> 1)];
-            sum = sum + (evenFlag * 0.375f ) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx    ) >> 1)];
-            sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx + 1) >> 1)];
-            sum = sum + (evenFlag * 0.0625f) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx + 2) >> 1)];
-        }
-
-        s_dstPatch[2 + threadIdx.y][threadIdx.x] = sum;
-
-        if (threadIdx.y < 2)
-        {
-            sum = VecTraits<work_type>::all(0);
-
-            if (eveny)
-            {
-                sum = sum + (evenFlag * 0.0625f) * s_srcPatch[0][1 + ((tidx - 2) >> 1)];
-                sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[0][1 + ((tidx - 1) >> 1)];
-                sum = sum + (evenFlag * 0.375f ) * s_srcPatch[0][1 + ((tidx    ) >> 1)];
-                sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[0][1 + ((tidx + 1) >> 1)];
-                sum = sum + (evenFlag * 0.0625f) * s_srcPatch[0][1 + ((tidx + 2) >> 1)];
-            }
-
-            s_dstPatch[threadIdx.y][threadIdx.x] = sum;
-        }
-
-        if (threadIdx.y > 13)
-        {
-            sum = VecTraits<work_type>::all(0);
-
-            if (eveny)
-            {
-                sum = sum + (evenFlag * 0.0625f) * s_srcPatch[9][1 + ((tidx - 2) >> 1)];
-                sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[9][1 + ((tidx - 1) >> 1)];
-                sum = sum + (evenFlag * 0.375f ) * s_srcPatch[9][1 + ((tidx    ) >> 1)];
-                sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[9][1 + ((tidx + 1) >> 1)];
-                sum = sum + (evenFlag * 0.0625f) * s_srcPatch[9][1 + ((tidx + 2) >> 1)];
-            }
-
-            s_dstPatch[4 + threadIdx.y][threadIdx.x] = sum;
-        }
-
-        __syncthreads();
-
-        sum = VecTraits<work_type>::all(0);
-
         const int tidy = threadIdx.y;
 
-        sum = sum + 0.0625f * s_dstPatch[2 + tidy - 2][threadIdx.x];
-        sum = sum + 0.25f   * s_dstPatch[2 + tidy - 1][threadIdx.x];
-        sum = sum + 0.375f  * s_dstPatch[2 + tidy    ][threadIdx.x];
-        sum = sum + 0.25f   * s_dstPatch[2 + tidy + 1][threadIdx.x];
-        sum = sum + 0.0625f * s_dstPatch[2 + tidy + 2][threadIdx.x];
+        const uint numBlocksY = (static_cast<uint>(dst_rows) + blockDim.y - 1u) / blockDim.y;
 
-        if (x < dst_cols && y < dst_rows)
-            dst(y, x) = saturate_cast<DstType>(4.0f * sum);
+        for (uint by = blockIdx.y; by < numBlocksY; by += gridDim.y)
+        {
+            const int y = static_cast<int>(by * blockDim.y + threadIdx.y);
+
+            if (threadIdx.x < 10 && threadIdx.y < 10)
+            {
+                int srcx = static_cast<int>((blockIdx.x * blockDim.x) / 2 + threadIdx.x) - 1;
+                int srcy = static_cast<int>((by * blockDim.y) / 2 + threadIdx.y) - 1;
+
+                srcx = ::abs(srcx);
+                srcx = ::min(src_cols - 1, srcx);
+
+                srcy = ::abs(srcy);
+                srcy = ::min(src_rows - 1, srcy);
+
+                s_srcPatch[threadIdx.y][threadIdx.x] = saturate_cast<work_type>(src(srcy, srcx));
+            }
+
+            __syncthreads();
+
+            work_type sum = VecTraits<work_type>::all(0);
+
+            if (eveny)
+            {
+                sum = sum + (evenFlag * 0.0625f) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx - 2) >> 1)];
+                sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx - 1) >> 1)];
+                sum = sum + (evenFlag * 0.375f ) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx    ) >> 1)];
+                sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx + 1) >> 1)];
+                sum = sum + (evenFlag * 0.0625f) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx + 2) >> 1)];
+            }
+
+            s_dstPatch[2 + threadIdx.y][threadIdx.x] = sum;
+
+            if (threadIdx.y < 2)
+            {
+                sum = VecTraits<work_type>::all(0);
+
+                if (eveny)
+                {
+                    sum = sum + (evenFlag * 0.0625f) * s_srcPatch[0][1 + ((tidx - 2) >> 1)];
+                    sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[0][1 + ((tidx - 1) >> 1)];
+                    sum = sum + (evenFlag * 0.375f ) * s_srcPatch[0][1 + ((tidx    ) >> 1)];
+                    sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[0][1 + ((tidx + 1) >> 1)];
+                    sum = sum + (evenFlag * 0.0625f) * s_srcPatch[0][1 + ((tidx + 2) >> 1)];
+                }
+
+                s_dstPatch[threadIdx.y][threadIdx.x] = sum;
+            }
+
+            if (threadIdx.y > 13)
+            {
+                sum = VecTraits<work_type>::all(0);
+
+                if (eveny)
+                {
+                    sum = sum + (evenFlag * 0.0625f) * s_srcPatch[9][1 + ((tidx - 2) >> 1)];
+                    sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[9][1 + ((tidx - 1) >> 1)];
+                    sum = sum + (evenFlag * 0.375f ) * s_srcPatch[9][1 + ((tidx    ) >> 1)];
+                    sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[9][1 + ((tidx + 1) >> 1)];
+                    sum = sum + (evenFlag * 0.0625f) * s_srcPatch[9][1 + ((tidx + 2) >> 1)];
+                }
+
+                s_dstPatch[4 + threadIdx.y][threadIdx.x] = sum;
+            }
+
+            __syncthreads();
+
+            sum = VecTraits<work_type>::all(0);
+
+            sum = sum + 0.0625f * s_dstPatch[2 + tidy - 2][threadIdx.x];
+            sum = sum + 0.25f   * s_dstPatch[2 + tidy - 1][threadIdx.x];
+            sum = sum + 0.375f  * s_dstPatch[2 + tidy    ][threadIdx.x];
+            sum = sum + 0.25f   * s_dstPatch[2 + tidy + 1][threadIdx.x];
+            sum = sum + 0.0625f * s_dstPatch[2 + tidy + 2][threadIdx.x];
+
+            if (x < dst_cols && y < dst_rows)
+                dst(y, x) = saturate_cast<DstType>(4.0f * sum);
+
+            __syncthreads();
+        }
     }
 
     template <class SrcPtr, typename DstType>
     __host__ void pyrUp(const SrcPtr& src, const GlobPtr<DstType>& dst, int src_rows, int src_cols, int dst_rows, int dst_cols, cudaStream_t stream)
     {
+        if (src_rows <= 0 || src_cols <= 0 || dst_rows <= 0 || dst_cols <= 0)
+            return;
+
         const dim3 block(16, 16);
-        const dim3 grid(divUp(dst_cols, block.x), divUp(dst_rows, block.y));
+        const uint numBlocksX = (static_cast<uint>(dst_cols) + block.x - 1u) / block.x;
+        const uint numBlocksY = (static_cast<uint>(dst_rows) + block.y - 1u) / block.y;
+        const dim3 grid(numBlocksX, std::min(numBlocksY, 65535u));
 
         pyrUp<<<grid, block, 0, stream>>>(src, dst, src_rows, src_cols, dst_rows, dst_cols);
         CV_CUDEV_SAFE_CALL( cudaGetLastError() );

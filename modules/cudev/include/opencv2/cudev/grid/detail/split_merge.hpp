@@ -46,6 +46,7 @@
 #ifndef OPENCV_CUDEV_GRID_SPLIT_MERGE_DETAIL_HPP
 #define OPENCV_CUDEV_GRID_SPLIT_MERGE_DETAIL_HPP
 
+#include <algorithm>
 #include "../../common.hpp"
 #include "../../util/saturate_cast.hpp"
 #include "../../util/tuple.hpp"
@@ -68,8 +69,11 @@ namespace grid_split_merge_detail
         if (x >= cols)
             return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             if (!mask(y, x))
                 continue;
 
@@ -83,6 +87,9 @@ namespace grid_split_merge_detail
     template <class Policy, class Src1Ptr, class Src2Ptr, typename DstType, class MaskPtr>
     __host__ void mergeC2(const Src1Ptr& src1, const Src2Ptr& src2, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
+        if (rows <= 0 || cols <= 0)
+            return;
+
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
         const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
@@ -102,8 +109,11 @@ namespace grid_split_merge_detail
         if (x >= cols)
             return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             if (!mask(y, x))
                 continue;
 
@@ -118,6 +128,9 @@ namespace grid_split_merge_detail
     template <class Policy, class Src1Ptr, class Src2Ptr, class Src3Ptr, typename DstType, class MaskPtr>
     __host__ void mergeC3(const Src1Ptr& src1, const Src2Ptr& src2, const Src3Ptr& src3, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
+        if (rows <= 0 || cols <= 0)
+            return;
+
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
         const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
@@ -137,8 +150,11 @@ namespace grid_split_merge_detail
         if (x >= cols)
             return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             if (!mask(y, x))
                 continue;
 
@@ -154,6 +170,9 @@ namespace grid_split_merge_detail
     template <class Policy, class Src1Ptr, class Src2Ptr, class Src3Ptr, class Src4Ptr, typename DstType, class MaskPtr>
     __host__ void mergeC4(const Src1Ptr& src1, const Src2Ptr& src2, const Src3Ptr& src3, const Src4Ptr& src4, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
+        if (rows <= 0 || cols <= 0)
+            return;
+
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
         const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
@@ -223,8 +242,11 @@ namespace grid_split_merge_detail
         if (x >= cols)
             return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             if (!mask(y, x))
                 continue;
 
@@ -238,6 +260,9 @@ namespace grid_split_merge_detail
     template <class Policy, class SrcPtr, typename DstType, class MaskPtr>
     __host__ void split(const SrcPtr& src, const GlobPtr<DstType>& dst1, const GlobPtr<DstType>& dst2, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
+        if (rows <= 0 || cols <= 0)
+            return;
+
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
         const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
@@ -257,8 +282,11 @@ namespace grid_split_merge_detail
         if (x >= cols)
             return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             if (!mask(y, x))
                 continue;
 
@@ -273,6 +301,9 @@ namespace grid_split_merge_detail
     template <class Policy, class SrcPtr, typename DstType, class MaskPtr>
     __host__ void split(const SrcPtr& src, const GlobPtr<DstType>& dst1, const GlobPtr<DstType>& dst2, const GlobPtr<DstType>& dst3, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
+        if (rows <= 0 || cols <= 0)
+            return;
+
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
         const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
@@ -292,8 +323,11 @@ namespace grid_split_merge_detail
         if (x >= cols)
             return;
 
-        for (int y = blockIdx.y * blockDim.y + threadIdx.y; y < rows; y += blockDim.y * gridDim.y)
+        const uint urows = static_cast<uint>(rows);
+        const uint y_stride = blockDim.y * gridDim.y;
+        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
         {
+            const int y = static_cast<int>(uy);
             if (!mask(y, x))
                 continue;
 
@@ -309,6 +343,9 @@ namespace grid_split_merge_detail
     template <class Policy, class SrcPtr, typename DstType, class MaskPtr>
     __host__ void split(const SrcPtr& src, const GlobPtr<DstType>& dst1, const GlobPtr<DstType>& dst2, const GlobPtr<DstType>& dst3, const GlobPtr<DstType>& dst4, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
+        if (rows <= 0 || cols <= 0)
+            return;
+
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
         const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
 
