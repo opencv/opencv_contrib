@@ -44,6 +44,7 @@
 //M*/
 
 #include "../precomp.hpp"
+#include <iostream>
 
 namespace cv { namespace viz
 {
@@ -96,7 +97,7 @@ void cv::viz::vtkVizInteractorStyle::saveScreenshot(const String &file)
     snapshot_writer->SetFileName(file.c_str());
     snapshot_writer->Write();
 
-    cout << "Screenshot successfully captured (" << file.c_str() << ")" << endl;
+    std::cout << "Screenshot successfully captured (" << file.c_str() << ")" << endl;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -118,7 +119,7 @@ void cv::viz::vtkVizInteractorStyle::exportScene(const String &file)
     exporter->SetInput(Interactor->GetRenderWindow());
     exporter->Write();
 
-    cout << "Scene successfully exported (" << file.c_str() << ")" << endl;
+    std::cout << "Scene successfully exported (" << file.c_str() << ")" << endl;
 }
 
 void cv::viz::vtkVizInteractorStyle::exportScene()
