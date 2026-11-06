@@ -195,6 +195,20 @@ namespace cv { namespace cuda { namespace device
     {
         return make_uchar4(pix.x, pix.y, pix.z, 255);
     }
+    template <typename D> __device__ __forceinline__ D toDst(const float3& pix);
+    template <> __device__ __forceinline__ float toDst<float>(const float3& pix)
+    {
+        typename bgr_to_gray_traits<float>::functor_type f = bgr_to_gray_traits<float>::create_functor();
+        return f(pix);
+    }
+    template <> __device__ __forceinline__ float3 toDst<float3>(const float3& pix)
+    {
+        return pix;
+    }
+    template <> __device__ __forceinline__ float4 toDst<float4>(const float3& pix)
+    {
+        return make_float4(pix.x, pix.y, pix.z, 1.0f);
+    }
 
     template <typename D>
     __global__ void Bayer2BGR_8u(const PtrStepSzb src, PtrStep<D> dst, const bool blue_last, const bool start_with_green)
@@ -401,6 +415,19 @@ namespace cv { namespace cuda { namespace device
         return make_ushort3(x, y, z);
     }
 
+    template<> __device__ TypeVec<float, 3>::vec_type make_3<float>(float x, float y, float z) {
+        return make_float3(x, y, z);
+    }
+
+    template <typename DstType> __device__ __forceinline__ DstType toDstColor(const float3& pix){
+        typedef typename VecTraits<DstType>::elem_type SrcElemType;
+        return toDst<DstType>(make_3<SrcElemType>(saturate_cast<SrcElemType>(pix.x), saturate_cast<SrcElemType>(pix.y), saturate_cast<SrcElemType>(pix.z)));
+    }
+    template <> __device__ __forceinline__ float3 toDstColor<float3>(const float3& pix)
+    {
+        return pix;
+    }
+
     template <typename DstType, class Ptr2D>
     __global__ void MHCdemosaic(PtrStepSz<DstType> dst, Ptr2D src, const int2 firstRed)
     {
@@ -517,19 +544,15 @@ namespace cv { namespace cuda { namespace device
         alternate.x = (x + firstRed.x) % 2;
         alternate.y = (y + firstRed.y) % 2;
 
-        typedef typename VecTraits<DstType>::elem_type SrcElemType;
-        typedef typename TypeVec<SrcElemType, 3>::vec_type SrcType;
-
-        SrcType pixelColor =
+        float3 pixelColor =
             (alternate.y == 0) ?
                 ((alternate.x == 0) ?
-                    make_3<SrcElemType>(saturate_cast<SrcElemType>(PATTERN.y), saturate_cast<SrcElemType>(PATTERN.x), saturate_cast<SrcElemType>(C)) :
-                    make_3<SrcElemType>(saturate_cast<SrcElemType>(PATTERN.w), saturate_cast<SrcElemType>(C), saturate_cast<SrcElemType>(PATTERN.z))) :
+                    make_float3(PATTERN.y, PATTERN.x, C) :
+                    make_float3(PATTERN.w, C, PATTERN.z)) :
                 ((alternate.x == 0) ?
-                    make_3<SrcElemType>(saturate_cast<SrcElemType>(PATTERN.z), saturate_cast<SrcElemType>(C), saturate_cast<SrcElemType>(PATTERN.w)) :
-                    make_3<SrcElemType>(saturate_cast<SrcElemType>(C), saturate_cast<SrcElemType>(PATTERN.x), saturate_cast<SrcElemType>(PATTERN.y)));
-
-        dst(y, x) = toDst<DstType>(pixelColor);
+                    make_float3(PATTERN.z, C, PATTERN.w) :
+                    make_float3(C, PATTERN.x, PATTERN.y));
+        dst(y, x) = toDstColor<DstType>(pixelColor);
     }
 
     template <int cn, typename Depth>
@@ -561,6 +584,9 @@ namespace cv { namespace cuda { namespace device
     template void MHCdemosaic<1, ushort>(PtrStepSz<ushort> src, int2 sourceOffset, PtrStepSz<ushort> dst, int2 firstRed, cudaStream_t stream);
     template void MHCdemosaic<3, ushort>(PtrStepSz<ushort> src, int2 sourceOffset, PtrStepSz<ushort> dst, int2 firstRed, cudaStream_t stream);
     template void MHCdemosaic<4, ushort>(PtrStepSz<ushort> src, int2 sourceOffset, PtrStepSz<ushort> dst, int2 firstRed, cudaStream_t stream);
+    template void MHCdemosaic<1, float>(PtrStepSzf src, int2 sourceOffset, PtrStepSzf dst, int2 firstRed, cudaStream_t stream);
+    template void MHCdemosaic<3, float>(PtrStepSzf src, int2 sourceOffset, PtrStepSzf dst, int2 firstRed, cudaStream_t stream);
+    template void MHCdemosaic<4, float>(PtrStepSzf src, int2 sourceOffset, PtrStepSzf dst, int2 firstRed, cudaStream_t stream);
 }}}
 
 #endif /* CUDA_DISABLER */
