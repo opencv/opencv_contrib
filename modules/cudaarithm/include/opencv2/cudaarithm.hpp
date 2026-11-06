@@ -719,7 +719,7 @@ CV_EXPORTS_W void polarToCart(InputArray magnitudeAngle, OutputArray xy, bool an
 //! @addtogroup cudaarithm_core
 //! @{
 
-/** @brief Makes a multi-channel matrix out of several single-channel matrices.
+/** @brief Makes a multi-channel matrix out of several single-channel or multi-channel matrices.
 
 @param src Array/vector of source matrices.
 @param n Number of source matrices.

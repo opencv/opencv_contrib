@@ -74,7 +74,7 @@ CUDA_TEST_P(Merge, Accuracy)
     std::vector<cv::Mat> src;
     src.reserve(channels);
     for (int i = 0; i < channels; ++i)
-        src.push_back(cv::Mat(size, depth, cv::Scalar::all(i)));
+        src.push_back(randomMat(size, CV_MAKE_TYPE(depth, 1)));
 
     std::vector<cv::cuda::GpuMat> d_src;
     for (int i = 0; i < channels; ++i)
@@ -100,15 +100,59 @@ CUDA_TEST_P(Merge, Accuracy)
         cv::Mat dst_gold;
         cv::merge(src, dst_gold);
 
+        ASSERT_EQ(dst_gold.type(), dst.type());
+        ASSERT_EQ(dst_gold.size(), dst.size());
         EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
     }
+}
+
+CUDA_TEST_P(Merge, MultiChannelInputs)
+{
+    if (depth == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
+        return;
+
+    std::vector<cv::Mat> src;
+    if (channels == 1)
+    {
+        src.push_back(randomMat(size, CV_MAKE_TYPE(depth, 3)));
+    }
+    else if (channels <= 3)
+    {
+        src.push_back(randomMat(size, CV_MAKE_TYPE(depth, 2)));
+        src.push_back(randomMat(size, CV_MAKE_TYPE(depth, 1)));
+    }
+    else if (channels == 4)
+    {
+        src.push_back(randomMat(size, CV_MAKE_TYPE(depth, 3)));
+        src.push_back(randomMat(size, CV_MAKE_TYPE(depth, 1)));
+    }
+    else
+    {
+        src.push_back(randomMat(size, CV_MAKE_TYPE(depth, 3)));
+        src.push_back(randomMat(size, CV_MAKE_TYPE(depth, 1)));
+        src.push_back(randomMat(size, CV_MAKE_TYPE(depth, 2)));
+    }
+
+    std::vector<cv::cuda::GpuMat> d_src;
+    for (size_t i = 0; i < src.size(); ++i)
+        d_src.push_back(loadMat(src[i], useRoi));
+
+    cv::cuda::GpuMat dst;
+    cv::cuda::merge(d_src, dst);
+
+    cv::Mat dst_gold;
+    cv::merge(src, dst_gold);
+
+    ASSERT_EQ(dst_gold.type(), dst.type());
+    ASSERT_EQ(dst_gold.size(), dst.size());
+    EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Merge, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     ALL_DEPTH,
-    testing::Values(1, 2, 3, 4),
+    testing::Values(1, 2, 3, 4, 6),
     WHOLE_SUBMAT));
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -140,7 +184,18 @@ PARAM_TEST_CASE(Split, cv::cuda::DeviceInfo, cv::Size, MatDepth, Channels, UseRo
 
 CUDA_TEST_P(Split, Accuracy)
 {
-    cv::Mat src = randomMat(size, type);
+    cv::Mat src;
+    if (channels <= 4)
+    {
+        src = randomMat(size, type);
+    }
+    else
+    {
+        std::vector<cv::Mat> planes(channels);
+        for (int i = 0; i < channels; ++i)
+            planes[i] = randomMat(size, CV_MAKE_TYPE(depth, 1));
+        cv::merge(planes, src);
+    }
 
     if (depth == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
     {
@@ -175,8 +230,132 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Split, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     ALL_DEPTH,
-    testing::Values(1, 2, 3, 4),
+    testing::Values(1, 2, 3, 4, 6),
     WHOLE_SUBMAT));
+
+////////////////////////////////////////////////////////////////////////////////
+// MergeSplitEdgeCases
+
+struct MergeSplitEdgeCases : testing::TestWithParam<cv::cuda::DeviceInfo>
+{
+    cv::cuda::DeviceInfo devInfo;
+
+    virtual void SetUp()
+    {
+        devInfo = GetParam();
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(MergeSplitEdgeCases, Batch65PointerStreamAndHostOutput)
+{
+    const cv::Size sz(37, 29);
+    const int num_ch = 65;
+
+    std::vector<cv::Mat> h_planes(num_ch);
+    std::vector<cv::cuda::GpuMat> d_planes(num_ch);
+    for (int i = 0; i < num_ch; ++i)
+    {
+        h_planes[i] = randomMat(sz, CV_16UC1);
+        d_planes[i] = loadMat(h_planes[i], true);
+    }
+
+    cv::cuda::Stream stream;
+    cv::cuda::GpuMat d_merged;
+    cv::cuda::merge(d_planes.data(), d_planes.size(), d_merged, stream);
+
+    std::vector<cv::cuda::GpuMat> d_split(num_ch);
+    cv::cuda::split(d_merged, d_split.data(), stream);
+    stream.waitForCompletion();
+
+    cv::Mat h_merged_gold;
+    cv::merge(h_planes, h_merged_gold);
+    EXPECT_MAT_NEAR(h_merged_gold, d_merged, 0.0);
+
+    for (int i = 0; i < num_ch; ++i)
+        EXPECT_MAT_NEAR(h_planes[i], d_split[i], 0.0);
+
+    // Host cv::Mat OutputArray (both n == 1 and n > 4)
+    cv::Mat h_out_single, h_out_multi;
+    cv::cuda::merge(&d_planes[0], 1, h_out_single);
+    cv::cuda::merge(d_planes.data(), 6, h_out_multi);
+    EXPECT_MAT_NEAR(h_planes[0], h_out_single, 0.0);
+
+    std::vector<cv::Mat> h_planes6(h_planes.begin(), h_planes.begin() + 6);
+    cv::Mat h_gold6;
+    cv::merge(h_planes6, h_gold6);
+    EXPECT_MAT_NEAR(h_gold6, h_out_multi, 0.0);
+}
+
+CUDA_TEST_P(MergeSplitEdgeCases, FP16AliasingAndEmpty)
+{
+    const cv::Size sz(31, 19);
+    std::vector<cv::Mat> h_fp16(6);
+    std::vector<cv::cuda::GpuMat> d_fp16(6);
+    for (int i = 0; i < 6; ++i)
+    {
+        randomMat(sz, CV_32FC1, -10.0, 10.0).convertTo(h_fp16[i], CV_16F);
+        d_fp16[i] = loadMat(h_fp16[i], false);
+    }
+
+    cv::cuda::GpuMat d_merged16;
+    cv::cuda::merge(d_fp16, d_merged16);
+    std::vector<cv::cuda::GpuMat> d_split16;
+    cv::cuda::split(d_merged16, d_split16);
+    ASSERT_EQ(6u, d_split16.size());
+    for (int i = 0; i < 6; ++i)
+    {
+        cv::Mat expected32, actual32;
+        h_fp16[i].convertTo(expected32, CV_32F);
+        cv::Mat(d_split16[i]).convertTo(actual32, CV_32F);
+        EXPECT_MAT_NEAR(expected32, actual32, 0.0);
+    }
+
+    // In-place / aliased destination handling
+    std::vector<cv::Mat> h_rgb(3);
+    std::vector<cv::cuda::GpuMat> d_rgb(3);
+    for (int i = 0; i < 3; ++i)
+    {
+        h_rgb[i] = randomMat(sz, CV_8UC1);
+        d_rgb[i] = loadMat(h_rgb[i]);
+    }
+    cv::Mat h_rgb_gold;
+    cv::merge(h_rgb, h_rgb_gold);
+    cv::cuda::merge(d_rgb, d_rgb[0]);
+    EXPECT_MAT_NEAR(h_rgb_gold, d_rgb[0], 0.0);
+
+    cv::cuda::GpuMat d_single = loadMat(h_rgb[1]);
+    cv::cuda::merge(&d_single, 1, d_single);
+    cv::cuda::split(d_single, &d_single);
+    EXPECT_MAT_NEAR(h_rgb[1], d_single, 0.0);
+
+    // Separate header aliasing same underlying buffer
+    std::vector<cv::cuda::GpuMat> d_rgb2(3);
+    for (int i = 0; i < 3; ++i)
+        d_rgb2[i] = loadMat(h_rgb[i]);
+    cv::cuda::GpuMat dst_alias = d_rgb2[0];
+    cv::cuda::merge(d_rgb2, dst_alias);
+    EXPECT_MAT_NEAR(h_rgb_gold, dst_alias, 0.0);
+
+    std::vector<cv::cuda::GpuMat> split_alias(3);
+    split_alias[0] = dst_alias;
+    cv::cuda::split(dst_alias, split_alias.data());
+    for (int i = 0; i < 3; ++i)
+        EXPECT_MAT_NEAR(h_rgb[i], split_alias[i], 0.0);
+
+    // Empty handling
+    std::vector<cv::cuda::GpuMat> non_empty_vec(3, d_single);
+    cv::cuda::split(cv::cuda::GpuMat(), non_empty_vec);
+    EXPECT_TRUE(non_empty_vec.empty());
+
+    std::vector<cv::cuda::GpuMat> empty_src;
+    cv::cuda::GpuMat dummy_dst;
+    EXPECT_THROW(cv::cuda::merge(empty_src, dummy_dst), cv::Exception);
+    cv::cuda::GpuMat empty_plane;
+    EXPECT_THROW(cv::cuda::merge(&empty_plane, 1, dummy_dst), cv::Exception);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, MergeSplitEdgeCases, ALL_DEVICES);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Transpose
