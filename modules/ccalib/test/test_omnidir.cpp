@@ -98,6 +98,15 @@ static void runOmnidirNonContiguousTest(int depth)
     omnidir::undistortPoints(distPtsSlice, undistOutSlice, K, DSlice, xiMat, rvecSlice);
     EXPECT_EQ(0.0, cv::norm(undistExpected, undistOutSlice, NORM_INF));
     EXPECT_EQ(Vec2T(static_cast<T>(-888), static_cast<T>(-888)), undistOutCanvas.at<Vec2T>(1, 1));
+
+    // 3. initUndistortRectifyMap: non-contiguous D and R
+    Mat map1Expected, map2Expected, map1Actual, map2Actual;
+    omnidir::initUndistortRectifyMap(K, DSlice.clone(), xiMat, rvecSlice.clone(), K, Size(16, 12), CV_32FC1,
+                                     map1Expected, map2Expected, omnidir::RECTIFY_PERSPECTIVE);
+    omnidir::initUndistortRectifyMap(K, DSlice, xiMat, rvecSlice, K, Size(16, 12), CV_32FC1,
+                                     map1Actual, map2Actual, omnidir::RECTIFY_PERSPECTIVE);
+    EXPECT_EQ(0.0, cv::norm(map1Expected, map1Actual, NORM_INF));
+    EXPECT_EQ(0.0, cv::norm(map2Expected, map2Actual, NORM_INF));
 }
 
 TEST(CCalib_Omnidir, non_contiguous_64f)
