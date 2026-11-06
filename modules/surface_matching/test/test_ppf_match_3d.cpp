@@ -154,12 +154,24 @@ TEST(SurfaceMatching_PointCloudShape, transformPCPose_Nx3)
 {
     Mat pcNx6 = generateAsymmetricEllipsoidPatch();
     Mat pcNx3 = pcNx6.colRange(0, 3).clone();
+    Mat pcNx1C6 = pcNx6.reshape(6, pcNx6.rows);
+    Mat pcNx1C3 = pcNx3.reshape(3, pcNx3.rows);
     Matx44d pose = makeTestPose(Vec3d(0.2, -0.1, 0.15), Vec3d(3.0, -2.0, 4.0));
 
     Mat tf6 = transformPCPose(pcNx6, pose);
     Mat tf3 = transformPCPose(pcNx3, pose);
+    Mat tf6c = transformPCPose(pcNx1C6, pose);
+    Mat tf3c = transformPCPose(pcNx1C3, pose);
     EXPECT_EQ(Size(3, pcNx3.rows), tf3.size());
     EXPECT_LE(cv::norm(tf3, tf6.colRange(0, 3), NORM_INF), 1e-6);
+    EXPECT_LE(cv::norm(tf6c, tf6, NORM_INF), 1e-6);
+    EXPECT_LE(cv::norm(tf3c, tf3, NORM_INF), 1e-6);
+
+    Vec2f xr, yr, zr;
+    computeBboxStd(pcNx1C6, xr, yr, zr);
+    Mat q6 = samplePCByQuantization(pcNx6, xr, yr, zr, 0.1f);
+    Mat q6c = samplePCByQuantization(pcNx1C6, xr, yr, zr, 0.1f);
+    EXPECT_LE(cv::norm(q6c, q6, NORM_INF), 1e-6);
 }
 
 TEST(SurfaceMatching_PointCloudShape, invalid_inputs_issue_3981)
@@ -168,6 +180,7 @@ TEST(SurfaceMatching_PointCloudShape, invalid_inputs_issue_3981)
     Mat pcNx3 = validNx6.colRange(0, 3).clone();
     Mat pcNx1C3 = pcNx3.clone().reshape(3, pcNx3.rows);
     Mat pcNx4(20, 4, CV_32FC1, Scalar::all(1.0));
+    Mat pcNx7(20, 7, CV_32FC1, Scalar::all(1.0));
     Mat pc2x3C6(2, 3, CV_32FC(6));
     pc2x3C6.reshape(1) = 1.0f;
     Mat pc64F;
@@ -179,6 +192,7 @@ TEST(SurfaceMatching_PointCloudShape, invalid_inputs_issue_3981)
     EXPECT_THROW(detector.trainModel(pcNx3), cv::Exception);
     EXPECT_THROW(detector.trainModel(pcNx1C3), cv::Exception);
     EXPECT_THROW(detector.trainModel(pcNx4), cv::Exception);
+    EXPECT_THROW(detector.trainModel(pcNx7), cv::Exception);
     EXPECT_THROW(detector.trainModel(pc2x3C6), cv::Exception);
 
     detector.trainModel(validNx6);
@@ -186,6 +200,7 @@ TEST(SurfaceMatching_PointCloudShape, invalid_inputs_issue_3981)
     EXPECT_THROW(detector.match(Mat(), poses), cv::Exception);
     EXPECT_THROW(detector.match(pcNx3, poses), cv::Exception);
     EXPECT_THROW(detector.match(pcNx1C3, poses), cv::Exception);
+    EXPECT_THROW(detector.match(pcNx7, poses), cv::Exception);
 
     ICP icp;
     double residual = 0.0;
@@ -194,6 +209,7 @@ TEST(SurfaceMatching_PointCloudShape, invalid_inputs_issue_3981)
     EXPECT_THROW(icp.registerModelToScene(validNx6, Mat(), residual, pose), cv::Exception);
     EXPECT_THROW(icp.registerModelToScene(pcNx3, validNx6, residual, pose), cv::Exception);
     EXPECT_THROW(icp.registerModelToScene(validNx6, pcNx3, residual, pose), cv::Exception);
+    EXPECT_THROW(icp.registerModelToScene(pcNx7, validNx6, residual, pose), cv::Exception);
     EXPECT_THROW(icp.registerModelToScene(pc64F, validNx6, residual, pose), cv::Exception);
 }
 
