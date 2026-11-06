@@ -17,16 +17,15 @@
 namespace zxing {
 class GenericGFPoly;
 
-static zxing::ErrorHandler gf_err_handler_;
-#define GF_AZTEC_DATA_12 (new GenericGF(0x1069, 4096, 1, gf_err_handler_))
-#define GF_AZTEC_DATA_10 (new GenericGF(0x409, 1024, 1, gf_err_handler_))
-#define GF_AZTEC_DATA_6 (new GenericGF(0x43, 64, 1, gf_err_handler_))
-#define GF_AZTEC_PARAM (new GenericGF(0x13, 16, 1, gf_err_handler_))
-#define GF_QR_CODE_FIELD_256 (new GenericGF(0x011D, 256, 0, gf_err_handler_))
-#define GF_DATA_MATRIX_FIELD_256 (new GenericGF(0x012D, 256, 1, gf_err_handler_))
-#define GF_AZTEC_DATA_8 (new GenericGF(0x012D, 256, 1, gf_err_handler_))
-#define GF_MAXICODE_FIELD_64 (new GenericGF(0x43, 64, 1, gf_err_handler_))
-// #define GF_WXCODE (new GenericGF(0x011D, 256, 0, gf_err_handler_))
+#define GF_AZTEC_DATA_12 (new GenericGF(0x1069, 4096, 1))
+#define GF_AZTEC_DATA_10 (new GenericGF(0x409, 1024, 1))
+#define GF_AZTEC_DATA_6 (new GenericGF(0x43, 64, 1))
+#define GF_AZTEC_PARAM (new GenericGF(0x13, 16, 1))
+#define GF_QR_CODE_FIELD_256 (new GenericGF(0x011D, 256, 0))
+#define GF_DATA_MATRIX_FIELD_256 (new GenericGF(0x012D, 256, 1))
+#define GF_AZTEC_DATA_8 (new GenericGF(0x012D, 256, 1))
+#define GF_MAXICODE_FIELD_64 (new GenericGF(0x43, 64, 1))
+// #define GF_WXCODE (new GenericGF(0x011D, 256, 0))
 
 class GenericGF : public Counted {
 private:
@@ -39,6 +38,7 @@ private:
     int generatorBase;
 
 public:
+    GenericGF(int primitive, int size, int b);
     GenericGF(int primitive, int size, int b, ErrorHandler &err_handler);
 
     Ref<GenericGFPoly> getZero();

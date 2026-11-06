@@ -466,5 +466,38 @@ TEST(Objdetect_QRCode_bug, issue_3478) {
     ASSERT_EQ("KFCVW50         ", outs[0]);
 }
 
+TEST(Objdetect_QRCode_bug, issue_3405_multithread) {
+    const std::string expect_msg = "OpenCV_multithread_3405";
+    QRCodeEncoder::Params params;
+    params.version = 4;
+    Ptr<QRCodeEncoder> qrcode_enc = cv::QRCodeEncoder::create(params);
+    Mat qrRaw;
+    qrcode_enc->encode(expect_msg, qrRaw);
+
+    Mat qrImg;
+    cv::resize(qrRaw, qrImg, Size(0, 0), 4.0, 4.0, INTER_NEAREST);
+    cv::copyMakeBorder(qrImg, qrImg, 16, 16, 16, 16, BORDER_CONSTANT, Scalar(255));
+
+    wechat_qrcode::WeChatQRCode detector;
+    const int numCalls = 512;
+    std::vector<std::string> decoded(numCalls);
+    Mat blank(32, 32, CV_8UC1, Scalar(128));
+
+    cv::parallel_for_(Range(0, numCalls), [&](const Range& range) {
+        for (int i = range.start; i < range.end; ++i) {
+            std::vector<std::string> emptyRes = detector.detectAndDecode(blank);
+            EXPECT_TRUE(emptyRes.empty());
+            std::vector<std::string> res = detector.detectAndDecode(qrImg);
+            if (!res.empty()) {
+                decoded[i] = res[0];
+            }
+        }
+    }, numCalls);
+
+    for (int i = 0; i < numCalls; ++i) {
+        EXPECT_EQ(expect_msg, decoded[i]) << "Mismatch at iteration " << i;
+    }
+}
+
 }  // namespace
 }  // namespace opencv_test
