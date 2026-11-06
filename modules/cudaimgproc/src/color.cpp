@@ -2157,7 +2157,7 @@ void cv::cuda::demosaicing(InputArray _src, OutputArray _dst, int code, int dcn,
                 PtrStepSzb srcWhole(wholeSize.height, wholeSize.width, src.datastart, src.step);
                 cv::cuda::device::MHCdemosaic<3, uchar>(srcWhole, make_int2(ofs.x, ofs.y), dst, firstRed, StreamAccessor::getStream(stream));
             } else {
-                PtrStepSz<ushort> srcWhole(wholeSize.height, wholeSize.width, src.ptr<ushort>(), src.step);
+                PtrStepSz<ushort> srcWhole(wholeSize.height, wholeSize.width, (ushort*)src.datastart, src.step);
                 cv::cuda::device::MHCdemosaic<3, ushort>(srcWhole, make_int2(ofs.x, ofs.y), dst, firstRed, StreamAccessor::getStream(stream));
             }
         } else {
@@ -2165,7 +2165,7 @@ void cv::cuda::demosaicing(InputArray _src, OutputArray _dst, int code, int dcn,
                 PtrStepSzb srcWhole(wholeSize.height, wholeSize.width, src.datastart, src.step);
                 cv::cuda::device::MHCdemosaic<4, uchar>(srcWhole, make_int2(ofs.x, ofs.y), dst, firstRed, StreamAccessor::getStream(stream));
             } else {
-                PtrStepSz<ushort> srcWhole(wholeSize.height, wholeSize.width, src.ptr<ushort>(), src.step);
+                PtrStepSz<ushort> srcWhole(wholeSize.height, wholeSize.width, (ushort*)src.datastart, src.step);
                 cv::cuda::device::MHCdemosaic<4, ushort>(srcWhole, make_int2(ofs.x, ofs.y), dst, firstRed, StreamAccessor::getStream(stream));
             }
         }
@@ -2178,6 +2178,7 @@ void cv::cuda::demosaicing(InputArray _src, OutputArray _dst, int code, int dcn,
         const int depth = _src.depth();
 
         CV_Assert( depth == CV_8U || depth == CV_16U);
+        CV_Assert( src.channels() == 1 );
 
         _dst.create(_src.size(), CV_MAKE_TYPE(depth, 1));
         GpuMat dst = _dst.getGpuMat();
@@ -2195,7 +2196,7 @@ void cv::cuda::demosaicing(InputArray _src, OutputArray _dst, int code, int dcn,
             PtrStepSzb srcWhole(wholeSize.height, wholeSize.width, src.datastart, src.step);
             cv::cuda::device::MHCdemosaic<1, uchar>(srcWhole, make_int2(ofs.x, ofs.y), dst, firstRed, StreamAccessor::getStream(stream));
         } else {
-            PtrStepSz<ushort> srcWhole(wholeSize.height, wholeSize.width, src.ptr<ushort>(), src.step);
+            PtrStepSz<ushort> srcWhole(wholeSize.height, wholeSize.width, (ushort*)src.datastart, src.step);
             cv::cuda::device::MHCdemosaic<1, ushort>(srcWhole, make_int2(ofs.x, ofs.y), dst, firstRed, StreamAccessor::getStream(stream));
         }
 

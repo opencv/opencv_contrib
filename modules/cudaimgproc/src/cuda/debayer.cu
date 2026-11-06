@@ -538,7 +538,7 @@ namespace cv { namespace cuda { namespace device
         typedef typename TypeVec<Depth, cn>::vec_type dst_t;
 
         const dim3 block(32, 8);
-        const dim3 grid(divUp(src.cols, block.x), divUp(src.rows, block.y));
+        const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
 
         if (sourceOffset.x || sourceOffset.y) {
             cv::cudev::TextureOff<Depth> texSrc(src, sourceOffset.y, sourceOffset.x);
