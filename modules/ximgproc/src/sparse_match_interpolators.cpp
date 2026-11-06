@@ -1153,28 +1153,31 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     Mat matDistanceMap(src_size, CV_32FC1);
     matDistanceMap.setTo(1e10);
 
+    Mat workCostMap(src_size, CV_32FC1);
     if (costMap.empty())
     {
-        costMap.create(src_size, CV_32FC1);
-        computeGradientMagnitude(src, costMap);
+        computeGradientMagnitude(src, workCostMap);
     }
     else
+    {
         CV_Assert(costMap.rows == src.rows && costMap.cols == src.cols );
+        costMap.copyTo(workCostMap);
+    }
 
-    costMap = (1000.0f - lambda) + lambda * costMap;
+    workCostMap = (1000.0f - lambda) + lambda * workCostMap;
 
     for (unsigned int i = 0; i < matches_vector.size(); i++)
     {
         const SparseMatch & p = matches_vector[i];
         Point pos(static_cast<int>(p.reference_image_pos.x), static_cast<int>(p.reference_image_pos.y));
         labels.at<int>(pos) = i;
-        matDistanceMap.at<float>(pos) = costMap.at<float>(pos);
+        matDistanceMap.at<float>(pos) = workCostMap.at<float>(pos);
     }
 
-    geodesicDistanceTransform(matDistanceMap, costMap);
+    geodesicDistanceTransform(matDistanceMap, workCostMap);
 
     g.assign(match_num, vector<node>());
-    buildGraph(matDistanceMap, costMap);
+    buildGraph(matDistanceMap, workCostMap);
     parallel_for_(Range(0, getNumThreads()), [&](const Range & range)
     {
         int stripe_sz = (int)ceil(match_num / (double)getNumThreads());
@@ -1312,7 +1315,6 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
         fastGlobalSmootherFilter(prevGrey, dst, dst, fgs_lambda, fgs_sigma);
     }
     dst.copyTo(dense_flow.getMat());
-    costMap.release();
 }
 
 void RICInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_map)
