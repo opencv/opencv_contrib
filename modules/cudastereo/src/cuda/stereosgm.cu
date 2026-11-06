@@ -1424,7 +1424,8 @@ __device__ inline uint32_t compute_disparity_subpixel(uint32_t disp, uint32_t co
         const int right = smem[disp + 1];
         const int numer = left - right;
         const int denom = left - 2 * cost + right;
-        subp += ((numer << StereoSGBM::DISP_SHIFT) + denom) / (2 * denom);
+        if (denom != 0)
+            subp += ((numer << StereoSGBM::DISP_SHIFT) + denom) / (2 * denom);
     }
     return subp;
 }
