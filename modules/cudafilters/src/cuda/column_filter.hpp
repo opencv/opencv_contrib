@@ -236,7 +236,9 @@ namespace filter
     template <typename T, typename D>
     void linearColumn(PtrStepSzb src, PtrStepSzb dst, const float* kernel, int ksize, int anchor, int brd_type, int cc, cudaStream_t stream)
     {
-        if (ksize > MAX_KERNEL_SIZE || filter::kernelOutreachesImage(ksize, anchor, src.rows))
+        const int rowsPerBlock = (cc >= 20) ? 64 : 16;
+        if (ksize > MAX_KERNEL_SIZE || filter::kernelOutreachesImage(ksize, anchor, src.rows) ||
+            divUp(src.rows, rowsPerBlock) > filter::MAX_GRID_Y)
         {
             typedef void (*arbitrary_caller_t)(PtrStepSz<T> src, PtrStepSz<D> dst, const float* kernel, int ksize, int anchor, int cc, cudaStream_t stream);
 

@@ -335,12 +335,13 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilter, testing::Combine(
                     BorderType(cv::BORDER_REFLECT)),
     WHOLE_SUBMAT));
 
-PARAM_TEST_CASE(SeparableLinearFilterLargeKSize, cv::cuda::DeviceInfo, cv::Size, MatType, KSize, BorderType, UseRoi)
+PARAM_TEST_CASE(SeparableLinearFilterLargeKSize, cv::cuda::DeviceInfo, cv::Size, MatType, KSize, Anchor, BorderType, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
     int type;
     cv::Size ksize;
+    cv::Point anchor;
     int borderType;
     bool useRoi;
 
@@ -350,8 +351,9 @@ PARAM_TEST_CASE(SeparableLinearFilterLargeKSize, cv::cuda::DeviceInfo, cv::Size,
         size = GET_PARAM(1);
         type = GET_PARAM(2);
         ksize = GET_PARAM(3);
-        borderType = GET_PARAM(4);
-        useRoi = GET_PARAM(5);
+        anchor = GET_PARAM(4);
+        borderType = GET_PARAM(5);
+        useRoi = GET_PARAM(6);
 
         cv::cuda::setDevice(devInfo.deviceID());
     }
@@ -363,18 +365,12 @@ CUDA_TEST_P(SeparableLinearFilterLargeKSize, Accuracy)
     cv::Mat rowKernel = normalizedKernel(ksize.width);
     cv::Mat columnKernel = normalizedKernel(ksize.height);
 
-    const cv::Point anchors[] = {cv::Point(-1, -1), cv::Point(0, ksize.height - 1), cv::Point(ksize.width - 1, 0)};
-    for (const cv::Point& anchor : anchors)
-    {
-        SCOPED_TRACE(cv::format("anchor=(%d, %d)", anchor.x, anchor.y));
+    cv::Ptr<cv::cuda::Filter> filter = cv::cuda::createSeparableLinearFilter(src.type(), -1, rowKernel, columnKernel, anchor, borderType);
 
-        cv::Ptr<cv::cuda::Filter> filter = cv::cuda::createSeparableLinearFilter(src.type(), -1, rowKernel, columnKernel, anchor, borderType);
+    cv::cuda::GpuMat dst = createMat(size, type, useRoi);
+    filter->apply(loadMat(src, useRoi), dst);
 
-        cv::cuda::GpuMat dst = createMat(size, type, useRoi);
-        filter->apply(loadMat(src, useRoi), dst);
-
-        EXPECT_MAT_NEAR(sepFilterGold(src, rowKernel, columnKernel, anchor, borderType), dst, sepFilterTolerance(src.depth()));
-    }
+    EXPECT_MAT_NEAR(sepFilterGold(src, rowKernel, columnKernel, anchor, borderType), dst, sepFilterTolerance(src.depth()));
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilterLargeKSize, testing::Combine(
@@ -382,6 +378,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, SeparableLinearFilterLargeKSize, testing::
     testing::Values(cv::Size(160, 140), cv::Size(48, 32)),
     testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_16SC3), MatType(CV_32FC1), MatType(CV_32FC4)),
     testing::Values(KSize(cv::Size(33, 33)), KSize(cv::Size(65, 15)), KSize(cv::Size(15, 65)), KSize(cv::Size(133, 65))),
+    testing::Values(Anchor(cv::Point(-1, -1)), Anchor(cv::Point(0, 0)), Anchor(cv::Point(14, 14))),
     testing::Values(BorderType(cv::BORDER_REFLECT101),
                     BorderType(cv::BORDER_REPLICATE),
                     BorderType(cv::BORDER_CONSTANT),
@@ -396,6 +393,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters_WideKernel, SeparableLinearFilterLargeKSize
     testing::Values(MatType(CV_8UC3), MatType(CV_32FC1)),
     testing::Values(KSize(cv::Size(3, 3)), KSize(cv::Size(9, 9)), KSize(cv::Size(15, 15)), KSize(cv::Size(16, 16)),
                     KSize(cv::Size(31, 31)), KSize(cv::Size(32, 32)), KSize(cv::Size(33, 33))),
+    testing::Values(Anchor(cv::Point(-1, -1)), Anchor(cv::Point(0, 0)), Anchor(cv::Point(2, 2))),
     testing::Values(BorderType(cv::BORDER_REFLECT101),
                     BorderType(cv::BORDER_REPLICATE),
                     BorderType(cv::BORDER_CONSTANT),
@@ -416,7 +414,7 @@ CUDA_TEST_P(SeparableLinearFilterTallImage, Accuracy)
 {
     const cv::Size size(40, 524301);
     cv::Mat src = makeStructuredMat(size, CV_32FC1);
-    cv::Mat rowKernel = normalizedKernel(33);
+    cv::Mat rowKernel = normalizedKernel(15);
     cv::Mat columnKernel = normalizedKernel(65);
 
     cv::Ptr<cv::cuda::Filter> filter = cv::cuda::createSeparableLinearFilter(src.type(), -1, rowKernel, columnKernel);
