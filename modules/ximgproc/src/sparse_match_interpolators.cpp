@@ -954,7 +954,7 @@ public:
     int  getK() const CV_OVERRIDE { return max_neighbors; }
     void setSuperpixelSize(int val) CV_OVERRIDE { sp_size = val; }
     int  getSuperpixelSize() const CV_OVERRIDE { return sp_size; }
-    void setSuperpixelNNCnt(int val) CV_OVERRIDE { sp_nncnt = val; }
+    void setSuperpixelNNCnt(int val) CV_OVERRIDE { CV_Assert(val > 0); sp_nncnt = val; }
     int  getSuperpixelNNCnt() const CV_OVERRIDE { return sp_nncnt; }
     void setSuperpixelRuler(float val) CV_OVERRIDE { sp_ruler = val; }
     float getSuperpixelRuler() const CV_OVERRIDE { return sp_ruler; }
@@ -1228,12 +1228,12 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     for (int i = 0; i < spCnt; i++)
     {
         Point pos = static_cast<Point>(spPos.at<Point2f>(i) + Point2f(0.5f,0.5f));
-        pos.x = MIN(labels.cols - 1, pos.x);
-        pos.y = MIN(labels.rows - 1, pos.y);
+        pos.x = std::max(0, std::min(labels.cols - 1, pos.x));
+        pos.y = std::max(0, std::min(labels.rows - 1, pos.y));
         srcMatchIds[i] = labels.at<int>(pos);
     }
 
-    int supportCnt = sp_nncnt;
+    int supportCnt = std::max(1, sp_nncnt);
     vector<int> supportMatchIds(spCnt*supportCnt);  // support matches for each superpixel
     vector<float> supportMatchDis(spCnt*supportCnt);
 
@@ -1249,9 +1249,13 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     for (int i = 0; i < spCnt; i++) {
         int matId = supportMatchIds[i*supportCnt + 0];
 
-        const SparseMatch & p = matches_vector[matId];
-        float u = p.target_image_pos.x - p.reference_image_pos.x;
-        float v = p.target_image_pos.y - p.reference_image_pos.y;
+        float u = 0.0f;
+        float v = 0.0f;
+        if (matId >= 0) {
+            const SparseMatch & p = matches_vector[matId];
+            u = p.target_image_pos.x - p.reference_image_pos.x;
+            v = p.target_image_pos.y - p.reference_image_pos.y;
+        }
 
         rawModel.copyTo(transModels.row(i));
         transModels.at<float>(i,2) = u;
@@ -1630,6 +1634,8 @@ void RICInterpolatorImpl::findSupportMatches(vector<int> & srcIds, int srcCnt, i
     for (int i = 0; i < srcCnt; i++)
     {
         int id = srcIds[i];
+        if (id < 0 || id >= allNodeCnt)
+            continue;
         int* pSupportIds   = &outSupportIds[i * supportCnt];
         float* pSupportDis = &outSupportDis[i * supportCnt];
 
