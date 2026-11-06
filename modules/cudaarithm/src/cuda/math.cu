@@ -119,6 +119,14 @@ namespace
         }
     };
 
+    template <> struct SqrOp<ushort> : unary_function<ushort, ushort>
+    {
+        __device__ __forceinline__ ushort operator ()(ushort x) const
+        {
+            return cudev::saturate_cast<ushort>(static_cast<unsigned int>(x) * x);
+        }
+    };
+
     template <typename T>
     void sqrMat(const GpuMat& src, const GpuMat& dst, Stream& stream)
     {

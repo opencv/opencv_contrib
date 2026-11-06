@@ -747,6 +747,67 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Multiply_Array, testing::Combine(
     ALL_CHANNELS,
     WHOLE_SUBMAT));
 
+PARAM_TEST_CASE(Multiply_Overflow, cv::cuda::DeviceInfo, std::pair<MatDepth, MatDepth>, Channels, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    std::pair<MatDepth, MatDepth> depth;
+    int channels;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        depth = GET_PARAM(1);
+        channels = GET_PARAM(2);
+        useRoi = GET_PARAM(3);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(Multiply_Overflow, Accuracy)
+{
+    if (depth.second == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
+        return;
+
+    cv::Mat src1, src2;
+    if (depth.first == CV_16U)
+    {
+        src1 = cv::Mat_<ushort>({1, 8}, {65535, 65535, 46341, 46340, 300, 255, 2, 0});
+        src2 = cv::Mat_<ushort>({1, 8}, {65535, 2, 46341, 46340, 300, 255, 3, 65535});
+    }
+    else
+    {
+        src1 = cv::Mat_<int>({1, 8}, {100000, 2147483647, -100000, 65536, 46341, 16777217, -2147483647 - 1, 2});
+        src2 = cv::Mat_<int>({1, 8}, {100000, 2, 100000, 65536, 46341, 3, -1, 3});
+    }
+    src1 = src1.reshape(channels);
+    src2 = src2.reshape(channels);
+
+    cv::Mat dst_gold;
+    if (depth.second == CV_16U)
+        dst_gold = cv::Mat_<ushort>({1, 8}, {65535, 65535, 65535, 65535, 65535, 65025, 6, 0});
+    else if (depth.second == CV_16S)
+        dst_gold = cv::Mat_<short>({1, 8}, {32767, 32767, 32767, 32767, 32767, 32767, 6, 0});
+    else
+        cv::multiply(src1, src2, dst_gold, 1, depth.second);
+    dst_gold = dst_gold.reshape(channels);
+
+    cv::cuda::GpuMat dst = createMat(src1.size(), CV_MAKE_TYPE(depth.second, channels), useRoi);
+    cv::cuda::multiply(loadMat(src1, useRoi), loadMat(src2, useRoi), dst, 1.0, depth.second);
+    EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Multiply_Overflow, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(std::make_pair(MatDepth(CV_16U), MatDepth(CV_16U)),
+                    std::make_pair(MatDepth(CV_16U), MatDepth(CV_16S)),
+                    std::make_pair(MatDepth(CV_16U), MatDepth(CV_32F)),
+                    std::make_pair(MatDepth(CV_16U), MatDepth(CV_64F)),
+                    std::make_pair(MatDepth(CV_32S), MatDepth(CV_32F)),
+                    std::make_pair(MatDepth(CV_32S), MatDepth(CV_64F))),
+    testing::Values(Channels(1), Channels(2), Channels(4)),
+    WHOLE_SUBMAT));
+
 ////////////////////////////////////////////////////////////////////////////////
 // Multiply_Array_Special
 
@@ -1548,6 +1609,36 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Sqr, testing::Combine(
                     MatDepth(CV_16U),
                     MatDepth(CV_16S),
                     MatDepth(CV_32F)),
+    WHOLE_SUBMAT));
+
+PARAM_TEST_CASE(Sqr_Overflow, cv::cuda::DeviceInfo, Channels, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    int channels;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        channels = GET_PARAM(1);
+        useRoi = GET_PARAM(2);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(Sqr_Overflow, Accuracy)
+{
+    cv::Mat src = cv::Mat_<ushort>({1, 8}, {65535, 46341, 46340, 300, 256, 255, 2, 0});
+    cv::Mat dst_gold = cv::Mat_<ushort>({1, 8}, {65535, 65535, 65535, 65535, 65535, 65025, 4, 0});
+    src = src.reshape(channels);
+    cv::cuda::GpuMat dst = createMat(src.size(), src.type(), useRoi);
+    cv::cuda::sqr(loadMat(src, useRoi), dst);
+    EXPECT_MAT_NEAR(dst_gold.reshape(channels), dst, 0.0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Sqr_Overflow, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(Channels(1), Channels(2), Channels(4)),
     WHOLE_SUBMAT));
 
 ////////////////////////////////////////////////////////////////////////////////
