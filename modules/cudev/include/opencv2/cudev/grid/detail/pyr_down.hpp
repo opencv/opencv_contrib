@@ -59,7 +59,7 @@ namespace cv { namespace cudev {
 namespace pyramids_detail
 {
     template <class Brd, class SrcPtr, typename DstType>
-    __global__ void pyrDown(const SrcPtr src, GlobPtr<DstType> dst, const int src_rows, const int src_cols, const int dst_rows, const int dst_cols)
+    __global__ void pyrDown(const SrcPtr src, GlobPtr<DstType> dst, const int src_rows, const int src_cols, const int dst_cols, const int y_offset)
     {
         typedef typename PtrTraits<SrcPtr>::value_type src_type;
         typedef typename VecTraits<src_type>::elem_type src_elem_type;
@@ -69,123 +69,117 @@ namespace pyramids_detail
         __shared__ work_type smem[256 + 4];
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const uint udst_rows = static_cast<uint>(dst_rows);
+        const int y = y_offset + blockIdx.y;
 
-        for (uint uy = blockIdx.y; uy < udst_rows; uy += gridDim.y)
+        const int src_y = 2 * y;
+
+        if (src_y >= 2 && src_y < src_rows - 2 && x >= 2 && x < src_cols - 2)
         {
-            const int y = static_cast<int>(uy);
-            const int src_y = 2 * y;
-
-            if (src_y >= 2 && src_y < src_rows - 2 && x >= 2 && x < src_cols - 2)
             {
-                {
-                    work_type sum;
+                work_type sum;
 
-                    sum =       0.0625f * src(src_y - 2, x);
-                    sum = sum + 0.25f   * src(src_y - 1, x);
-                    sum = sum + 0.375f  * src(src_y    , x);
-                    sum = sum + 0.25f   * src(src_y + 1, x);
-                    sum = sum + 0.0625f * src(src_y + 2, x);
+                sum =       0.0625f * src(src_y - 2, x);
+                sum = sum + 0.25f   * src(src_y - 1, x);
+                sum = sum + 0.375f  * src(src_y    , x);
+                sum = sum + 0.25f   * src(src_y + 1, x);
+                sum = sum + 0.0625f * src(src_y + 2, x);
 
-                    smem[2 + threadIdx.x] = sum;
-                }
-
-                if (threadIdx.x < 2)
-                {
-                    const int left_x = x - 2;
-
-                    work_type sum;
-
-                    sum =       0.0625f * src(src_y - 2, left_x);
-                    sum = sum + 0.25f   * src(src_y - 1, left_x);
-                    sum = sum + 0.375f  * src(src_y    , left_x);
-                    sum = sum + 0.25f   * src(src_y + 1, left_x);
-                    sum = sum + 0.0625f * src(src_y + 2, left_x);
-
-                    smem[threadIdx.x] = sum;
-                }
-
-                if (threadIdx.x > 253)
-                {
-                    const int right_x = x + 2;
-
-                    work_type sum;
-
-                    sum =       0.0625f * src(src_y - 2, right_x);
-                    sum = sum + 0.25f   * src(src_y - 1, right_x);
-                    sum = sum + 0.375f  * src(src_y    , right_x);
-                    sum = sum + 0.25f   * src(src_y + 1, right_x);
-                    sum = sum + 0.0625f * src(src_y + 2, right_x);
-
-                    smem[4 + threadIdx.x] = sum;
-                }
-            }
-            else
-            {
-                {
-                    work_type sum;
-
-                    sum =       0.0625f * src(Brd::idx_low(src_y - 2, src_rows) , Brd::idx_high(x, src_cols));
-                    sum = sum + 0.25f   * src(Brd::idx_low(src_y - 1, src_rows) , Brd::idx_high(x, src_cols));
-                    sum = sum + 0.375f  * src(src_y                             , Brd::idx_high(x, src_cols));
-                    sum = sum + 0.25f   * src(Brd::idx_high(src_y + 1, src_rows), Brd::idx_high(x, src_cols));
-                    sum = sum + 0.0625f * src(Brd::idx_high(src_y + 2, src_rows), Brd::idx_high(x, src_cols));
-
-                    smem[2 + threadIdx.x] = sum;
-                }
-
-                if (threadIdx.x < 2)
-                {
-                    const int left_x = x - 2;
-
-                    work_type sum;
-
-                    sum =       0.0625f * src(Brd::idx_low(src_y - 2, src_rows) , Brd::idx_low(Brd::idx_high(left_x, src_cols), src_cols));
-                    sum = sum + 0.25f   * src(Brd::idx_low(src_y - 1, src_rows) , Brd::idx_low(Brd::idx_high(left_x, src_cols), src_cols));
-                    sum = sum + 0.375f  * src(src_y                             , Brd::idx_low(Brd::idx_high(left_x, src_cols), src_cols));
-                    sum = sum + 0.25f   * src(Brd::idx_high(src_y + 1, src_rows), Brd::idx_low(Brd::idx_high(left_x, src_cols), src_cols));
-                    sum = sum + 0.0625f * src(Brd::idx_high(src_y + 2, src_rows), Brd::idx_low(Brd::idx_high(left_x, src_cols), src_cols));
-
-                    smem[threadIdx.x] = sum;
-                }
-
-                if (threadIdx.x > 253)
-                {
-                    const int right_x = x + 2;
-
-                    work_type sum;
-
-                    sum =       0.0625f * src(Brd::idx_low(src_y - 2, src_rows) , Brd::idx_high(right_x, src_cols));
-                    sum = sum + 0.25f   * src(Brd::idx_low(src_y - 1, src_rows) , Brd::idx_high(right_x, src_cols));
-                    sum = sum + 0.375f  * src(src_y                             , Brd::idx_high(right_x, src_cols));
-                    sum = sum + 0.25f   * src(Brd::idx_high(src_y + 1, src_rows), Brd::idx_high(right_x, src_cols));
-                    sum = sum + 0.0625f * src(Brd::idx_high(src_y + 2, src_rows), Brd::idx_high(right_x, src_cols));
-
-                    smem[4 + threadIdx.x] = sum;
-                }
+                smem[2 + threadIdx.x] = sum;
             }
 
-            __syncthreads();
-
-            if (threadIdx.x < 128)
+            if (threadIdx.x < 2)
             {
-                const int tid2 = threadIdx.x * 2;
+                const int left_x = x - 2;
 
                 work_type sum;
 
-                sum =       0.0625f * smem[2 + tid2 - 2];
-                sum = sum + 0.25f   * smem[2 + tid2 - 1];
-                sum = sum + 0.375f  * smem[2 + tid2    ];
-                sum = sum + 0.25f   * smem[2 + tid2 + 1];
-                sum = sum + 0.0625f * smem[2 + tid2 + 2];
+                sum =       0.0625f * src(src_y - 2, left_x);
+                sum = sum + 0.25f   * src(src_y - 1, left_x);
+                sum = sum + 0.375f  * src(src_y    , left_x);
+                sum = sum + 0.25f   * src(src_y + 1, left_x);
+                sum = sum + 0.0625f * src(src_y + 2, left_x);
 
-                const int dst_x = (blockIdx.x * blockDim.x + tid2) / 2;
-
-                if (dst_x < dst_cols)
-                    dst(y, dst_x) = saturate_cast<DstType>(sum);
+                smem[threadIdx.x] = sum;
             }
 
-            __syncthreads();
+            if (threadIdx.x > 253)
+            {
+                const int right_x = x + 2;
+
+                work_type sum;
+
+                sum =       0.0625f * src(src_y - 2, right_x);
+                sum = sum + 0.25f   * src(src_y - 1, right_x);
+                sum = sum + 0.375f  * src(src_y    , right_x);
+                sum = sum + 0.25f   * src(src_y + 1, right_x);
+                sum = sum + 0.0625f * src(src_y + 2, right_x);
+
+                smem[4 + threadIdx.x] = sum;
+            }
+        }
+        else
+        {
+            {
+                work_type sum;
+
+                sum =       0.0625f * src(Brd::idx_low(src_y - 2, src_rows) , Brd::idx_high(x, src_cols));
+                sum = sum + 0.25f   * src(Brd::idx_low(src_y - 1, src_rows) , Brd::idx_high(x, src_cols));
+                sum = sum + 0.375f  * src(src_y                             , Brd::idx_high(x, src_cols));
+                sum = sum + 0.25f   * src(Brd::idx_high(src_y + 1, src_rows), Brd::idx_high(x, src_cols));
+                sum = sum + 0.0625f * src(Brd::idx_high(src_y + 2, src_rows), Brd::idx_high(x, src_cols));
+
+                smem[2 + threadIdx.x] = sum;
+            }
+
+            if (threadIdx.x < 2)
+            {
+                const int left_x = x - 2;
+
+                work_type sum;
+
+                sum =       0.0625f * src(Brd::idx_low(src_y - 2, src_rows) , Brd::idx_low(Brd::idx_high(left_x, src_cols), src_cols));
+                sum = sum + 0.25f   * src(Brd::idx_low(src_y - 1, src_rows) , Brd::idx_low(Brd::idx_high(left_x, src_cols), src_cols));
+                sum = sum + 0.375f  * src(src_y                             , Brd::idx_low(Brd::idx_high(left_x, src_cols), src_cols));
+                sum = sum + 0.25f   * src(Brd::idx_high(src_y + 1, src_rows), Brd::idx_low(Brd::idx_high(left_x, src_cols), src_cols));
+                sum = sum + 0.0625f * src(Brd::idx_high(src_y + 2, src_rows), Brd::idx_low(Brd::idx_high(left_x, src_cols), src_cols));
+
+                smem[threadIdx.x] = sum;
+            }
+
+            if (threadIdx.x > 253)
+            {
+                const int right_x = x + 2;
+
+                work_type sum;
+
+                sum =       0.0625f * src(Brd::idx_low(src_y - 2, src_rows) , Brd::idx_high(right_x, src_cols));
+                sum = sum + 0.25f   * src(Brd::idx_low(src_y - 1, src_rows) , Brd::idx_high(right_x, src_cols));
+                sum = sum + 0.375f  * src(src_y                             , Brd::idx_high(right_x, src_cols));
+                sum = sum + 0.25f   * src(Brd::idx_high(src_y + 1, src_rows), Brd::idx_high(right_x, src_cols));
+                sum = sum + 0.0625f * src(Brd::idx_high(src_y + 2, src_rows), Brd::idx_high(right_x, src_cols));
+
+                smem[4 + threadIdx.x] = sum;
+            }
+        }
+
+        __syncthreads();
+
+        if (threadIdx.x < 128)
+        {
+            const int tid2 = threadIdx.x * 2;
+
+            work_type sum;
+
+            sum =       0.0625f * smem[2 + tid2 - 2];
+            sum = sum + 0.25f   * smem[2 + tid2 - 1];
+            sum = sum + 0.375f  * smem[2 + tid2    ];
+            sum = sum + 0.25f   * smem[2 + tid2 + 1];
+            sum = sum + 0.0625f * smem[2 + tid2 + 2];
+
+            const int dst_x = (blockIdx.x * blockDim.x + tid2) / 2;
+
+            if (dst_x < dst_cols)
+                dst(y, dst_x) = saturate_cast<DstType>(sum);
         }
     }
 
@@ -196,10 +190,13 @@ namespace pyramids_detail
             return;
 
         const dim3 block(256);
-        const dim3 grid(divUp(src_cols, block.x), std::min(dst_rows, 65535));
 
-        pyrDown<Brd><<<grid, block, 0, stream>>>(src, dst, src_rows, src_cols, dst_rows, dst_cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        for (int y0 = 0; y0 < dst_rows; y0 += 65535)
+        {
+            const dim3 grid(divUp(src_cols, block.x), std::min(dst_rows - y0, 65535));
+            pyrDown<Brd><<<grid, block, 0, stream>>>(src, dst, src_rows, src_cols, dst_cols, y0);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );

@@ -157,37 +157,27 @@ namespace grid_transform_detail
     // transformSimple
 
     template <class SrcPtr, typename DstType, class UnOp, class MaskPtr>
-    __global__ void transformSimple(const SrcPtr src, GlobPtr<DstType> dst, const UnOp op, const MaskPtr mask, const int rows, const int cols)
+    __global__ void transformSimple(const SrcPtr src, GlobPtr<DstType> dst, const UnOp op, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        if (x >= cols)
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= cols || y >= rows || !mask(y, x))
             return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
-        {
-            const int y = static_cast<int>(uy);
-            if (mask(y, x))
-                dst(y, x) = saturate_cast<DstType>(op(src(y, x)));
-        }
+        dst(y, x) = saturate_cast<DstType>(op(src(y, x)));
     }
 
     template <class SrcPtr1, class SrcPtr2, typename DstType, class BinOp, class MaskPtr>
-    __global__ void transformSimple(const SrcPtr1 src1, const SrcPtr2 src2, GlobPtr<DstType> dst, const BinOp op, const MaskPtr mask, const int rows, const int cols)
+    __global__ void transformSimple(const SrcPtr1 src1, const SrcPtr2 src2, GlobPtr<DstType> dst, const BinOp op, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        if (x >= cols)
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= cols || y >= rows || !mask(y, x))
             return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
-        {
-            const int y = static_cast<int>(uy);
-            if (mask(y, x))
-                dst(y, x) = saturate_cast<DstType>(op(src1(y, x), src2(y, x)));
-        }
+        dst(y, x) = saturate_cast<DstType>(op(src1(y, x), src2(y, x)));
     }
 
     // transformSimple, 2 outputs
@@ -195,43 +185,32 @@ namespace grid_transform_detail
     // the previous implementation with touple causes cuda namespace clash. See https://github.com/opencv/opencv_contrib/issues/3690
     template <class SrcPtr1, class SrcPtr2, typename DstType1, typename DstType2, class BinOp1, class BinOp2, class MaskPtr>
     __global__ void transformSimple(const SrcPtr1 src1, const SrcPtr2 src2, GlobPtr<DstType1> dst1, GlobPtr<DstType2> dst2,
-                                    const BinOp1 op1, const BinOp2 op2, const MaskPtr mask, const int rows, const int cols)
+                                    const BinOp1 op1, const BinOp2 op2, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        if (x >= cols)
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= cols || y >= rows || !mask(y, x))
             return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
-        {
-            const int y = static_cast<int>(uy);
-            if (mask(y, x))
-            {
-                dst1(y, x) = saturate_cast<DstType1>(op1(src1(y, x), src2(y, x)));
-                dst2(y, x) = saturate_cast<DstType2>(op2(src1(y, x), src2(y, x)));
-            }
-        }
+        dst1(y, x) = saturate_cast<DstType1>(op1(src1(y, x), src2(y, x)));
+        dst2(y, x) = saturate_cast<DstType2>(op2(src1(y, x), src2(y, x)));
     }
 
     // transformSmart
 
     template <int SHIFT, typename SrcType, typename DstType, class UnOp, class MaskPtr>
-    __global__ void transformSmart(const GlobPtr<SrcType> src_, GlobPtr<DstType> dst_, const UnOp op, const MaskPtr mask, const int rows, const int cols)
+    __global__ void transformSmart(const GlobPtr<SrcType> src_, GlobPtr<DstType> dst_, const UnOp op, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         typedef typename MakeVec<SrcType, SHIFT>::type read_type;
         typedef typename MakeVec<DstType, SHIFT>::type write_type;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
         const int x_shifted = x * SHIFT;
-        if (x_shifted >= cols)
-            return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
+        if (y < rows)
         {
-            const int y = static_cast<int>(uy);
             const SrcType* src = src_.row(y);
             DstType* dst = dst_.row(y);
 
@@ -253,22 +232,18 @@ namespace grid_transform_detail
     }
 
     template <int SHIFT, typename SrcType1, typename SrcType2, typename DstType, class BinOp, class MaskPtr>
-    __global__ void transformSmart(const GlobPtr<SrcType1> src1_, const GlobPtr<SrcType2> src2_, GlobPtr<DstType> dst_, const BinOp op, const MaskPtr mask, const int rows, const int cols)
+    __global__ void transformSmart(const GlobPtr<SrcType1> src1_, const GlobPtr<SrcType2> src2_, GlobPtr<DstType> dst_, const BinOp op, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         typedef typename MakeVec<SrcType1, SHIFT>::type read_type1;
         typedef typename MakeVec<SrcType2, SHIFT>::type read_type2;
         typedef typename MakeVec<DstType, SHIFT>::type write_type;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
         const int x_shifted = x * SHIFT;
-        if (x_shifted >= cols)
-            return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
+        if (y < rows)
         {
-            const int y = static_cast<int>(uy);
             const SrcType1* src1 = src1_.row(y);
             const SrcType2* src2 = src2_.row(y);
             DstType* dst = dst_.row(y);
@@ -297,7 +272,7 @@ namespace grid_transform_detail
     template <int SHIFT, typename SrcType1, typename SrcType2, typename DstType1, typename DstType2, class BinOp1, class BinOp2, class MaskPtr>
     __global__ void transformSmart(const GlobPtr<SrcType1> src1_, const GlobPtr<SrcType2> src2_,
                                    GlobPtr<DstType1> dst1_, GlobPtr<DstType2> dst2_,
-                                   const BinOp1 op1, const BinOp2 op2, const MaskPtr mask, const int rows, const int cols)
+                                   const BinOp1 op1, const BinOp2 op2, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         typedef typename MakeVec<SrcType1, SHIFT>::type read_type1;
         typedef typename MakeVec<SrcType2, SHIFT>::type read_type2;
@@ -305,15 +280,11 @@ namespace grid_transform_detail
         typedef typename MakeVec<DstType2, SHIFT>::type write_type2;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
         const int x_shifted = x * SHIFT;
-        if (x_shifted >= cols)
-            return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
+        if (y < rows)
         {
-            const int y = static_cast<int>(uy);
             const SrcType1* src1 = src1_.row(y);
             const SrcType2* src2 = src2_.row(y);
             DstType1* dst1 = dst1_.row(y);
@@ -354,10 +325,14 @@ namespace grid_transform_detail
                 return;
 
             const dim3 block(Policy::block_size_x, Policy::block_size_y);
-            const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
+            const int grid_y = divUp(rows, block.y);
 
-            transformSimple<<<grid, block, 0, stream>>>(src, dst, op, mask, rows, cols);
-            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            for (int by0 = 0; by0 < grid_y; by0 += 65535)
+            {
+                const dim3 grid(divUp(cols, block.x), std::min(grid_y - by0, 65535));
+                transformSimple<<<grid, block, 0, stream>>>(src, dst, op, mask, rows, cols, by0 * block.y);
+                CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            }
 
             if (stream == 0)
                 CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
@@ -370,10 +345,14 @@ namespace grid_transform_detail
                 return;
 
             const dim3 block(Policy::block_size_x, Policy::block_size_y);
-            const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
+            const int grid_y = divUp(rows, block.y);
 
-            transformSimple<<<grid, block, 0, stream>>>(src1, src2, dst, op, mask, rows, cols);
-            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            for (int by0 = 0; by0 < grid_y; by0 += 65535)
+            {
+                const dim3 grid(divUp(cols, block.x), std::min(grid_y - by0, 65535));
+                transformSimple<<<grid, block, 0, stream>>>(src1, src2, dst, op, mask, rows, cols, by0 * block.y);
+                CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            }
 
             if (stream == 0)
                 CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
@@ -387,10 +366,14 @@ namespace grid_transform_detail
                 return;
 
             const dim3 block(Policy::block_size_x, Policy::block_size_y);
-            const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
+            const int grid_y = divUp(rows, block.y);
 
-            transformSimple<<<grid, block, 0, stream>>>(src1, src2, dst1, dst2, op1, op2, mask, rows, cols);
-            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            for (int by0 = 0; by0 < grid_y; by0 += 65535)
+            {
+                const dim3 grid(divUp(cols, block.x), std::min(grid_y - by0, 65535));
+                transformSimple<<<grid, block, 0, stream>>>(src1, src2, dst1, dst2, op1, op2, mask, rows, cols, by0 * block.y);
+                CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            }
 
             if (stream == 0)
                 CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
@@ -413,9 +396,6 @@ namespace grid_transform_detail
         template <typename SrcType, typename DstType, class UnOp, class MaskPtr>
         __host__ static void call(const GlobPtr<SrcType>& src, const GlobPtr<DstType>& dst, const UnOp& op, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
-            if (rows <= 0 || cols <= 0)
-                return;
-
             if (Policy::shift == 1 ||
                 !isAligned(src.data, Policy::shift * sizeof(SrcType)) || !isAligned(src.step, Policy::shift * sizeof(SrcType)) ||
                 !isAligned(dst.data, Policy::shift * sizeof(DstType)) || !isAligned(dst.step, Policy::shift * sizeof(DstType)))
@@ -424,11 +404,18 @@ namespace grid_transform_detail
                 return;
             }
 
-            const dim3 block(Policy::block_size_x, Policy::block_size_y);
-            const dim3 grid(divUp(cols, block.x * Policy::shift), std::min(divUp(rows, block.y), 65535));
+            if (rows <= 0 || cols <= 0)
+                return;
 
-            transformSmart<Policy::shift><<<grid, block, 0, stream>>>(src, dst, op, mask, rows, cols);
-            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            const dim3 block(Policy::block_size_x, Policy::block_size_y);
+            const int grid_y = divUp(rows, block.y);
+
+            for (int by0 = 0; by0 < grid_y; by0 += 65535)
+            {
+                const dim3 grid(divUp(cols, block.x * Policy::shift), std::min(grid_y - by0, 65535));
+                transformSmart<Policy::shift><<<grid, block, 0, stream>>>(src, dst, op, mask, rows, cols, by0 * block.y);
+                CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            }
 
             if (stream == 0)
                 CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
@@ -437,9 +424,6 @@ namespace grid_transform_detail
         template <typename SrcType1, typename SrcType2, typename DstType, class BinOp, class MaskPtr>
         __host__ static void call(const GlobPtr<SrcType1>& src1, const GlobPtr<SrcType2>& src2, const GlobPtr<DstType>& dst, const BinOp& op, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
-            if (rows <= 0 || cols <= 0)
-                return;
-
             if (Policy::shift == 1 ||
                 !isAligned(src1.data, Policy::shift * sizeof(SrcType1)) || !isAligned(src1.step, Policy::shift * sizeof(SrcType1)) ||
                 !isAligned(src2.data, Policy::shift * sizeof(SrcType2)) || !isAligned(src2.step, Policy::shift * sizeof(SrcType2)) ||
@@ -449,11 +433,18 @@ namespace grid_transform_detail
                 return;
             }
 
-            const dim3 block(Policy::block_size_x, Policy::block_size_y);
-            const dim3 grid(divUp(cols, block.x * Policy::shift), std::min(divUp(rows, block.y), 65535));
+            if (rows <= 0 || cols <= 0)
+                return;
 
-            transformSmart<Policy::shift><<<grid, block, 0, stream>>>(src1, src2, dst, op, mask, rows, cols);
-            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            const dim3 block(Policy::block_size_x, Policy::block_size_y);
+            const int grid_y = divUp(rows, block.y);
+
+            for (int by0 = 0; by0 < grid_y; by0 += 65535)
+            {
+                const dim3 grid(divUp(cols, block.x * Policy::shift), std::min(grid_y - by0, 65535));
+                transformSmart<Policy::shift><<<grid, block, 0, stream>>>(src1, src2, dst, op, mask, rows, cols, by0 * block.y);
+                CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            }
 
             if (stream == 0)
                 CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
@@ -464,9 +455,6 @@ namespace grid_transform_detail
                                   const GlobPtr<DstType1>& dst1, const GlobPtr<DstType2>& dst2,
                                   const BinOp1& op1, const BinOp2& op2, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
         {
-            if (rows <= 0 || cols <= 0)
-                return;
-
             if (Policy::shift == 1 ||
                 !isAligned(src1.data, Policy::shift * sizeof(SrcType1))  || !isAligned(src1.step, Policy::shift * sizeof(SrcType1)) ||
                 !isAligned(src2.data, Policy::shift * sizeof(SrcType2))  || !isAligned(src2.step, Policy::shift * sizeof(SrcType2)) ||
@@ -478,11 +466,18 @@ namespace grid_transform_detail
                 return;
             }
 
-            const dim3 block(Policy::block_size_x, Policy::block_size_y);
-            const dim3 grid(divUp(cols, block.x * Policy::shift), std::min(divUp(rows, block.y), 65535));
+            if (rows <= 0 || cols <= 0)
+                return;
 
-            transformSmart<Policy::shift><<<grid, block, 0, stream>>>(src1, src2, dst1, dst2, op1, op2, mask, rows, cols);
-            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            const dim3 block(Policy::block_size_x, Policy::block_size_y);
+            const int grid_y = divUp(rows, block.y);
+
+            for (int by0 = 0; by0 < grid_y; by0 += 65535)
+            {
+                const dim3 grid(divUp(cols, block.x * Policy::shift), std::min(grid_y - by0, 65535));
+                transformSmart<Policy::shift><<<grid, block, 0, stream>>>(src1, src2, dst1, dst2, op1, op2, mask, rows, cols, by0 * block.y);
+                CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+            }
 
             if (stream == 0)
                 CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
@@ -553,24 +548,17 @@ namespace grid_transform_detail
     };
 
     template <class SrcPtr, class DstPtrTuple, class OpTuple, class MaskPtr>
-    __global__ void transform_tuple(const SrcPtr src, DstPtrTuple dst, const OpTuple op, const MaskPtr mask, const int rows, const int cols)
+    __global__ void transform_tuple(const SrcPtr src, DstPtrTuple dst, const OpTuple op, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        if (x >= cols)
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= cols || y >= rows || !mask(y, x))
             return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
-        {
-            const int y = static_cast<int>(uy);
-            if (!mask(y, x))
-                continue;
+        typename PtrTraits<SrcPtr>::value_type srcVal = src(y, x);
 
-            typename PtrTraits<SrcPtr>::value_type srcVal = src(y, x);
-
-            Unroll<tuple_size<DstPtrTuple>::value>::transform(srcVal, dst, op, y, x);
-        }
+        Unroll<tuple_size<DstPtrTuple>::value>::transform(srcVal, dst, op, y, x);
     }
 
     template <class Policy, class SrcPtrTuple, class DstPtrTuple, class OpTuple, class MaskPtr>
@@ -580,10 +568,14 @@ namespace grid_transform_detail
             return;
 
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
+        const int grid_y = divUp(rows, block.y);
 
-        transform_tuple<<<grid, block, 0, stream>>>(src, dst, op, mask, rows, cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        for (int by0 = 0; by0 < grid_y; by0 += 65535)
+        {
+            const dim3 grid(divUp(cols, block.x), std::min(grid_y - by0, 65535));
+            transform_tuple<<<grid, block, 0, stream>>>(src, dst, op, mask, rows, cols, by0 * block.y);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );

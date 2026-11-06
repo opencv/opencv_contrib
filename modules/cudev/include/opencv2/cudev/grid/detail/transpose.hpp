@@ -57,64 +57,57 @@ namespace cv { namespace cudev {
 namespace transpose_detail
 {
     template <int TILE_DIM, int BLOCK_DIM_Y, class SrcPtr, typename DstType>
-    __global__ void transpose(const SrcPtr src, GlobPtr<DstType> dst, const int rows, const int cols)
+    __global__ void transpose(const SrcPtr src, GlobPtr<DstType> dst, const int rows, const int cols, const int tile_y_offset)
     {
         typedef typename PtrTraits<SrcPtr>::value_type src_type;
 
         __shared__ src_type tile[TILE_DIM][TILE_DIM + 1];
 
-        const uint numTilesX = (static_cast<uint>(cols) + TILE_DIM - 1u) / TILE_DIM;
-        const uint numTilesY = (static_cast<uint>(rows) + TILE_DIM - 1u) / TILE_DIM;
+        int blockIdx_x, blockIdx_y;
 
-        for (uint by = blockIdx.y; by < numTilesY; by += gridDim.y)
+        // do diagonal reordering
+        if (gridDim.x == gridDim.y)
         {
-            uint blockIdx_x, blockIdx_y;
+            blockIdx_y = blockIdx.x;
+            blockIdx_x = (blockIdx.x + blockIdx.y) % gridDim.x;
+        }
+        else
+        {
+            int bid = blockIdx.x + gridDim.x * blockIdx.y;
+            blockIdx_y = bid % gridDim.y;
+            blockIdx_x = ((bid / gridDim.y) + blockIdx_y) % gridDim.x;
+        }
 
-            // do diagonal reordering over logical tile grid (numTilesX, numTilesY)
-            if (numTilesX == numTilesY)
-            {
-                blockIdx_y = blockIdx.x;
-                blockIdx_x = (blockIdx.x + by) % numTilesX;
-            }
-            else
-            {
-                const unsigned long long bid = static_cast<unsigned long long>(blockIdx.x) +
-                                               static_cast<unsigned long long>(numTilesX) * by;
-                blockIdx_y = static_cast<uint>(bid % numTilesY);
-                blockIdx_x = static_cast<uint>(((bid / numTilesY) + blockIdx_y) % numTilesX);
-            }
+        blockIdx_y += tile_y_offset;
 
-            uint xIndex = blockIdx_x * TILE_DIM + threadIdx.x;
-            uint yIndex = blockIdx_y * TILE_DIM + threadIdx.y;
+        int xIndex = blockIdx_x * TILE_DIM + threadIdx.x;
+        int yIndex = blockIdx_y * TILE_DIM + threadIdx.y;
 
-            if (xIndex < static_cast<uint>(cols))
+        if (xIndex < cols)
+        {
+            for (int i = 0; i < TILE_DIM; i += BLOCK_DIM_Y)
             {
-                for (int i = 0; i < TILE_DIM; i += BLOCK_DIM_Y)
+                if (yIndex + i < rows)
                 {
-                    if (yIndex + static_cast<uint>(i) < static_cast<uint>(rows))
-                    {
-                        tile[threadIdx.y + i][threadIdx.x] = src(static_cast<int>(yIndex) + i, static_cast<int>(xIndex));
-                    }
+                    tile[threadIdx.y + i][threadIdx.x] = src(yIndex + i, xIndex);
                 }
             }
+        }
 
-            __syncthreads();
+        __syncthreads();
 
-            xIndex = blockIdx_y * TILE_DIM + threadIdx.x;
-            yIndex = blockIdx_x * TILE_DIM + threadIdx.y;
+        xIndex = blockIdx_y * TILE_DIM + threadIdx.x;
+        yIndex = blockIdx_x * TILE_DIM + threadIdx.y;
 
-            if (xIndex < static_cast<uint>(rows))
+        if (xIndex < rows)
+        {
+            for (int i = 0; i < TILE_DIM; i += BLOCK_DIM_Y)
             {
-                for (int i = 0; i < TILE_DIM; i += BLOCK_DIM_Y)
+                if (yIndex + i < cols)
                 {
-                    if (yIndex + static_cast<uint>(i) < static_cast<uint>(cols))
-                    {
-                        dst(static_cast<int>(yIndex) + i, static_cast<int>(xIndex)) = saturate_cast<DstType>(tile[threadIdx.x][threadIdx.y + i]);
-                    }
+                    dst(yIndex + i, xIndex) = saturate_cast<DstType>(tile[threadIdx.x][threadIdx.y + i]);
                 }
             }
-
-            __syncthreads();
         }
     }
 
@@ -125,12 +118,14 @@ namespace transpose_detail
             return;
 
         const dim3 block(Policy::tile_dim, Policy::block_dim_y);
-        const uint numTilesX = (static_cast<uint>(cols) + Policy::tile_dim - 1u) / Policy::tile_dim;
-        const uint numTilesY = (static_cast<uint>(rows) + Policy::tile_dim - 1u) / Policy::tile_dim;
-        const dim3 grid(numTilesX, std::min(numTilesY, 65535u));
+        const int tiles_y = divUp(rows, Policy::tile_dim);
 
-        transpose<Policy::tile_dim, Policy::block_dim_y><<<grid, block, 0, stream>>>(src, dst, rows, cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        for (int t0 = 0; t0 < tiles_y; t0 += 65535)
+        {
+            const dim3 grid(divUp(cols, Policy::tile_dim), std::min(tiles_y - t0, 65535));
+            transpose<Policy::tile_dim, Policy::block_dim_y><<<grid, block, 0, stream>>>(src, dst, rows, cols, t0);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );

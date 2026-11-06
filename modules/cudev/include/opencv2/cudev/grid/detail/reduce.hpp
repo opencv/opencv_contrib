@@ -390,29 +390,20 @@ namespace grid_reduce_detail
     // glob_reduce
 
     template <class Reductor, int BLOCK_SIZE, int PATCH_X, int PATCH_Y, class SrcPtr, typename ResType, class MaskPtr>
-    __global__ void reduce(const SrcPtr src, ResType* result, const MaskPtr mask, const int rows, const int cols)
+    __global__ void reduce(const SrcPtr src, ResType* result, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         const int x0 = blockIdx.x * blockDim.x * PATCH_X + threadIdx.x;
+        const int y0 = y_offset + blockIdx.y * blockDim.y * PATCH_Y + threadIdx.y;
 
         Reductor reductor;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * PATCH_Y * gridDim.y;
-        for (uint uy0 = blockIdx.y * blockDim.y * PATCH_Y + threadIdx.y; uy0 < urows; uy0 += y_stride)
+        for (int i = 0, y = y0; i < PATCH_Y && y < rows; ++i, y += blockDim.y)
         {
-            for (int i = 0; i < PATCH_Y; ++i)
+            for (int j = 0, x = x0; j < PATCH_X && x < cols; ++j, x += blockDim.x)
             {
-                const uint uy = uy0 + static_cast<uint>(i) * blockDim.y;
-                if (uy >= urows)
-                    break;
-
-                const int y = static_cast<int>(uy);
-                for (int j = 0, x = x0; j < PATCH_X && x < cols; ++j, x += blockDim.x)
+                if (mask(y, x))
                 {
-                    if (mask(y, x))
-                    {
-                        reductor.reduceVal(src(y, x));
-                    }
+                    reductor.reduceVal(src(y, x));
                 }
             }
         }
@@ -429,10 +420,14 @@ namespace grid_reduce_detail
             return;
 
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x * Policy::patch_size_x), std::min(divUp(rows, block.y * Policy::patch_size_y), 65535));
+        const int grid_y = divUp(rows, block.y * Policy::patch_size_y);
 
-        reduce<Reductor, Policy::block_size_x * Policy::block_size_y, Policy::patch_size_x, Policy::patch_size_y><<<grid, block, 0, stream>>>(src, result, mask, rows, cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        for (int by0 = 0; by0 < grid_y; by0 += 65535)
+        {
+            const dim3 grid(divUp(cols, block.x * Policy::patch_size_x), std::min(grid_y - by0, 65535));
+            reduce<Reductor, Policy::block_size_x * Policy::block_size_y, Policy::patch_size_x, Policy::patch_size_y><<<grid, block, 0, stream>>>(src, result, mask, rows, cols, by0 * block.y * Policy::patch_size_y);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );

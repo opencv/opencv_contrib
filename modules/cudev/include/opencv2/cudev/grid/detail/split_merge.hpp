@@ -61,27 +61,20 @@ namespace grid_split_merge_detail
     // merge
 
     template <class Src1Ptr, class Src2Ptr, typename DstType, class MaskPtr>
-    __global__ void mergeC2(const Src1Ptr src1, const Src2Ptr src2, GlobPtr<DstType> dst, const MaskPtr mask, const int rows, const int cols)
+    __global__ void mergeC2(const Src1Ptr src1, const Src2Ptr src2, GlobPtr<DstType> dst, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         typedef typename VecTraits<DstType>::elem_type dst_elem_type;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        if (x >= cols)
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= cols || y >= rows || !mask(y, x))
             return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
-        {
-            const int y = static_cast<int>(uy);
-            if (!mask(y, x))
-                continue;
-
-            dst(y, x) = VecTraits<DstType>::make(
-                        saturate_cast<dst_elem_type>(src1(y, x)),
-                        saturate_cast<dst_elem_type>(src2(y, x))
-                        );
-        }
+        dst(y, x) = VecTraits<DstType>::make(
+                    saturate_cast<dst_elem_type>(src1(y, x)),
+                    saturate_cast<dst_elem_type>(src2(y, x))
+                    );
     }
 
     template <class Policy, class Src1Ptr, class Src2Ptr, typename DstType, class MaskPtr>
@@ -91,38 +84,35 @@ namespace grid_split_merge_detail
             return;
 
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
+        const int grid_y = divUp(rows, block.y);
 
-        mergeC2<<<grid, block, 0, stream>>>(src1, src2, dst, mask, rows, cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        for (int by0 = 0; by0 < grid_y; by0 += 65535)
+        {
+            const dim3 grid(divUp(cols, block.x), std::min(grid_y - by0, 65535));
+            mergeC2<<<grid, block, 0, stream>>>(src1, src2, dst, mask, rows, cols, by0 * block.y);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL(cudaDeviceSynchronize());
     }
 
     template <class Src1Ptr, class Src2Ptr, class Src3Ptr, typename DstType, class MaskPtr>
-    __global__ void mergeC3(const Src1Ptr src1, const Src2Ptr src2, const Src3Ptr src3, GlobPtr<DstType> dst, const MaskPtr mask, const int rows, const int cols)
+    __global__ void mergeC3(const Src1Ptr src1, const Src2Ptr src2, const Src3Ptr src3, GlobPtr<DstType> dst, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         typedef typename VecTraits<DstType>::elem_type dst_elem_type;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        if (x >= cols)
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= cols || y >= rows || !mask(y, x))
             return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
-        {
-            const int y = static_cast<int>(uy);
-            if (!mask(y, x))
-                continue;
-
-            dst(y, x) = VecTraits<DstType>::make(
-                        saturate_cast<dst_elem_type>(src1(y, x)),
-                        saturate_cast<dst_elem_type>(src2(y, x)),
-                        saturate_cast<dst_elem_type>(src3(y, x))
-                        );
-        }
+        dst(y, x) = VecTraits<DstType>::make(
+                    saturate_cast<dst_elem_type>(src1(y, x)),
+                    saturate_cast<dst_elem_type>(src2(y, x)),
+                    saturate_cast<dst_elem_type>(src3(y, x))
+                    );
     }
 
     template <class Policy, class Src1Ptr, class Src2Ptr, class Src3Ptr, typename DstType, class MaskPtr>
@@ -132,39 +122,36 @@ namespace grid_split_merge_detail
             return;
 
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
+        const int grid_y = divUp(rows, block.y);
 
-        mergeC3<<<grid, block, 0, stream>>>(src1, src2, src3, dst, mask, rows, cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        for (int by0 = 0; by0 < grid_y; by0 += 65535)
+        {
+            const dim3 grid(divUp(cols, block.x), std::min(grid_y - by0, 65535));
+            mergeC3<<<grid, block, 0, stream>>>(src1, src2, src3, dst, mask, rows, cols, by0 * block.y);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL(cudaDeviceSynchronize());
     }
 
     template <class Src1Ptr, class Src2Ptr, class Src3Ptr, class Src4Ptr, typename DstType, class MaskPtr>
-    __global__ void mergeC4(const Src1Ptr src1, const Src2Ptr src2, const Src3Ptr src3, const Src4Ptr src4, GlobPtr<DstType> dst, const MaskPtr mask, const int rows, const int cols)
+    __global__ void mergeC4(const Src1Ptr src1, const Src2Ptr src2, const Src3Ptr src3, const Src4Ptr src4, GlobPtr<DstType> dst, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         typedef typename VecTraits<DstType>::elem_type dst_elem_type;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        if (x >= cols)
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= cols || y >= rows || !mask(y, x))
             return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
-        {
-            const int y = static_cast<int>(uy);
-            if (!mask(y, x))
-                continue;
-
-            dst(y, x) = VecTraits<DstType>::make(
-                        saturate_cast<dst_elem_type>(src1(y, x)),
-                        saturate_cast<dst_elem_type>(src2(y, x)),
-                        saturate_cast<dst_elem_type>(src3(y, x)),
-                        saturate_cast<dst_elem_type>(src4(y, x))
-                        );
-        }
+        dst(y, x) = VecTraits<DstType>::make(
+                    saturate_cast<dst_elem_type>(src1(y, x)),
+                    saturate_cast<dst_elem_type>(src2(y, x)),
+                    saturate_cast<dst_elem_type>(src3(y, x)),
+                    saturate_cast<dst_elem_type>(src4(y, x))
+                    );
     }
 
     template <class Policy, class Src1Ptr, class Src2Ptr, class Src3Ptr, class Src4Ptr, typename DstType, class MaskPtr>
@@ -174,10 +161,14 @@ namespace grid_split_merge_detail
             return;
 
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
+        const int grid_y = divUp(rows, block.y);
 
-        mergeC4<<<grid, block, 0, stream>>>(src1, src2, src3, src4, dst, mask, rows, cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        for (int by0 = 0; by0 < grid_y; by0 += 65535)
+        {
+            const dim3 grid(divUp(cols, block.x), std::min(grid_y - by0, 65535));
+            mergeC4<<<grid, block, 0, stream>>>(src1, src2, src3, src4, dst, mask, rows, cols, by0 * block.y);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL(cudaDeviceSynchronize());
@@ -234,27 +225,20 @@ namespace grid_split_merge_detail
     // split
 
     template <class SrcPtr, typename DstType, class MaskPtr>
-    __global__ void split(const SrcPtr src, GlobPtr<DstType> dst1, GlobPtr<DstType> dst2, const MaskPtr mask, const int rows, const int cols)
+    __global__ void split(const SrcPtr src, GlobPtr<DstType> dst1, GlobPtr<DstType> dst2, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         typedef typename PtrTraits<SrcPtr>::value_type src_type;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        if (x >= cols)
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= cols || y >= rows || !mask(y, x))
             return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
-        {
-            const int y = static_cast<int>(uy);
-            if (!mask(y, x))
-                continue;
+        const src_type src_value = src(y, x);
 
-            const src_type src_value = src(y, x);
-
-            dst1(y, x) = src_value.x;
-            dst2(y, x) = src_value.y;
-        }
+        dst1(y, x) = src_value.x;
+        dst2(y, x) = src_value.y;
     }
 
     template <class Policy, class SrcPtr, typename DstType, class MaskPtr>
@@ -264,38 +248,35 @@ namespace grid_split_merge_detail
             return;
 
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
+        const int grid_y = divUp(rows, block.y);
 
-        split<<<grid, block, 0, stream>>>(src, dst1, dst2, mask, rows, cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        for (int by0 = 0; by0 < grid_y; by0 += 65535)
+        {
+            const dim3 grid(divUp(cols, block.x), std::min(grid_y - by0, 65535));
+            split<<<grid, block, 0, stream>>>(src, dst1, dst2, mask, rows, cols, by0 * block.y);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL(cudaDeviceSynchronize());
     }
 
     template <class SrcPtr, typename DstType, class MaskPtr>
-    __global__ void split(const SrcPtr src, GlobPtr<DstType> dst1, GlobPtr<DstType> dst2, GlobPtr<DstType> dst3, const MaskPtr mask, const int rows, const int cols)
+    __global__ void split(const SrcPtr src, GlobPtr<DstType> dst1, GlobPtr<DstType> dst2, GlobPtr<DstType> dst3, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         typedef typename PtrTraits<SrcPtr>::value_type src_type;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        if (x >= cols)
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= cols || y >= rows || !mask(y, x))
             return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
-        {
-            const int y = static_cast<int>(uy);
-            if (!mask(y, x))
-                continue;
+        const src_type src_value = src(y, x);
 
-            const src_type src_value = src(y, x);
-
-            dst1(y, x) = src_value.x;
-            dst2(y, x) = src_value.y;
-            dst3(y, x) = src_value.z;
-        }
+        dst1(y, x) = src_value.x;
+        dst2(y, x) = src_value.y;
+        dst3(y, x) = src_value.z;
     }
 
     template <class Policy, class SrcPtr, typename DstType, class MaskPtr>
@@ -305,39 +286,36 @@ namespace grid_split_merge_detail
             return;
 
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
+        const int grid_y = divUp(rows, block.y);
 
-        split<<<grid, block, 0, stream>>>(src, dst1, dst2, dst3, mask, rows, cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        for (int by0 = 0; by0 < grid_y; by0 += 65535)
+        {
+            const dim3 grid(divUp(cols, block.x), std::min(grid_y - by0, 65535));
+            split<<<grid, block, 0, stream>>>(src, dst1, dst2, dst3, mask, rows, cols, by0 * block.y);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL(cudaDeviceSynchronize());
     }
 
     template <class SrcPtr, typename DstType, class MaskPtr>
-    __global__ void split(const SrcPtr src, GlobPtr<DstType> dst1, GlobPtr<DstType> dst2, GlobPtr<DstType> dst3, GlobPtr<DstType> dst4, const MaskPtr mask, const int rows, const int cols)
+    __global__ void split(const SrcPtr src, GlobPtr<DstType> dst1, GlobPtr<DstType> dst2, GlobPtr<DstType> dst3, GlobPtr<DstType> dst4, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         typedef typename PtrTraits<SrcPtr>::value_type src_type;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        if (x >= cols)
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x >= cols || y >= rows || !mask(y, x))
             return;
 
-        const uint urows = static_cast<uint>(rows);
-        const uint y_stride = blockDim.y * gridDim.y;
-        for (uint uy = blockIdx.y * blockDim.y + threadIdx.y; uy < urows; uy += y_stride)
-        {
-            const int y = static_cast<int>(uy);
-            if (!mask(y, x))
-                continue;
+        const src_type src_value = src(y, x);
 
-            const src_type src_value = src(y, x);
-
-            dst1(y, x) = src_value.x;
-            dst2(y, x) = src_value.y;
-            dst3(y, x) = src_value.z;
-            dst4(y, x) = src_value.w;
-        }
+        dst1(y, x) = src_value.x;
+        dst2(y, x) = src_value.y;
+        dst3(y, x) = src_value.z;
+        dst4(y, x) = src_value.w;
     }
 
     template <class Policy, class SrcPtr, typename DstType, class MaskPtr>
@@ -347,10 +325,14 @@ namespace grid_split_merge_detail
             return;
 
         const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x), std::min(divUp(rows, block.y), 65535));
+        const int grid_y = divUp(rows, block.y);
 
-        split<<<grid, block, 0, stream>>>(src, dst1, dst2, dst3, dst4, mask, rows, cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        for (int by0 = 0; by0 < grid_y; by0 += 65535)
+        {
+            const dim3 grid(divUp(cols, block.x), std::min(grid_y - by0, 65535));
+            split<<<grid, block, 0, stream>>>(src, dst1, dst2, dst3, dst4, mask, rows, cols, by0 * block.y);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL(cudaDeviceSynchronize());
