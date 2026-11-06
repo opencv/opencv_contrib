@@ -199,13 +199,14 @@ namespace
 
         if (n == 1)
         {
-            GpuMat dst = getOutputMat(_dst, size, src[0].type(), stream);
-            if (src[0].data != dst.data || src[0].step != dst.step)
+            GpuMat src0 = src[0];
+            GpuMat dst = getOutputMat(_dst, size, src0.type(), stream);
+            if (src0.data != dst.data || src0.step != dst.step)
             {
                 if (stream)
-                    src[0].copyTo(dst, stream);
+                    src0.copyTo(dst, stream);
                 else
-                    src[0].copyTo(dst);
+                    src0.copyTo(dst);
             }
             syncOutput(dst, _dst, stream);
             return;
@@ -215,9 +216,33 @@ namespace
         if (_dst.kind() == _InputArray::CUDA_GPU_MAT)
         {
             const GpuMat* dst_hdr = &_dst.getGpuMatRef();
-            if (dst_hdr >= src && dst_hdr < src + n)
+            bool aliased = (dst_hdr >= src && dst_hdr < src + n);
+            if (!aliased && dst_hdr->datastart != 0)
+            {
+                for (size_t i = 0; i < n; ++i)
+                {
+                    if (src[i].datastart == dst_hdr->datastart)
+                    {
+                        aliased = true;
+                        break;
+                    }
+                }
+            }
+            if (aliased)
             {
                 src_copy.assign(src, src + n);
+                for (size_t i = 0; i < n; ++i)
+                {
+                    if (dst_hdr->datastart != 0 && src_copy[i].datastart == dst_hdr->datastart)
+                    {
+                        GpuMat tmp;
+                        if (stream)
+                            src_copy[i].copyTo(tmp, stream);
+                        else
+                            src_copy[i].copyTo(tmp);
+                        src_copy[i] = tmp;
+                    }
+                }
                 src = src_copy.data();
             }
         }
@@ -423,6 +448,21 @@ namespace
             return;
         }
 
+        GpuMat src_copy;
+        const GpuMat* src_ptr = &src;
+        for (int i = 0; i < channels; ++i)
+        {
+            if (dst[i].datastart != 0 && dst[i].datastart == src.datastart)
+            {
+                if (stream)
+                    src.copyTo(src_copy, stream);
+                else
+                    src.copyTo(src_copy);
+                src_ptr = &src_copy;
+                break;
+            }
+        }
+
         if (channels <= 4)
         {
             const func_t func = funcs[channels - 2][elem_size / 2];
@@ -433,7 +473,7 @@ namespace
             for (int i = 0; i < channels; ++i)
                 dst[i].create(src.size(), depth);
 
-            func(src, dst, stream);
+            func(*src_ptr, dst, stream);
         }
         else
         {
@@ -455,7 +495,7 @@ namespace
             for (int i = 0; i < channels; ++i)
                 dst[i].create(src.size(), depth);
 
-            func(src, dst, stream);
+            func(*src_ptr, dst, stream);
         }
     }
 }

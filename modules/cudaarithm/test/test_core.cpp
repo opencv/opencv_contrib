@@ -329,6 +329,20 @@ CUDA_TEST_P(MergeSplitEdgeCases, FP16AliasingAndEmpty)
     cv::cuda::split(d_single, &d_single);
     EXPECT_MAT_NEAR(h_rgb[1], d_single, 0.0);
 
+    // Separate header aliasing same underlying buffer
+    std::vector<cv::cuda::GpuMat> d_rgb2(3);
+    for (int i = 0; i < 3; ++i)
+        d_rgb2[i] = loadMat(h_rgb[i]);
+    cv::cuda::GpuMat dst_alias = d_rgb2[0];
+    cv::cuda::merge(d_rgb2, dst_alias);
+    EXPECT_MAT_NEAR(h_rgb_gold, dst_alias, 0.0);
+
+    std::vector<cv::cuda::GpuMat> split_alias(3);
+    split_alias[0] = dst_alias;
+    cv::cuda::split(dst_alias, split_alias.data());
+    for (int i = 0; i < 3; ++i)
+        EXPECT_MAT_NEAR(h_rgb[i], split_alias[i], 0.0);
+
     // Empty handling
     std::vector<cv::cuda::GpuMat> non_empty_vec(3, d_single);
     cv::cuda::split(cv::cuda::GpuMat(), non_empty_vec);
