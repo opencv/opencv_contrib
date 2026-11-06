@@ -2437,7 +2437,8 @@ CUDA_TEST_P(Demosaicing, MHT_16U)
 
     for (int i = 0; i < 3; ++i)
     {
-        cv::cuda::GpuMat dst, dst_gold;
+        cv::cuda::GpuMat dst = createMat(src.size(), CV_MAKE_TYPE(CV_16U, dcns[i]), useRoi);
+        cv::cuda::GpuMat dst_gold;
         cv::cuda::demosaicing(loadMat(src, useRoi), dst, codes[i], dcns[i]);
         cv::cuda::demosaicing(loadMat(src), dst_gold, codes[i], dcns[i]);
 

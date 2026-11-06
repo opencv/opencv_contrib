@@ -2178,6 +2178,7 @@ void cv::cuda::demosaicing(InputArray _src, OutputArray _dst, int code, int dcn,
         const int depth = _src.depth();
 
         CV_Assert( depth == CV_8U || depth == CV_16U);
+        CV_Assert( src.channels() == 1 );
 
         _dst.create(_src.size(), CV_MAKE_TYPE(depth, 1));
         GpuMat dst = _dst.getGpuMat();
