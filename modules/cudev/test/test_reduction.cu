@@ -310,3 +310,23 @@ TEST(Histogram, GpuMat)
 
     EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
 }
+
+// DefaultGlobReducePolicy uses block_size_y = 8 and patch_size_y = 4 (32 rows per block),
+// so rows > 65535 * 32 = 2,097,120 exceed the 2D CUDA grid.y limit of 65535.
+TEST(SumLargeRows, GridYOverflow)
+{
+    const Size size(2, 2100000);
+
+    Mat src = randomMat(size, CV_8UC1, 0, 100);
+
+    GpuMat d_raw;
+    createContinuous(size, CV_8UC1, d_raw);
+    d_raw.upload(src);
+    GpuMat_<uchar> d_src(d_raw);
+
+    GpuMat_<int> dst = sum_(d_src);
+    int res = 0;
+    dst.download(_OutputArray(&res, 1));
+
+    ASSERT_EQ(static_cast<int>(cv::sum(src)[0]), res);
+}
