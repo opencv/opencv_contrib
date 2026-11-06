@@ -44,6 +44,7 @@
 #include "opencv2/core/cuda/saturate_cast.hpp"
 #include "opencv2/core/cuda/vec_math.hpp"
 #include "opencv2/core/cuda/border_interpolate.hpp"
+#include "arbitrary_ksize.hpp"
 
 using namespace cv::cuda;
 using namespace cv::cuda::device;
@@ -171,6 +172,63 @@ namespace row_filter
         if (stream == 0)
             cudaSafeCall( cudaDeviceSynchronize() );
     }
+
+    template <typename T, typename D, int BRD_TYPE>
+    __global__ void linearRowFilterArbitrary(const PtrStepSz<T> src, PtrStep<D> dst, const float* kernel, const int ksize, const int anchor)
+    {
+        const unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
+        if (x >= (unsigned int)src.cols)
+            return;
+
+        typedef typename TypeVec<float, VecTraits<T>::cn>::vec_type sum_t;
+
+        const int x0 = (int)x - anchor;
+        const int k_start = ::max(0, ::min(ksize, -x0));
+        const int k_end = ::max(k_start, ::min(ksize, src.cols - x0));
+
+        const unsigned int stride_y = blockDim.y * gridDim.y;
+        for (unsigned int y = blockIdx.y * blockDim.y + threadIdx.y; y < (unsigned int)src.rows; y += stride_y)
+        {
+            const T* src_row = src.ptr((int)y);
+            sum_t sum = VecTraits<sum_t>::all(0);
+
+            if (BRD_TYPE != cv::BORDER_CONSTANT)
+            {
+                for (int k = 0; k < k_start; ++k)
+                    sum = sum + saturate_cast<sum_t>(src_row[filter::borderIdx<BRD_TYPE>(x0 + k, src.cols)]) * kernel[k];
+            }
+
+            for (int k = k_start; k < k_end; ++k)
+                sum = sum + saturate_cast<sum_t>(src_row[x0 + k]) * kernel[k];
+
+            if (BRD_TYPE != cv::BORDER_CONSTANT)
+            {
+                for (int k = k_end; k < ksize; ++k)
+                    sum = sum + saturate_cast<sum_t>(src_row[filter::borderIdx<BRD_TYPE>(x0 + k, src.cols)]) * kernel[k];
+            }
+
+            dst((int)y, (int)x) = saturate_cast<D>(sum);
+        }
+    }
+
+    template <typename T, typename D, int BRD_TYPE>
+    void callerArbitrary(PtrStepSz<T> src, PtrStepSz<D> dst, const float* kernel, int ksize, int anchor, int cc, cudaStream_t stream)
+    {
+        if (src.rows <= 0 || src.cols <= 0)
+            return;
+
+        const int BLOCK_DIM_X = 32;
+        const int BLOCK_DIM_Y = (cc >= 20) ? 8 : 4;
+
+        const dim3 block(BLOCK_DIM_X, BLOCK_DIM_Y);
+        const dim3 grid(divUp(src.cols, BLOCK_DIM_X), std::min(divUp(src.rows, BLOCK_DIM_Y), filter::MAX_GRID_Y));
+
+        linearRowFilterArbitrary<T, D, BRD_TYPE><<<grid, block, 0, stream>>>(src, dst, kernel, ksize, anchor);
+        cudaSafeCall( cudaGetLastError() );
+
+        if (stream == 0)
+            cudaSafeCall( cudaDeviceSynchronize() );
+    }
 }
 
 namespace filter
@@ -178,6 +236,25 @@ namespace filter
     template <typename T, typename D>
     void linearRow(PtrStepSzb src, PtrStepSzb dst, const float* kernel, int ksize, int anchor, int brd_type, int cc, cudaStream_t stream)
     {
+        const int blockDimY = (cc >= 20) ? 8 : 4;
+        if (ksize > MAX_KERNEL_SIZE || filter::kernelOutreachesImage(ksize, anchor, src.cols) ||
+            divUp(src.rows, blockDimY) > filter::MAX_GRID_Y)
+        {
+            typedef void (*arbitrary_caller_t)(PtrStepSz<T> src, PtrStepSz<D> dst, const float* kernel, int ksize, int anchor, int cc, cudaStream_t stream);
+
+            static const arbitrary_caller_t arbitrary_callers[5] =
+            {
+                row_filter::callerArbitrary<T, D, cv::BORDER_CONSTANT>,
+                row_filter::callerArbitrary<T, D, cv::BORDER_REPLICATE>,
+                row_filter::callerArbitrary<T, D, cv::BORDER_REFLECT>,
+                row_filter::callerArbitrary<T, D, cv::BORDER_WRAP>,
+                row_filter::callerArbitrary<T, D, cv::BORDER_REFLECT101>
+            };
+
+            arbitrary_callers[brd_type]((PtrStepSz<T>)src, (PtrStepSz<D>)dst, kernel, ksize, anchor, cc, stream);
+            return;
+        }
+
         typedef void (*caller_t)(PtrStepSz<T> src, PtrStepSz<D> dst, const float* kernel, int anchor, int cc, cudaStream_t stream);
 
         static const caller_t callers[5][33] =

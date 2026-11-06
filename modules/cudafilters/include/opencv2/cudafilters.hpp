@@ -155,9 +155,9 @@ CV_EXPORTS_W Ptr<Filter> createLaplacianFilter(int srcType, int dstType, int ksi
 
 @param srcType Source array type.
 @param dstType Destination array type.
-@param rowKernel Horizontal filter coefficients. Support kernels with size \<= 32 .
+@param rowKernel Horizontal filter coefficients.
 noArray() is supported to ignore the row filtering.
-@param columnKernel Vertical filter coefficients. Support kernels with size \<= 32 .
+@param columnKernel Vertical filter coefficients.
 noArray() is supported to ignore the column filtering.
 @param anchor Anchor position within the kernel. Negative values mean that anchor is positioned at
 the aperture center.

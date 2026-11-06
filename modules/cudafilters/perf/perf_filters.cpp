@@ -229,7 +229,7 @@ PERF_TEST_P(Sz_Type, Scharr, Combine(CUDA_TYPICAL_MAT_SIZES, Values(CV_8UC1, CV_
 //////////////////////////////////////////////////////////////////////
 // GaussianBlur
 
-PERF_TEST_P(Sz_Type_KernelSz, GaussianBlur, Combine(CUDA_TYPICAL_MAT_SIZES, Values(CV_8UC1, CV_8UC4, CV_32FC1), Values(3, 5, 7, 9, 11, 13, 15)))
+PERF_TEST_P(Sz_Type_KernelSz, GaussianBlur, Combine(CUDA_TYPICAL_MAT_SIZES, Values(CV_8UC1, CV_8UC4, CV_32FC1), Values(3, 5, 7, 9, 11, 13, 15, 33, 65)))
 {
     declare.time(20.0);
 
@@ -249,7 +249,10 @@ PERF_TEST_P(Sz_Type_KernelSz, GaussianBlur, Combine(CUDA_TYPICAL_MAT_SIZES, Valu
 
         TEST_CYCLE() gauss->apply(d_src, dst);
 
-        CUDA_SANITY_CHECK(dst);
+        if (ksize <= 15)
+            CUDA_SANITY_CHECK(dst);
+        else
+            SANITY_CHECK_NOTHING();
     }
     else
     {
@@ -257,7 +260,10 @@ PERF_TEST_P(Sz_Type_KernelSz, GaussianBlur, Combine(CUDA_TYPICAL_MAT_SIZES, Valu
 
         TEST_CYCLE() cv::GaussianBlur(src, dst, cv::Size(ksize, ksize), 0.5);
 
-        CPU_SANITY_CHECK(dst);
+        if (ksize <= 15)
+            CPU_SANITY_CHECK(dst);
+        else
+            SANITY_CHECK_NOTHING();
     }
 }
 

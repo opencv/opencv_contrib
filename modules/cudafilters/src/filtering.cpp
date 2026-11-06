@@ -438,8 +438,8 @@ namespace
             columnKernel_.upload(kernel32F.reshape(1, 1));
         }
 
-        CV_Assert( rowKernel_.empty() || (rowKernel_.cols > 0 && rowKernel_.cols <= 32 ));
-        CV_Assert( columnKernel_.empty() || (columnKernel_.cols > 0 && columnKernel_.cols <= 32 ));
+        CV_Assert( rowKernel_.empty() || rowKernel_.cols > 0 );
+        CV_Assert( columnKernel_.empty() || columnKernel_.cols > 0 );
 
         if (!rowKernel_.empty())
           normalizeAnchor(anchor_.x, rowKernel_.cols);
