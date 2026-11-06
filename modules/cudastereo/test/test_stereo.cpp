@@ -1043,7 +1043,18 @@ protected:
 
 TEST(CudaStereo_StereoSGM, regression) { CV_Cuda_StereoSGMTest test; test.safe_run(); }
 
-TEST(CudaStereo_StereoSGM, P2Limit)
+PARAM_TEST_CASE(StereoSGM_P2Limit, cv::cuda::DeviceInfo)
+{
+    cv::cuda::DeviceInfo devInfo;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(StereoSGM_P2Limit, Validation)
 {
     cv::Mat left(64, 128, CV_8UC1), right(64, 128, CV_8UC1);
     cv::theRNG().fill(left, cv::RNG::UNIFORM, 0, 256);
@@ -1059,12 +1070,24 @@ TEST(CudaStereo_StereoSGM, P2Limit)
     sgm->setP2(1536);
     EXPECT_THROW(sgm->compute(d_left, d_right, d_disp), cv::Exception);
 
-    sgm->setP2(0);
-    EXPECT_NO_THROW(sgm->compute(d_left, d_right, d_disp));
+    sgm->setP2(10);
+    EXPECT_THROW(sgm->compute(d_left, d_right, d_disp), cv::Exception);
+
+    sgm->setP2(5);
+    EXPECT_THROW(sgm->compute(d_left, d_right, d_disp), cv::Exception);
 
     sgm->setP2(-1);
     EXPECT_THROW(sgm->compute(d_left, d_right, d_disp), cv::Exception);
+
+    sgm->setP2(120);
+    sgm->setP1(0);
+    EXPECT_THROW(sgm->compute(d_left, d_right, d_disp), cv::Exception);
+
+    sgm->setP1(-1);
+    EXPECT_THROW(sgm->compute(d_left, d_right, d_disp), cv::Exception);
 }
+
+INSTANTIATE_TEST_CASE_P(CUDA_Stereo, StereoSGM_P2Limit, ALL_DEVICES);
 
 // Regression for the check_consistency launch-bounds fix.
 // Pre-fix, check_consistency launched dim3(width/16, height/16); integer
