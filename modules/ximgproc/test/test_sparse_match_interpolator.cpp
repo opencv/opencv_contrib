@@ -246,6 +246,32 @@ TEST(InterpolatorTest, RICReuseInstance)
         fresh->interpolate(from, fromPoints, to, toPoints, flowFresh);
         EXPECT_EQ(0.0, cvtest::norm(flowFresh, flowReused, NORM_INF)) << "call " << c;
     }
+
+    Mat customCost(size, CV_32FC1);
+    rng.fill(customCost, RNG::UNIFORM, 0.f, 255.f);
+    Mat customCostOrig = customCost.clone();
+    reused->setCostMap(customCost);
+    for (size_t c = 0; c < 2; ++c)
+    {
+        Mat from(size, CV_8UC3), to(size, CV_8UC3);
+        rng.fill(from, RNG::UNIFORM, 0, 256);
+        rng.fill(to, RNG::UNIFORM, 0, 256);
+        vector<Point2f> fromPoints(200), toPoints(200);
+        for (int i = 0; i < 200; ++i)
+        {
+            fromPoints[i] = Point2f(rng.uniform(0.f, size.width - 1.f), rng.uniform(0.f, size.height - 1.f));
+            toPoints[i] = fromPoints[i] + Point2f(rng.uniform(-4.f, 4.f), rng.uniform(-4.f, 4.f));
+        }
+
+        Mat flowReused, flowFresh;
+        reused->interpolate(from, fromPoints, to, toPoints, flowReused);
+        EXPECT_EQ(0.0, cvtest::norm(customCostOrig, customCost, NORM_INF));
+        Ptr<RICInterpolator> fresh = createRICInterpolator();
+        fresh->setUseVariationalRefinement(false);
+        fresh->setCostMap(customCostOrig);
+        fresh->interpolate(from, fromPoints, to, toPoints, flowFresh);
+        EXPECT_EQ(0.0, cvtest::norm(flowFresh, flowReused, NORM_INF)) << "customCost call " << c;
+    }
     cv::setNumThreads(origThreads);
 }
 
