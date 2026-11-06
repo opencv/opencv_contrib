@@ -16,6 +16,33 @@ using zxing::GenericGF;
 using zxing::GenericGFPoly;
 using zxing::Ref;
 
+GenericGF::GenericGF(int primitive_, int size_, int b)
+    : size(size_), primitive(primitive_), generatorBase(b) {
+    ErrorHandler err_handler;
+    expTable.resize(size);
+    logTable.resize(size);
+
+    int x = 1;
+
+    for (int i = 0; i < size; i++) {
+        expTable[i] = x;
+        x <<= 1;  // x = x * 2; we're assuming the generator alpha is 2
+        if (x >= size) {
+            x ^= primitive;
+            x &= size - 1;
+        }
+    }
+    for (int i = 0; i < size - 1; i++) {
+        logTable[expTable[i]] = i;
+    }
+    zero =
+        Ref<GenericGFPoly>(new GenericGFPoly(*this, ArrayRef<int>(new Array<int>(1)), err_handler));
+    zero->getCoefficients()[0] = 0;
+    one =
+        Ref<GenericGFPoly>(new GenericGFPoly(*this, ArrayRef<int>(new Array<int>(1)), err_handler));
+    one->getCoefficients()[0] = 1;
+}
+
 GenericGF::GenericGF(int primitive_, int size_, int b, ErrorHandler &err_handler)
     : size(size_), primitive(primitive_), generatorBase(b) {
     expTable.resize(size);
