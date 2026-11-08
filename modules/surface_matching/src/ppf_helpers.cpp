@@ -149,7 +149,6 @@ Mat loadPLYSimple(const char* fileName, int withNormals)
 
 void writePLY(Mat PC, const char* FileName)
 {
-  PC = normalizePointCloud3Or6(PC);
   std::ofstream outFile( FileName );
 
   if ( !outFile.is_open() )
@@ -199,7 +198,6 @@ void writePLY(Mat PC, const char* FileName)
 
 void writePLYVisibleNormals(Mat PC, const char* FileName)
 {
-  PC = normalizePointCloud3Or6(PC);
   std::ofstream outFile(FileName);
 
   if (!outFile.is_open())
@@ -252,7 +250,6 @@ void writePLYVisibleNormals(Mat PC, const char* FileName)
 
 Mat samplePCUniform(Mat PC, int sampleStep)
 {
-  PC = normalizePointCloud3Or6(PC);
   int numRows = PC.rows/sampleStep;
   Mat sampledPC = Mat(numRows, PC.cols, PC.type());
 
@@ -267,7 +264,6 @@ Mat samplePCUniform(Mat PC, int sampleStep)
 
 Mat samplePCUniformInd(Mat PC, int sampleStep, std::vector<int> &indices)
 {
-  PC = normalizePointCloud3Or6(PC);
   int numRows = cvRound((double)PC.rows/(double)sampleStep);
   indices.resize(numRows);
   Mat sampledPC = Mat(numRows, PC.cols, PC.type());
@@ -312,7 +308,6 @@ void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances, const
 // This is much faster than sample_pc_octree
 Mat samplePCByQuantization(Mat pc, Vec2f& xrange, Vec2f& yrange, Vec2f& zrange, float sampleStep, int weightByCenter)
 {
-  pc = normalizePointCloud(pc);
   std::vector< std::vector<int> > map;
 
   int numSamplesDim = (int)(1.0/sampleStep);
@@ -479,7 +474,6 @@ void shuffle(int *array, size_t n)
 // compute the standard bounding box
 void computeBboxStd(Mat pc, Vec2f& xRange, Vec2f& yRange, Vec2f& zRange)
 {
-  pc = normalizePointCloud3Or6(pc);
   Mat pcPts = pc.colRange(0, 3);
   int num = pcPts.rows;
 
@@ -518,7 +512,6 @@ void computeBboxStd(Mat pc, Vec2f& xRange, Vec2f& yRange, Vec2f& zRange)
 
 Mat normalizePCCoeff(Mat pc, float scale, float* Cx, float* Cy, float* Cz, float* MinVal, float* MaxVal)
 {
-  pc = normalizePointCloud3Or6(pc);
   double minVal=0, maxVal=0;
 
   Mat x,y,z, pcn;
@@ -554,7 +547,6 @@ Mat normalizePCCoeff(Mat pc, float scale, float* Cx, float* Cy, float* Cz, float
 
 Mat transPCCoeff(Mat pc, float scale, float Cx, float Cy, float Cz, float MinVal, float MaxVal)
 {
-  pc = normalizePointCloud3Or6(pc);
   Mat x,y,z, pcn;
   pc.col(0).copyTo(x);
   pc.col(1).copyTo(y);
@@ -575,7 +567,6 @@ Mat transPCCoeff(Mat pc, float scale, float Cx, float Cy, float Cz, float MinVal
 
 Mat transformPCPose(Mat pc, const Matx44d& Pose)
 {
-  pc = normalizePointCloud3Or6(pc);
   Mat pct = Mat(pc.rows, pc.cols, CV_32F);
 
   Matx33d R;
@@ -664,7 +655,6 @@ void getRandomPose(Matx44d& Pose)
 
 Mat addNoisePC(Mat pc, double scale)
 {
-  pc = normalizePointCloud3Or6(pc);
   Mat randT = genRandomMat(pc.rows,pc.cols,0,scale,CV_32FC1);
   return randT + pc;
 }
@@ -707,10 +697,9 @@ void meanCovLocalPCInd(const Mat& pc, const int* Indices, const int point_count,
       CovMat(j, k) -= Mean[j] * Mean[k];
 }
 
-int computeNormalsPC3d(const Mat& _PC, Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const Vec3f& viewpoint)
+int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const Vec3f& viewpoint)
 {
   int i;
-  Mat PC = normalizePointCloud3Or6(_PC);
 
   if (PC.cols!=3 && PC.cols!=6) // 3d data is expected
   {
