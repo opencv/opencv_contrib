@@ -77,30 +77,6 @@ namespace cv { namespace
         Mat m = arr.getMat();
         return m.isContinuous() ? m : m.clone();
     }
-
-    template <int N>
-    static Vec<double, N> readVecd(InputArray arr)
-    {
-        Mat m = arr.getMat().reshape(1);
-        Vec<double, N> v;
-        int k = 0;
-        for (int r = 0; r < m.rows; ++r)
-        {
-            if (m.depth() == CV_32F)
-            {
-                const float* p = m.ptr<float>(r);
-                for (int c = 0; c < m.cols; ++c)
-                    v[k++] = p[c];
-            }
-            else
-            {
-                const double* p = m.ptr<double>(r);
-                for (int c = 0; c < m.cols; ++c)
-                    v[k++] = p[c];
-            }
-        }
-        return v;
-    }
 }}
 
 /////////////////////////////////////////////////////////////////////////////
@@ -125,8 +101,10 @@ void cv::omnidir::projectPoints(InputArray objectPoints, OutputArray imagePoints
 
     int n = (int)objectPoints.total();
 
-    Vec3d om = readVecd<3>(rvec);
-    Vec3d T  = readVecd<3>(tvec);
+    Mat rvecMat = getContinuousMat(rvec);
+    Mat tvecMat = getContinuousMat(tvec);
+    Vec3d om = rvecMat.depth() == CV_32F ? (Vec3d)*rvecMat.ptr<Vec3f>() : *rvecMat.ptr<Vec3d>();
+    Vec3d T  = tvecMat.depth() == CV_32F ? (Vec3d)*tvecMat.ptr<Vec3f>() : *tvecMat.ptr<Vec3d>();
 
     Vec2d f,c;
     double s;
@@ -145,7 +123,8 @@ void cv::omnidir::projectPoints(InputArray objectPoints, OutputArray imagePoints
         s = Kc(0,1);
     }
 
-    Vec4d kp = readVecd<4>(D);
+    Mat DMat = getContinuousMat(D);
+    Vec4d kp = DMat.depth() == CV_32F ? (Vec4d)*DMat.ptr<Vec4f>() : *DMat.ptr<Vec4d>();
     //Vec<double, 4> kp= (Vec<double,4>)*D.getMat().ptr<Vec<double,4> >();
 
     Mat objMat = getContinuousMat(objectPoints);
@@ -317,7 +296,8 @@ void cv::omnidir::undistortPoints( InputArray distorted, OutputArray undistorted
         s = camMat(0,1);
     }
 
-    Vec4d kp = readVecd<4>(D);
+    Mat DMat = getContinuousMat(D);
+    Vec4d kp = DMat.depth()==CV_32F ? (Vec4d)*DMat.ptr<Vec4f>():(Vec4d)*DMat.ptr<Vec4d>();
     Vec2d k = Vec2d(kp[0], kp[1]);
     Vec2d p = Vec2d(kp[2], kp[3]);
 
@@ -326,7 +306,8 @@ void cv::omnidir::undistortPoints( InputArray distorted, OutputArray undistorted
     // R is om
     if(!R.empty() && R.total()*R.channels() == 3)
     {
-        cv::Vec3d rvec = readVecd<3>(R);
+        cv::Vec3d rvec;
+        R.getMat().convertTo(rvec, CV_64F);
         cv::Rodrigues(rvec, RR);
     }
     else if (!R.empty() && R.size() == Size(3,3))
@@ -430,7 +411,8 @@ void cv::omnidir::initUndistortRectifyMap(InputArray K, InputArray D, InputArray
     Vec4d kp = Vec4d::all(0);
     if (!D.empty())
     {
-        kp = readVecd<4>(D);
+        Mat DMat = getContinuousMat(D);
+        kp = DMat.depth() == CV_32F ? (Vec4d)*DMat.ptr<Vec4f>(): *DMat.ptr<Vec4d>();
     }
     double _xi = xi.depth() == CV_32F ? (double)*xi.getMat().ptr<float>() : *xi.getMat().ptr<double>();
     Vec2d k = Vec2d(kp[0], kp[1]);
@@ -438,7 +420,8 @@ void cv::omnidir::initUndistortRectifyMap(InputArray K, InputArray D, InputArray
     cv::Matx33d RR  = cv::Matx33d::eye();
     if (!R.empty() && R.total() * R.channels() == 3)
     {
-        cv::Vec3d rvec = readVecd<3>(R);
+        cv::Vec3d rvec;
+        R.getMat().convertTo(rvec, CV_64F);
         cv::Rodrigues(rvec, RR);
     }
     else if (!R.empty() && R.size() == Size(3, 3))
