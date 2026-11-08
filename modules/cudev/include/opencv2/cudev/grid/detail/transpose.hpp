@@ -73,10 +73,9 @@ namespace transpose_detail
         }
         else
         {
-            unsigned long long bid = static_cast<unsigned long long>(blockIdx.x)
-                                   + static_cast<unsigned long long>(gridDim.x) * blockIdx.y;
-            blockIdx_y = static_cast<int>(bid % gridDim.y);
-            blockIdx_x = static_cast<int>(((bid / gridDim.y) + blockIdx_y) % gridDim.x);
+            int bid = blockIdx.x + gridDim.x * blockIdx.y;
+            blockIdx_y = bid % gridDim.y;
+            blockIdx_x = ((bid / gridDim.y) + blockIdx_y) % gridDim.x;
         }
 
         blockIdx_y += tile_y_offset;
