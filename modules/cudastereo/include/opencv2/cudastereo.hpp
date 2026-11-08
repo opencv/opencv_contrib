@@ -278,9 +278,9 @@ public:
 
 @param minDisparity Minimum possible disparity value. Normally, it is zero but sometimes rectification algorithms can shift images, so this parameter needs to be adjusted accordingly.
 @param numDisparities Maximum disparity minus minimum disparity. The value must be 64, 128 or 256.
-@param P1 The first parameter controlling the disparity smoothness. This parameter is used for the case of slanted surfaces (not fronto parallel). It must be positive and less than P2; compute() throws otherwise.
-@param P2 The second parameter controlling the disparity smoothness. This parameter is used for "solving" the depth discontinuities problem.
-It must satisfy P1 < P2 <= 224, because path costs are stored in 8 bits and can reach P2 + 31; compute() throws otherwise.
+@param P1 The first parameter controlling the disparity smoothness.This parameter is used for the case of slanted surfaces (not fronto parallel).
+@param P2 The second parameter controlling the disparity smoothness.This parameter is used for "solving" the depth discontinuities problem.
+It must be between 0 and 224, because path costs are stored in 8 bits and can reach P2 + 31; compute() throws otherwise.
 Values commonly used with cv::StereoSGBM can be above this limit.
 @param uniquenessRatio Margin in percentage by which the best (minimum) computed cost function
 value should "win" the second best value to consider the found match correct. Normally, a value

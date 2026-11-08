@@ -103,9 +103,8 @@ void StereoSGMImpl::compute(InputArray _left, InputArray _right, OutputArray _di
         CV_Error(Error::StsBadArg, "Unsupported mode");
     }
     // Path costs are stored as uint8_t and can reach P2 + 31, the 31 being the census width.
-    // The kernels read P1 and P2 as unsigned, and SGM requires 0 < P1 < P2 <= 224.
-    CV_CheckGT(params.P1, 0, "P1 must be positive");
-    CV_CheckLT(params.P1, params.P2, "P1 must be less than P2");
+    // The kernels read P2 as unsigned, so a negative value removes this cap altogether.
+    CV_CheckGE(params.P2, 0, "P2 must not be negative");
     CV_CheckLE(params.P2, 224, "P2 + 31 must fit in 8 bits");
     const unsigned int num_paths = params.mode == MODE_HH4 ? 4 : 8;
 
