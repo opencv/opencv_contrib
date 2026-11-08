@@ -652,10 +652,12 @@ namespace
         normalizeAnchor(anchor_, ksize);
 
         if (kernel.empty())
-            kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
-
-        if (iters_ > 1 && cv::countNonZero(kernel) == (int) kernel.total() &&
-            anchor_ == Point(ksize.width / 2, ksize.height / 2))
+        {
+            kernel = getStructuringElement(MORPH_RECT, Size(1 + iters_ * 2, 1 + iters_ * 2));
+            anchor_ = Point(iters_, iters_);
+            iters_ = 1;
+        }
+        else if (iters_ > 1 && cv::countNonZero(kernel) == (int) kernel.total())
         {
             anchor_ = Point(anchor_.x * iters_, anchor_.y * iters_);
             kernel = getStructuringElement(MORPH_RECT,
