@@ -46,6 +46,7 @@
 #ifndef OPENCV_CUDEV_GRID_PYR_UP_DETAIL_HPP
 #define OPENCV_CUDEV_GRID_PYR_UP_DETAIL_HPP
 
+#include <algorithm>
 #include "../../common.hpp"
 #include "../../util/vec_traits.hpp"
 #include "../../util/saturate_cast.hpp"
@@ -58,7 +59,7 @@ namespace cv { namespace cudev {
 namespace pyramids_detail
 {
     template <class SrcPtr, typename DstType>
-    __global__ void pyrUp(const SrcPtr src, GlobPtr<DstType> dst, const int src_rows, const int src_cols, const int dst_rows, const int dst_cols)
+    __global__ void pyrUp(const SrcPtr src, GlobPtr<DstType> dst, const int src_rows, const int src_cols, const int dst_rows, const int dst_cols, const int y_offset)
     {
         typedef typename PtrTraits<SrcPtr>::value_type src_type;
         typedef typename VecTraits<src_type>::elem_type src_elem_type;
@@ -66,7 +67,7 @@ namespace pyramids_detail
         typedef typename MakeVec<work_elem_type, VecTraits<src_type>::cn>::type work_type;
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
 
         __shared__ work_type s_srcPatch[10][10];
         __shared__ work_type s_dstPatch[20][16];
@@ -74,7 +75,7 @@ namespace pyramids_detail
         if (threadIdx.x < 10 && threadIdx.y < 10)
         {
             int srcx = static_cast<int>((blockIdx.x * blockDim.x) / 2 + threadIdx.x) - 1;
-            int srcy = static_cast<int>((blockIdx.y * blockDim.y) / 2 + threadIdx.y) - 1;
+            int srcy = static_cast<int>((y_offset + blockIdx.y * blockDim.y) / 2 + threadIdx.y) - 1;
 
             srcx = ::abs(srcx);
             srcx = ::min(src_cols - 1, srcx);
@@ -156,11 +157,18 @@ namespace pyramids_detail
     template <class SrcPtr, typename DstType>
     __host__ void pyrUp(const SrcPtr& src, const GlobPtr<DstType>& dst, int src_rows, int src_cols, int dst_rows, int dst_cols, cudaStream_t stream)
     {
-        const dim3 block(16, 16);
-        const dim3 grid(divUp(dst_cols, block.x), divUp(dst_rows, block.y));
+        if (src_rows <= 0 || src_cols <= 0 || dst_rows <= 0 || dst_cols <= 0)
+            return;
 
-        pyrUp<<<grid, block, 0, stream>>>(src, dst, src_rows, src_cols, dst_rows, dst_cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        const dim3 block(16, 16);
+        const int grid_y = divUp(dst_rows, block.y);
+
+        for (int by0 = 0; by0 < grid_y; by0 += 65535)
+        {
+            const dim3 grid(divUp(dst_cols, block.x), std::min(grid_y - by0, 65535));
+            pyrUp<<<grid, block, 0, stream>>>(src, dst, src_rows, src_cols, dst_rows, dst_cols, by0 * block.y);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );

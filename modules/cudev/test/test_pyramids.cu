@@ -79,3 +79,47 @@ TEST(PyrUp, _32fc4)
 
     ASSERT_MAT_NEAR(dst_gold, dst, 1e-4);
 }
+
+TEST(PyrDown, GridYOverflow)
+{
+    // dst_rows = divUp(131077, 2) = 65539 > 65535
+    const Size size(8, 65536 * 2 + 5);
+
+    Mat src = randomMat(size, CV_8UC1);
+
+    GpuMat d_src_raw, d_dst_raw;
+    createContinuous(size, CV_8UC1, d_src_raw);
+    createContinuous(divUp(size.height, 2), divUp(size.width, 2), CV_8UC1, d_dst_raw);
+    d_src_raw.upload(src);
+
+    GpuMat_<uchar> d_src(d_src_raw);
+    GpuMat_<uchar> dst(d_dst_raw);
+    gridPyrDown(d_src, dst);
+
+    Mat dst_gold;
+    cv::pyrDown(src, dst_gold);
+
+    ASSERT_MAT_NEAR(dst_gold, dst, 1.0);
+}
+
+TEST(PyrUp, GridYOverflow)
+{
+    // dst_rows = 524291 * 2 = 1048582; divUp(dst_rows, 16) = 65537 > 65535
+    const Size size(8, 65536 * 8 + 3);
+
+    Mat src = randomMat(size, CV_8UC1);
+
+    GpuMat d_src_raw, d_dst_raw;
+    createContinuous(size, CV_8UC1, d_src_raw);
+    createContinuous(size.height * 2, size.width * 2, CV_8UC1, d_dst_raw);
+    d_src_raw.upload(src);
+
+    GpuMat_<uchar> d_src(d_src_raw);
+    GpuMat_<uchar> dst(d_dst_raw);
+    gridPyrUp(d_src, dst);
+
+    Mat dst_gold;
+    cv::pyrUp(src, dst_gold);
+
+    ASSERT_MAT_NEAR(dst_gold, dst, 1.0);
+}

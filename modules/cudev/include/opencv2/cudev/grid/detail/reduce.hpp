@@ -46,6 +46,7 @@
 #ifndef OPENCV_CUDEV_GRID_REDUCE_DETAIL_HPP
 #define OPENCV_CUDEV_GRID_REDUCE_DETAIL_HPP
 
+#include <algorithm>
 #include "../../common.hpp"
 #include "../../util/tuple.hpp"
 #include "../../util/saturate_cast.hpp"
@@ -389,10 +390,10 @@ namespace grid_reduce_detail
     // glob_reduce
 
     template <class Reductor, int BLOCK_SIZE, int PATCH_X, int PATCH_Y, class SrcPtr, typename ResType, class MaskPtr>
-    __global__ void reduce(const SrcPtr src, ResType* result, const MaskPtr mask, const int rows, const int cols)
+    __global__ void reduce(const SrcPtr src, ResType* result, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         const int x0 = blockIdx.x * blockDim.x * PATCH_X + threadIdx.x;
-        const int y0 = blockIdx.y * blockDim.y * PATCH_Y + threadIdx.y;
+        const int y0 = y_offset + blockIdx.y * blockDim.y * PATCH_Y + threadIdx.y;
 
         Reductor reductor;
 
@@ -415,11 +416,18 @@ namespace grid_reduce_detail
     template <class Reductor, class Policy, class SrcPtr, typename ResType, class MaskPtr>
     __host__ void reduce(const SrcPtr& src, ResType* result, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
-        const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x * Policy::patch_size_x), divUp(rows, block.y * Policy::patch_size_y));
+        if (rows <= 0 || cols <= 0)
+            return;
 
-        reduce<Reductor, Policy::block_size_x * Policy::block_size_y, Policy::patch_size_x, Policy::patch_size_y><<<grid, block, 0, stream>>>(src, result, mask, rows, cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        const dim3 block(Policy::block_size_x, Policy::block_size_y);
+        const int grid_y = divUp(rows, block.y * Policy::patch_size_y);
+
+        for (int by0 = 0; by0 < grid_y; by0 += 65535)
+        {
+            const dim3 grid(divUp(cols, block.x * Policy::patch_size_x), std::min(grid_y - by0, 65535));
+            reduce<Reductor, Policy::block_size_x * Policy::block_size_y, Policy::patch_size_x, Policy::patch_size_y><<<grid, block, 0, stream>>>(src, result, mask, rows, cols, by0 * block.y * Policy::patch_size_y);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );

@@ -46,6 +46,7 @@
 #ifndef OPENCV_CUDEV_GRID_PYR_DOWN_DETAIL_HPP
 #define OPENCV_CUDEV_GRID_PYR_DOWN_DETAIL_HPP
 
+#include <algorithm>
 #include "../../common.hpp"
 #include "../../util/vec_traits.hpp"
 #include "../../util/saturate_cast.hpp"
@@ -58,7 +59,7 @@ namespace cv { namespace cudev {
 namespace pyramids_detail
 {
     template <class Brd, class SrcPtr, typename DstType>
-    __global__ void pyrDown(const SrcPtr src, GlobPtr<DstType> dst, const int src_rows, const int src_cols, const int dst_cols)
+    __global__ void pyrDown(const SrcPtr src, GlobPtr<DstType> dst, const int src_rows, const int src_cols, const int dst_cols, const int y_offset)
     {
         typedef typename PtrTraits<SrcPtr>::value_type src_type;
         typedef typename VecTraits<src_type>::elem_type src_elem_type;
@@ -68,7 +69,7 @@ namespace pyramids_detail
         __shared__ work_type smem[256 + 4];
 
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y;
+        const int y = y_offset + blockIdx.y;
 
         const int src_y = 2 * y;
 
@@ -185,11 +186,17 @@ namespace pyramids_detail
     template <class Brd, class SrcPtr, typename DstType>
     __host__ void pyrDown(const SrcPtr& src, const GlobPtr<DstType>& dst, int src_rows, int src_cols, int dst_rows, int dst_cols, cudaStream_t stream)
     {
-        const dim3 block(256);
-        const dim3 grid(divUp(src_cols, block.x), dst_rows);
+        if (src_rows <= 0 || src_cols <= 0 || dst_rows <= 0 || dst_cols <= 0)
+            return;
 
-        pyrDown<Brd><<<grid, block, 0, stream>>>(src, dst, src_rows, src_cols, dst_cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        const dim3 block(256);
+
+        for (int y0 = 0; y0 < dst_rows; y0 += 65535)
+        {
+            const dim3 grid(divUp(src_cols, block.x), std::min(dst_rows - y0, 65535));
+            pyrDown<Brd><<<grid, block, 0, stream>>>(src, dst, src_rows, src_cols, dst_cols, y0);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );

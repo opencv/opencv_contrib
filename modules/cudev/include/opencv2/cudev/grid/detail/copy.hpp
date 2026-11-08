@@ -46,6 +46,7 @@
 #ifndef OPENCV_CUDEV_GRID_COPY_DETAIL_HPP
 #define OPENCV_CUDEV_GRID_COPY_DETAIL_HPP
 
+#include <algorithm>
 #include "../../common.hpp"
 #include "../../util/tuple.hpp"
 #include "../../util/saturate_cast.hpp"
@@ -57,10 +58,10 @@ namespace cv { namespace cudev {
 namespace grid_copy_detail
 {
     template <class SrcPtr, typename DstType, class MaskPtr>
-    __global__ void copy(const SrcPtr src, GlobPtr<DstType> dst, const MaskPtr mask, const int rows, const int cols)
+    __global__ void copy(const SrcPtr src, GlobPtr<DstType> dst, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
 
         if (x >= cols || y >= rows || !mask(y, x))
             return;
@@ -71,11 +72,18 @@ namespace grid_copy_detail
     template <class Policy, class SrcPtr, typename DstType, class MaskPtr>
     __host__ void copy(const SrcPtr& src, const GlobPtr<DstType>& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
-        const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x), divUp(rows, block.y));
+        if (rows <= 0 || cols <= 0)
+            return;
 
-        copy<<<grid, block, 0, stream>>>(src, dst, mask, rows, cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        const dim3 block(Policy::block_size_x, Policy::block_size_y);
+        const int grid_y = divUp(rows, block.y);
+
+        for (int by0 = 0; by0 < grid_y; by0 += 65535)
+        {
+            const dim3 grid(divUp(cols, block.x), std::min(grid_y - by0, 65535));
+            copy<<<grid, block, 0, stream>>>(src, dst, mask, rows, cols, by0 * block.y);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
@@ -102,10 +110,10 @@ namespace grid_copy_detail
     };
 
     template <class SrcPtrTuple, class DstPtrTuple, class MaskPtr>
-    __global__ void copy_tuple(const SrcPtrTuple src, DstPtrTuple dst, const MaskPtr mask, const int rows, const int cols)
+    __global__ void copy_tuple(const SrcPtrTuple src, DstPtrTuple dst, const MaskPtr mask, const int rows, const int cols, const int y_offset)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
+        const int y = y_offset + blockIdx.y * blockDim.y + threadIdx.y;
 
         if (x >= cols || y >= rows || !mask(y, x))
             return;
@@ -116,11 +124,18 @@ namespace grid_copy_detail
     template <class Policy, class SrcPtrTuple, class DstPtrTuple, class MaskPtr>
     __host__ void copy_tuple(const SrcPtrTuple& src, const DstPtrTuple& dst, const MaskPtr& mask, int rows, int cols, cudaStream_t stream)
     {
-        const dim3 block(Policy::block_size_x, Policy::block_size_y);
-        const dim3 grid(divUp(cols, block.x), divUp(rows, block.y));
+        if (rows <= 0 || cols <= 0)
+            return;
 
-        copy_tuple<<<grid, block, 0, stream>>>(src, dst, mask, rows, cols);
-        CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        const dim3 block(Policy::block_size_x, Policy::block_size_y);
+        const int grid_y = divUp(rows, block.y);
+
+        for (int by0 = 0; by0 < grid_y; by0 += 65535)
+        {
+            const dim3 grid(divUp(cols, block.x), std::min(grid_y - by0, 65535));
+            copy_tuple<<<grid, block, 0, stream>>>(src, dst, mask, rows, cols, by0 * block.y);
+            CV_CUDEV_SAFE_CALL( cudaGetLastError() );
+        }
 
         if (stream == 0)
             CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
