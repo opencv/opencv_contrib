@@ -617,6 +617,59 @@ INSTANTIATE_TEST_CASE_P(CUDA_Filters, Erode, testing::Combine(
     testing::Values(Iterations(1), Iterations(2), Iterations(3)),
     WHOLE_SUBMAT));
 
+PARAM_TEST_CASE(MorphNonRectMultiIter, cv::cuda::DeviceInfo, cv::Size, MatType, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int type;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        type = GET_PARAM(2);
+        useRoi = GET_PARAM(3);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(MorphNonRectMultiIter, Accuracy)
+{
+    const int iters = 5;
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
+
+    const int ops[] = { cv::MORPH_ERODE, cv::MORPH_DILATE };
+    for (size_t opIdx = 0; opIdx < sizeof(ops) / sizeof(ops[0]); ++opIdx)
+    {
+        const int op = ops[opIdx];
+        // keep values away from 0: a zero-filled border then changes the result (negative values for 32F dilate)
+        cv::Mat src = (op == cv::MORPH_DILATE && CV_MAT_DEPTH(type) == CV_32F) ? randomMat(size, type, -255, -128) : randomMat(size, type, 128, 255);
+        cv::Ptr<cv::cuda::Filter> morphMulti = cv::cuda::createMorphologyFilter(op, src.type(), kernel, cv::Point(-1, -1), iters);
+        cv::Ptr<cv::cuda::Filter> morphSingle = cv::cuda::createMorphologyFilter(op, src.type(), kernel, cv::Point(-1, -1), 1);
+
+        cv::cuda::GpuMat dstMulti = createMat(size, type, useRoi);
+        morphMulti->apply(loadMat(src, useRoi), dstMulti);
+
+        cv::cuda::GpuMat dstSeq = loadMat(src, useRoi);
+        for (int i = 0; i < iters; ++i)
+            morphSingle->apply(dstSeq, dstSeq);
+
+        EXPECT_MAT_NEAR(dstSeq, dstMulti, 0.0);
+
+        cv::Mat dst_gold;
+        cv::morphologyEx(src, dst_gold, op, kernel, cv::Point(-1, -1), iters, cv::BORDER_DEFAULT);
+        EXPECT_MAT_NEAR(dst_gold, dstMulti, 0.0);
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Filters, MorphNonRectMultiIter, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    testing::Values(MatType(CV_8UC1), MatType(CV_8UC4), MatType(CV_32FC1), MatType(CV_32FC4)),
+    WHOLE_SUBMAT));
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Dilate
 
