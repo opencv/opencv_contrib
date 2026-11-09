@@ -9,5 +9,9 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4127 /wd4100 /wd4324 /wd4512 /wd4515 -Wu
 ocv_define_module(cudaimgproc opencv_imgproc OPTIONAL opencv_cudev opencv_cudaarithm opencv_cudafilters opencv_geometry WRAP python)
 
 if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
-  ocv_target_link_libraries(${the_module} PRIVATE CUDA::cudart${CUDA_LIB_EXT} CUDA::nppial${CUDA_LIB_EXT} CUDA::nppist${CUDA_LIB_EXT} CUDA::nppicc${CUDA_LIB_EXT} CUDA::nppidei${CUDA_LIB_EXT})
+  set(CUDA_NPP_LIB_EXT "${CUDA_LIB_EXT}")
+  if(CUDA_VERSION VERSION_GREATER_EQUAL 13.4)
+    set(CUDA_NPP_LIB_EXT "")
+  endif()
+  ocv_target_link_libraries(${the_module} PRIVATE CUDA::cudart${CUDA_LIB_EXT} CUDA::nppial${CUDA_NPP_LIB_EXT} CUDA::nppist${CUDA_NPP_LIB_EXT} CUDA::nppicc${CUDA_NPP_LIB_EXT} CUDA::nppidei${CUDA_NPP_LIB_EXT})
 endif()

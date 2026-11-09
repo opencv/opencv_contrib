@@ -13,7 +13,11 @@ ocv_glob_module_sources()
 
 set(build_libs "")
 if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
-  list(APPEND build_libs CUDA::cudart${CUDA_LIB_EXT} CUDA::nppif${CUDA_LIB_EXT} CUDA::nppim${CUDA_LIB_EXT})
+  set(CUDA_NPP_LIB_EXT "${CUDA_LIB_EXT}")
+  if(CUDA_VERSION VERSION_GREATER_EQUAL 13.4)
+    set(CUDA_NPP_LIB_EXT "")
+  endif()
+  list(APPEND build_libs CUDA::cudart${CUDA_LIB_EXT} CUDA::nppif${CUDA_NPP_LIB_EXT} CUDA::nppim${CUDA_NPP_LIB_EXT})
 endif()
 ocv_create_module(${build_libs})
 
