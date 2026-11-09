@@ -8,7 +8,11 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4127 /wd4324 /wd4512 -Wundef -Wmissing-d
 
 set(build_libs "")
 if(ENABLE_CUDA_FIRST_CLASS_LANGUAGE)
-  list(APPEND build_libs CUDA::cudart${CUDA_LIB_EXT} CUDA::nppial${CUDA_LIB_EXT} CUDA::nppig${CUDA_LIB_EXT})
+  set(CUDA_NPP_LIB_EXT "${CUDA_LIB_EXT}")
+  if(CUDA_VERSION VERSION_GREATER_EQUAL 13.4)
+    set(CUDA_NPP_LIB_EXT "")
+  endif()
+  list(APPEND build_libs CUDA::cudart${CUDA_LIB_EXT} CUDA::nppial${CUDA_NPP_LIB_EXT} CUDA::nppig${CUDA_NPP_LIB_EXT})
 endif()
 
 ocv_add_module(cudawarping opencv_core opencv_imgproc opencv_geometry OPTIONAL opencv_cudev WRAP python)
