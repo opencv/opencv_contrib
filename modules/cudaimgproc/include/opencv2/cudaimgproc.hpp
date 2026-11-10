@@ -90,6 +90,24 @@ performance.
  */
 CV_EXPORTS_W void cvtColor(InputArray src, OutputArray dst, int code, int dcn = 0, Stream& stream = Stream::Null());
 
+/** @brief Converts an image from one color space to another where the source image is stored in two planes.
+
+This function currently only supports YUV420 in NV12 format to RGB/BGR conversion. The conversion used is:
+- R=1.163999557*(Y-16) + 1.5959997177(V-128)
+- G=1.163999557*(Y-16) -0.812999725(V-128) -0.390999794(U-128)
+- B=1.163999557*(Y-16) + 2.017999649(U-128)
+
+@param src1 8-bit image (CV_8U) of the Y plane.
+@param src2 image containing interleaved (CV_8UC2) U/V plane.
+@param dst Destination image.
+@param code Color space conversion code. It can take any of the following values:
+- #COLOR_YUV2BGR_NV12
+- #COLOR_YUV2RGB_NV12
+@param stream Stream for the asynchronous version.
+
+ */
+CV_EXPORTS_W void cvtColorTwoPlane(InputArray src1, InputArray src2, OutputArray dst, int code, Stream& stream = Stream::Null());
+
 enum DemosaicTypes
 {
     //! Bayer Demosaicing (Malvar, He, and Cutler)
