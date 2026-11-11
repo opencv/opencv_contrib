@@ -287,6 +287,21 @@ TEST(DenseOpticalFlow_SparseToDenseFlow, ReferenceAccuracy)
     EXPECT_LE(calcRMSE(GT, flow), target_RMSE);
 }
 
+TEST(DenseOpticalFlow_SparseToDenseFlow, HandlesFewerMatchesThanK)
+{
+    // A 64x48 image at the default grid_step of 8 samples at most 48 points,
+    // which is below the default k of 128. calcOpticalFlowSparseToDense used
+    // to hand that k straight to EdgeAwareInterpolator and read past the end
+    // of the match array (#4195).
+    RNG rng(0);
+    Mat frame1(48, 64, CV_8UC1);
+    rng.fill(frame1, RNG::UNIFORM, 0, 256);
+
+    Mat flow;
+    ASSERT_NO_THROW(calcOpticalFlowSparseToDense(frame1, frame1, flow));
+    EXPECT_EQ(frame1.size(), flow.size());
+}
+
 TEST(DenseOpticalFlow_PCAFlow, ReferenceAccuracy)
 {
     Mat frame1, frame2, GT;
