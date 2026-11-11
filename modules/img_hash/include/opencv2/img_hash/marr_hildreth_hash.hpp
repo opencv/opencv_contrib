@@ -13,9 +13,13 @@ namespace img_hash {
 //! @addtogroup img_hash
 //! @{
 
-/** @brief Marr-Hildreth Operator Based Hash, slowest but more discriminative.
+/** @brief Computes OpenCV's Marr-Hildreth image hash.
 
-See @cite zauner2010implementation for details.
+OpenCV uses the kernel \f$(2-a)e^{a/2}\f$, where \f$a\f$ is the squared
+distance from the kernel center in scaled coordinates. The Laplacian of
+Gaussian described in @cite zauner2010implementation uses \f$e^{-a/2}\f$.
+Hashes from OpenCV should only be compared with hashes produced using the same
+implementation and kernel parameters.
 */
 class CV_EXPORTS_W MarrHildrethHash : public ImgHashBase
 {
@@ -30,28 +34,27 @@ public:
      */
     CV_WRAP float getScale() const;
 
-    /** @brief Set Mh kernel parameters
-        @param alpha int scale factor for marr wavelet (default=2).
-        @param scale int level of scale factor (default = 1)
+    /** @brief Sets the hash kernel parameters.
+        @param alpha Base of the kernel scale factor.
+        @param scale Exponent of the kernel scale factor.
     */
     CV_WRAP void setKernelParam(float alpha, float scale);
 
     /**
-        @param alpha int scale factor for marr wavelet (default=2).
-        @param scale int level of scale factor (default = 1)
+        @param alpha Base of the kernel scale factor (default 2).
+        @param scale Exponent of the kernel scale factor (default 1).
     */
     CV_WRAP static Ptr<MarrHildrethHash> create(float alpha = 2.0f, float scale = 1.0f);
 protected:
     MarrHildrethHash() {}
 };
 
-/** @brief Computes average hash value of the input image
-    @param inputArr input image want to compute hash value,
-    type should be CV_8UC4, CV_8UC3, CV_8UC1.
-    @param outputArr Hash value of input, it will contain 16 hex
-    decimal number, return type is CV_8U
-    @param alpha int scale factor for marr wavelet (default=2).
-    @param scale int level of scale factor (default = 1)
+/** @brief Computes the Marr-Hildreth hash of the input image.
+    @param inputArr Input image of type CV_8UC1, CV_8UC3, or CV_8UC4.
+    @param outputArr A 1-by-72 matrix of type CV_8U containing the hash.
+    @param alpha Base of the kernel scale factor (default 2).
+    @param scale Exponent of the kernel scale factor (default 1).
+    @sa MarrHildrethHash
 */
 CV_EXPORTS_W void marrHildrethHash(cv::InputArray inputArr,
                                    cv::OutputArray outputArr,
