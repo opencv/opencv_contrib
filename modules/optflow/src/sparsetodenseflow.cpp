@@ -99,6 +99,9 @@ CV_EXPORTS_W void calcOpticalFlowSparseToDense(InputArray from, InputArray to, O
     flow.create(from.size(),CV_32FC2);
     Mat dense_flow = flow.getMat();
 
+    if((int)points_filtered.size() <= k)
+        k = std::max(4, (int)points_filtered.size() - 1);
+
     Ptr<ximgproc::EdgeAwareInterpolator> gd = ximgproc::createEdgeAwareInterpolator();
     gd->setK(k);
     gd->setSigma(sigma);

@@ -287,6 +287,19 @@ TEST(DenseOpticalFlow_SparseToDenseFlow, ReferenceAccuracy)
     EXPECT_LE(calcRMSE(GT, flow), target_RMSE);
 }
 
+TEST(DenseOpticalFlow_SparseToDenseFlow, SmallImageDoesNotCrash)
+{
+    // small image + default k used to crash inside the interpolator
+    cv::setRNGSeed(1);
+    Mat frame1(48, 64, CV_8UC1), frame2(48, 64, CV_8UC1), flow;
+    randu(frame1, Scalar(0), Scalar(255));
+    randu(frame2, Scalar(0), Scalar(255));
+
+    ASSERT_NO_THROW(calcOpticalFlowSparseToDense(frame1, frame2, flow, 8, 128));
+    ASSERT_EQ(frame1.rows, flow.rows);
+    ASSERT_EQ(frame1.cols, flow.cols);
+}
+
 TEST(DenseOpticalFlow_PCAFlow, ReferenceAccuracy)
 {
     Mat frame1, frame2, GT;
