@@ -181,27 +181,7 @@ namespace rgbd
    */
   DepthCleaner::~DepthCleaner()
   {
-    if (depth_cleaner_impl_ == 0)
-      return;
-    switch (method_)
-    {
-      case DEPTH_CLEANER_NIL:
-      {
-        switch (depth_)
-        {
-          case CV_16U:
-            delete reinterpret_cast<const NIL<unsigned short> *>(depth_cleaner_impl_);
-            break;
-          case CV_32F:
-            delete reinterpret_cast<const NIL<float> *>(depth_cleaner_impl_);
-            break;
-          case CV_64F:
-            delete reinterpret_cast<const NIL<double> *>(depth_cleaner_impl_);
-            break;
-        }
-        break;
-      }
-    }
+    delete reinterpret_cast<DepthCleanerImpl *>(depth_cleaner_impl_);
   }
 
   void
@@ -242,7 +222,12 @@ namespace rgbd
     if (depth_cleaner_impl_ == 0)
       initialize_cleaner_impl();
     else if (!reinterpret_cast<DepthCleanerImpl *>(depth_cleaner_impl_)->validate(depth_, window_size_, method_))
+    {
+      // the parameters changed: the old implementation is not needed any more
+      delete reinterpret_cast<DepthCleanerImpl *>(depth_cleaner_impl_);
+      depth_cleaner_impl_ = 0;
       initialize_cleaner_impl();
+    }
   }
 
   /** Given a set of 3d points in a depth image, compute the normals at each point

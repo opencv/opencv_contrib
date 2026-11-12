@@ -452,4 +452,18 @@ TEST(Rgbd_Plane, regression_2309_valgrind_check)
     plane_detector(points, mask, planes);  // Will corrupt memory; valgrind gets triggered
 }
 
+TEST(Rgbd_Normals, rejected_window_size_keeps_one_owner)
+{
+    // a parameter change frees the old implementation before building the new one; when the new window size is
+    // rejected, the destructor used to free the old implementation a second time
+    Mat intrinsics = (Mat_<double>(3, 3) << 525, 0, 319.5, 0, 525, 239.5, 0, 0, 1);
+    Mat points(48, 64, CV_32FC3, Scalar(0.f, 0.f, 1.f)), normals;
+    {
+        Ptr<RgbdNormals> computer = RgbdNormals::create(48, 64, CV_32F, intrinsics, 5, RgbdNormals::RGBD_NORMALS_METHOD_FALS);
+        (*computer)(points, normals);
+        computer->setWindowSize(4);
+        EXPECT_ANY_THROW((*computer)(points, normals));
+    }
+}
+
 }} // namespace
