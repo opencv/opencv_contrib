@@ -579,6 +579,7 @@ Mat transformPCPose(Mat pc, const Matx44d& Pose)
   for (int i=0; i<pc.rows; i++)
   {
     const float *pcData = pc.ptr<float>(i);
+    const Vec3f n1(&pcData[3]);
 
     Vec4d p = Pose * Vec4d(pcData[0], pcData[1], pcData[2], 1);
     Vec3d p2(p.val);
@@ -593,7 +594,6 @@ Mat transformPCPose(Mat pc, const Matx44d& Pose)
     // then rotate them as well
     if (pc.cols == 6)
     {
-      const Vec3f n1(&pcData[3]);
       Vec3d n(n1), n2;
 
       n2 = R * n;
