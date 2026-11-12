@@ -335,13 +335,25 @@ CUDA_TEST_P(GeneralizedHough, Ballard)
 
     alg->setTemplate(loadMat(templ, useRoi));
 
-    cv::cuda::GpuMat d_pos;
-    alg->detect(loadMat(image, useRoi), d_pos);
+    cv::cuda::GpuMat d_pos, d_votes;
+    alg->detect(loadMat(image, useRoi), d_pos, d_votes);
 
     std::vector<cv::Vec4f> pos;
     d_pos.download(pos);
 
     ASSERT_EQ(gold_count, pos.size());
+
+    // one vote count per position, as the CPU version returns them
+    ASSERT_EQ(CV_32SC3, d_votes.type());
+    std::vector<cv::Vec3i> votes;
+    d_votes.download(votes);
+    ASSERT_EQ(gold_count, votes.size());
+    for (size_t i = 0; i < votes.size(); ++i)
+    {
+        EXPECT_GT(votes[i][0], 200);
+        EXPECT_EQ(0, votes[i][1]);
+        EXPECT_EQ(0, votes[i][2]);
+    }
 
     for (size_t i = 0; i < gold_count; ++i)
     {
