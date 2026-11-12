@@ -164,6 +164,7 @@ Mat interpolate_irregular_nn_raster(const std::vector<Point2f> & prevPoints,
                         done = true;
                         break;
                     }
+                    clean = true;  // a round with no update leaves nothing dirty: stop after it
                 }
             }
         }
@@ -181,6 +182,7 @@ Mat interpolate_irregular_nn_raster(const std::vector<Point2f> & prevPoints,
                         done = true;
                         break;
                     }
+                    clean = true;  // a round with no update leaves nothing dirty: stop after it
                 }
             }
         }

@@ -349,5 +349,56 @@ TEST(DenseOpticalFlow_GlobalPatchColliderWHT, ReferenceAccuracy)
     ASSERT_LE(calcAvgEPE(corr, GT), 0.5f);
 }
 
+TEST(DenseOpticalFlow_RLOF, SyntheticAllInvokersAndCollectGarbage)
+{
+    RNG& rng = theRNG();
+    Mat frame1(144, 192, CV_8UC3);
+    rng.fill(frame1, RNG::UNIFORM, 20, 235);
+    GaussianBlur(frame1, frame1, Size(5, 5), 1.2);
+
+    Mat warp = (Mat_<float>(2, 3) << 1.f, 0.f, 2.f, 0.f, 1.f, 1.f);
+    Mat frame2;
+    warpAffine(frame1, frame2, warp, frame1.size(), INTER_LINEAR, BORDER_REPLICATE);
+
+    std::vector<Point2f> prevPts;
+    for (int r = 24; r < frame1.rows - 24; r += 20)
+        for (int c = 24; c < frame1.cols - 24; c += 20)
+            prevPts.push_back(Point2f((float)c, (float)r));
+
+    Ptr<SparseRLOFOpticalFlow> sparse = SparseRLOFOpticalFlow::create();
+    sparse->setForwardBackward(0.0f);
+    for (bool useMEst : {true, false})
+    {
+        for (bool useIllum : {true, false})
+        {
+            for (SolverType st : {ST_STANDART, ST_BILINEAR})
+            {
+                Ptr<RLOFOpticalFlowParameter> p = RLOFOpticalFlowParameter::create();
+                p->setUseMEstimator(useMEst);
+                p->supportRegionType = SR_CROSS;
+                p->useIlluminationModel = useIllum;
+                p->solverType = st;
+                sparse->setRLOFOpticalFlowParameter(p);
+
+                std::vector<Point2f> currPts;
+                std::vector<uchar> status;
+                std::vector<float> err;
+                sparse->calc(frame1, frame2, prevPts, currPts, status, err);
+                ASSERT_EQ(currPts.size(), prevPts.size());
+            }
+        }
+    }
+
+    // Verify DenseRLOFOpticalFlow::collectGarbage() followed by subsequent calc() does not deref null pyramids
+    Ptr<DenseRLOFOpticalFlow> dense = DenseRLOFOpticalFlow::create();
+    dense->setGridStep(Size(8, 8));
+    dense->setInterpolation(INTERP_EPIC);
+    Mat flow1, flow2;
+    dense->calc(frame1, frame2, flow1);
+    dense->collectGarbage();
+    dense->calc(frame1, frame2, flow2);
+    ASSERT_EQ(flow1.size(), frame1.size());
+    EXPECT_EQ(0.0, cvtest::norm(flow1, flow2, NORM_INF));
+}
 
 }} // namespace

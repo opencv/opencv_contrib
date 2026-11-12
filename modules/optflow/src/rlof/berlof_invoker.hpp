@@ -108,20 +108,25 @@ public:
 
         winSize = cv::Size(maxWinSize,maxWinSize);
         int winMaskwidth = roundUp(winSize.width, 16);
-        cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
+        cv::AutoBuffer<tMaskType, 2304> winMaskStorage(winMaskwidth * winMaskwidth);
+        cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType, winMaskStorage.data());
         winMaskMatBuf.setTo(1);
 
         int j, cn = I.channels(), cn2 = cn*2;
         int winbufwidth = roundUp(winSize.width, 16);
         cv::Size winBufSize(winbufwidth,winbufwidth);
 
-        cv::AutoBuffer<deriv_type> _buf(winBufSize.area()*(cn + cn2));
+        cv::AutoBuffer<deriv_type, 9216> _buf(winBufSize.area()*(cn + cn2));
         int derivDepth = DataType<deriv_type>::depth;
 
         Mat IWinBuf(winBufSize, CV_MAKETYPE(derivDepth, cn), (deriv_type*)_buf.data());
         Mat derivIWinBuf(winBufSize, CV_MAKETYPE(derivDepth, cn2), (deriv_type*)_buf.data() + winBufSize.area()*cn);
 
-
+        const int resLen = maxWinSize * (maxWinSize + 8) * cn;
+        cv::AutoBuffer<short, 4096> resStorage(resLen * 2);
+        // residuals of one point, reused for every point of this range: an iteration reads only the entries it wrote
+        cv::Mat residualMatBuf(resLen, 1, CV_16SC1, resStorage.data());
+        cv::Mat absMatBuf(resLen, 1, CV_16SC1, resStorage.data() + resLen);
         for( int ptidx = range.start; ptidx < range.end; ptidx++ )
         {
             Point2f prevPt = prevPts[ptidx]*(float)(1./(1 << level));
@@ -180,7 +185,7 @@ public:
 
             copyWinBuffers(iw00, iw01, iw10, iw11, winSize, I, derivI, winMaskMat, IWinBuf, derivIWinBuf, iprevPt);
 
-            cv::Mat residualMat = cv::Mat::zeros(winSize.height * (winSize.width + 8) * cn, 1, CV_16SC1);
+            cv::Mat residualMat = residualMatBuf;
             cv::Point2f backUpNextPt = nextPt;
             nextPt += halfWin;
             Point2f prevDelta(0,0);    //denotes h(t-1)
@@ -247,7 +252,7 @@ public:
                         }
                         /*! Estimation for the residual */
                         cv::Mat residualMatRoi(residualMat, cv::Rect(0,0,1, buffIdx));
-                        MEstimatorScale = (buffIdx == 0) ? 1.f : estimateScale(residualMatRoi);
+                        MEstimatorScale = (buffIdx == 0) ? 1.f : estimateScale(residualMatRoi, absMatBuf);
                     }
 
                     float eta = 1.f / winArea;
@@ -732,7 +737,8 @@ public:
         const float FLT_SCALE = (1.f/(1 << 16));//(1.f/(1 << 20)); // 20
         winSize = cv::Size(maxWinSize,maxWinSize);
         int winMaskwidth = roundUp(winSize.width, 16);
-        cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
+        cv::AutoBuffer<tMaskType, 2304> winMaskStorage(winMaskwidth * winMaskwidth);
+        cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType, winMaskStorage.data());
         winMaskMatBuf.setTo(1);
 
         int cn = I.channels(), cn2 = cn*2;
@@ -742,12 +748,17 @@ public:
 
         cv::Matx44f invTensorMat;
 
-        cv::AutoBuffer<deriv_type> _buf(winBufSize.area()*(cn + cn2));
+        cv::AutoBuffer<deriv_type, 9216> _buf(winBufSize.area()*(cn + cn2));
         int derivDepth = DataType<deriv_type>::depth;
 
         Mat IWinBuf(winBufSize, CV_MAKETYPE(derivDepth, cn), (deriv_type*)_buf.data());
         Mat derivIWinBuf(winBufSize, CV_MAKETYPE(derivDepth, cn2), (deriv_type*)_buf.data() + winBufSize.area()*cn);
 
+        const int resLen = maxWinSize * (maxWinSize + 8) * cn;
+        cv::AutoBuffer<short, 4096> resStorage(resLen * 2);
+        // residuals of one point, reused for every point of this range: an iteration reads only the entries it wrote
+        cv::Mat residualMatBuf(resLen, 1, CV_16SC1, resStorage.data());
+        cv::Mat absMatBuf(resLen, 1, CV_16SC1, resStorage.data() + resLen);
         for( int ptidx = range.start; ptidx < range.end; ptidx++ )
         {
             Point2f prevPt = prevPts[ptidx]*(float)(1./(1 << level));
@@ -811,7 +822,7 @@ public:
 
             copyWinBuffers(iw00, iw01, iw10, iw11, winSize, I, derivI, winMaskMat, IWinBuf, derivIWinBuf, iprevPt);
 
-            cv::Mat residualMat = cv::Mat::zeros(winSize.height * (winSize.width + 8) * cn, 1, CV_16SC1);
+            cv::Mat residualMat = residualMatBuf;
             cv::Point2f backUpNextPt = nextPt;
                     nextPt += halfWin;
             Point2f prevDelta(0,0);    //relates to h(t-1)
@@ -897,7 +908,7 @@ public:
                         }
                         /*! Estimation for the residual */
                         cv::Mat residualMatRoi(residualMat, cv::Rect(0,0,1, buffIdx));
-                        MEstimatorScale = (buffIdx == 0) ? 1.f : estimateScale(residualMatRoi);
+                        MEstimatorScale = (buffIdx == 0) ? 1.f : estimateScale(residualMatRoi, absMatBuf);
                     }
 
                     float eta = 1.f / winArea;
@@ -1514,7 +1525,8 @@ public:
 
         winSize = cv::Size(maxWinSize,maxWinSize);
         int winMaskwidth = roundUp(winSize.width, 8) * 2;
-        cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
+        cv::AutoBuffer<tMaskType, 2304> winMaskStorage(winMaskwidth * winMaskwidth);
+        cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType, winMaskStorage.data());
         winMaskMatBuf.setTo(1);
 
         const float FLT_SCALE = (1.f/(1 << 20)); // 20
@@ -1523,9 +1535,9 @@ public:
         int winbufwidth = roundUp(winSize.width, 8);
         cv::Size winBufSize(winbufwidth,winbufwidth);
 
-        std::vector<short> _buf(winBufSize.area()*(cn + cn2));
-        Mat IWinBuf(winBufSize, CV_MAKETYPE(CV_16S, cn), &_buf[0]);
-        Mat derivIWinBuf(winBufSize, CV_MAKETYPE(CV_16S, cn2), &_buf[winBufSize.area()*cn]);
+        cv::AutoBuffer<short, 9216> _buf(winBufSize.area()*(cn + cn2));
+        Mat IWinBuf(winBufSize, CV_MAKETYPE(CV_16S, cn), _buf.data());
+        Mat derivIWinBuf(winBufSize, CV_MAKETYPE(CV_16S, cn2), _buf.data() + winBufSize.area()*cn);
 
         for( int ptidx = range.start; ptidx < range.end; ptidx++ )
         {
@@ -1891,7 +1903,8 @@ namespace radial {
             const float FLT_SCALE = (1.f / (1 << 16));//(1.f/(1 << 20)); // 20
             winSize = cv::Size(maxWinSize, maxWinSize);
             int winMaskwidth = roundUp(winSize.width, 16);
-            cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
+            cv::AutoBuffer<tMaskType, 2304> winMaskStorage(winMaskwidth * winMaskwidth);
+            cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType, winMaskStorage.data());
             winMaskMatBuf.setTo(1);
 
             int cn = I.channels(), cn2 = cn * 2;
@@ -1901,7 +1914,7 @@ namespace radial {
 
             cv::Matx44f invTensorMat;
 
-            cv::AutoBuffer<deriv_type> _buf(winBufSize.area()*(cn + cn2));
+            cv::AutoBuffer<deriv_type, 9216> _buf(winBufSize.area()*(cn + cn2));
             int derivDepth = DataType<deriv_type>::depth;
 
             Mat IWinBuf(winBufSize, CV_MAKETYPE(derivDepth, cn), (deriv_type*)_buf.data());
@@ -1970,7 +1983,6 @@ namespace radial {
 
                 copyWinBuffers(iw00, iw01, iw10, iw11, winSize, I, derivI, winMaskMat, IWinBuf, derivIWinBuf, iprevPt);
 
-                cv::Mat residualMat = cv::Mat::zeros(winSize.height * (winSize.width + 8) * cn, 1, CV_16SC1);
                 cv::Point2f backUpNextPt = nextPt;
                 nextPt += halfWin;
                 Point2f prevDelta(0, 0);    //relates to h(t-1)

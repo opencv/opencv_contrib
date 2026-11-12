@@ -148,7 +148,8 @@ public:
         channel[0] = m_stride ? 2 : 0;
         channel[1] = m_stride ? 3 : 1;
         int hWinSize        = (m_winSize - 1) / 2;
-        std::vector<int> differenz(m_winSize);
+        cv::AutoBuffer<int, 64> differenzBuf(m_winSize);
+        int* differenz = differenzBuf.data();
         for( int r = range.start; r < range.end; r++ )
         {
             for(int c = hWinSize; c < m_data->cols - hWinSize; c++)
@@ -217,7 +218,7 @@ void preCalcCrossSegmentation(
     int hWinSize = (winSize - 1) / 2;
     cv::Mat data = img;
     data.adjustROI(hWinSize, hWinSize, hWinSize, hWinSize);
-    if( dst.size() != dst.size() || dst.type() != CV_32SC4)
+    if( dst.size() != data.size() || dst.type() != CV_32SC4)
     {
         dst.release();
         dst.create(data.size(), CV_32SC4);
@@ -238,8 +239,9 @@ void preCalcCrossSegmentation(
     }
     cv::Mat datat = data.t();
     cv::Mat maskt = mask.t();
-    parallel_for_(cv::Range(0, datat.rows),    HorizontalCrossSegmentation(ptList, npoints, pointScale, &datat, winSize, &dst, threshold, true, &mask));
-    parallel_for_(cv::Range(0, data.rows),    HorizontalCrossSegmentation(ptList, npoints, pointScale, &data, winSize, &dst, threshold, false, &maskt));
+    const double nstripes = std::max(1, cv::getNumThreads()) * 4;
+    parallel_for_(cv::Range(0, datat.rows), HorizontalCrossSegmentation(ptList, npoints, pointScale, &datat, winSize, &dst, threshold, true, &mask), nstripes);
+    parallel_for_(cv::Range(0, data.rows),  HorizontalCrossSegmentation(ptList, npoints, pointScale, &data, winSize, &dst, threshold, false, &maskt), nstripes);
 
 }
 
@@ -431,6 +433,8 @@ void calcLocalOpticalFlowCore(
     // dI/dx ~ Ix, dI/dy ~ Iy
     Mat derivIBuf;
     derivIBuf.create(prevPyramids[0]->m_ImagePyramid[0].rows + iWinSize * 2, prevPyramids[0]->m_ImagePyramid[0].cols + iWinSize * 2, CV_MAKETYPE(derivDepth, prevPyramids[0]->m_ImagePyramid[0].channels() * 2));
+    cv::Mat preCrossMap;
+    const double nstripes = std::max(1, cv::getNumThreads()) * 4;
 
     for (level = maxLevel; level >= 0; level--)
     {
@@ -455,7 +459,6 @@ void calcLocalOpticalFlowCore(
         cv::Mat prevImage = prevPyramids[0]->getImage(level);
         cv::Mat currImage = currPyramids[0]->getImage(level);
 
-        cv::Mat preCrossMap;
         if( usePreComputedCross )
         {
             preCalcCrossSegmentation(prevPts, npoints, (float)(1./(1 << level)), tRGBPrevPyr, winSizes[1], preCrossMap, param.crossSegmentationThreshold);
@@ -481,7 +484,8 @@ void calcLocalOpticalFlowCore(
                             param.useInitialFlow,
                             param.supportRegionType,
                             param.minEigenValue,
-                            param.crossSegmentationThreshold));
+                            param.crossSegmentationThreshold),
+                        nstripes);
                 }
                 else
                 {
@@ -494,7 +498,8 @@ void calcLocalOpticalFlowCore(
                             param.useInitialFlow,
                             param.supportRegionType,
                             param.crossSegmentationThreshold,
-                            param.minEigenValue));
+                            param.minEigenValue),
+                        nstripes);
                 }
             }
             else
@@ -510,7 +515,8 @@ void calcLocalOpticalFlowCore(
                             param.useInitialFlow,
                             param.supportRegionType,
                             param.crossSegmentationThreshold,
-                            param.minEigenValue));
+                            param.minEigenValue),
+                        nstripes);
                 }
                 else
                 {
@@ -522,7 +528,8 @@ void calcLocalOpticalFlowCore(
                             param.useInitialFlow,
                             param.supportRegionType,
                             param.crossSegmentationThreshold,
-                            param.minEigenValue));
+                            param.minEigenValue),
+                        nstripes);
                 }
             }
         }
@@ -543,7 +550,8 @@ void calcLocalOpticalFlowCore(
                             param.supportRegionType,
                             rlofNorm,
                             param.minEigenValue,
-                            param.crossSegmentationThreshold));
+                            param.crossSegmentationThreshold),
+                        nstripes);
                 }
                 else
                 {
@@ -556,7 +564,8 @@ void calcLocalOpticalFlowCore(
                             param.supportRegionType,
                             param.crossSegmentationThreshold,
                             rlofNorm,
-                            param.minEigenValue));
+                            param.minEigenValue),
+                        nstripes);
                 }
             }
             else
@@ -574,7 +583,8 @@ void calcLocalOpticalFlowCore(
                             param.supportRegionType,
                             rlofNorm,
                             param.minEigenValue,
-                            param.crossSegmentationThreshold));
+                            param.crossSegmentationThreshold),
+                        nstripes);
                 }
                 else
                 {
@@ -587,7 +597,8 @@ void calcLocalOpticalFlowCore(
                             param.supportRegionType,
                             param.crossSegmentationThreshold,
                             rlofNorm,
-                            param.minEigenValue));
+                            param.minEigenValue),
+                        nstripes);
                 }
 
             }
