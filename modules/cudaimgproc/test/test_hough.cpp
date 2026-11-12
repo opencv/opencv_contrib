@@ -293,6 +293,60 @@ CUDA_TEST_P(HoughCircles, Accuracy)
     }
 }
 
+CUDA_TEST_P(HoughCircles, MinDist)
+{
+    const cv::cuda::DeviceInfo devInfo = GET_PARAM(0);
+    cv::cuda::setDevice(devInfo.deviceID());
+    const cv::Size size = GET_PARAM(1);
+    const bool useRoi = GET_PARAM(2);
+
+    // with minDist > 1 the centres are kept in order of their votes, so each circle is found once
+    const float dp = 2.0f;
+    const float minDist = 20.0f;
+    const int minRadius = 10;
+    const int maxRadius = 20;
+    const int cannyThreshold = 100;
+    const int votesThreshold = 20;
+
+    std::vector<cv::Vec3f> circles_gold(3);
+    circles_gold[0] = cv::Vec3i(25, 25, minRadius);
+    circles_gold[1] = cv::Vec3i(85, 82, minRadius + 3);
+    circles_gold[2] = cv::Vec3i(30, 75, minRadius + 8);
+
+    cv::Mat src(size, CV_8UC1);
+    drawCircles(src, circles_gold, true);
+
+    cv::Ptr<cv::cuda::HoughCirclesDetector> houghCircles = cv::cuda::createHoughCirclesDetector(dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius);
+
+    cv::cuda::GpuMat d_circles;
+    houghCircles->detect(loadMat(src, useRoi), d_circles);
+
+    std::vector<cv::Vec3f> circles;
+    d_circles.download(circles);
+
+    ASSERT_EQ(circles_gold.size(), circles.size());
+
+    for (size_t j = 0; j < circles_gold.size(); ++j)
+    {
+        const cv::Vec3f gold = circles_gold[j];
+
+        bool found = false;
+
+        for (size_t i = 0; i < circles.size(); ++i)
+        {
+            const cv::Vec3f cur = circles[i];
+
+            if (std::fabs(cur[0] - gold[0]) <= dp && std::fabs(cur[1] - gold[1]) <= dp && std::fabs(cur[2] - gold[2]) < 5)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        ASSERT_TRUE(found) << "circle " << gold;
+    }
+}
+
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, HoughCircles, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,

@@ -62,6 +62,7 @@ namespace cv { namespace cuda { namespace device
     {
         void circlesAccumCenters_gpu(const unsigned int* list, int count, PtrStepi dx, PtrStepi dy, PtrStepSzi accum, int minRadius, int maxRadius, float idp, cudaStream_t stream);
         int buildCentersList_gpu(PtrStepSzi accum, unsigned int* centers, int threshold, int* counterPtr, cudaStream_t stream);
+        void centersVotes_gpu(PtrStepSzi accum, const unsigned int* centers, int count, int* votes, cudaStream_t stream);
         int circlesAccumRadius_gpu(const unsigned int* centers, int centersCount, const unsigned int* list, int count,
                                    float3* circles, int maxCircles, float dp, int minRadius, int maxRadius, int threshold, bool has20, int* counterPtr, cudaStream_t stream);
     }
@@ -135,14 +136,13 @@ namespace
         GpuMat dx_, dy_;
         GpuMat edges_;
         GpuMat accum_;
-        Mat tt; //CPU copy of accum_
         GpuMat list_;
+        GpuMat votes_;
         GpuMat result_;
+        GpuMat counter_;
         Ptr<cuda::Filter> filterDx_;
         Ptr<cuda::Filter> filterDy_;
         Ptr<cuda::CannyEdgeDetector> canny_;
-
-        int* counterPtr_;
     };
 
     bool centersCompare(Vec3f a, Vec3f b) {return (a[2] > b[2]);}
@@ -156,13 +156,10 @@ namespace
 
         filterDx_ = cuda::createSobelFilter(CV_8UC1, CV_32S, 1, 0);
         filterDy_ = cuda::createSobelFilter(CV_8UC1, CV_32S, 0, 1);
-
-        cudaSafeCall(cudaMalloc(&counterPtr_, sizeof(int)));
     }
 
     HoughCirclesDetectorImpl::~HoughCirclesDetectorImpl()
     {
-        cudaSafeCall(cudaFree(counterPtr_));
     }
 
     void HoughCirclesDetectorImpl::detect(InputArray _src, OutputArray circles, Stream& stream)
@@ -185,8 +182,8 @@ namespace
 
         const float idp = 1.0f / dp_;
 
-        filterDx_->apply(src, dx_);
-        filterDy_->apply(src, dy_);
+        filterDx_->apply(src, dx_, stream);
+        filterDy_->apply(src, dy_, stream);
 
         canny_->setLowThreshold(std::max(cannyThreshold_ / 2, 1));
         canny_->setHighThreshold(cannyThreshold_);
@@ -194,10 +191,12 @@ namespace
         canny_->detect(dx_, dy_, edges_, stream);
 
         ensureSizeIsEnough(2, src.size().area(), CV_32SC1, list_);
+        ensureSizeIsEnough(1, 1, CV_32SC1, counter_);
+        int* counterPtr = counter_.ptr<int>();
         unsigned int* srcPoints = list_.ptr<unsigned int>(0);
         unsigned int* centers = list_.ptr<unsigned int>(1);
 
-        const int pointsCount = buildPointList_gpu(edges_, srcPoints, counterPtr_, cudaStream);
+        const int pointsCount = buildPointList_gpu(edges_, srcPoints, counterPtr, cudaStream);
         if (pointsCount == 0)
         {
             circles.release();
@@ -209,25 +208,31 @@ namespace
 
         circlesAccumCenters_gpu(srcPoints, pointsCount, dx_, dy_, accum_, minRadius_, maxRadius_, idp, cudaStream);
 
-        accum_.download(tt, stream);
-
-        int centersCount = buildCentersList_gpu(accum_, centers, votesThreshold_, counterPtr_, cudaStream);
+        int centersCount = buildCentersList_gpu(accum_, centers, votesThreshold_, counterPtr, cudaStream);
         if (centersCount == 0)
         {
             circles.release();
             return;
         }
 
+        AutoBuffer<ushort2> newBuf_;
         if (minDist_ > 1)
         {
             AutoBuffer<ushort2> oldBuf_(centersCount);
-            AutoBuffer<ushort2> newBuf_(centersCount);
+            newBuf_.allocate(centersCount);
+            AutoBuffer<int> votesBuf_(centersCount);
             int newCount = 0;
 
             ushort2* oldBuf = oldBuf_.data();
             ushort2* newBuf = newBuf_.data();
+            int* votes = votesBuf_.data();
+
+            // the accumulator value at each centre, to sort the centres by votes
+            ensureSizeIsEnough(1, centersCount, CV_32SC1, votes_);
+            centersVotes_gpu(accum_, centers, centersCount, votes_.ptr<int>(), cudaStream);
 
             cudaSafeCall( cudaMemcpyAsync(oldBuf, centers, centersCount * sizeof(ushort2), cudaMemcpyDeviceToHost, cudaStream) );
+            cudaSafeCall( cudaMemcpyAsync(votes, votes_.ptr<int>(), centersCount * sizeof(int), cudaMemcpyDeviceToHost, cudaStream) );
             cudaSafeCall( cudaStreamSynchronize(cudaStream) );
 
             const int cellSize = cvRound(minDist_);
@@ -243,7 +248,7 @@ namespace
                 Vec3f temp;
                 temp[0] = oldBuf[i].x;
                 temp[1] = oldBuf[i].y;
-                temp[2] = tt.at<int>(temp[1]+1, temp[0]+1);
+                temp[2] = (float)votes[i];
                 sortBuf.push_back(temp);
             }
             std::sort(sortBuf.begin(), sortBuf.end(), centersCompare);
@@ -308,7 +313,7 @@ namespace
 
         int circlesCount = circlesAccumRadius_gpu(centers, centersCount, srcPoints, pointsCount, result_.ptr<float3>(), maxCircles_,
                                                   dp_, minRadius_, maxRadius_, votesThreshold_, deviceSupports(FEATURE_SET_COMPUTE_20),
-                                                  counterPtr_, cudaStream);
+                                                  counterPtr, cudaStream);
 
         if (circlesCount == 0)
         {
