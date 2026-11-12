@@ -39,4 +39,31 @@ TEST(ximgproc_StructuredEdgeDetection, regression)
     }
 }
 
+TEST(ximgproc_EdgeBoxes, DetectorReuse)
+{
+    cv::Mat edge1 = cv::Mat::zeros(128, 128, CV_32FC1);
+    cv::Mat orient1 = cv::Mat::zeros(128, 128, CV_32FC1);
+    cv::rectangle(edge1, cv::Rect(20, 20, 60, 60), cv::Scalar(0.9f), 1);
+    cv::rectangle(edge1, cv::Rect(35, 35, 30, 30), cv::Scalar(0.8f), 1);
+
+    cv::Mat edge2 = cv::Mat::zeros(128, 128, CV_32FC1);
+    cv::Mat orient2 = cv::Mat::zeros(128, 128, CV_32FC1);
+    cv::rectangle(edge2, cv::Rect(15, 25, 70, 50), cv::Scalar(0.85f), 1);
+    cv::rectangle(edge2, cv::Rect(40, 10, 45, 80), cv::Scalar(0.25f), 1);
+
+    cv::Ptr<cv::ximgproc::EdgeBoxes> ebReused = cv::ximgproc::createEdgeBoxes();
+    std::vector<cv::Rect> boxes1, boxes2Reused, boxes2Fresh;
+    cv::Mat scores1, scores2Reused, scores2Fresh;
+    ebReused->getBoundingBoxes(edge1, orient1, boxes1, scores1);
+    ebReused->getBoundingBoxes(edge2, orient2, boxes2Reused, scores2Reused);
+
+    cv::Ptr<cv::ximgproc::EdgeBoxes> ebFresh = cv::ximgproc::createEdgeBoxes();
+    ebFresh->getBoundingBoxes(edge2, orient2, boxes2Fresh, scores2Fresh);
+
+    ASSERT_EQ(boxes2Fresh.size(), boxes2Reused.size());
+    for (size_t i = 0; i < boxes2Fresh.size(); ++i)
+        EXPECT_EQ(boxes2Fresh[i], boxes2Reused[i]);
+    EXPECT_EQ(0.0, cv::norm(scores2Fresh, scores2Reused, cv::NORM_INF));
+}
+
 }} // namespace

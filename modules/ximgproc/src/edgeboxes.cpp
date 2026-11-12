@@ -235,6 +235,8 @@ void EdgeBoxesImpl::clusterEdges(Mat &edgeMap, Mat &orientationMap)
         }
     }
 
+    vector<float> vs;
+    vector<int> xs, ys;
     for (x = 1; x < w - 1; x++)
     {
         int *s_ptr = _segIds.ptr<int>(x);
@@ -244,8 +246,9 @@ void EdgeBoxesImpl::clusterEdges(Mat &edgeMap, Mat &orientationMap)
             float sumv = 0;
             int x0 = x;
             int y0 = y;
-            vector<float> vs;
-            vector<int> xs, ys;
+            vs.clear();
+            xs.clear();
+            ys.clear();
 
             while (sumv < _edgeMergeThr)
             {
@@ -299,7 +302,7 @@ void EdgeBoxesImpl::clusterEdges(Mat &edgeMap, Mat &orientationMap)
     }
 
     // merge or remove small segments
-    _segMag.resize(_segCnt, 0);
+    _segMag.assign(_segCnt, 0);
     for (x = 1; x < w - 1; x++)
     {
         const float *e_ptr = edgeMap.ptr<float>(x);
@@ -493,21 +496,19 @@ void EdgeBoxesImpl::prepDataStructs(Mat &edgeMap)
 {
     int y, x, i;
 
-    // create _segIImg
-    Mat E1 = Mat::zeros(w, h, DataType<float>::type);
+    // create _segIImg and _magIImg without an extra full-resolution E1 plane
+    _segIImg = Mat::zeros(w+1, h+1, DataType<float>::type);
+    _magIImg = Mat::zeros(w+1, h+1, DataType<float>::type);
 
     for (i=0; i < _segCnt; i++)
     {
-      if (_segMag[i] > 0) E1.at<float>(_segP[i].x, _segP[i].y) = _segMag[i];
+      if (_segMag[i] > 0 && _segP[i].x >= 1 && _segP[i].x < w && _segP[i].y >= 1 && _segP[i].y < h)
+        _segIImg.at<float>(_segP[i].x + 1, _segP[i].y + 1) = _segMag[i];
     }
-
-    _segIImg = Mat::zeros(w+1, h+1, DataType<float>::type);
-    _magIImg = Mat::zeros(w+1, h+1, DataType<float>::type);
 
     for (x=1; x < w; x++)
     {
       const float *e_ptr = edgeMap.ptr<float>(x);
-      const float *e1_ptr = E1.ptr<float>(x);
       const float *si0_ptr = _segIImg.ptr<float>(x);
       float *si1_ptr = _segIImg.ptr<float>(x+1);
       const float *mi0_ptr = _magIImg.ptr<float>(x);
@@ -515,7 +516,7 @@ void EdgeBoxesImpl::prepDataStructs(Mat &edgeMap)
       for (y=1; y < h; y++)
       {
         // create _segIImg
-        si1_ptr[y+1] = e1_ptr[y] + si0_ptr[y+1] + si1_ptr[y] - si0_ptr[y];
+        si1_ptr[y+1] = si1_ptr[y+1] + si0_ptr[y+1] + si1_ptr[y] - si0_ptr[y];
         float e = e_ptr[y] > _edgeMinMag ? e_ptr[y] : 0;
         // create _magIImg
         mi1_ptr[y+1] = e +mi0_ptr[y+1] + mi1_ptr[y] - mi0_ptr[y];
@@ -531,6 +532,7 @@ void EdgeBoxesImpl::prepDataStructs(Mat &edgeMap)
     for (y = 0; y < h; y++)
     {
         s = 0;
+        _hIdxs[y].clear();  // _hIdxs is kept between calls
         _hIdxs[y].push_back(s);
         for (x = 0; x < w; x++)
         {
@@ -549,6 +551,7 @@ void EdgeBoxesImpl::prepDataStructs(Mat &edgeMap)
     for (x = 0; x < w; x++)
     {
         s = 0;
+        _vIdxs[x].clear();
         _vIdxs[x].push_back(s);
         for (y = 0; y < h; y++)
         {
