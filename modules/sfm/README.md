@@ -60,6 +60,14 @@ We are now ready to build, test, and install Ceres.
 Usage
 -----
 
+**rpc_camera.cpp**
+
+Projects satellite rational polynomial camera (RPC) coordinates and backprojects
+observations onto a plane, optionally in a local WGS84 frame. The self-contained
+example uses synthetic coefficients and needs neither Ceres nor visualization.
+See the [RPC camera documentation](doc/rpc.markdown) for units and conventions.
+With `BUILD_EXAMPLES=ON`, build and run `example_sfm_rpc_camera`.
+
 **trajectory_reconstruction.cpp**
 
 This program shows the camera trajectory reconstruction capabilities in the OpenCV Structure From Motion (SFM) module. It loads a file with the tracked 2d points over all the frames which are embedded into a vector of 2d points array, where each inner array represents a different frame. Every frame is composed by a list of 2d points which e.g. the first point in frame 1 is the same point in frame 2. If there is no point in a frame the assigned value will be (-1,-1).

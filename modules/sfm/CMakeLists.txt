@@ -149,6 +149,8 @@ ocv_set_module_sources(HEADERS ${OPENCV_SFM_HDRS}
 
 ocv_create_module()
 
+ocv_install_3rdparty_licenses(VXL "${CMAKE_CURRENT_SOURCE_DIR}/misc/VXL_LICENSE")
+
 
 ### BUILD libmv_light ###
 
@@ -177,3 +179,15 @@ endif ()
 if(Ceres_FOUND)
   ocv_add_samples(opencv_viz)
 endif ()
+
+# RPC projection needs neither Ceres reconstruction nor visualization.
+if(BUILD_EXAMPLES AND NOT TARGET example_sfm_rpc_camera)
+  ocv_add_executable(example_sfm_rpc_camera "${CMAKE_CURRENT_SOURCE_DIR}/samples/rpc_camera.cpp")
+  ocv_target_include_modules(example_sfm_rpc_camera opencv_sfm)
+  ocv_target_link_libraries(example_sfm_rpc_camera PRIVATE opencv_sfm)
+  if(NOT TARGET opencv_samples_sfm)
+    add_custom_target(opencv_samples_sfm)
+    add_dependencies(opencv_samples opencv_samples_sfm)
+  endif()
+  add_dependencies(opencv_samples_sfm example_sfm_rpc_camera)
+endif()
