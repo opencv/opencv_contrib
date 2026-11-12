@@ -199,6 +199,64 @@ TEST_F(ximgproc_FLD, mergeLines)
     ASSERT_EQ(EPOCHS, passedtests);
 }
 
+TEST_F(ximgproc_FLD, mergeOppositeDirections)
+{
+    std::vector<std::pair<cv::Vec4f, cv::Vec4f>> touchingParallelPairs;
+
+    RNG rng(12345);
+    std::vector<cv::Point2f> dirs;
+    for (int i = 0; i < 10; i++)
+    {
+        float x = rng.uniform(1.f, 99.f);
+        float y = 100.f - x;
+        dirs.emplace_back(x, y);
+    }
+    
+    // --- Add the four fixed vectors ---
+    dirs.emplace_back(100.f,   0.f);
+    dirs.emplace_back(  0.f, 100.f);
+    dirs.emplace_back(-100.f,  0.f);
+    dirs.emplace_back(  0.f, -100.f);
+    // --- Construct segment pairs ---
+    const cv::Point2f base(150.f, 150.f);
+
+    for (const auto& v : dirs)
+    {
+        cv::Point2f p1 = base;
+        cv::Point2f p2 = base + v;
+        cv::Point2f mid = 0.5f * (p1 + p2);
+        // Pair A: same direction, touching
+        {
+            cv::Vec4f seg1(p1.x, p1.y, p2.x, p2.y);
+            cv::Vec4f seg2(mid.x, mid.y, p2.x, p2.y);
+            touchingParallelPairs.emplace_back(seg1, seg2);
+        }
+        // Pair B: opposite direction, touching
+        {
+            cv::Vec4f seg1(p1.x, p1.y, p2.x, p2.y);
+            cv::Vec4f seg2(mid.x, mid.y, p1.x, p1.y);
+            touchingParallelPairs.emplace_back(seg1, seg2);
+        }
+    }
+
+    for (const auto& pair : touchingParallelPairs)
+    {
+        lines.clear();
+        test_image = Mat(img_size, CV_8UC1, Scalar::all(0));
+        
+        cv::Vec4f seg1 = pair.first;
+        cv::Vec4f seg2 = pair.second;
+        
+        line(test_image, Point2f(seg1[0], seg1[1]), Point2f(seg1[2], seg1[3]), Scalar(255), 2);
+        line(test_image, Point2f(seg2[0], seg2[1]), Point2f(seg2[2], seg2[3]), Scalar(255), 2);
+        
+        Ptr<FastLineDetector> detector = createFastLineDetector(10, 1.414213562f, 50, 50, 0, true);
+        detector->detect(test_image, lines);
+        
+        EXPECT_EQ(1u, lines.size());
+    }
+}
+
 TEST_F(ximgproc_FLD, rotatedRect)
 {
     for (int i = 0; i < EPOCHS; ++i)
