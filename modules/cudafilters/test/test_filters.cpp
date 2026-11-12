@@ -708,7 +708,16 @@ CUDA_TEST_P(MorphSquareKernel, Accuracy)
             cv::Mat dst_gold;
             cv::morphologyEx(src, dst_gold, op, kernel, cv::Point(-1, -1), iterations);
 
-            EXPECT_MAT_NEAR(getInnerROI(dst_gold, ksize * iterations), getInnerROI(dst, ksize * iterations), 0.0);
+            if (iterations == 1)
+            {
+                // whole image: the padded mask must also read the border that apply() prepares
+                EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
+            }
+            else
+            {
+                // the border of later iterations is a separate issue (#3035): compare the interior
+                EXPECT_MAT_NEAR(getInnerROI(dst_gold, ksize * iterations), getInnerROI(dst, ksize * iterations), 0.0);
+            }
         }
     }
 }
