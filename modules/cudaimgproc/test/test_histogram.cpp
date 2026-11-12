@@ -69,7 +69,20 @@ const hist_size_to_roi_offset_params_t hist_size_to_roi_offset_params[] =
     hist_size_to_roi_offset_params_t(Size(129,32), 2),
     hist_size_to_roi_offset_params_t(Size(129,32), 3),
     // int reads only
-    hist_size_to_roi_offset_params_t(Size(128,32), 0)
+    hist_size_to_roi_offset_params_t(Size(128,32), 0),
+    // ROI offsets past the first 4-byte word: the parent's pixels to the left of the ROI must not be counted
+    hist_size_to_roi_offset_params_t(Size(129,32), 4),
+    hist_size_to_roi_offset_params_t(Size(129,32), 5),
+    hist_size_to_roi_offset_params_t(Size(129,32), 6),
+    hist_size_to_roi_offset_params_t(Size(129,32), 7),
+    hist_size_to_roi_offset_params_t(Size(129,32), 8),
+    hist_size_to_roi_offset_params_t(Size(129,32), 9),
+    hist_size_to_roi_offset_params_t(Size(129,32), 10),
+    hist_size_to_roi_offset_params_t(Size(129,32), 11),
+    hist_size_to_roi_offset_params_t(Size(129,32), 12),
+    hist_size_to_roi_offset_params_t(Size(129,32), 13),
+    hist_size_to_roi_offset_params_t(Size(128,32), 5),
+    hist_size_to_roi_offset_params_t(Size(128,32), 8)
 };
 
 PARAM_TEST_CASE(HistEven, cv::cuda::DeviceInfo, hist_size_to_roi_offset_params_t)
@@ -210,15 +223,57 @@ CUDA_TEST_P(CalcHistWithMask, Accuracy)
     EXPECT_MAT_NEAR(hist_gold, hist, 0.0);
 }
 
+CUDA_TEST_P(CalcHistWithMask, MaskWithDifferentOffset)
+{
+    // The mask is a ROI of a wider matrix taken at its own x offset, so its rows do not become 4-byte
+    // aligned where the source rows do and it has to be read one byte at a time. The mask values are 0
+    // and 255 rather than 0 and 1 so that the top byte of each mask word is exercised as well.
+    cv::Mat src = randomMat(size, CV_8UC1);
+    const Rect roi = Rect(roiOffsetX, 0, src.cols - roiOffsetX, src.rows);
+    cv::Mat maskParent = randomMat(Size(size.width + 8, size.height), CV_8UC1, 0, 2) * 255;
+
+    GpuMat srcDevice = loadMat(src);
+    GpuMat maskParentDevice = loadMat(maskParent);
+
+    for (int maskOffsetX = 0; maskOffsetX < 8; ++maskOffsetX)
+    {
+        SCOPED_TRACE(cv::format("mask x offset %d", maskOffsetX));
+
+        const Rect maskRoi = Rect(maskOffsetX, 0, roi.width, roi.height);
+
+        cv::cuda::GpuMat hist;
+        cv::cuda::calcHist(srcDevice(roi), maskParentDevice(maskRoi), hist);
+
+        cv::Mat hist_gold;
+
+        const int hbins = 256;
+        const float hranges[] = {0.0f, 256.0f};
+        const int histSize[] = {hbins};
+        const float* ranges[] = {hranges};
+        const int channels[] = {0};
+
+        const Mat srcRoi = src(roi);
+        cv::calcHist(&srcRoi, 1, channels, maskParent(maskRoi), hist_gold, 1, histSize, ranges);
+        hist_gold = hist_gold.reshape(1, 1);
+        hist_gold.convertTo(hist_gold, CV_32S);
+
+        EXPECT_MAT_NEAR(hist_gold, hist, 0.0);
+    }
+}
+
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, CalcHistWithMask, testing::Combine(
     ALL_DEVICES, testing::ValuesIn(hist_size_to_roi_offset_params)));
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-// EqualizeHist
+// HistogramRowAlignment
 
-PARAM_TEST_CASE(EqualizeHist, cv::cuda::DeviceInfo, cv::Size)
+// cv::cuda::createContinuous() gives a matrix whose step equals its width, so when the width is not a
+// multiple of four its rows do not all start at the same 4-byte alignment and the position at which a
+// row can start being read as 32-bit words differs from row to row.
+PARAM_TEST_CASE(HistogramRowAlignment, cv::cuda::DeviceInfo, cv::Size)
 {
     cv::cuda::DeviceInfo devInfo;
+
     cv::Size size;
 
     virtual void SetUp()
@@ -228,21 +283,134 @@ PARAM_TEST_CASE(EqualizeHist, cv::cuda::DeviceInfo, cv::Size)
 
         cv::cuda::setDevice(devInfo.deviceID());
     }
+
+    cv::cuda::GpuMat uploadContinuous(const cv::Mat& m)
+    {
+        cv::cuda::GpuMat d;
+        cv::cuda::createContinuous(m.rows, m.cols, m.type(), d);
+        d.upload(m);
+        return d;
+    }
+};
+
+CUDA_TEST_P(HistogramRowAlignment, CalcHist)
+{
+    cv::Mat src = randomMat(size, CV_8UC1);
+
+    cv::cuda::GpuMat srcDevice = uploadContinuous(src);
+    ASSERT_EQ(static_cast<size_t>(size.width), srcDevice.step);
+
+    cv::cuda::GpuMat hist;
+    cv::cuda::calcHist(srcDevice, hist);
+
+    cv::Mat hist_gold;
+
+    const int hbins = 256;
+    const float hranges[] = {0.0f, 256.0f};
+    const int histSize[] = {hbins};
+    const float* ranges[] = {hranges};
+    const int channels[] = {0};
+
+    cv::calcHist(&src, 1, channels, cv::Mat(), hist_gold, 1, histSize, ranges);
+    hist_gold = hist_gold.reshape(1, 1);
+    hist_gold.convertTo(hist_gold, CV_32S);
+
+    EXPECT_MAT_NEAR(hist_gold, hist, 0.0);
+}
+
+CUDA_TEST_P(HistogramRowAlignment, CalcHistWithMask)
+{
+    // the source is continuous and the mask is pitched, so their steps differ modulo four and the mask
+    // cannot be read as words at the offsets at which the source is
+    cv::Mat src = randomMat(size, CV_8UC1);
+    cv::Mat mask = randomMat(size, CV_8UC1, 0, 2) * 255;
+
+    cv::cuda::GpuMat srcDevice = uploadContinuous(src);
+    ASSERT_EQ(static_cast<size_t>(size.width), srcDevice.step);
+    GpuMat maskDevice = loadMat(mask);
+
+    cv::cuda::GpuMat hist;
+    cv::cuda::calcHist(srcDevice, maskDevice, hist);
+
+    cv::Mat hist_gold;
+
+    const int hbins = 256;
+    const float hranges[] = {0.0f, 256.0f};
+    const int histSize[] = {hbins};
+    const float* ranges[] = {hranges};
+    const int channels[] = {0};
+
+    cv::calcHist(&src, 1, channels, mask, hist_gold, 1, histSize, ranges);
+    hist_gold = hist_gold.reshape(1, 1);
+    hist_gold.convertTo(hist_gold, CV_32S);
+
+    EXPECT_MAT_NEAR(hist_gold, hist, 0.0);
+}
+
+CUDA_TEST_P(HistogramRowAlignment, HistEven)
+{
+    cv::Mat src = randomMat(size, CV_8UC1);
+    int hbins = 30;
+    float hranges[] = {50.0f, 200.0f};
+
+    cv::cuda::GpuMat srcDevice = uploadContinuous(src);
+    ASSERT_EQ(static_cast<size_t>(size.width), srcDevice.step);
+
+    cv::cuda::GpuMat hist;
+    cv::cuda::histEven(srcDevice, hist, hbins, (int)hranges[0], (int)hranges[1]);
+
+    cv::Mat hist_gold;
+
+    int histSize[] = {hbins};
+    const float* ranges[] = {hranges};
+    int channels[] = {0};
+    cv::calcHist(&src, 1, channels, cv::Mat(), hist_gold, 1, histSize, ranges);
+
+    hist_gold = hist_gold.t();
+    hist_gold.convertTo(hist_gold, CV_32S);
+
+    EXPECT_MAT_NEAR(hist_gold, hist, 0.0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, HistogramRowAlignment, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(cv::Size(128, 32), cv::Size(129, 32), cv::Size(130, 32), cv::Size(131, 32))));
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// EqualizeHist
+
+PARAM_TEST_CASE(EqualizeHist, cv::cuda::DeviceInfo, cv::Size, int)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int roiOffsetX;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        roiOffsetX = GET_PARAM(2);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
 };
 
 CUDA_TEST_P(EqualizeHist, Async)
 {
     cv::Mat src = randomMat(size, CV_8UC1);
+    const Rect roi = Rect(roiOffsetX, 0, src.cols - roiOffsetX, src.rows);
 
     cv::cuda::Stream stream;
 
+    cv::cuda::GpuMat srcDevice = loadMat(src);
     cv::cuda::GpuMat dst;
-    cv::cuda::equalizeHist(loadMat(src), dst, stream);
+    cv::cuda::equalizeHist(srcDevice(roi), dst, stream);
 
     stream.waitForCompletion();
 
     cv::Mat dst_gold;
-    cv::equalizeHist(src, dst_gold);
+    const Mat srcRoi = src(roi);
+    cv::equalizeHist(srcRoi, dst_gold);
 
     EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
 }
@@ -250,19 +418,23 @@ CUDA_TEST_P(EqualizeHist, Async)
 CUDA_TEST_P(EqualizeHist, Accuracy)
 {
     cv::Mat src = randomMat(size, CV_8UC1);
+    const Rect roi = Rect(roiOffsetX, 0, src.cols - roiOffsetX, src.rows);
 
+    cv::cuda::GpuMat srcDevice = loadMat(src);
     cv::cuda::GpuMat dst;
-    cv::cuda::equalizeHist(loadMat(src), dst);
+    cv::cuda::equalizeHist(srcDevice(roi), dst);
 
     cv::Mat dst_gold;
-    cv::equalizeHist(src, dst_gold);
+    const Mat srcRoi = src(roi);
+    cv::equalizeHist(srcRoi, dst_gold);
 
     EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, EqualizeHist, testing::Combine(
     ALL_DEVICES,
-    DIFFERENT_SIZES));
+    DIFFERENT_SIZES,
+    testing::Values(0, 1, 2, 3, 5, 8)));
 
 TEST(EqualizeHistIssue, Issue18035)
 {
