@@ -926,8 +926,13 @@ namespace
 
         CV_Assert( query.channels() == 1 && query.depth() < CV_64F );
 
-        GpuMat trainCollection, maskCollection;
-        makeGpuCollection(trainDescCollection_, masks, trainCollection, maskCollection);
+        // the kernels take the train and mask headers from host arrays
+        CV_Assert( masks.empty() || masks.size() == trainDescCollection_.size() );
+        for (size_t i = 0; i < trainDescCollection_.size(); ++i)
+        {
+            CV_Assert( !trainDescCollection_[i].empty() && trainDescCollection_[i].cols == query.cols && trainDescCollection_[i].type() == query.type() );
+            CV_Assert( masks.empty() || masks[i].empty() || (masks[i].type() == CV_8UC1 && masks[i].rows == query.rows && masks[i].cols == trainDescCollection_[i].rows) );
+        }
 
         typedef void (*caller_t)(const PtrStepSzb& query, const PtrStepSzb* trains, int n, float maxDistance, const PtrStepSzb* masks,
                                  const PtrStepSzi& trainIdx, const PtrStepSzi& imgIdx, const PtrStepSzf& distance, const PtrStepSz<unsigned int>& nMatches,
