@@ -126,101 +126,6 @@ namespace
             add(relBackwardMotions[i - 1], forwardMotions[i - 1], relBackwardMotions[i]);
         }
     }
-#ifdef HAVE_OPENCL
-
-    bool ocl_upscaleMotions(InputArrayOfArrays _lowResMotions, OutputArrayOfArrays _highResMotions, int scale)
-    {
-        std::vector<UMat> & lowResMotions = *(std::vector<UMat> *)_lowResMotions.getObj(),
-                & highResMotions = *(std::vector<UMat> *)_highResMotions.getObj();
-
-        highResMotions.resize(lowResMotions.size());
-
-        for (size_t i = 0; i < lowResMotions.size(); ++i)
-        {
-            resize(lowResMotions[i], highResMotions[i], Size(), scale, scale, INTER_LINEAR); // TODO
-            multiply(highResMotions[i], Scalar::all(scale), highResMotions[i]);
-        }
-
-        return true;
-    }
-
-#endif
-
-    void upscaleMotions(InputArrayOfArrays _lowResMotions, OutputArrayOfArrays _highResMotions, int scale)
-    {
-        CV_OCL_RUN(_lowResMotions.isUMatVector() && _highResMotions.isUMatVector(),
-                   ocl_upscaleMotions(_lowResMotions, _highResMotions, scale))
-
-        std::vector<Mat> & lowResMotions = *(std::vector<Mat> *)_lowResMotions.getObj(),
-                & highResMotions = *(std::vector<Mat> *)_highResMotions.getObj();
-
-        highResMotions.resize(lowResMotions.size());
-
-        for (size_t i = 0; i < lowResMotions.size(); ++i)
-        {
-            resize(lowResMotions[i], highResMotions[i], Size(), scale, scale, INTER_CUBIC);
-            multiply(highResMotions[i], Scalar::all(scale), highResMotions[i]);
-        }
-    }
-
-#ifdef HAVE_OPENCL
-
-    bool ocl_buildMotionMaps(InputArray _forwardMotion, InputArray _backwardMotion,
-                             OutputArray _forwardMap, OutputArray _backwardMap)
-    {
-        ocl::Kernel k("buildMotionMaps", ocl::superres::superres_btvl1_oclsrc);
-        if (k.empty())
-            return false;
-
-        UMat forwardMotion = _forwardMotion.getUMat(), backwardMotion = _backwardMotion.getUMat();
-        Size size = forwardMotion.size();
-
-        _forwardMap.create(size, CV_32FC2);
-        _backwardMap.create(size, CV_32FC2);
-
-        UMat forwardMap = _forwardMap.getUMat(), backwardMap = _backwardMap.getUMat();
-
-        k.args(ocl::KernelArg::ReadOnlyNoSize(forwardMotion),
-               ocl::KernelArg::ReadOnlyNoSize(backwardMotion),
-               ocl::KernelArg::WriteOnlyNoSize(forwardMap),
-               ocl::KernelArg::WriteOnly(backwardMap));
-
-        size_t globalsize[2] = { (size_t)size.width, (size_t)size.height };
-        return k.run(2, globalsize, NULL, false);
-    }
-
-#endif
-
-    void buildMotionMaps(InputArray _forwardMotion, InputArray _backwardMotion,
-                         OutputArray _forwardMap, OutputArray _backwardMap)
-    {
-        CV_OCL_RUN(_forwardMap.isUMat() && _backwardMap.isUMat(),
-                   ocl_buildMotionMaps(_forwardMotion, _backwardMotion, _forwardMap,
-                                       _backwardMap));
-
-        Mat forwardMotion = _forwardMotion.getMat(), backwardMotion = _backwardMotion.getMat();
-
-        _forwardMap.create(forwardMotion.size(), CV_32FC2);
-        _backwardMap.create(forwardMotion.size(), CV_32FC2);
-
-        Mat forwardMap = _forwardMap.getMat(), backwardMap = _backwardMap.getMat();
-
-        for (int y = 0; y < forwardMotion.rows; ++y)
-        {
-            const Point2f* forwardMotionRow = forwardMotion.ptr<Point2f>(y);
-            const Point2f* backwardMotionRow = backwardMotion.ptr<Point2f>(y);
-            Point2f* forwardMapRow = forwardMap.ptr<Point2f>(y);
-            Point2f* backwardMapRow = backwardMap.ptr<Point2f>(y);
-
-            for (int x = 0; x < forwardMotion.cols; ++x)
-            {
-                Point2f base(static_cast<float>(x), static_cast<float>(y));
-
-                forwardMapRow[x] = base + backwardMotionRow[x];
-                backwardMapRow[x] = base + forwardMotionRow[x];
-            }
-        }
-    }
 
     template <typename T>
     void upscaleImpl(InputArray _src, OutputArray _dst, int scale)
@@ -524,15 +429,12 @@ namespace
         std::vector<Mat> lowResForwardMotions_;
         std::vector<Mat> lowResBackwardMotions_;
 
-        std::vector<Mat> highResForwardMotions_;
-        std::vector<Mat> highResBackwardMotions_;
-
         std::vector<Mat> forwardMaps_;
         std::vector<Mat> backwardMaps_;
 
         Mat highRes_;
 
-        Mat diffTerm_, regTerm_;
+        Mat diffTerm_;
         Mat a_, b_, c_;
 
 #ifdef HAVE_OPENCL
@@ -540,15 +442,12 @@ namespace
         std::vector<UMat> ulowResForwardMotions_;
         std::vector<UMat> ulowResBackwardMotions_;
 
-        std::vector<UMat> uhighResForwardMotions_;
-        std::vector<UMat> uhighResBackwardMotions_;
-
         std::vector<UMat> uforwardMaps_;
         std::vector<UMat> ubackwardMaps_;
 
         UMat uhighRes_;
 
-        UMat udiffTerm_, uregTerm_;
+        UMat udiffTerm_;
         UMat ua_, ub_, uc_;
 #endif
     };
@@ -604,13 +503,23 @@ namespace
         // calc high res motions
         calcRelativeMotions(forwardMotions, backwardMotions, ulowResForwardMotions_, ulowResBackwardMotions_, baseIdx, src[0].size());
 
-        upscaleMotions(ulowResForwardMotions_, uhighResForwardMotions_, scale_);
-        upscaleMotions(ulowResBackwardMotions_, uhighResBackwardMotions_, scale_);
+        uforwardMaps_.resize(ulowResForwardMotions_.size());
+        ubackwardMaps_.resize(ulowResForwardMotions_.size());
+        {
+            UMat uhighResForwardMotion, uhighResBackwardMotion;
+            for (size_t i = 0; i < ulowResForwardMotions_.size(); ++i)
+            {
+                resize(ulowResForwardMotions_[i], uhighResForwardMotion, Size(), scale_, scale_, INTER_LINEAR);
+                multiply(uhighResForwardMotion, Scalar::all(scale_), uhighResForwardMotion);
 
-        uforwardMaps_.resize(uhighResForwardMotions_.size());
-        ubackwardMaps_.resize(uhighResForwardMotions_.size());
-        for (size_t i = 0; i < uhighResForwardMotions_.size(); ++i)
-            buildMotionMaps(uhighResForwardMotions_[i], uhighResBackwardMotions_[i], uforwardMaps_[i], ubackwardMaps_[i]);
+                resize(ulowResBackwardMotions_[i], uhighResBackwardMotion, Size(), scale_, scale_, INTER_LINEAR);
+                multiply(uhighResBackwardMotion, Scalar::all(scale_), uhighResBackwardMotion);
+
+                buildMotionMaps(uhighResForwardMotion, uhighResBackwardMotion, uforwardMaps_[i], ubackwardMaps_[i]);
+            }
+        }
+        ulowResForwardMotions_.clear();
+        ulowResBackwardMotions_.clear();
 
         // initial estimation
         const Size lowResSize = src[0].size();
@@ -652,8 +561,8 @@ namespace
 
             if (lambda_ > 0)
             {
-                calcBtvRegularization(uhighRes_, uregTerm_, btvKernelSize_, btvWeights_, ubtvWeights_);
-                addWeighted(udiffTerm_, 1.0, uregTerm_, -lambda_, 0.0, udiffTerm_);
+                calcBtvRegularization(uhighRes_, ua_, btvKernelSize_, btvWeights_, ubtvWeights_);
+                addWeighted(udiffTerm_, 1.0, ua_, -lambda_, 0.0, udiffTerm_);
             }
 
             addWeighted(uhighRes_, 1.0, udiffTerm_, tau_, 0.0, uhighRes_);
@@ -704,16 +613,35 @@ namespace
             curAlpha_ = alpha_;
         }
 
-        // calc high res motions
+        // calc high res motions directly into forwardMaps_ / backwardMaps_ without count high-res temporaries
         calcRelativeMotions(forwardMotions, backwardMotions, lowResForwardMotions_, lowResBackwardMotions_, baseIdx, src[0].size());
 
-        upscaleMotions(lowResForwardMotions_, highResForwardMotions_, scale_);
-        upscaleMotions(lowResBackwardMotions_, highResBackwardMotions_, scale_);
+        const size_t motionCount = lowResForwardMotions_.size();
+        forwardMaps_.resize(motionCount);
+        backwardMaps_.resize(motionCount);
+        const float scale_f = static_cast<float>(scale_);
+        for (size_t i = 0; i < motionCount; ++i)
+        {
+            resize(lowResBackwardMotions_[i], forwardMaps_[i], Size(), scale_, scale_, INTER_CUBIC);
+            resize(lowResForwardMotions_[i], backwardMaps_[i], Size(), scale_, scale_, INTER_CUBIC);
 
-        forwardMaps_.resize(highResForwardMotions_.size());
-        backwardMaps_.resize(highResForwardMotions_.size());
-        for (size_t i = 0; i < highResForwardMotions_.size(); ++i)
-            buildMotionMaps(highResForwardMotions_[i], highResBackwardMotions_[i], forwardMaps_[i], backwardMaps_[i]);
+            Mat& forwardMap = forwardMaps_[i];
+            Mat& backwardMap = backwardMaps_[i];
+            for (int y = 0; y < forwardMap.rows; ++y)
+            {
+                Point2f* forwardMapRow = forwardMap.ptr<Point2f>(y);
+                Point2f* backwardMapRow = backwardMap.ptr<Point2f>(y);
+                const float yf = static_cast<float>(y);
+                for (int x = 0; x < forwardMap.cols; ++x)
+                {
+                    const Point2f base(static_cast<float>(x), yf);
+                    forwardMapRow[x] = base + forwardMapRow[x] * scale_f;
+                    backwardMapRow[x] = base + backwardMapRow[x] * scale_f;
+                }
+            }
+        }
+        lowResForwardMotions_.clear();
+        lowResBackwardMotions_.clear();
 
         // initial estimation
         const Size lowResSize = src[0].size();
@@ -754,8 +682,8 @@ namespace
 
             if (lambda_ > 0)
             {
-                calcBtvRegularization(highRes_, regTerm_, btvKernelSize_, btvWeights_, ubtvWeights_);
-                addWeighted(diffTerm_, 1.0, regTerm_, -lambda_, 0.0, diffTerm_);
+                calcBtvRegularization(highRes_, a_, btvKernelSize_, btvWeights_, ubtvWeights_);
+                addWeighted(diffTerm_, 1.0, a_, -lambda_, 0.0, diffTerm_);
             }
 
             addWeighted(highRes_, 1.0, diffTerm_, tau_, 0.0, highRes_);
@@ -767,12 +695,13 @@ namespace
 
     void BTVL1_Base::collectGarbage()
     {
+        btvWeights_.clear();
+        curBtvKernelSize_ = -1;
+        curAlpha_ = -1.0;
+
         // Mat
         lowResForwardMotions_.clear();
         lowResBackwardMotions_.clear();
-
-        highResForwardMotions_.clear();
-        highResBackwardMotions_.clear();
 
         forwardMaps_.clear();
         backwardMaps_.clear();
@@ -780,18 +709,16 @@ namespace
         highRes_.release();
 
         diffTerm_.release();
-        regTerm_.release();
         a_.release();
         b_.release();
         c_.release();
 
 #ifdef HAVE_OPENCL
+        ubtvWeights_.release();
+
         // UMat
         ulowResForwardMotions_.clear();
         ulowResBackwardMotions_.clear();
-
-        uhighResForwardMotions_.clear();
-        uhighResBackwardMotions_.clear();
 
         uforwardMaps_.clear();
         ubackwardMaps_.clear();
@@ -799,7 +726,6 @@ namespace
         uhighRes_.release();
 
         udiffTerm_.release();
-        uregTerm_.release();
         ua_.release();
         ub_.release();
         uc_.release();

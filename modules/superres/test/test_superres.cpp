@@ -304,4 +304,71 @@ OCL_TEST_F(SuperResolution, BTVL1)
 
 #endif // HAVE_VIDEO_INPUT
 
+namespace {
+
+class SyntheticShiftFrameSource : public cv::superres::FrameSource
+{
+public:
+    SyntheticShiftFrameSource(int totalFrames) : idx_(0), total_(totalFrames)
+    {
+        RNG& rng = theRNG();
+        base_ = cv::Mat(48, 64, CV_8UC3);
+        rng.fill(base_, RNG::UNIFORM, 20, 200);
+        cv::rectangle(base_, cv::Rect(16, 12, 24, 20), cv::Scalar(240, 60, 40), cv::FILLED);
+    }
+
+    void nextFrame(cv::OutputArray frame) CV_OVERRIDE
+    {
+        if (idx_ >= total_)
+        {
+            frame.release();
+            return;
+        }
+        cv::Mat shifted;
+        const float dx = static_cast<float>((idx_ % 3) - 1);
+        const float dy = static_cast<float>(((idx_ / 2) % 3) - 1);
+        const cv::Mat M = (cv::Mat_<double>(2, 3) << 1.0, 0.0, dx, 0.0, 1.0, dy);
+        cv::warpAffine(base_, shifted, M, base_.size(), cv::INTER_LINEAR, cv::BORDER_REPLICATE);
+        shifted.copyTo(frame);
+        ++idx_;
+    }
+
+    void reset() CV_OVERRIDE { idx_ = 0; }
+
+private:
+    cv::Mat base_;
+    int idx_;
+    int total_;
+};
+
+TEST(SuperResolution_BTVL1_Synthetic, ProcessAndCollectGarbageReuse)
+{
+    cv::Ptr<cv::superres::SuperResolution> sr = cv::superres::createSuperResolution_BTVL1();
+    sr->setScale(2);
+    sr->setIterations(6);
+    sr->setTemporalAreaRadius(2);
+
+    const int btvK = sr->getKernelSize();
+    const cv::Size expectedSize(64 * 2 - 2 * btvK, 48 * 2 - 2 * btvK);
+
+    for (int pass = 0; pass < 2; ++pass)
+    {
+        cv::Ptr<cv::superres::FrameSource> src = cv::makePtr<SyntheticShiftFrameSource>(8);
+        sr->setInput(src);
+
+        cv::Mat out1, out2;
+        sr->nextFrame(out1);
+        sr->nextFrame(out2);
+        ASSERT_FALSE(out1.empty());
+        ASSERT_FALSE(out2.empty());
+        EXPECT_EQ(expectedSize, out1.size());
+        EXPECT_EQ(CV_8UC3, out1.type());
+        EXPECT_GT(cv::countNonZero(out1.reshape(1)), 0);
+
+        sr->collectGarbage();
+    }
+}
+
+} // namespace
+
 } // namespace
