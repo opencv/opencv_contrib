@@ -167,17 +167,30 @@ TEST(InterpolatorTest, RICResultDoesNotDependOnRand)
     }
     ASSERT_FALSE(from_points.empty());
 
-    const int origThreads = cv::getNumThreads();
-    cv::setNumThreads(1);
+    // one thread, since the flow differs by about 5e-6 pixel between thread counts;
+    // the guard restores the count even if interpolate() throws
+    struct ThreadsGuard
+    {
+        const int origThreads;
+        ThreadsGuard() : origThreads(cv::getNumThreads()) { cv::setNumThreads(1); }
+        ~ThreadsGuard() { cv::setNumThreads(origThreads); }
+    } threadsGuard;
+
+    // calls rand() on another thread while in scope
+    struct RandCaller
+    {
+        std::atomic<bool> stop;
+        std::thread thread;
+        RandCaller() : stop(false), thread([this]() { while (!stop) rand(); }) {}
+        ~RandCaller() { stop = true; thread.join(); }
+    };
+
     Mat flow, flowWithOtherRandCalls;
     createRICInterpolator()->interpolate(src, from_points, src1, to_points, flow);
-
-    std::atomic<bool> stop(false);
-    std::thread other([&stop]() { while (!stop) rand(); });
-    createRICInterpolator()->interpolate(src, from_points, src1, to_points, flowWithOtherRandCalls);
-    stop = true;
-    other.join();
-    cv::setNumThreads(origThreads);
+    {
+        RandCaller randCaller;
+        createRICInterpolator()->interpolate(src, from_points, src1, to_points, flowWithOtherRandCalls);
+    }
 
     EXPECT_EQ(cv::norm(flow, flowWithOtherRandCalls, NORM_INF), 0.0);
 }
