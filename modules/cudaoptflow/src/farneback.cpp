@@ -141,6 +141,8 @@ namespace
         double polySigma_;
         int flags_;
         Event sourceStreamComplete;
+        Event calcComplete_;
+        bool hasPendingAsync_ = false;
 
     private:
         void prepareGaussian(
@@ -162,6 +164,9 @@ namespace
         GpuMat frames_[2];
         GpuMat pyrLevel_[2], M_, bufM_, R_[2], blurredFrame_[2];
         std::vector<GpuMat> pyramid0_, pyramid1_;
+        GpuMat flows_[2];         // full-size flow, x and y
+        GpuMat levelFlows_[2][2]; // flow of the coarser levels, two levels used in turn
+        Stream streams_[2];
     };
 
     void FarnebackOpticalFlowImpl::calc(InputArray _frame0, InputArray _frame1, InputOutputArray _flow, Stream& stream)
@@ -173,7 +178,12 @@ namespace
         CV_Assert(frame0.channels() == 1 && frame1.channels() == 1);
         CV_Assert(frame0.size() == frame1.size());
 
-        GpuMat flowx, flowy;
+        if (!stream && hasPendingAsync_)
+        {
+            streams_[0].waitEvent(calcComplete_);
+            streams_[1].waitEvent(calcComplete_);
+            hasPendingAsync_ = false;
+        }
 
         // If flag is set, check for integrity; if not set, allocate memory space
         if (flags_ & OPTFLOW_USE_INITIAL_FLOW)
@@ -181,21 +191,22 @@ namespace
             CV_Assert(flow.size() == frame0.size() && flow.channels() == 2 &&
                       flow.depth() == CV_32F);
 
-            std::vector<cuda::GpuMat> _flows(2);
-            cuda::split(flow, _flows, stream);
-            flowx = _flows[0];
-            flowy = _flows[1];
+            cuda::split(flow, flows_, stream);
         }
         else
         {
-            flowx.create(frame0.size(), CV_32FC1);
-            flowy.create(frame0.size(), CV_32FC1);
+            ensureSizeIsEnough(frame0.size(), CV_32FC1, flows_[0]);
+            ensureSizeIsEnough(frame0.size(), CV_32FC1, flows_[1]);
         }
 
-        calcImpl(frame0, frame1, flowx, flowy, stream);
+        calcImpl(frame0, frame1, flows_[0], flows_[1], stream);
 
-        GpuMat flows[] = {flowx, flowy};
-        cuda::merge(flows, 2, _flow, stream);
+        cuda::merge(flows_, 2, _flow, stream);
+        if (stream)
+        {
+            calcComplete_.record(stream);
+            hasPendingAsync_ = true;
+        }
     }
 
     GpuMat allocMatFromBuf(int rows, int cols, int type, GpuMat& mat)
@@ -285,8 +296,6 @@ namespace
             device::optflow_farneback::boxFilter5Gpu_CC11(M, blockSize/2, bufM, StreamAccessor::getStream(streams[0]));
         swap(M, bufM);
 
-        for (int i = 1; i < 5; ++i)
-            streams[i].waitForCompletion();
         device::optflow_farneback::updateFlowGpu(M, flowx, flowy, StreamAccessor::getStream(streams[0]));
 
         if (updateMatrices)
@@ -316,11 +325,11 @@ namespace
         CV_Assert(polyN_ == 5 || polyN_ == 7);
         CV_Assert(!fastPyramids_ || std::abs(pyrScale_ - 0.5) < 1e-6);
 
-        Stream streams[5];
+        Stream streams[2] = {streams_[0], streams_[1]};
         if (stream)
         {
             streams[0] = stream;
-            sourceStreamComplete.record();
+            sourceStreamComplete.record(stream);
         }
 
         Size size = frame0.size();
@@ -384,8 +393,9 @@ namespace
 
             if (k > 0)
             {
-                curFlowX.create(height, width, CV_32F);
-                curFlowY.create(height, width, CV_32F);
+                // the previous level's flow is in the other pair of buffers
+                curFlowX = allocMatFromBuf(height, width, CV_32F, levelFlows_[k % 2][0]);
+                curFlowY = allocMatFromBuf(height, width, CV_32F, levelFlows_[k % 2][1]);
             }
             else
             {
@@ -436,11 +446,18 @@ namespace
                     allocMatFromBuf(size.height, size.width, CV_32F, blurredFrame_[0]),
                     allocMatFromBuf(size.height, size.width, CV_32F, blurredFrame_[1])
                 };
-                GpuMat pyrLevel[2] =
+                // at full size the resized frame would be a copy of the blurred one
+                GpuMat pyrLevel[2];
+                if (k > 0)
                 {
-                    allocMatFromBuf(height, width, CV_32F, pyrLevel_[0]),
-                    allocMatFromBuf(height, width, CV_32F, pyrLevel_[1])
-                };
+                    pyrLevel[0] = allocMatFromBuf(height, width, CV_32F, pyrLevel_[0]);
+                    pyrLevel[1] = allocMatFromBuf(height, width, CV_32F, pyrLevel_[1]);
+                }
+                else
+                {
+                    pyrLevel[0] = blurredFrame[0];
+                    pyrLevel[1] = blurredFrame[1];
+                }
 
                 Mat g = getGaussianKernel(smoothSize, sigma, CV_32F);
                 device::optflow_farneback::setGaussianBlurKernel(g.ptr<float>(smoothSize/2), smoothSize/2);
@@ -449,7 +466,8 @@ namespace
                 {
                     device::optflow_farneback::gaussianBlurGpu(
                             frames_[i], smoothSize/2, blurredFrame[i], BORDER_REFLECT101, StreamAccessor::getStream(streams[i]));
-                    cuda::resize(blurredFrame[i], pyrLevel[i], Size(width, height), 0.0, 0.0, INTER_LINEAR, streams[i]);
+                    if (k > 0)
+                        cuda::resize(blurredFrame[i], pyrLevel[i], Size(width, height), 0.0, 0.0, INTER_LINEAR, streams[i]);
                     device::optflow_farneback::polynomialExpansionGpu(pyrLevel[i], polyN_, R[i], StreamAccessor::getStream(streams[i]));
                 }
             }
