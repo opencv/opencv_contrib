@@ -83,7 +83,7 @@ protected:
     int match_num;
     int w, h;
     //internal buffers:
-    vector<node>* g;
+    vector<vector<node> > g;
     Mat NNlabels;
     Mat NNdistances;
     Mat labels;
@@ -210,18 +210,22 @@ void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray fr
     NNlabels = Scalar(-1);
     NNdistances = Mat(match_num,k,CV_32F);
     NNdistances = Scalar(0.0f);
-    g = new vector<node>[match_num];
+    g.assign(match_num, vector<node>());
 
     preprocessData(src,matches_vector);
+    costMap.release();
 
     dense_flow.create(from_image.size(),CV_32FC2);
     Mat dst = dense_flow.getMat();
     ransacInterpolation(matches_vector,dst);
+    NNlabels.release();
+    NNdistances.release();
+    labels.release();
+    vector<vector<node> >().swap(g);
+    matches_vector.clear();
+
     if(use_post_proc)
         fastGlobalSmootherFilter(src,dst,dst,fgs_lambda,fgs_sigma);
-
-    costMap.release();
-    delete[] g;
 }
 
 void EdgeAwareInterpolatorImpl::preprocessData(Mat& src, vector<SparseMatch>& matches)
@@ -440,6 +444,8 @@ struct nodeHeap
     // start indexing from 1 (root)
     // children: 2*i, 2*i+1
     // parent: i>>1
+    vector<node> heap_storage;
+    vector<int> heap_pos_storage;
     node* heap;
     int* heap_pos;
     node tmp_node;
@@ -447,25 +453,20 @@ struct nodeHeap
     int num_labels;
 
     nodeHeap(int _num_labels)
+        : heap_storage(_num_labels + 1), heap_pos_storage(_num_labels, 0)
     {
         num_labels = _num_labels;
-        heap = new node[num_labels+1];
+        heap = heap_storage.data();
         heap[0] = node(-1,-1.0f);
-        heap_pos = new int[num_labels];
-        memset(heap_pos,0,sizeof(int)*num_labels);
+        heap_pos = heap_pos_storage.data();
         size=0;
-    }
-
-    ~nodeHeap()
-    {
-        delete[] heap;
-        delete[] heap_pos;
     }
 
     void clear()
     {
         size=0;
-        memset(heap_pos,0,sizeof(int)*num_labels);
+        if (num_labels > 0)
+            memset(heap_pos,0,sizeof(int)*num_labels);
     }
 
     inline bool empty()
@@ -577,7 +578,8 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
     int end   = std::min(range.end   * stripe_sz, inst->match_num);
     nodeHeap q((int)inst->match_num);
     int num_expanded_vertices;
-    unsigned char* expanded_flag = new unsigned char[inst->match_num];
+    AutoBuffer<unsigned char> expanded_flag_buf(inst->match_num);
+    unsigned char* expanded_flag = expanded_flag_buf.data();
     node* neighbors;
 
     for(int i=start;i<end;i++)
@@ -610,7 +612,6 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
             }
         }
     }
-    delete[] expanded_flag;
 }
 
 static void weightedLeastSquaresAffineFit(int* labels, float* weights, int count, float lambda, const SparseMatch* matches, Mat& dst)
@@ -774,11 +775,14 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
 
     int* KNNlabels;
     float* KNNdistances;
-    unsigned char* is_used = new unsigned char[inst->k];
+    AutoBuffer<unsigned char, 256> is_used_buf(inst->k);
+    unsigned char* is_used = is_used_buf.data();
     Mat hypothesis_transform;
 
-    int* inlier_labels    = new int[inst->k];
-    float* inlier_distances = new float[inst->k];
+    AutoBuffer<int, 256> inlier_labels_buf(inst->k);
+    int* inlier_labels = inlier_labels_buf.data();
+    AutoBuffer<float, 256> inlier_distances_buf(inst->k);
+    float* inlier_distances = inlier_distances_buf.data();
     float* tr;
     int num_inliers;
     Point2f a,b;
@@ -844,21 +848,18 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
             weightedLeastSquaresAffineFit(inlier_labels,inlier_distances,num_inliers,inst->regularization_coef,matches,transforms[i]);
         }
     }
-
-    delete[] inlier_labels;
-    delete[] inlier_distances;
-    delete[] is_used;
 }
 
 void EdgeAwareInterpolatorImpl::ransacInterpolation(vector<SparseMatch>& matches, Mat& dst_dense_flow)
 {
     NNdistances *= (-sigma*sigma);
 
-    Mat* transforms = new Mat[match_num];
-    float* weighted_inlier_nums = new float[match_num];
-    float* eps = new float[match_num];
-    for(int i=0;i<match_num;i++)
-        weighted_inlier_nums[i] = -std::numeric_limits<float>::max();
+    vector<Mat> transforms_vec(match_num);
+    Mat* transforms = transforms_vec.data();
+    vector<float> weighted_inlier_nums_vec(match_num, -std::numeric_limits<float>::max());
+    float* weighted_inlier_nums = weighted_inlier_nums_vec.data();
+    vector<float> eps_vec(match_num, 0.0f);
+    float* eps = eps_vec.data();
 
     for(int i=0;i<ransac_num_stripes;i++)
         rngs[i] = RNG(0);
@@ -881,10 +882,6 @@ void EdgeAwareInterpolatorImpl::ransacInterpolation(vector<SparseMatch>& matches
             dst_row[j] = Point2f(tr[0]*j+tr[1]*i+tr[2],tr[3]*j+tr[4]*i+tr[5]) - Point2f((float)j,(float)i);
         }
     }
-
-    delete[] transforms;
-    delete[] weighted_inlier_nums;
-    delete[] eps;
 }
 
 CV_EXPORTS_W
@@ -1173,8 +1170,10 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
 
     geodesicDistanceTransform(matDistanceMap, costMap);
 
-    g.resize(match_num);
+    g.assign(match_num, vector<node>());
     buildGraph(matDistanceMap, costMap);
+    matDistanceMap.release();
+    costMap.release();
     parallel_for_(Range(0, getNumThreads()), [&](const Range & range)
     {
         int stripe_sz = (int)ceil(match_num / (double)getNumThreads());
@@ -1214,6 +1213,7 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
             }
         }
     });
+    vector<vector<node> >().swap(g);
 
     Mat spLabels;
     Mat spNN;
@@ -1223,6 +1223,7 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     int spCnt = overSegmentaion(src, spLabels, sp_size);
     superpixelNeighborConstruction(spLabels, spCnt, spNN);
     superpixelLayoutAnalysis(spLabels, spCnt, spPos, spItems);
+    spLabels.release();
 
     vector<int> srcMatchIds(spCnt);
     for (int i = 0; i < spCnt; i++)
@@ -1232,12 +1233,16 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
         pos.y = MIN(labels.rows - 1, pos.y);
         srcMatchIds[i] = labels.at<int>(pos);
     }
+    labels.release();
+    spPos.release();
 
     int supportCnt = sp_nncnt;
     vector<int> supportMatchIds(spCnt*supportCnt);  // support matches for each superpixel
     vector<float> supportMatchDis(spCnt*supportCnt);
 
     findSupportMatches(srcMatchIds, spCnt, supportCnt, NNlabels, NNdistances, supportMatchIds, supportMatchDis);
+    NNlabels.release();
+    NNdistances.release();
 
     Mat transModels(spCnt,6, CV_32FC1);
     Mat fitModels(spCnt, 6, CV_32FC1);
@@ -1509,69 +1514,54 @@ int RICInterpolatorImpl::overSegmentaion(const Mat & img, Mat & outLabels, const
     return slic->getNumberOfSuperpixels();
 }
 
+static inline void insertUniqueNeighborPair(Mat& outNeighbor, int maxNeighbors, int a, int b)
+{
+    int* rowA = outNeighbor.ptr<int>(a);
+    for (int k = 0; k < maxNeighbors; ++k)
+    {
+        if (rowA[k] < 0)
+        {
+            rowA[k] = b;
+            break;
+        }
+        if (rowA[k] == b)
+            break;
+    }
+
+    int* rowB = outNeighbor.ptr<int>(b);
+    for (int k = 0; k < maxNeighbors; ++k)
+    {
+        if (rowB[k] < 0)
+        {
+            rowB[k] = a;
+            break;
+        }
+        if (rowB[k] == a)
+            break;
+    }
+}
+
 void RICInterpolatorImpl::superpixelNeighborConstruction(const Mat & _labels, int labelCnt, Mat& outNeighbor)
 {
     // init
     outNeighbor = Mat(labelCnt, max_neighbors, CV_32SC1); // only support 32 neighbors
     outNeighbor.setTo(-1);
 
-    vector<int> diffPairs(labels.cols*_labels.rows * 4, 0);
-    int diffPairCnt = 0;
     for (int i = 1; i < _labels.rows; i++) {
+        const int* curRow = _labels.ptr<int>(i);
+        const int* prevRow = _labels.ptr<int>(i - 1);
         for (int j = 1; j < _labels.cols; j++) {
+            const int l0 = curRow[j];
+            const int l1 = curRow[j - 1];
+            const int l2 = prevRow[j];
 
-            int l0 = _labels.at<int>(i,j);
-            int l1 = _labels.at<int>(i,j- 1);
-            int l2 = _labels.at<int>(i-1,j);
+            if (l0 != l1)
+                insertUniqueNeighborPair(outNeighbor, max_neighbors, l0, l1);
 
-            if (l0 != l1) {
-                diffPairs[2 * diffPairCnt] = l0;
-                diffPairs[2 * diffPairCnt + 1] = l1;
-                diffPairCnt++;
-            }
-
-            if (l0 != l2) {
-                diffPairs[2 * diffPairCnt] = l0;
-                diffPairs[2 * diffPairCnt + 1] = l2;
-                diffPairCnt++;
-            }
+            if (l0 != l2)
+                insertUniqueNeighborPair(outNeighbor, max_neighbors, l0, l2);
         }
     }
-
-    for (int i = 0; i < diffPairCnt; i++) {
-        int a = diffPairs[2 * i];
-        int b = diffPairs[2 * i + 1];
-        int k = 0;
-
-        // add to neighbor list of a
-        for (k = 0; k < max_neighbors; k++) {
-            if (outNeighbor.at<int>(a, k) < 0) {
-                break;
-            }
-            if (outNeighbor.at<int>(a,k) == b) {
-                k = -1;
-                break;
-            }
-        }
-        if (k >= 0 && k < max_neighbors) {
-            outNeighbor.at<int>(a, k) = b;
-        }
-
-        // add to neighbor list of b
-        for (k = 0; k < max_neighbors; k++) {
-            if (outNeighbor.at<int>(b, k) < 0) {
-                break;
-            }
-            if (outNeighbor.at<int>(b, k) == a) {
-                k = -1;
-                break;
-            }
-        }
-        if (k >= 0 && k < max_neighbors) {
-            outNeighbor.at<int>(b, k) = a;
-        }
-    }
-
 }
 
 void RICInterpolatorImpl::superpixelLayoutAnalysis(const Mat & _labels, int labelCnt, Mat & outCenterPositions, Mat & outNodeItemLists)
@@ -1768,9 +1758,6 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
             int minPtCnt = 30;
             for (int i = range.start; i < range.end; i++)
             {
-
-                Mat pt1(supportCnt, 1, CV_32FC2);
-                Mat pt2(supportCnt, 1, CV_32FC2);
                 vector<int>   inlier_labels(supportCnt);
                 vector<float> inlier_distances(supportCnt);
                 Mat fitModel;

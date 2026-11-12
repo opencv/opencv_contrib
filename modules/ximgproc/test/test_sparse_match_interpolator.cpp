@@ -255,5 +255,46 @@ TEST_P(InterpolatorTest, MultiThreadReproducibility)
 }
 INSTANTIATE_TEST_CASE_P(FullSet,InterpolatorTest, Combine(Values(szODD,szVGA), GuideTypes::all()));
 
+TEST(InterpolatorTest, SyntheticEdgeAwareAndRICTranslationRecovery)
+{
+    RNG& rng = theRNG();
+    Mat from(80, 96, CV_8UC3), to(80, 96, CV_8UC3);
+    rng.fill(from, RNG::UNIFORM, 20, 220);
+    const Mat M = (Mat_<double>(2, 3) << 1.0, 0.0, 3.0, 0.0, 1.0, -2.0);
+    warpAffine(from, to, M, from.size(), INTER_LINEAR, BORDER_REPLICATE);
+
+    vector<Point2f> fromPts, toPts;
+    for (int y = 8; y < from.rows - 8; y += 8)
+    {
+        for (int x = 8; x < from.cols - 8; x += 8)
+        {
+            const float jx = rng.uniform(-0.05f, 0.05f);
+            const float jy = rng.uniform(-0.05f, 0.05f);
+            fromPts.push_back(Point2f(static_cast<float>(x), static_cast<float>(y)));
+            toPts.push_back(Point2f(static_cast<float>(x + 3) + jx, static_cast<float>(y - 2) + jy));
+        }
+    }
+
+    Ptr<EdgeAwareInterpolator> epic = createEdgeAwareInterpolator();
+    epic->setK(16);
+    Mat flowEpic;
+    epic->interpolate(from, fromPts, to, toPts, flowEpic);
+    ASSERT_EQ(from.size(), flowEpic.size());
+    ASSERT_EQ(CV_32FC2, flowEpic.type());
+    Scalar meanEpic = mean(flowEpic(Rect(16, 16, 64, 48)));
+    EXPECT_NEAR(3.0, meanEpic[0], 0.25);
+    EXPECT_NEAR(-2.0, meanEpic[1], 0.25);
+
+    Ptr<RICInterpolator> ric = createRICInterpolator();
+    ric->setK(16);
+    ric->setSuperpixelNNCnt(32);
+    Mat flowRic;
+    ric->interpolate(from, fromPts, to, toPts, flowRic);
+    ASSERT_EQ(from.size(), flowRic.size());
+    ASSERT_EQ(CV_32FC2, flowRic.type());
+    Scalar meanRic = mean(flowRic(Rect(16, 16, 64, 48)));
+    EXPECT_NEAR(3.0, meanRic[0], 0.25);
+    EXPECT_NEAR(-2.0, meanRic[1], 0.25);
+}
 
 }} // namespace
