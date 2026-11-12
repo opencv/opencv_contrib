@@ -85,11 +85,14 @@ void BinaryDescriptorMatcher::train()
   if( !dataset )
     dataset = Ptr<Mihasher>(new Mihasher( 256, 32 ));
 
+  /* radiusMatch() and the other dataset queries call train() themselves: when nothing was added since the last
+   train(), the dataset and its count stay as they are */
   if( descriptorsMat.rows > 0 )
+  {
     dataset->populate( descriptorsMat, descriptorsMat.rows, descriptorsMat.cols );
-
-  descrInDS = descriptorsMat.rows;
-  descriptorsMat.release();
+    descrInDS = descriptorsMat.rows;
+    descriptorsMat.release();
+  }
 }
 
 /* clear dataset and internal data */
@@ -144,12 +147,17 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DM
   /* add new descriptors to dataset, if needed */
   train();
 
+  if( descrInDS == 0 )
+    return;
+
   /* set number of requested matches to return for each query */
   dataset->setK( 1 );
 
   /* prepare structures for query */
-  UINT32 *results = new UINT32[queryDescriptors.rows];
-  UINT32 * numres = new UINT32[ ( 256 + 1 ) * ( queryDescriptors.rows )];
+  AutoBuffer<UINT32> results_buf( static_cast<size_t>(queryDescriptors.rows) );
+  UINT32 *results = results_buf.data();
+  AutoBuffer<UINT32> numres_buf( static_cast<size_t>(256 + 1) * static_cast<size_t>(queryDescriptors.rows) );
+  UINT32 * numres = numres_buf.data();
 
   /* execute query */
   dataset->batchquery( results, numres, queryDescriptors, queryDescriptors.rows, queryDescriptors.cols );
@@ -189,8 +197,6 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DM
   }
 
   /* delete data */
-  delete[] results;
-  delete[] numres;
 }
 
 /* for every input descriptor, find the best matching one (for a pair of images) */
@@ -204,7 +210,7 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, const Mat& tra
     return;
   }
 
-  if( !mask.empty() && ( mask.rows != queryDescriptors.rows && mask.cols != 1 ) )
+  if( !mask.empty() && ( mask.rows != queryDescriptors.rows || mask.cols != 1 ) )
   {
     std::cout << "Error: input mask should have " << queryDescriptors.rows << " rows and 1 column. " << "Program will be terminated" << std::endl;
 
@@ -212,7 +218,7 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, const Mat& tra
   }
 
   /* create a new mihasher object */
-  Mihasher *mh = new Mihasher( 256, 32 );
+  Ptr<Mihasher> mh = makePtr<Mihasher>( 256, 32 );
 
   /* populate mihasher */
   cv::Mat copy = trainDescriptors.clone();
@@ -220,8 +226,10 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, const Mat& tra
   mh->setK( 1 );
 
   /* prepare structures for query */
-  UINT32 *results = new UINT32[queryDescriptors.rows];
-  UINT32 * numres = new UINT32[ ( 256 + 1 ) * ( queryDescriptors.rows )];
+  AutoBuffer<UINT32> results_buf( static_cast<size_t>(queryDescriptors.rows) );
+  UINT32 *results = results_buf.data();
+  AutoBuffer<UINT32> numres_buf( static_cast<size_t>(256 + 1) * static_cast<size_t>(queryDescriptors.rows) );
+  UINT32 * numres = numres_buf.data();
 
   /* execute query */
   mh->batchquery( results, numres, queryDescriptors, queryDescriptors.rows, queryDescriptors.cols );
@@ -247,9 +255,6 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, const Mat& tra
   }
 
   /* delete data */
-  delete mh;
-  delete[] results;
-  delete[] numres;
 
 }
 
@@ -274,7 +279,7 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, const Mat& 
   }
 
   /* create a new mihasher object */
-  Mihasher *mh = new Mihasher( 256, 32 );
+  Ptr<Mihasher> mh = makePtr<Mihasher>( 256, 32 );
 
   /* populate mihasher */
   cv::Mat copy = trainDescriptors.clone();
@@ -284,8 +289,10 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, const Mat& 
   mh->setK( k );
 
   /* prepare structures for query */
-  UINT32 *results = new UINT32[k * queryDescriptors.rows];
-  UINT32 * numres = new UINT32[ ( 256 + 1 ) * ( queryDescriptors.rows )];
+  AutoBuffer<UINT32> results_buf( static_cast<size_t>(k) * static_cast<size_t>(queryDescriptors.rows) );
+  UINT32 *results = results_buf.data();
+  AutoBuffer<UINT32> numres_buf( static_cast<size_t>(256 + 1) * static_cast<size_t>(queryDescriptors.rows) );
+  UINT32 * numres = numres_buf.data();
 
   /* execute query */
   mh->batchquery( results, numres, queryDescriptors, queryDescriptors.rows, queryDescriptors.cols );
@@ -329,9 +336,6 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, const Mat& 
   }
 
   /* delete data */
-  delete mh;
-  delete[] results;
-  delete[] numres;
 }
 
 /* for every input descriptor,
@@ -358,12 +362,17 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
   /* add new descriptors to dataset, if needed */
   train();
 
+  if( descrInDS == 0 )
+    return;
+
   /* set number of requested matches to return for each query */
   dataset->setK( k );
 
   /* prepare structures for query */
-  UINT32 *results = new UINT32[k * queryDescriptors.rows];
-  UINT32 * numres = new UINT32[ ( 256 + 1 ) * ( queryDescriptors.rows )];
+  AutoBuffer<UINT32> results_buf( static_cast<size_t>(k) * static_cast<size_t>(queryDescriptors.rows) );
+  UINT32 *results = results_buf.data();
+  AutoBuffer<UINT32> numres_buf( static_cast<size_t>(256 + 1) * static_cast<size_t>(queryDescriptors.rows) );
+  UINT32 * numres = numres_buf.data();
 
   /* execute query */
   dataset->batchquery( results, numres, queryDescriptors, queryDescriptors.rows, queryDescriptors.cols );
@@ -374,6 +383,7 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
   {
     /* create a void vector of matches */
     std::vector < DMatch > tempVector;
+    std::vector<int> k_distances;
 
     /* loop over k results returned for every query */
     for ( int j = index; j < index + k; j++ )
@@ -397,8 +407,8 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
        considered */
       else if( masks.size() == 0 || masks[itup->second].at < uchar > ( counter ) != 0 )
       {
-        std::vector<int> k_distances;
-        checkKDistances( numres, k, k_distances, counter, 256 );
+        if( k_distances.empty() )
+          checkKDistances( numres, k, k_distances, counter, 256 );
 
         DMatch dm;
         dm.queryIdx = counter;
@@ -419,8 +429,6 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
   }
 
   /* delete data */
-  delete[] results;
-  delete[] numres;
 }
 
 /* for every input desciptor, find all the ones falling in a
@@ -437,7 +445,7 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
     return;
   }
 
-  if( !mask.empty() && ( mask.rows != queryDescriptors.rows && mask.cols != 1 ) )
+  if( !mask.empty() && ( mask.rows != queryDescriptors.rows || mask.cols != 1 ) )
   {
     std::cout << "Error: input mask should have " << queryDescriptors.rows << " rows and 1 column. " << "Program will be terminated" << std::endl;
 
@@ -445,7 +453,7 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
   }
 
   /* create a new Mihasher */
-  Mihasher* mh = new Mihasher( 256, 32 );
+  Ptr<Mihasher> mh = makePtr<Mihasher>( 256, 32 );
 
   /* populate Mihasher */
   //Mat copy = queryDescriptors.clone();
@@ -456,8 +464,10 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
   mh->setK( trainDescriptors.rows );
 
   /* prepare structures for query */
-  UINT32 *results = new UINT32[trainDescriptors.rows * queryDescriptors.rows];
-  UINT32 * numres = new UINT32[ ( 256 + 1 ) * ( queryDescriptors.rows )];
+  AutoBuffer<UINT32> results_buf( static_cast<size_t>(trainDescriptors.rows) * static_cast<size_t>(queryDescriptors.rows) );
+  UINT32 *results = results_buf.data();
+  AutoBuffer<UINT32> numres_buf( static_cast<size_t>(256 + 1) * static_cast<size_t>(queryDescriptors.rows) );
+  UINT32 * numres = numres_buf.data();
 
   /* execute query */
   mh->batchquery( results, numres, queryDescriptors, queryDescriptors.rows, queryDescriptors.cols );
@@ -498,9 +508,6 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
   }
 
   /* delete data */
-  delete mh;
-  delete[] results;
-  delete[] numres;
 }
 
 /* for every input descriptor, find all the ones falling in a
@@ -527,12 +534,17 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
   /* populate dataset */
   train();
 
+  if( descrInDS == 0 )
+    return;
+
   /* set K */
   dataset->setK( descrInDS );
 
   /* prepare structures for query */
-  UINT32 *results = new UINT32[descrInDS * queryDescriptors.rows];
-  UINT32 * numres = new UINT32[ ( 256 + 1 ) * ( queryDescriptors.rows )];
+  AutoBuffer<UINT32> results_buf( static_cast<size_t>(descrInDS) * static_cast<size_t>(queryDescriptors.rows) );
+  UINT32 *results = results_buf.data();
+  AutoBuffer<UINT32> numres_buf( static_cast<size_t>(256 + 1) * static_cast<size_t>(queryDescriptors.rows) );
+  UINT32 * numres = numres_buf.data();
 
   /* execute query */
   dataset->batchquery( results, numres, queryDescriptors, queryDescriptors.rows, queryDescriptors.cols );
@@ -541,11 +553,12 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
   int index = 0;
   for ( int counter = 0; counter < queryDescriptors.rows; counter++ )
   {
+    std::vector<int> k_distances;
+    checkKDistances( numres, descrInDS, k_distances, counter, 256 );
+
     std::vector < DMatch > tempVector;
     for ( int j = index; j < index + descrInDS; j++ )
     {
-      std::vector<int> k_distances;
-      checkKDistances( numres, descrInDS, k_distances, counter, 256 );
 
       if( k_distances[j - index] <= maxDistance )
       {
@@ -587,8 +600,6 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
   }
 
   /* delete data */
-  delete[] results;
-  delete[] numres;
 
 }
 
@@ -599,8 +610,10 @@ void BinaryDescriptorMatcher::Mihasher::batchquery( UINT32 * results, UINT32 *nu
   counter = makePtr<bitarray>();
   counter->init( N );
 
-  UINT32 *res = new UINT32[K * ( D + 1 )];
-  UINT64 *chunks = new UINT64[m];
+  AutoBuffer<UINT32> res_buf( static_cast<size_t>(K) * static_cast<size_t>(D + 1) );
+  AutoBuffer<UINT64> chunks_buf( static_cast<size_t>(m) );
+  UINT32 *res = res_buf.data();
+  UINT64 *chunks = chunks_buf.data();
   UINT32 * presults = results;
   UINT32 *pnumres = numres;
 
@@ -624,9 +637,6 @@ void BinaryDescriptorMatcher::Mihasher::batchquery( UINT32 * results, UINT32 *nu
     pq += dim1queries;
 
   }
-
-  delete[] res;
-  delete[] chunks;
 }
 
 /* execute a single query */
