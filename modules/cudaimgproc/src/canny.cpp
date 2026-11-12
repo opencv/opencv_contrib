@@ -74,7 +74,10 @@ namespace
             low_thresh_(low_thresh), high_thresh_(high_thresh), apperture_size_(apperture_size), L2gradient_(L2gradient)
         {
             old_apperture_size_ = -1;
-            d_counter = nullptr;
+        }
+
+        ~CannyImpl()
+        {
         }
 
         void detect(InputArray image, OutputArray edges, Stream& stream);
@@ -129,7 +132,7 @@ namespace
 #endif
         int old_apperture_size_;
 
-        int *d_counter;
+        GpuMat counter_;
     };
 
     void CannyImpl::detect(InputArray _image, OutputArray _edges, Stream& stream)
@@ -217,6 +220,7 @@ namespace
 
         ensureSizeIsEnough(1, image_size.area(), CV_16SC2, st1_);
         ensureSizeIsEnough(1, image_size.area(), CV_16SC2, st2_);
+        ensureSizeIsEnough(1, 1, CV_32SC1, counter_);
     }
 
     void CannyImpl::CannyCaller(GpuMat& edges, Stream& stream)
@@ -225,13 +229,9 @@ namespace
 
         canny::calcMap(dx_, dy_, mag_, map_, static_cast<float>(low_thresh_), static_cast<float>(high_thresh_), StreamAccessor::getStream(stream));
 
-        cudaSafeCall( cudaMalloc(&d_counter, sizeof(int)) );
+        canny::edgesHysteresisLocal(map_, st1_.ptr<short2>(), counter_.ptr<int>(), StreamAccessor::getStream(stream));
 
-        canny::edgesHysteresisLocal(map_, st1_.ptr<short2>(), d_counter, StreamAccessor::getStream(stream));
-
-        canny::edgesHysteresisGlobal(map_, st1_.ptr<short2>(), st2_.ptr<short2>(), d_counter, StreamAccessor::getStream(stream));
-
-        cudaSafeCall( cudaFree(d_counter) );
+        canny::edgesHysteresisGlobal(map_, st1_.ptr<short2>(), st2_.ptr<short2>(), counter_.ptr<int>(), StreamAccessor::getStream(stream));
 
         canny::getEdges(map_, edges, StreamAccessor::getStream(stream));
     }

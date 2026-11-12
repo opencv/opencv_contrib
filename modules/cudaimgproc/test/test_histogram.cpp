@@ -387,6 +387,62 @@ CUDA_TEST_P(CLAHE, Accuracy)
     ASSERT_MAT_NEAR(dst_gold, dst, 1.0);
 }
 
+// Counts the device memory of the GpuMats allocated through it.
+struct CountingAllocator : cv::cuda::GpuMat::Allocator
+{
+    cv::cuda::GpuMat::Allocator* const base = cv::cuda::GpuMat::defaultAllocator();
+    std::map<uchar*, size_t> sizes;
+    size_t held = 0;
+    int allocations = 0;
+
+    bool allocate(cv::cuda::GpuMat* mat, int rows, int cols, size_t elemSize) override
+    {
+        if (!base->allocate(mat, rows, cols, elemSize))
+            return false;
+        sizes[mat->data] = mat->step * rows;
+        held += mat->step * rows;
+        ++allocations;
+        return true;
+    }
+
+    void free(cv::cuda::GpuMat* mat) override
+    {
+        held -= sizes[mat->datastart];
+        sizes.erase(mat->datastart);
+        base->free(mat);
+    }
+};
+
+// Makes the allocator the default one while it is in scope.
+struct DefaultAllocatorScope
+{
+    explicit DefaultAllocatorScope(CountingAllocator& allocator) : prev(allocator.base) { cv::cuda::GpuMat::setDefaultAllocator(&allocator); }
+    ~DefaultAllocatorScope() { cv::cuda::GpuMat::setDefaultAllocator(prev); }
+    cv::cuda::GpuMat::Allocator* const prev;
+};
+
+CUDA_TEST_P(CLAHE, CollectGarbage)
+{
+    cv::Mat src;
+    if (type == CV_8UC1)
+        src = randomMat(size, type);
+    else if (type == CV_16UC1)
+        src = randomMat(size, type, 0, 65535);
+
+    cv::cuda::GpuMat d_src = loadMat(src);
+    cv::cuda::GpuMat dst(size, type);
+
+    CountingAllocator allocator;
+    {
+        DefaultAllocatorScope scope(allocator);
+        cv::Ptr<cv::cuda::CLAHE> clahe = cv::cuda::createCLAHE(clipLimit);
+        clahe->apply(d_src, dst);
+        clahe->collectGarbage();
+
+        EXPECT_EQ(0u, allocator.held);
+    }
+}
+
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, CLAHE, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
