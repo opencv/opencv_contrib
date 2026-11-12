@@ -157,10 +157,16 @@ void DecodedBitStreamParser::decodeHanziSegment(Ref<BitSource> bits_, string& re
 
 void DecodedBitStreamParser::decodeKanjiSegment(Ref<BitSource> bits, std::string& result, int count,
                                                 ErrorHandler& err_handler) {
+    // Don't crash trying to read more bits than we have available.
+    if (count * 13 > bits->available()) {
+        err_handler = zxing::FormatErrorHandler("decodeKanjiSegment");
+        return;
+    }
+
     // Each character will require 2 bytes. Read the characters as 2-byte pairs
     // and decode as Shift_JIS afterwards
     size_t nBytes = 2 * count;
-    char* buffer = new char[nBytes];
+    std::vector<char> buffer(nBytes);
     int offset = 0;
     while (count > 0) {
         // Each 13 bits encodes a 2-byte character
@@ -181,13 +187,7 @@ void DecodedBitStreamParser::decodeKanjiSegment(Ref<BitSource> bits, std::string
         count--;
     }
 
-    append(result, buffer, nBytes, err_handler);
-    if (err_handler.ErrCode()) {
-        delete[] buffer;
-        return;
-    }
-    // cout<<buffer<<endl;
-    delete[] buffer;
+    append(result, buffer.data(), nBytes, err_handler);
 }
 
 void DecodedBitStreamParser::decodeByteSegment(Ref<BitSource> bits_, string& result, int count,
@@ -429,7 +429,7 @@ Ref<DecoderResult> DecodedBitStreamParser::decode(ArrayRef<char> bytes, Version*
             } else if (mode == &Mode::ECI) {
                 // Count doesn't apply to ECI
                 int value = parseECIValue(bits, err_handler);
-                if (err_handler.ErrCode()) Ref<DecoderResult>();
+                if (err_handler.ErrCode()) return Ref<DecoderResult>();
                 currentCharacterSetECI = CharacterSetECI::getCharacterSetECIByValueFind(value);
                 if (currentCharacterSetECI == 0) {
                     err_handler = zxing::FormatErrorHandler("decode");
@@ -447,7 +447,7 @@ Ref<DecoderResult> DecodedBitStreamParser::decode(ArrayRef<char> bytes, Version*
                     if (err_handler.ErrCode()) return Ref<DecoderResult>();
                     if (subset == GB2312_SUBSET) {
                         decodeHanziSegment(bits_, result, countHanzi, err_handler);
-                        if (err_handler.ErrCode()) Ref<DecoderResult>();
+                        if (err_handler.ErrCode()) return Ref<DecoderResult>();
                         outputCharset = "GB2312";
                         modeName = mode->getName();
                     }
@@ -465,7 +465,7 @@ Ref<DecoderResult> DecodedBitStreamParser::decode(ArrayRef<char> bytes, Version*
                         modeName = mode->getName();
                     } else if (mode == &Mode::ALPHANUMERIC) {
                         decodeAlphanumericSegment(bits_, result, count, fc1InEffect, err_handler);
-                        if (err_handler.ErrCode()) Ref<DecoderResult>();
+                        if (err_handler.ErrCode()) return Ref<DecoderResult>();
                         modeName = mode->getName();
                     } else if (mode == &Mode::BYTE) {
                         decodeByteSegment(bits_, result, count, currentCharacterSetECI,
@@ -482,7 +482,7 @@ Ref<DecoderResult> DecodedBitStreamParser::decode(ArrayRef<char> bytes, Version*
                         // cout<<"countKanji: "<<countKanji<<endl;
                         // decodeKanjiSegment(bits_, result, countKanji);
                         decodeKanjiSegment(bits_, result, count, err_handler);
-                        if (err_handler.ErrCode()) Ref<DecoderResult>();
+                        if (err_handler.ErrCode()) return Ref<DecoderResult>();
                         modeName = mode->getName();
                     } else {
                         err_handler = zxing::FormatErrorHandler("decode");
