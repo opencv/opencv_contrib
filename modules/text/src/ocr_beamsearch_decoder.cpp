@@ -690,14 +690,13 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
                     (feature_max.at<double>(0,k)-feature_min.at<double>(0,k));
         }
 
-        double *p = new double[nr_class];
-        double predict_label = eval_feature(feature,p);
+        vector<double> recognition_p(nr_class);
+        double predict_label = eval_feature(feature, recognition_p.data());
 
         if ( (predict_label < 0) || (predict_label > nr_class) )
             CV_Error(Error::StsOutOfRange, "OCRBeamSearchClassifierCNN::eval Error: unexpected prediction in eval_feature()");
 
 
-        vector<double> recognition_p(p, p+nr_class);
         recognition_probabilities.push_back(recognition_p);
         oversegmentation.push_back(seg_points);
         seg_points++;
