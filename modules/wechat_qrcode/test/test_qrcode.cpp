@@ -466,6 +466,16 @@ TEST(Objdetect_QRCode_bug, issue_3478) {
     ASSERT_EQ("KFCVW50         ", outs[0]);
 }
 
+class ScopedThreadsGuard
+{
+public:
+    ScopedThreadsGuard() : old_threads(getNumThreads()) {}
+    ~ScopedThreadsGuard() { setNumThreads(old_threads); }
+    void set(int n) { setNumThreads(n); }
+private:
+    int old_threads;
+};
+
 TEST(Objdetect_QRCode_bug, issue_3405_multithread) {
     const std::string expect_msg = "OpenCV_multithread_3405";
     QRCodeEncoder::Params params;
@@ -482,6 +492,10 @@ TEST(Objdetect_QRCode_bug, issue_3405_multithread) {
     const int numCalls = 512;
     std::vector<std::string> decoded(numCalls);
     Mat blank(32, 32, CV_8UC1, Scalar(128));
+
+    // the race needs calls running at the same time
+    ScopedThreadsGuard threadsGuard;
+    threadsGuard.set(std::max(2, getNumThreads()));
 
     cv::parallel_for_(Range(0, numCalls), [&](const Range& range) {
         for (int i = range.start; i < range.end; ++i) {
