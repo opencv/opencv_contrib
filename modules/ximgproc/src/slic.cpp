@@ -1380,10 +1380,6 @@ inline void SuperpixelSLICImpl::PerformSLIC( const int&  itrnum )
  */
 inline void SuperpixelSLICImpl::PerformMSLIC( const int&  itrnum )
 {
-    vector< vector<float> > sigma(m_nr_channels);
-    for( int b = 0; b < m_nr_channels; b++ )
-      sigma[b].resize(m_numlabels, 0);
-
     Mat distvec( m_height, m_width, CV_32F );
 
     const float xywt = (m_region_size/m_ruler)*(m_region_size/m_ruler);
@@ -1439,7 +1435,7 @@ inline void SuperpixelSLICImpl::PerformMSLIC( const int&  itrnum )
 
 inline void SuperpixelSLICImpl::SuperpixelSplit()
 {
-    Mat klabels = m_klabels.clone();
+    const Mat& klabels = m_klabels;
 
     // parallel reduce structure
     SeedsCenters msc( m_chvec, m_klabels, m_numlabels, m_nr_channels );
@@ -1453,6 +1449,9 @@ inline void SuperpixelSLICImpl::SuperpixelSplit()
     if ( m_cur_iter < m_iterations - 2 )
     {
         vector<float> avglabs( m_numlabels, 0 );
+        // per-pixel channel differences, overwritten for every pixel
+        vector<float> ch1( m_nr_channels );
+        vector<float> ch2( m_nr_channels );
         for( int y = 0; y < m_height - 1; y++ )
         {
             for( int x = 0; x < m_width - 1; x++ )
@@ -1462,9 +1461,6 @@ inline void SuperpixelSLICImpl::SuperpixelSplit()
                 {
                     float x1 = 1, y1 = 0;
                     float x2 = 0, y2 = 1;
-
-                    vector<float> ch1(m_nr_channels);
-                    vector<float> ch2(m_nr_channels);
 
                     switch ( m_chvec.at(0).depth() )
                     {
@@ -1774,9 +1770,6 @@ inline void SuperpixelSLICImpl::SuperpixelSplit()
                 m_kseeds[c][k] = msc.sigma[c][k] / msc.clustersize[k];
         }
     }
-
-  m_klabels.release();
-  m_klabels = klabels.clone();
 
   // re-update amount of labels
   m_numlabels = (int)m_kseeds[0].size();
