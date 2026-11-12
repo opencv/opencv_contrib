@@ -47,7 +47,7 @@
 #include "opencv2/imgproc.hpp"
 
 #include "opencv2/core.hpp"
-
+#include "opencv2/core/hal/hal.hpp"
 #include "opencv2/core/types.hpp"
 
 namespace cv
@@ -60,75 +60,109 @@ namespace xphoto
     void dctDenoising(const Mat &, Mat &, const double, const int);
 
 
-    struct grayDctDenoisingInvoker : public ParallelLoopBody
+    namespace
     {
-    public:
-        grayDctDenoisingInvoker(const Mat &src, std::vector <Mat> &patches, const double sigma, const int psize);
-        ~grayDctDenoisingInvoker(){};
-
-        void operator() (const Range &range) const CV_OVERRIDE;
-
-    protected:
-        const Mat &src;
-        std::vector <Mat> &patches; // image decomposition into sliding patches
-
-        const int psize; // size of block to compute dct
-        const double sigma; // expected noise standard deviation
-        const double thresh; // thresholding estimate
-
-        void operator =(const grayDctDenoisingInvoker&) const {};
-    };
-
-    grayDctDenoisingInvoker::grayDctDenoisingInvoker(const Mat &_src, std::vector <Mat> &_patches,
-                                                     const double _sigma, const int _psize)
-        : src(_src), patches(_patches), psize(_psize), sigma(_sigma), thresh(3*_sigma) {}
-
-    void grayDctDenoisingInvoker::operator() (const Range &range) const
+    struct GrayDctDenoisingBandInvoker : public ParallelLoopBody
     {
-        for (int i = range.start; i <= range.end - 1; ++i)
+        GrayDctDenoisingBandInvoker(const Mat& _src, Mat& _dst, double _sigma, int _psize, int _nstripes)
+            : src(_src), dst(_dst), psize(_psize), thresh(static_cast<float>(3.0 * _sigma)), nstripes(_nstripes) {}
+
+        void operator()(const Range& range) const CV_OVERRIDE
         {
-            int y = i / (src.cols - psize);
-            int x = i % (src.cols - psize);
+            const int rows = src.rows;
+            const int cols = src.cols;
+            const int maxPy = rows - psize;
+            const int maxPx = cols - psize;
 
-            Rect patchNum( x, y, psize, psize );
+            const int r0 = (range.start * rows) / nstripes;
+            const int r1 = (range.end * rows) / nstripes;
+            if (r0 >= r1)
+                return;
+
+            Mat dstBand = dst.rowRange(r0, r1);
+            dstBand.setTo(0.0f);
+
+            const int pyStart = std::max(0, r0 - psize + 1);
+            const int pyEnd = std::min(maxPy, r1);
 
             Mat patch(psize, psize, CV_32FC1);
-            src(patchNum).copyTo( patch );
+            float* patchData = patch.ptr<float>();
+            const int patchArea = psize * psize;
+            Ptr<hal::DCT2D> dctFwd = hal::DCT2D::create(psize, psize, CV_32F, 0);
+            Ptr<hal::DCT2D> dctInv = hal::DCT2D::create(psize, psize, CV_32F, DCT_INVERSE);
 
-            dct(patch, patch);
-            float *data = (float *) patch.data;
-            for (int k = 0; k < psize*psize; ++k)
-                data[k] *= fabs(data[k]) > thresh;
-            idct(patch, patches[i]);
+            for (int py = pyStart; py < pyEnd; ++py)
+            {
+                const int dy0 = std::max(0, r0 - py);
+                const int dy1 = std::min(psize, r1 - py);
+
+                for (int px = 0; px < maxPx; ++px)
+                {
+                    for (int dy = 0; dy < psize; ++dy)
+                        std::memcpy(patch.ptr<float>(dy), src.ptr<float>(py + dy) + px, static_cast<size_t>(psize) * sizeof(float));
+
+                    dctFwd->apply(patch.data, patch.step, patch.data, patch.step);
+                    for (int k = 0; k < patchArea; ++k)
+                        patchData[k] *= (std::fabs(patchData[k]) > thresh);
+                    dctInv->apply(patch.data, patch.step, patch.data, patch.step);
+
+                    for (int dy = dy0; dy < dy1; ++dy)
+                    {
+                        const float* pRow = patch.ptr<float>(dy);
+                        float* dRow = dst.ptr<float>(py + dy) + px;
+                        for (int dx = 0; dx < psize; ++dx)
+                            dRow[dx] += pRow[dx];
+                    }
+                }
+            }
+
+            for (int y = r0; y < r1; ++y)
+            {
+                float* dRow = dst.ptr<float>(y);
+                const int wy = std::min(y + 1, maxPy) - std::max(0, y - psize + 1);
+                if (wy <= 0)
+                {
+                    for (int x = 0; x < cols; ++x)
+                        dRow[x] = 0.0f;
+                    continue;
+                }
+                for (int x = 0; x < cols; ++x)
+                {
+                    const int wx = std::min(x + 1, maxPx) - std::max(0, x - psize + 1);
+                    const int count = wy * wx;
+                    dRow[x] = (count > 0) ? (dRow[x] / static_cast<float>(count)) : 0.0f;
+                }
+            }
         }
-    }
+
+        const Mat& src;
+        Mat& dst;
+        int psize;
+        float thresh;
+        int nstripes;
+
+    private:
+        GrayDctDenoisingBandInvoker& operator=(const GrayDctDenoisingBandInvoker&);
+    };
+    } // anonymous namespace
 
     void grayDctDenoising(const Mat &src, Mat &dst, const double sigma, const int psize)
     {
         CV_Assert( src.type() == CV_MAKE_TYPE(CV_32F, 1) );
+        CV_CheckGT(psize, 0, "psize must be positive");
+        CV_CheckGT(src.rows, psize, "src.rows must exceed psize");
+        CV_CheckGT(src.cols, psize, "src.cols must exceed psize");
 
-        int npixels = (src.rows - psize)*(src.cols - psize);
+        Mat srcIn = src;
+        if (dst.data == src.data)
+            srcIn = src.clone();
 
-        std::vector <Mat> patches;
-        for (int i = 0; i < npixels; ++i)
-            patches.push_back( Mat(psize, psize, CV_32FC1) );
-        parallel_for_( cv::Range(0, npixels),
-            grayDctDenoisingInvoker(src, patches, sigma, psize) );
+        dst.create(srcIn.size(), CV_32FC1);
 
-        Mat res( src.size(), CV_32FC1, 0.0f ),
-            num( src.size(), CV_32FC1, 0.0f );
-
-        for (int k = 0; k < npixels; ++k)
-        {
-            int i = k / (src.cols - psize);
-            int j = k % (src.cols - psize);
-
-            res( Rect(j, i, psize, psize) ) += patches[k];
-            num( Rect(j, i, psize, psize) ) += Mat::ones(psize, psize, CV_32FC1);
-        }
-        res /= num;
-
-        res.convertTo( dst, src.type() );
+        const int maxStripes = std::max(1, std::min(srcIn.rows / std::max(1, psize), getNumThreads() * 4));
+        parallel_for_(Range(0, maxStripes),
+                      GrayDctDenoisingBandInvoker(srcIn, dst, sigma, psize, maxStripes),
+                      maxStripes);
     }
 
     void rgbDctDenoising(const Mat &src, Mat &dst, const double sigma, const int psize)
@@ -141,13 +175,14 @@ namespace xphoto
 
         cv::transform(src, dst, mt);
 
-        std::vector <Mat> mv;
-        split(dst, mv);
-
-        for (size_t i = 0; i < mv.size(); ++i)
-            grayDctDenoising(mv[i], mv[i], sigma, psize);
-
-        merge(mv, dst);
+        Mat planeSrc(src.size(), CV_32FC1);
+        Mat planeDst(src.size(), CV_32FC1);
+        for (int c = 0; c < 3; ++c)
+        {
+            extractChannel(dst, planeSrc, c);
+            grayDctDenoising(planeSrc, planeDst, sigma, psize);
+            insertChannel(planeDst, dst, c);
+        }
 
         cv::transform( dst, dst, mt.inv() );
     }
@@ -165,7 +200,18 @@ namespace xphoto
         CV_Assert( src.channels() == 3 || src.channels() == 1 );
 
         int xtype = CV_MAKE_TYPE( CV_32F, src.channels() );
-        Mat img( src.size(), xtype );
+        if (src.type() == CV_32FC1)
+        {
+            grayDctDenoising(src, dst, sigma, psize);
+            return;
+        }
+        if (src.type() == CV_32FC3)
+        {
+            rgbDctDenoising(src, dst, sigma, psize);
+            return;
+        }
+
+        Mat img;
         src.convertTo(img, xtype);
 
         if ( img.type() == CV_32FC3 )
