@@ -162,10 +162,6 @@ private:
         Mat_<float> I1x_buf;
         Mat_<float> I1y_buf;
 
-        Mat_<float> flowMap1_buf;
-        Mat_<float> flowMap2_buf;
-
-        Mat_<float> I1w_buf;
         Mat_<float> I1wx_buf;
         Mat_<float> I1wy_buf;
 
@@ -186,13 +182,6 @@ private:
         Mat_<float> div_p1_buf;
         Mat_<float> div_p2_buf;
         Mat_<float> div_p3_buf;
-
-        Mat_<float> u1x_buf;
-        Mat_<float> u1y_buf;
-        Mat_<float> u2x_buf;
-        Mat_<float> u2y_buf;
-        Mat_<float> u3x_buf;
-        Mat_<float> u3y_buf;
     } dm;
 
 #ifdef HAVE_OPENCL
@@ -441,10 +430,6 @@ void OpticalFlowDual_TVL1::calc(InputArray _I0, InputArray _I1, InputOutputArray
     dm.I1x_buf.create(I0.size());
     dm.I1y_buf.create(I0.size());
 
-    dm.flowMap1_buf.create(I0.size());
-    dm.flowMap2_buf.create(I0.size());
-
-    dm.I1w_buf.create(I0.size());
     dm.I1wx_buf.create(I0.size());
     dm.I1wy_buf.create(I0.size());
 
@@ -453,25 +438,21 @@ void OpticalFlowDual_TVL1::calc(InputArray _I0, InputArray _I1, InputOutputArray
 
     dm.v1_buf.create(I0.size());
     dm.v2_buf.create(I0.size());
-    dm.v3_buf.create(I0.size());
+    if (use_gamma) dm.v3_buf.create(I0.size());
 
     dm.p11_buf.create(I0.size());
     dm.p12_buf.create(I0.size());
     dm.p21_buf.create(I0.size());
     dm.p22_buf.create(I0.size());
-    dm.p31_buf.create(I0.size());
-    dm.p32_buf.create(I0.size());
+    if (use_gamma)
+    {
+        dm.p31_buf.create(I0.size());
+        dm.p32_buf.create(I0.size());
+    }
 
     dm.div_p1_buf.create(I0.size());
     dm.div_p2_buf.create(I0.size());
-    dm.div_p3_buf.create(I0.size());
-
-    dm.u1x_buf.create(I0.size());
-    dm.u1y_buf.create(I0.size());
-    dm.u2x_buf.create(I0.size());
-    dm.u2y_buf.create(I0.size());
-    dm.u3x_buf.create(I0.size());
-    dm.u3y_buf.create(I0.size());
+    if (use_gamma) dm.div_p3_buf.create(I0.size());
 
     // create the scales
     for (int s = 1; s < nscales; ++s)
@@ -1146,15 +1127,15 @@ void EstimateDualVariablesBody::operator() (const Range& range) const
         const float* u1yRow = u1y[y];
         const float* u2xRow = u2x[y];
         const float* u2yRow = u2y[y];
-        const float* u3xRow = u3x[y];
-        const float* u3yRow = u3y[y];
+        const float* u3xRow = use_gamma ? u3x[y] : NULL;
+        const float* u3yRow = use_gamma ? u3y[y] : NULL;
 
         float* p11Row = p11[y];
         float* p12Row = p12[y];
         float* p21Row = p21[y];
         float* p22Row = p22[y];
-        float* p31Row = p31[y];
-        float* p32Row = p32[y];
+        float* p31Row = use_gamma ? p31[y] : NULL;
+        float* p32Row = use_gamma ? p32[y] : NULL;
 
         for (int x = 0; x < u1x.cols; ++x)
         {
@@ -1190,15 +1171,15 @@ static void estimateDualVariables(const Mat_<float>& u1x, const Mat_<float>& u1y
 {
     CV_DbgAssert( u1y.size() == u1x.size() );
     CV_DbgAssert( u2x.size() == u1x.size() );
-    CV_DbgAssert( u3x.size() == u1x.size() );
+    CV_DbgAssert( !use_gamma || u3x.size() == u1x.size() );
     CV_DbgAssert( u2y.size() == u1x.size() );
-    CV_DbgAssert( u3y.size() == u1x.size() );
+    CV_DbgAssert( !use_gamma || u3y.size() == u1x.size() );
     CV_DbgAssert( p11.size() == u1x.size() );
     CV_DbgAssert( p12.size() == u1x.size() );
     CV_DbgAssert( p21.size() == u1x.size() );
     CV_DbgAssert( p22.size() == u1x.size() );
-    CV_DbgAssert( p31.size() == u1x.size() );
-    CV_DbgAssert( p32.size() == u1x.size() );
+    CV_DbgAssert( !use_gamma || p31.size() == u1x.size() );
+    CV_DbgAssert( !use_gamma || p32.size() == u1x.size() );
 
     EstimateDualVariablesBody body;
 
@@ -1323,10 +1304,6 @@ void OpticalFlowDual_TVL1::procOneScale(const Mat_<float>& I0, const Mat_<float>
     Mat_<float> I1y = dm.I1y_buf(Rect(0, 0, I0.cols, I0.rows));
     centeredGradient(I1, I1x, I1y);
 
-    Mat_<float> flowMap1 = dm.flowMap1_buf(Rect(0, 0, I0.cols, I0.rows));
-    Mat_<float> flowMap2 = dm.flowMap2_buf(Rect(0, 0, I0.cols, I0.rows));
-
-    Mat_<float> I1w = dm.I1w_buf(Rect(0, 0, I0.cols, I0.rows));
     Mat_<float> I1wx = dm.I1wx_buf(Rect(0, 0, I0.cols, I0.rows));
     Mat_<float> I1wy = dm.I1wy_buf(Rect(0, 0, I0.cols, I0.rows));
 
@@ -1335,32 +1312,38 @@ void OpticalFlowDual_TVL1::procOneScale(const Mat_<float>& I0, const Mat_<float>
 
     Mat_<float> v1 = dm.v1_buf(Rect(0, 0, I0.cols, I0.rows));
     Mat_<float> v2 = dm.v2_buf(Rect(0, 0, I0.cols, I0.rows));
-    Mat_<float> v3 = dm.v3_buf(Rect(0, 0, I0.cols, I0.rows));
+    // the gamma planes exist only when gamma is used
+    const bool use_gamma = gamma != 0.;
+    Mat_<float> v3 = use_gamma ? dm.v3_buf(Rect(0, 0, I0.cols, I0.rows)) : Mat_<float>();
 
     Mat_<float> p11 = dm.p11_buf(Rect(0, 0, I0.cols, I0.rows));
     Mat_<float> p12 = dm.p12_buf(Rect(0, 0, I0.cols, I0.rows));
     Mat_<float> p21 = dm.p21_buf(Rect(0, 0, I0.cols, I0.rows));
     Mat_<float> p22 = dm.p22_buf(Rect(0, 0, I0.cols, I0.rows));
-    Mat_<float> p31 = dm.p31_buf(Rect(0, 0, I0.cols, I0.rows));
-    Mat_<float> p32 = dm.p32_buf(Rect(0, 0, I0.cols, I0.rows));
+    Mat_<float> p31 = use_gamma ? dm.p31_buf(Rect(0, 0, I0.cols, I0.rows)) : Mat_<float>();
+    Mat_<float> p32 = use_gamma ? dm.p32_buf(Rect(0, 0, I0.cols, I0.rows)) : Mat_<float>();
     p11.setTo(Scalar::all(0));
     p12.setTo(Scalar::all(0));
     p21.setTo(Scalar::all(0));
     p22.setTo(Scalar::all(0));
-    bool use_gamma = gamma != 0.;
     if (use_gamma) p31.setTo(Scalar::all(0));
     if (use_gamma) p32.setTo(Scalar::all(0));
 
     Mat_<float> div_p1 = dm.div_p1_buf(Rect(0, 0, I0.cols, I0.rows));
     Mat_<float> div_p2 = dm.div_p2_buf(Rect(0, 0, I0.cols, I0.rows));
-    Mat_<float> div_p3 = dm.div_p3_buf(Rect(0, 0, I0.cols, I0.rows));
+    Mat_<float> div_p3 = use_gamma ? dm.div_p3_buf(Rect(0, 0, I0.cols, I0.rows)) : Mat_<float>();
 
-    Mat_<float> u1x = dm.u1x_buf(Rect(0, 0, I0.cols, I0.rows));
-    Mat_<float> u1y = dm.u1y_buf(Rect(0, 0, I0.cols, I0.rows));
-    Mat_<float> u2x = dm.u2x_buf(Rect(0, 0, I0.cols, I0.rows));
-    Mat_<float> u2y = dm.u2y_buf(Rect(0, 0, I0.cols, I0.rows));
-    Mat_<float> u3x = dm.u3x_buf(Rect(0, 0, I0.cols, I0.rows));
-    Mat_<float> u3y = dm.u3y_buf(Rect(0, 0, I0.cols, I0.rows));
+    // flowMap1/2, I1w, and u1x..u3y have disjoint lifetimes from v1..v3 and div_p1..div_p3
+    Mat_<float> flowMap1 = v1;
+    Mat_<float> flowMap2 = v2;
+    Mat_<float> I1w = div_p1;
+
+    Mat_<float> u1x = v1;
+    Mat_<float> u1y = v2;
+    Mat_<float> u2x = div_p1;
+    Mat_<float> u2y = div_p2;
+    Mat_<float> u3x = v3;
+    Mat_<float> u3y = div_p3;
 
     const float l_t = static_cast<float>(lambda * theta);
     const float taut = static_cast<float>(tau / theta);
@@ -1414,14 +1397,11 @@ void OpticalFlowDual_TVL1::collectGarbage()
     dm.I1s.clear();
     dm.u1s.clear();
     dm.u2s.clear();
+    dm.u3s.clear();
 
     dm.I1x_buf.release();
     dm.I1y_buf.release();
 
-    dm.flowMap1_buf.release();
-    dm.flowMap2_buf.release();
-
-    dm.I1w_buf.release();
     dm.I1wx_buf.release();
     dm.I1wy_buf.release();
 
@@ -1430,19 +1410,18 @@ void OpticalFlowDual_TVL1::collectGarbage()
 
     dm.v1_buf.release();
     dm.v2_buf.release();
+    dm.v3_buf.release();
 
     dm.p11_buf.release();
     dm.p12_buf.release();
     dm.p21_buf.release();
     dm.p22_buf.release();
+    dm.p31_buf.release();
+    dm.p32_buf.release();
 
     dm.div_p1_buf.release();
     dm.div_p2_buf.release();
-
-    dm.u1x_buf.release();
-    dm.u1y_buf.release();
-    dm.u2x_buf.release();
-    dm.u2y_buf.release();
+    dm.div_p3_buf.release();
 
 #ifdef HAVE_OPENCL
     //dataUMat structure dum

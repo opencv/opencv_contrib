@@ -170,4 +170,25 @@ TEST(Contrib_calcOpticalFlowDual_TVL1, Regression)
 #endif
 }
 
+TEST(Contrib_calcOpticalFlowDual_TVL1, GammaToggleReuse)
+{
+    Mat frame1(64, 64, CV_8UC1, Scalar(0));
+    Mat frame2(64, 64, CV_8UC1, Scalar(0));
+    rectangle(frame1, Rect(16, 16, 20, 20), Scalar(200), FILLED);
+    rectangle(frame2, Rect(18, 17, 20, 20), Scalar(200), FILLED);
+
+    Ptr<DualTVL1OpticalFlow> tvl1 = cv::optflow::DualTVL1OpticalFlow::create();
+    Mat flow0, flowGammaReused, flowGammaFresh;
+    tvl1->calc(frame1, frame2, flow0);
+
+    tvl1->setGamma(0.1);
+    tvl1->calc(frame1, frame2, flowGammaReused);
+
+    Ptr<DualTVL1OpticalFlow> tvl1Fresh = cv::optflow::DualTVL1OpticalFlow::create();
+    tvl1Fresh->setGamma(0.1);
+    tvl1Fresh->calc(frame1, frame2, flowGammaFresh);
+
+    EXPECT_EQ(0.0, cv::norm(flowGammaReused, flowGammaFresh, NORM_INF));
+}
+
 }} // namespace
