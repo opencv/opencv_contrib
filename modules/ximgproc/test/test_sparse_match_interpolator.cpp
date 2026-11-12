@@ -223,8 +223,14 @@ TEST(InterpolatorTest, RICReuseInstance)
     const Size size(160, 120);
     const int matchCounts[] = { 600, 200, 400 }; // the second call has fewer matches than the first
 
-    const int origThreads = cv::getNumThreads();
-    cv::setNumThreads(1); // PropagateModels() uses rand(): bit-exact results need one thread
+    // one thread, so that the results can be compared bit-exactly;
+    // the guard restores the count even if interpolate() throws
+    struct ThreadsGuard
+    {
+        const int origThreads;
+        ThreadsGuard() : origThreads(cv::getNumThreads()) { cv::setNumThreads(1); }
+        ~ThreadsGuard() { cv::setNumThreads(origThreads); }
+    } threadsGuard;
     Ptr<RICInterpolator> reused = createRICInterpolator();
     reused->setUseVariationalRefinement(false);
     for (size_t c = 0; c < sizeof(matchCounts) / sizeof(matchCounts[0]); ++c)
@@ -272,7 +278,6 @@ TEST(InterpolatorTest, RICReuseInstance)
         fresh->interpolate(from, fromPoints, to, toPoints, flowFresh);
         EXPECT_EQ(0.0, cvtest::norm(flowFresh, flowReused, NORM_INF)) << "customCost call " << c;
     }
-    cv::setNumThreads(origThreads);
 }
 
 
