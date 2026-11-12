@@ -255,5 +255,69 @@ TEST_P(InterpolatorTest, MultiThreadReproducibility)
 }
 INSTANTIATE_TEST_CASE_P(FullSet,InterpolatorTest, Combine(Values(szODD,szVGA), GuideTypes::all()));
 
+// https://github.com/opencv/opencv_contrib/issues/3097
+TEST(InterpolatorTest, RICReuseInstance)
+{
+    RNG& rng = theRNG();
+    const Size size(160, 120);
+    const int matchCounts[] = { 600, 200, 400 }; // the second call has fewer matches than the first
+
+    // one thread, so that the results can be compared bit-exactly;
+    // the guard restores the count even if interpolate() throws
+    struct ThreadsGuard
+    {
+        const int origThreads;
+        ThreadsGuard() : origThreads(cv::getNumThreads()) { cv::setNumThreads(1); }
+        ~ThreadsGuard() { cv::setNumThreads(origThreads); }
+    } threadsGuard;
+    Ptr<RICInterpolator> reused = createRICInterpolator();
+    reused->setUseVariationalRefinement(false);
+    for (size_t c = 0; c < sizeof(matchCounts) / sizeof(matchCounts[0]); ++c)
+    {
+        Mat from(size, CV_8UC3), to(size, CV_8UC3);
+        rng.fill(from, RNG::UNIFORM, 0, 256);
+        rng.fill(to, RNG::UNIFORM, 0, 256);
+        vector<Point2f> fromPoints(matchCounts[c]), toPoints(matchCounts[c]);
+        for (int i = 0; i < matchCounts[c]; ++i)
+        {
+            fromPoints[i] = Point2f(rng.uniform(0.f, size.width - 1.f), rng.uniform(0.f, size.height - 1.f));
+            toPoints[i] = fromPoints[i] + Point2f(rng.uniform(-4.f, 4.f), rng.uniform(-4.f, 4.f));
+        }
+
+        Mat flowReused, flowFresh;
+        reused->interpolate(from, fromPoints, to, toPoints, flowReused);
+        Ptr<RICInterpolator> fresh = createRICInterpolator();
+        fresh->setUseVariationalRefinement(false);
+        fresh->interpolate(from, fromPoints, to, toPoints, flowFresh);
+        EXPECT_EQ(0.0, cvtest::norm(flowFresh, flowReused, NORM_INF)) << "call " << c;
+    }
+
+    Mat customCost(size, CV_32FC1);
+    rng.fill(customCost, RNG::UNIFORM, 0.f, 255.f);
+    Mat customCostOrig = customCost.clone();
+    reused->setCostMap(customCost);
+    for (size_t c = 0; c < 2; ++c)
+    {
+        Mat from(size, CV_8UC3), to(size, CV_8UC3);
+        rng.fill(from, RNG::UNIFORM, 0, 256);
+        rng.fill(to, RNG::UNIFORM, 0, 256);
+        vector<Point2f> fromPoints(200), toPoints(200);
+        for (int i = 0; i < 200; ++i)
+        {
+            fromPoints[i] = Point2f(rng.uniform(0.f, size.width - 1.f), rng.uniform(0.f, size.height - 1.f));
+            toPoints[i] = fromPoints[i] + Point2f(rng.uniform(-4.f, 4.f), rng.uniform(-4.f, 4.f));
+        }
+
+        Mat flowReused, flowFresh;
+        reused->interpolate(from, fromPoints, to, toPoints, flowReused);
+        EXPECT_EQ(0.0, cvtest::norm(customCostOrig, customCost, NORM_INF));
+        Ptr<RICInterpolator> fresh = createRICInterpolator();
+        fresh->setUseVariationalRefinement(false);
+        fresh->setCostMap(customCostOrig);
+        fresh->interpolate(from, fromPoints, to, toPoints, flowFresh);
+        EXPECT_EQ(0.0, cvtest::norm(flowFresh, flowReused, NORM_INF)) << "customCost call " << c;
+    }
+}
+
 
 }} // namespace
