@@ -275,4 +275,33 @@ TEST(Tracking_CSRT, synthetic_sequence_and_border_roi)
     EXPECT_TRUE(borderTracker->update(borderFrame, borderPred));
 }
 
+#ifdef TEST_LEGACY
+TEST(Tracking_TLD_MultiTracker, synthetic_two_targets_smoke)
+{
+    RNG& rng = theRNG();
+    Mat base(240, 320, CV_8UC3);
+    rng.fill(base, RNG::UNIFORM, 20, 100);
+    GaussianBlur(base, base, Size(5, 5), 1.2);
+
+    Mat f0 = base.clone();
+    Rect2d b0(40, 50, 44, 44), b1(190, 110, 44, 44);
+    rectangle(f0, b0, Scalar(245, 210, 30), FILLED);
+    circle(f0, Point(62, 72), 12, Scalar(20, 40, 230), FILLED);
+    rectangle(f0, b1, Scalar(30, 220, 240), FILLED);
+    circle(f0, Point(212, 132), 12, Scalar(230, 30, 180), FILLED);
+
+    legacy::MultiTrackerTLD mt;
+    ASSERT_TRUE(mt.addTarget(f0, b0, legacy::TrackerTLD::create()));
+    ASSERT_TRUE(mt.addTarget(f0, b1, legacy::TrackerTLD::create()));
+
+    Mat f1 = base.clone();
+    rectangle(f1, Rect(42, 51, 44, 44), Scalar(245, 210, 30), FILLED);
+    circle(f1, Point(64, 73), 12, Scalar(20, 40, 230), FILLED);
+    rectangle(f1, Rect(192, 111, 44, 44), Scalar(30, 220, 240), FILLED);
+    circle(f1, Point(214, 133), 12, Scalar(230, 30, 180), FILLED);
+
+    EXPECT_TRUE(mt.update_opt(f1));
+}
+#endif
+
 }} // namespace

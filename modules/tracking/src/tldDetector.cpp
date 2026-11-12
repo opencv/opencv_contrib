@@ -379,9 +379,11 @@ namespace tld {
 			scaleID = 0;
 			resized_imgs.push_back(img);
 			blurred_imgs.push_back(imgBlurred);
+			Mat_<double> intImgPFull(img.rows + 1, img.cols + 1), intImgP2Full(img.rows + 1, img.cols + 1);
 			do
 			{
-				Mat_<double> intImgP, intImgP2;
+				Mat_<double> intImgP = intImgPFull(Rect(0, 0, resized_imgs[scaleID].cols + 1, resized_imgs[scaleID].rows + 1));
+				Mat_<double> intImgP2 = intImgP2Full(Rect(0, 0, resized_imgs[scaleID].cols + 1, resized_imgs[scaleID].rows + 1));
 				computeIntegralImages(resized_imgs[scaleID], intImgP, intImgP2);
 				for (int i = 0, imax = cvFloor((0.0 + resized_imgs[scaleID].cols - initSize.width) / dx); i < imax; i++)
 				{
@@ -489,9 +491,11 @@ namespace tld {
 			scaleID = 0;
 			resized_imgs.push_back(img);
 			blurred_imgs.push_back(imgBlurred);
+			Mat_<double> intImgPFull(img.rows + 1, img.cols + 1), intImgP2Full(img.rows + 1, img.cols + 1);
 			do
 			{
-				Mat_<double> intImgP, intImgP2;
+				Mat_<double> intImgP = intImgPFull(Rect(0, 0, resized_imgs[scaleID].cols + 1, resized_imgs[scaleID].rows + 1));
+				Mat_<double> intImgP2 = intImgP2Full(Rect(0, 0, resized_imgs[scaleID].cols + 1, resized_imgs[scaleID].rows + 1));
 				computeIntegralImages(resized_imgs[scaleID], intImgP, intImgP2);
 				for (int i = 0, imax = cvFloor((0.0 + resized_imgs[scaleID].cols - initSize.width) / dx); i < imax; i++)
 				{
@@ -525,49 +529,46 @@ namespace tld {
 			//NN classification
 			//Prepare batch of patches
 			int numOfPatches = (int)ensBuffer.size();
-			Mat_<uchar> stdPatches(numOfPatches, 225);
-			double *resultSr = new double[numOfPatches];
-			double *resultSc = new double[numOfPatches];
-
-			uchar *patchesData = stdPatches.data;
-			for (int i = 0; i < (int)ensBuffer.size(); i++)
+			if (numOfPatches > 0)
 			{
-				resample(resized_imgs[ensScaleIDs[i]], Rect2d(ensBuffer[i], initSize), standardPatch);
-				uchar *stdPatchData = standardPatch.data;
-				for (int j = 0; j < 225; j++)
-					patchesData[225*i+j] = stdPatchData[j];
-			}
-			//Calculate Sr and Sc batches
-			ocl_batchSrSc(stdPatches, resultSr, resultSc, numOfPatches);
+				Mat_<uchar> stdPatches(numOfPatches, 225);
+				AutoBuffer<double> resultSrBuf(numOfPatches);
+				AutoBuffer<double> resultScBuf(numOfPatches);
+				double *resultSr = resultSrBuf.data();
+				double *resultSc = resultScBuf.data();
 
-
-			for (int i = 0; i < (int)ensBuffer.size(); i++)
-			{
-				LabeledPatch labPatch;
-				standardPatch.data = &stdPatches.data[225 * i];
-				double curScale = pow(SCALE_STEP, ensScaleIDs[i]);
-				labPatch.rect = Rect2d(ensBuffer[i].x*curScale, ensBuffer[i].y*curScale, initSize.width * curScale, initSize.height * curScale);
-
-				double srValue, scValue;
-
-				srValue = resultSr[i];
-
-				////To fix: Check the paper, probably this cause wrong learning
-				//
-				labPatch.isObject = srValue > THETA_NN;
-                labPatch.shouldBeIntegrated = abs(srValue - THETA_NN) < CLASSIFIER_MARGIN;
-				patches.push_back(labPatch);
-				//
-
-				if (!labPatch.isObject)
+				uchar *patchesData = stdPatches.data;
+				for (int i = 0; i < numOfPatches; i++)
 				{
-					continue;
+					resample(resized_imgs[ensScaleIDs[i]], Rect2d(ensBuffer[i], initSize), standardPatch);
+					uchar *stdPatchData = standardPatch.data;
+					for (int j = 0; j < 225; j++)
+						patchesData[225*i+j] = stdPatchData[j];
 				}
-				scValue = resultSc[i];
-				if (scValue > maxSc)
+				//Calculate Sr and Sc batches
+				ocl_batchSrSc(stdPatches, resultSr, resultSc, numOfPatches);
+
+				for (int i = 0; i < numOfPatches; i++)
 				{
-					maxSc = scValue;
-					maxScRect = labPatch.rect;
+					LabeledPatch labPatch;
+					double curScale = pow(SCALE_STEP, ensScaleIDs[i]);
+					labPatch.rect = Rect2d(ensBuffer[i].x*curScale, ensBuffer[i].y*curScale, initSize.width * curScale, initSize.height * curScale);
+
+					double srValue = resultSr[i];
+					labPatch.isObject = srValue > THETA_NN;
+					labPatch.shouldBeIntegrated = abs(srValue - THETA_NN) < CLASSIFIER_MARGIN;
+					patches.push_back(labPatch);
+
+					if (!labPatch.isObject)
+					{
+						continue;
+					}
+					double scValue = resultSc[i];
+					if (scValue > maxSc)
+					{
+						maxSc = scValue;
+						maxScRect = labPatch.rect;
+					}
 				}
 			}
 
