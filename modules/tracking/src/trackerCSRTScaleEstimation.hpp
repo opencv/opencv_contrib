@@ -5,6 +5,8 @@
 #ifndef OPENCV_TRACKER_CSRT_SCALE_ESTIMATION
 #define OPENCV_TRACKER_CSRT_SCALE_ESTIMATION
 
+#include <opencv2/core/hal/hal.hpp>
+
 namespace cv
 {
 
@@ -38,6 +40,7 @@ private:
     float learn_rate;
 
     Size original_targ_sz;
+    Ptr<hal::DFT2D> dft_rows_fwd_;
 };
 
 } /* namespace cv */

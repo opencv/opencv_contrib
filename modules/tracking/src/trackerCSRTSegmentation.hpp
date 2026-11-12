@@ -20,7 +20,7 @@ public:
     void extractBackGroundHistogram(std::vector<cv::Mat> & imgChannels,
             int x1, int y1, int x2, int y2, int outer_x1, int outer_y1,
             int outer_x2, int outer_y2);
-    cv::Mat backProject(std::vector<cv::Mat> & imgChannels);
+    cv::Mat backProject(const std::vector<cv::Mat> & imgChannels) const;
     std::vector<double> getHistogramVector();
     void setHistogramVector(double *vector);
 
@@ -42,9 +42,12 @@ public:
             cv::Mat bgPrior, const Histogram &fgHistPrior, int numBinsPerChannel = 16);
     static std::pair<cv::Mat, cv::Mat> computePosteriors2(std::vector<cv::Mat> & imgChannels,
             int x1, int y1, int x2, int y2, double p_b, cv::Mat fgPrior,
-            cv::Mat bgPrior, Histogram hist_target, Histogram hist_background);
+            cv::Mat bgPrior, const Histogram &hist_target, const Histogram &hist_background);
+    static cv::Mat computeForegroundPosterior2(std::vector<cv::Mat> & imgChannels,
+            int x1, int y1, int x2, int y2, double p_b, cv::Mat fgPrior,
+            cv::Mat bgPrior, const Histogram &hist_target, const Histogram &hist_background);
     static std::pair<cv::Mat, cv::Mat> computePosteriors2(std::vector<cv::Mat> &imgChannels,
-            cv::Mat fgPrior, cv::Mat bgPrior, Histogram hist_target, Histogram hist_background);
+            cv::Mat fgPrior, cv::Mat bgPrior, const Histogram &hist_target, const Histogram &hist_background);
 
 private:
     static std::pair<cv::Mat, cv::Mat> getRegularizedSegmentation(cv::Mat & prob_o,

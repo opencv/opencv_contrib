@@ -43,41 +43,37 @@ Mat gaussian_shaped_labels(const float sigma, const int w, const int h)
     return yf;
 }
 
-std::vector<Mat> fourier_transform_features(const std::vector<Mat> &M)
+std::vector<Mat> fourier_transform_features(const std::vector<Mat> &M, Ptr<hal::DFT2D> fwd_plan)
 {
     std::vector<Mat> out(M.size());
-    Mat channel;
+    if (M.empty())
+        return out;
+    if (fwd_plan.empty())
+        fwd_plan = hal::DFT2D::create(M[0].cols, M[0].rows, CV_32F, 1, 2, CV_HAL_DFT_IS_CONTINUOUS);
+    Mat src32f;
     // iterate over channels and convert them to Fourier domain
     for(size_t k = 0; k < M.size(); k++) {
-        M[k].convertTo(channel, CV_32F);
-        dft(channel, channel, DFT_COMPLEX_OUTPUT);
-        out[k] = (channel);
+        Mat in;
+        if (M[k].type() == CV_32FC1 && M[k].isContinuous()) {
+            in = M[k];
+        } else {
+            M[k].convertTo(src32f, CV_32F);
+            in = src32f;
+        }
+        out[k].create(in.size(), CV_32FC2);
+        if (!fwd_plan.empty() && in.size() == M[0].size() && in.isContinuous() && out[k].isContinuous()) {
+            fwd_plan->apply(in.data, in.step, out[k].data, out[k].step);
+        } else {
+            dft(in, out[k], DFT_COMPLEX_OUTPUT);
+        }
     }
     return out;
 }
 
 Mat divide_complex_matrices(const Mat &A, const Mat &B)
 {
-    std::vector<Mat> va,vb;
-    split(A, va);
-    split(B, vb);
-
-    Mat a = va.at(0);
-    Mat b = va.at(1);
-    Mat c = vb.at(0);
-    Mat d = vb.at(1);
-
-    Mat div = c.mul(c) + d.mul(d);
-    Mat real_part = (a.mul(c) + b.mul(d));
-    Mat im_part = (b.mul(c) - a.mul(d));
-    divide(real_part, div, real_part);
-    divide(im_part, div, im_part);
-
-    std::vector<Mat> tmp(2);
-    tmp[0] = real_part;
-    tmp[1] = im_part;
     Mat res;
-    merge(tmp, res);
+    divide_complex_add_scalar(A, B, 0.0f, res);
     return res;
 }
 
@@ -110,8 +106,11 @@ Mat get_subwindow(
         padding_bottom = roi.y + roi.height - image.rows;
         roi.height = image.rows - roi.y;
     }
-    Mat subwin = image(roi).clone();
-    copyMakeBorder(subwin, subwin, padding_top, padding_bottom, padding_left, padding_right, BORDER_REPLICATE);
+    Mat subwin;
+    if (padding_top == 0 && padding_bottom == 0 && padding_left == 0 && padding_right == 0)
+        subwin = image(roi).clone();
+    else
+        copyMakeBorder(image(roi), subwin, padding_top, padding_bottom, padding_left, padding_right, BORDER_REPLICATE);
 
     if(valid_pixels != NULL) {
         *valid_pixels = Rect(padding_left, padding_top, roi.width, roi.height);
@@ -264,7 +263,8 @@ Mat get_chebyshev_win(Size sz, float attenuation)
     return cheb_rows * cheb_cols;
 }
 
-static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const int pad_x, const int pad_y)
+void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const int pad_x, const int pad_y,
+                   Mat &histM, Mat &normM)
 {
     const int dimHOG = 32;
     CV_Assert(pad_x >= 0);
@@ -296,9 +296,12 @@ static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const i
     const Size visible = blockSize*sbin;
 
     // initialize historgram, norm, output feature matrices
-    Mat histM = Mat::zeros(Size(blockSize.width*numOrient, blockSize.height), CV_64F);
-    Mat normM = Mat::zeros(Size(blockSize.width, blockSize.height), CV_64F);
-    featM = Mat::zeros(Size(outSize.width*dimHOG, outSize.height), CV_64F);
+    histM.create(Size(blockSize.width*numOrient, blockSize.height), CV_64F);
+    histM.setTo(0);
+    normM.create(Size(blockSize.width, blockSize.height), CV_64F);
+    normM.setTo(0);
+    featM.create(Size(outSize.width*dimHOG, outSize.height), CV_64F);
+    featM.setTo(0);
 
     // get the stride of each matrix
     const size_t imStride = imageM.step1();
@@ -481,10 +484,10 @@ static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const i
 
 std::vector<Mat> get_features_hog(const Mat &im, const int bin_size)
 {
-    Mat hogmatrix;
+    Mat hogmatrix, histM, normM;
     Mat im_;
     im.convertTo(im_, CV_64FC3, 1.0/255.0);
-    computeHOG32D(im_,hogmatrix,bin_size,1,1);
+    computeHOG32D(im_, hogmatrix, bin_size, 1, 1, histM, normM);
     hogmatrix.convertTo(hogmatrix, CV_32F);
     Size hog_size = im.size();
     hog_size.width /= bin_size;
@@ -496,29 +499,38 @@ std::vector<Mat> get_features_hog(const Mat &im, const int bin_size)
 }
 
 std::vector<Mat> get_features_cn(const Mat &ppatch_data, const Size &output_size) {
-    Mat patch_data = ppatch_data.clone();
-    Vec3b & pixel = patch_data.at<Vec3b>(0,0);
-    unsigned index;
+    const int rows = ppatch_data.rows;
+    const int cols = ppatch_data.cols;
+    const bool need_resize = (output_size.width > 0 && output_size.height > 0 && output_size != ppatch_data.size());
 
-    Mat cnFeatures = Mat::zeros(patch_data.rows,patch_data.cols,CV_32FC(10));
+    std::vector<Mat> raw(10);
+    float* planePtrs[10];
+    for (int k = 0; k < 10; ++k) {
+        raw[k].create(rows, cols, CV_32FC1);
+    }
 
-    for(int i=0;i<patch_data.rows;i++){
-        for(int j=0;j<patch_data.cols;j++){
-            pixel=patch_data.at<Vec3b>(i,j);
-            index=(unsigned)(cvFloor((float)pixel[2]/8)+32*cvFloor((float)pixel[1]/8)+32*32*cvFloor((float)pixel[0]/8));
+    for (int i = 0; i < rows; ++i) {
+        const Vec3b* prow = ppatch_data.ptr<Vec3b>(i);
+        for (int k = 0; k < 10; ++k)
+            planePtrs[k] = raw[k].ptr<float>(i);
 
-            //copy the values
-            for(int k=0;k<10;k++){
-                cnFeatures.at<Vec<float,10> >(i,j)[k]=(float)ColorNames[index][k];
+        for (int j = 0; j < cols; ++j) {
+            const Vec3b pixel = prow[j];
+            const unsigned index = (unsigned)((pixel[2] >> 3) + 32 * (pixel[1] >> 3) + 1024 * (pixel[0] >> 3));
+            const float* cn = ColorNames[index];
+            for (int k = 0; k < 10; ++k) {
+                planePtrs[k][j] = cn[k];
             }
         }
     }
-    std::vector<Mat> result;
-    split(cnFeatures, result);
-    for (size_t i = 0; i < result.size(); i++) {
-        if (output_size.width > 0 && output_size.height > 0) {
-            resize(result.at(i), result.at(i), output_size, INTER_CUBIC);
-        }
+
+    if (!need_resize)
+        return raw;
+
+    std::vector<Mat> result(10);
+    for (int k = 0; k < 10; ++k) {
+        resize(raw[k], result[k], output_size, 0, 0, INTER_CUBIC);
+        raw[k].release();
     }
     return result;
 }
@@ -553,10 +565,13 @@ Mat bgr2hsv(const Mat &img)
 {
     Mat hsv_img;
     cvtColor(img, hsv_img, COLOR_BGR2HSV);
-    std::vector<Mat> hsv_img_channels;
-    split(hsv_img, hsv_img_channels);
-    hsv_img_channels.at(0).convertTo(hsv_img_channels.at(0), CV_8UC1, 255.0 / 180.0);
-    merge(hsv_img_channels, hsv_img);
+    const double scale = 255.0 / 180.0;
+    for (int y = 0; y < hsv_img.rows; ++y) {
+        Vec3b* row = hsv_img.ptr<Vec3b>(y);
+        for (int x = 0; x < hsv_img.cols; ++x) {
+            row[x][0] = saturate_cast<uchar>(row[x][0] * scale);
+        }
+    }
     return hsv_img;
 }
 
