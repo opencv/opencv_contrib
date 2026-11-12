@@ -31,6 +31,48 @@ public:
     virtual void getRidgeFilteredImage(InputArray _img, OutputArray out) CV_OVERRIDE;
 };
 
+namespace
+{
+template <typename T>
+struct RidgeEigenRowInvoker : public ParallelLoopBody
+{
+    RidgeEigenRowInvoker(const Mat& _sbxx, const Mat& _sbyy, Mat& _sbxy_out)
+        : sbxx(_sbxx), sbyy(_sbyy), sbxy_out(_sbxy_out) {}
+
+    void operator()(const Range& range) const CV_OVERRIDE
+    {
+        const int cols = sbxx.cols;
+        for (int r = range.start; r < range.end; ++r)
+        {
+            const T* xxRow = sbxx.ptr<T>(r);
+            const T* yyRow = sbyy.ptr<T>(r);
+            T* xyRow = sbxy_out.ptr<T>(r);
+            for (int c = 0; c < cols; ++c)
+            {
+                const T xx = xxRow[c];
+                const T yy = yyRow[c];
+                const T xy = xyRow[c];
+                const T sb2xx = xx * xx;
+                const T sb2yy = yy * yy;
+                const T sb2xy = xy * xy;
+                const T sbxxyy = xx * yy;
+                const T four_sb2xy = ((sb2xy + sb2xy) + sb2xy) + sb2xy;
+                const T two_sbxxyy = sbxxyy + sbxxyy;
+                const T rootex = ((sb2xx + four_sb2xy) - two_sbxxyy) + sb2yy;
+                xyRow[c] = (xx + yy) + std::sqrt(rootex);
+            }
+        }
+    }
+
+    const Mat& sbxx;
+    const Mat& sbyy;
+    Mat& sbxy_out;
+
+private:
+    RidgeEigenRowInvoker& operator=(const RidgeEigenRowInvoker&);
+};
+} // anonymous namespace
+
 void RidgeDetectionFilterImpl::getRidgeFilteredImage(InputArray _img, OutputArray out)
 {
     Mat img = _img.getMat();
@@ -39,30 +81,25 @@ void RidgeDetectionFilterImpl::getRidgeFilteredImage(InputArray _img, OutputArra
     if(img.channels() == 3)
         cvtColor(img, img, COLOR_BGR2GRAY);
 
-    Mat sbx, sby;
-    Sobel(img, sbx, _ddepth, _dx, 0, _ksize, _scale, _delta, _borderType);
-    Sobel(img, sby, _ddepth, 0, _dy, _ksize, _scale, _delta, _borderType);
+    Mat grad, sbxx, sbxy, sbyy;
+    Sobel(img, grad, _ddepth, _dx, 0, _ksize, _scale, _delta, _borderType);
+    Sobel(grad, sbxx, _ddepth, _dx, 0, _ksize, _scale, _delta, _borderType);
+    Sobel(grad, sbxy, _ddepth, 0, _dy, _ksize, _scale, _delta, _borderType);
 
-    Mat sbxx, sbyy, sbxy;
-    Sobel(sbx, sbxx, _ddepth, _dx, 0, _ksize, _scale, _delta, _borderType);
-    Sobel(sby, sbyy, _ddepth, 0, _dy, _ksize, _scale, _delta, _borderType);
-    Sobel(sbx, sbxy, _ddepth, 0, _dy, _ksize, _scale, _delta, _borderType);
+    Sobel(img, grad, _ddepth, 0, _dy, _ksize, _scale, _delta, _borderType);
+    img.release();
+    Sobel(grad, sbyy, _ddepth, 0, _dy, _ksize, _scale, _delta, _borderType);
+    grad.release();
 
-    Mat sb2xx, sb2yy, sb2xy;
-    multiply(sbxx, sbxx, sb2xx);
-    multiply(sbyy, sbyy, sb2yy);
-    multiply(sbxy, sbxy, sb2xy);
+    const int nstripes = std::max(1, getNumThreads()) * 4;
+    if (_ddepth == CV_32FC1)
+        parallel_for_(Range(0, sbxx.rows), RidgeEigenRowInvoker<float>(sbxx, sbyy, sbxy), nstripes);
+    else
+        parallel_for_(Range(0, sbxx.rows), RidgeEigenRowInvoker<double>(sbxx, sbyy, sbxy), nstripes);
 
-    Mat sbxxyy;
-    multiply(sbxx, sbyy, sbxxyy);
-
-    Mat rootex;
-    rootex = (sb2xx +  (sb2xy + sb2xy + sb2xy + sb2xy)  - (sbxxyy + sbxxyy) + sb2yy );
-    Mat root;
-    sqrt(rootex, root);
-    Mat ridgexp;
-    ridgexp = ( (sbxx + sbyy) + root );
-    ridgexp.convertTo(out, _out_dtype, 0.5);
+    sbxx.release();
+    sbyy.release();
+    sbxy.convertTo(out, _out_dtype, 0.5);
 }
 
 Ptr<RidgeDetectionFilter> RidgeDetectionFilter::create(int ddepth, int dx, int dy, int ksize, int out_dtype, double scale, double delta, int borderType)

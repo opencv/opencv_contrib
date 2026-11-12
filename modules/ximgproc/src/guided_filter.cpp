@@ -759,55 +759,115 @@ void GuidedFilterImpl::filter(InputArray src, OutputArray dst, int dDepth /*= -1
         return;
     }
 
-    if (dDepth == -1) dDepth = src.depth();
-    int srcCnNum = src.channels();
+    Mat srcMat = src.getMat();
+    if (dDepth == -1) dDepth = srcMat.depth();
+    const int srcCnNum = srcMat.channels();
 
-    vector<Mat> srcCn(srcCnNum);
+    dst.create(hOriginal, wOriginal, CV_MAKE_TYPE(dDepth, srcCnNum));
+    Mat dstMat = dst.getMat();
+
+    // Stream 1 source channel at a time, reusing 1 beta plane + gCnNum cov/alpha planes
+    vector<Mat> srcCn(1);
     vector<Mat>& srcCnMean = srcCn;
-    split(src, srcCn);
+    vector<vector<Mat> > covAndAlpha(1);
+    covAndAlpha[0].resize(gCnNum);
+    Mat outPlane;
 
-    if (scale < 1.0)
+    for (int si = 0; si < srcCnNum; ++si)
     {
-        parSubsample(srcCn, srcCn);
+        if (srcCnNum == 1)
+        {
+            if (scale < 1.0)
+            {
+                resize(srcMat, srcCn[0], Size(w, h), 0, 0, INTER_LINEAR);
+                if (srcMat.depth() != CV_32F)
+                    srcCn[0].convertTo(srcCn[0], CV_32F);
+            }
+            else if (srcMat.depth() != CV_32F)
+            {
+                srcMat.convertTo(srcCn[0], CV_32F);
+            }
+            else
+            {
+                srcMat.copyTo(srcCn[0]);
+            }
+        }
+        else
+        {
+            extractChannel(srcMat, srcCn[0], si);
+            if (scale < 1.0)
+                resize(srcCn[0], srcCn[0], Size(w, h), 0, 0, INTER_LINEAR);
+            if (srcCn[0].depth() != CV_32F)
+                srcCn[0].convertTo(srcCn[0], CV_32F);
+        }
+
+        computeCovGuideAndSrc(srcCn, srcCnMean, covAndAlpha);
+
+        // Compute alpha in-place inside covAndAlpha[0] using a stack-backed per-stripe 3-row buffer
+        const int nstripes = std::max(1, getNumThreads()) * 4;
+        parallel_for_(Range(0, h), [&](const Range& range)
+        {
+            AutoBuffer<float, 16384> tmpBuf(static_cast<size_t>(gCnNum) * static_cast<size_t>(w));
+            float* tmpRows[4] = { NULL, NULL, NULL, NULL };
+            for (int gi = 0; gi < gCnNum; ++gi)
+                tmpRows[gi] = tmpBuf.data() + static_cast<size_t>(gi) * static_cast<size_t>(w);
+
+            for (int i = range.start; i < range.end; ++i)
+            {
+                for (int gi = 0; gi < gCnNum; ++gi)
+                {
+                    float* dstAlpha = tmpRows[gi];
+                    for (int k = 0; k < gCnNum; ++k)
+                    {
+                        float* y = covAndAlpha[0][k].ptr<float>(i);
+                        float* A = covarsInv(gi, k).ptr<float>(i);
+                        if (k == 0)
+                            mul(dstAlpha, A, y, w);
+                        else
+                            add_mul(dstAlpha, A, y, w);
+                    }
+                }
+                for (int gi = 0; gi < gCnNum; ++gi)
+                    std::memcpy(covAndAlpha[0][gi].ptr<float>(i), tmpRows[gi], static_cast<size_t>(w) * sizeof(float));
+            }
+        }, nstripes);
+
+        vector<Mat>& beta = srcCnMean;
+        runParBody(ComputeBeta_ParBody(*this, covAndAlpha, srcCnMean, beta));
+
+        parallel_for_(Range(0, 1 + gCnNum), [&](const Range& range)
+        {
+            for (int idx = range.start; idx < range.end; ++idx)
+            {
+                Mat& m = (idx == 0) ? beta[0] : covAndAlpha[0][idx - 1];
+                meanFilter(m, m);
+                if (scale < 1.0)
+                    upsample(m, m);
+            }
+        });
+
+        parallel_for_(Range(0, hOriginal), ApplyTransform_ParBody(*this, covAndAlpha, beta), nstripes);
+
+        if (srcCnNum == 1)
+        {
+            if (dDepth != CV_32F)
+                beta[0].convertTo(dstMat, dDepth);
+            else
+                beta[0].copyTo(dstMat);
+        }
+        else
+        {
+            if (dDepth != CV_32F)
+            {
+                beta[0].convertTo(outPlane, dDepth);
+                insertChannel(outPlane, dstMat, si);
+            }
+            else
+            {
+                insertChannel(beta[0], dstMat, si);
+            }
+        }
     }
-
-    if (src.depth() != CV_32F)
-    {
-        parConvertToWorkType(srcCn, srcCn);
-    }
-
-    vector<vector<Mat> > covSrcGuide(srcCnNum);
-    computeCovGuideAndSrc(srcCn, srcCnMean, covSrcGuide);
-
-    vector<vector<Mat> > alpha(srcCnNum);
-    for (int si = 0; si < srcCnNum; si++)
-    {
-        alpha[si].resize(gCnNum);
-        for (int gi = 0; gi < gCnNum; gi++)
-            alpha[si][gi].create(h, w, CV_32FC1);
-    }
-    runParBody(ComputeAlpha_ParBody(*this, alpha, covSrcGuide));
-    covSrcGuide.clear();
-
-    vector<Mat>& beta = srcCnMean;
-    runParBody(ComputeBeta_ParBody(*this, alpha, srcCnMean, beta));
-
-    parMeanFilter(beta, beta);
-    parMeanFilter(alpha, alpha);
-
-    if (scale < 1.0)
-    {
-        parUpsample(beta, beta);
-        parUpsample(alpha, alpha);
-    }
-
-    parallel_for_(Range(0, hOriginal), ApplyTransform_ParBody(*this, alpha, beta));
-    if (dDepth != CV_32F)
-    {
-        for (int i = 0; i < srcCnNum; i++)
-            beta[i].convertTo(beta[i], dDepth);
-    }
-    merge(beta, dst);
 }
 
 void GuidedFilterImpl::computeCovGuideAndSrc(vector<Mat>& srcCn, vector<Mat>& srcCnMean, vector<vector<Mat> >& cov)
