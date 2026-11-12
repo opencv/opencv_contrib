@@ -48,13 +48,11 @@ namespace
     class ParallelDft : public ParallelLoopBody
     {
     private:
-        vector<Mat> src_;
+        vector<Mat>& src_;
+        ParallelDft& operator=(const ParallelDft&);
     public:
-        ParallelDft(vector<Mat> &s)
-        {
-            src_ = s;
-        }
-        void operator() (const Range& range) const CV_OVERRIDE
+        ParallelDft(vector<Mat>& s) : src_(s) {}
+        void operator()(const Range& range) const CV_OVERRIDE
         {
             for (int i = range.start; i != range.end; i++)
             {
@@ -66,58 +64,18 @@ namespace
     class ParallelIdft : public ParallelLoopBody
     {
     private:
-        vector<Mat> src_;
+        vector<Mat>& src_;
+        ParallelIdft& operator=(const ParallelIdft&);
     public:
-        ParallelIdft(vector<Mat> &s)
-        {
-            src_ = s;
-        }
-        void operator() (const Range& range) const CV_OVERRIDE
+        ParallelIdft(vector<Mat>& s) : src_(s) {}
+        void operator()(const Range& range) const CV_OVERRIDE
         {
             for (int i = range.start; i != range.end; i++)
             {
-                idft(src_[i], src_[i],DFT_SCALE);
+                idft(src_[i], src_[i], DFT_SCALE);
             }
         }
     };
-
-    class ParallelDivComplexByReal : public ParallelLoopBody
-    {
-    private:
-        vector<Mat> numer_;
-        vector<Mat> denom_;
-        vector<Mat> dst_;
-
-    public:
-        ParallelDivComplexByReal(vector<Mat> &numer, vector<Mat> &denom, vector<Mat> &dst)
-        {
-            numer_ = numer;
-            denom_ = denom;
-            dst_ = dst;
-        }
-        void operator() (const Range& range) const CV_OVERRIDE
-        {
-            for (int i = range.start; i != range.end; i++)
-            {
-                Mat aPanels[2];
-                Mat bPanels[2];
-                split(numer_[i], aPanels);
-                split(denom_[i], bPanels);
-
-                Mat realPart;
-                Mat imaginaryPart;
-
-                divide(aPanels[0], denom_[i], realPart);
-                divide(aPanels[1], denom_[i], imaginaryPart);
-
-                aPanels[0] = realPart;
-                aPanels[1] = imaginaryPart;
-
-                merge(aPanels, 2, dst_[i]);
-            }
-        }
-    };
-
 
     void shift(InputArray src, OutputArray dst, int shift_x, int shift_y)
     {
@@ -151,12 +109,16 @@ namespace
     void fft(InputArray src, OutputArray dst)
     {
         Mat S = src.getMat();
-        Mat planes[] = {S.clone(), Mat::zeros(S.size(), S.type())};
-        Mat x;
-        merge(planes, 2, dst);
-
-        // compute the result
-        dft(dst, dst);
+        dst.create(S.size(), CV_32FC2);
+        Mat D = dst.getMat();
+        for (int r = 0; r < S.rows; ++r)
+        {
+            const float* sRow = S.ptr<float>(r);
+            Vec2f* dRow = D.ptr<Vec2f>(r);
+            for (int c = 0; c < S.cols; ++c)
+                dRow[c] = Vec2f(sRow[c], 0.0f);
+        }
+        dft(D, D);
     }
 
     void psf2otf(InputArray src, OutputArray dst, int height, int width)
@@ -180,64 +142,230 @@ namespace
         fft(padded, dst);
     }
 
-    void dftMultiChannel(InputArray src, vector<Mat> &dst)
+    void packRealToComplexMultiChannel(const Mat& S, vector<Mat>& dst)
     {
-        Mat S = src.getMat();
+        const int cn = S.channels();
+        dst.resize(cn);
+        for (int c = 0; c < cn; ++c)
+            dst[c].create(S.size(), CV_32FC2);
 
-        split(S, dst);
-
-        for(int i = 0; i < S.channels(); i++){
-            Mat planes[] = {dst[i].clone(), Mat::zeros(dst[i].size(), dst[i].type())};
-            merge(planes, 2, dst[i]);
-        }
-
-        parallel_for_(cv::Range(0,S.channels()), ParallelDft(dst));
-
-    }
-
-    void idftMultiChannel(const vector<Mat> &src, OutputArray dst)
-    {
-        vector<Mat> channels(src);
-
-        parallel_for_(Range(0, int(src.size())), ParallelIdft(channels));
-
-        for(int i = 0; unsigned(i) < src.size(); i++){
-            Mat panels[2];
-            split(channels[i], panels);
-            channels[i] = panels[0];
-        }
-
-        Mat D;
-        merge(channels, D);
-        D.copyTo(dst);
-    }
-
-    void divComplexByRealMultiChannel(vector<Mat> &numer,
-        vector<Mat> &denom, vector<Mat> &dst)
-    {
-
-        for(int i = 0; unsigned(i) < numer.size(); i++)
+        for (int r = 0; r < S.rows; ++r)
         {
-            dst[i].create(numer[i].size(), numer[i].type());
+            const float* sRow = S.ptr<float>(r);
+            if (cn == 1)
+            {
+                Vec2f* d0 = dst[0].ptr<Vec2f>(r);
+                for (int x = 0; x < S.cols; ++x)
+                    d0[x] = Vec2f(sRow[x], 0.0f);
+            }
+            else if (cn == 3)
+            {
+                Vec2f* d0 = dst[0].ptr<Vec2f>(r);
+                Vec2f* d1 = dst[1].ptr<Vec2f>(r);
+                Vec2f* d2 = dst[2].ptr<Vec2f>(r);
+                for (int x = 0; x < S.cols; ++x)
+                {
+                    d0[x] = Vec2f(sRow[3 * x], 0.0f);
+                    d1[x] = Vec2f(sRow[3 * x + 1], 0.0f);
+                    d2[x] = Vec2f(sRow[3 * x + 2], 0.0f);
+                }
+            }
+            else
+            {
+                for (int c = 0; c < cn; ++c)
+                {
+                    Vec2f* dc = dst[c].ptr<Vec2f>(r);
+                    for (int x = 0; x < S.cols; ++x)
+                        dc[x] = Vec2f(sRow[cn * x + c], 0.0f);
+                }
+            }
         }
-        parallel_for_(Range(0, int(numer.size())), ParallelDivComplexByReal(numer, denom, dst));
-
     }
 
-        // power of 2 of the absolute value of the complex
-    Mat pow2absComplex(InputArray src)
+    void addGradAndPackComplexMultiChannel(const Mat& hGrad, const Mat& vGrad, vector<Mat>& dst)
     {
-        Mat S = src.getMat();
-
-        Mat sPanels[2];
-        split(S, sPanels);
-
-        Mat mag;
-        magnitude(sPanels[0], sPanels[1], mag);
-        pow(mag, 2, mag);
-
-        return mag;
+        const int cn = hGrad.channels();
+        for (int r = 0; r < hGrad.rows; ++r)
+        {
+            const float* hgRow = hGrad.ptr<float>(r);
+            const float* vgRow = vGrad.ptr<float>(r);
+            if (cn == 1)
+            {
+                Vec2f* d0 = dst[0].ptr<Vec2f>(r);
+                for (int x = 0; x < hGrad.cols; ++x)
+                    d0[x] = Vec2f(hgRow[x] + vgRow[x], 0.0f);
+            }
+            else if (cn == 3)
+            {
+                Vec2f* d0 = dst[0].ptr<Vec2f>(r);
+                Vec2f* d1 = dst[1].ptr<Vec2f>(r);
+                Vec2f* d2 = dst[2].ptr<Vec2f>(r);
+                for (int x = 0; x < hGrad.cols; ++x)
+                {
+                    d0[x] = Vec2f(hgRow[3 * x] + vgRow[3 * x], 0.0f);
+                    d1[x] = Vec2f(hgRow[3 * x + 1] + vgRow[3 * x + 1], 0.0f);
+                    d2[x] = Vec2f(hgRow[3 * x + 2] + vgRow[3 * x + 2], 0.0f);
+                }
+            }
+            else
+            {
+                for (int c = 0; c < cn; ++c)
+                {
+                    Vec2f* dc = dst[c].ptr<Vec2f>(r);
+                    for (int x = 0; x < hGrad.cols; ++x)
+                        dc[x] = Vec2f(hgRow[cn * x + c] + vgRow[cn * x + c], 0.0f);
+                }
+            }
+        }
     }
+
+    void unpackRealFromComplexMultiChannel(const vector<Mat>& src, Mat& S)
+    {
+        const int cn = S.channels();
+        for (int r = 0; r < S.rows; ++r)
+        {
+            float* sRow = S.ptr<float>(r);
+            if (cn == 1)
+            {
+                const Vec2f* c0 = src[0].ptr<Vec2f>(r);
+                for (int x = 0; x < S.cols; ++x)
+                    sRow[x] = c0[x][0];
+            }
+            else if (cn == 3)
+            {
+                const Vec2f* c0 = src[0].ptr<Vec2f>(r);
+                const Vec2f* c1 = src[1].ptr<Vec2f>(r);
+                const Vec2f* c2 = src[2].ptr<Vec2f>(r);
+                for (int x = 0; x < S.cols; ++x)
+                {
+                    sRow[3 * x] = c0[x][0];
+                    sRow[3 * x + 1] = c1[x][0];
+                    sRow[3 * x + 2] = c2[x][0];
+                }
+            }
+            else
+            {
+                for (int c = 0; c < cn; ++c)
+                {
+                    const Vec2f* cc = src[c].ptr<Vec2f>(r);
+                    for (int x = 0; x < S.cols; ++x)
+                        sRow[cn * x + c] = cc[x][0];
+                }
+            }
+        }
+    }
+
+    void accumPow2AbsComplex(const Mat& S, Mat& acc, bool initZero)
+    {
+        acc.create(S.size(), CV_32FC1);
+        for (int r = 0; r < S.rows; ++r)
+        {
+            const Vec2f* sRow = S.ptr<Vec2f>(r);
+            float* aRow = acc.ptr<float>(r);
+            if (initZero)
+            {
+                for (int c = 0; c < S.cols; ++c)
+                    aRow[c] = sRow[c][0] * sRow[c][0] + sRow[c][1] * sRow[c][1];
+            }
+            else
+            {
+                for (int c = 0; c < S.cols; ++c)
+                    aRow[c] += sRow[c][0] * sRow[c][0] + sRow[c][1] * sRow[c][1];
+            }
+        }
+    }
+
+    void hardThresholdGradientsInPlace(Mat& h, Mat& v, float thresh)
+    {
+        const int cn = h.channels();
+        const int cols = h.cols;
+        for (int r = 0; r < h.rows; ++r)
+        {
+            float* hRow = h.ptr<float>(r);
+            float* vRow = v.ptr<float>(r);
+            if (cn == 1)
+            {
+                for (int x = 0; x < cols; ++x)
+                {
+                    const float mag = hRow[x] * hRow[x] + vRow[x] * vRow[x];
+                    if (!(mag > thresh))
+                    {
+                        hRow[x] = 0.0f;
+                        vRow[x] = 0.0f;
+                    }
+                }
+            }
+            else if (cn == 3)
+            {
+                for (int x = 0; x < cols; ++x)
+                {
+                    const int idx = 3 * x;
+                    const float mag =
+                        (hRow[idx] * hRow[idx] + vRow[idx] * vRow[idx]) +
+                        (hRow[idx + 1] * hRow[idx + 1] + vRow[idx + 1] * vRow[idx + 1]) +
+                        (hRow[idx + 2] * hRow[idx + 2] + vRow[idx + 2] * vRow[idx + 2]);
+                    if (!(mag > thresh))
+                    {
+                        hRow[idx] = hRow[idx + 1] = hRow[idx + 2] = 0.0f;
+                        vRow[idx] = vRow[idx + 1] = vRow[idx + 2] = 0.0f;
+                    }
+                }
+            }
+            else
+            {
+                for (int x = 0; x < cols; ++x)
+                {
+                    const int base = cn * x;
+                    float mag = 0.0f;
+                    for (int c = 0; c < cn; ++c)
+                        mag += hRow[base + c] * hRow[base + c] + vRow[base + c] * vRow[base + c];
+                    if (!(mag > thresh))
+                    {
+                        for (int c = 0; c < cn; ++c)
+                        {
+                            hRow[base + c] = 0.0f;
+                            vRow[base + c] = 0.0f;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    struct ParallelSpectrumSolve : public ParallelLoopBody
+    {
+        const vector<Mat>& numerConst;
+        const Mat& denomConst;
+        vector<Mat>& workFreq;
+        float beta;
+
+        ParallelSpectrumSolve(const vector<Mat>& _nc, const Mat& _dc, vector<Mat>& _wf, float _beta)
+            : numerConst(_nc), denomConst(_dc), workFreq(_wf), beta(_beta) {}
+
+        void operator()(const Range& range) const CV_OVERRIDE
+        {
+            const int cn = (int)workFreq.size();
+            const int cols = denomConst.cols;
+            for (int r = range.start; r < range.end; ++r)
+            {
+                const float* dcRow = denomConst.ptr<float>(r);
+                for (int c = 0; c < cn; ++c)
+                {
+                    const Vec2f* ncRow = numerConst[c].ptr<Vec2f>(r);
+                    Vec2f* wfRow = workFreq[c].ptr<Vec2f>(r);
+                    for (int x = 0; x < cols; ++x)
+                    {
+                        const float denom = beta * dcRow[x] + 1.0f;
+                        wfRow[x][0] = (ncRow[x][0] + wfRow[x][0] * beta) / denom;
+                        wfRow[x][1] = (ncRow[x][1] + wfRow[x][1] * beta) / denom;
+                    }
+                }
+            }
+        }
+
+    private:
+        ParallelSpectrumSolve& operator=(const ParallelSpectrumSolve&);
+    };
 }
 
 namespace cv
@@ -257,11 +385,6 @@ namespace cv
 
             dst.create(src.size(), src.type());
 
-            if(S.data == dst.getMat().data)
-            {
-                S = S.clone();
-            }
-
             if(S.depth() == CV_8U)
             {
                 S.convertTo(S, CV_32F, 1/255.0f);
@@ -274,94 +397,76 @@ namespace cv
             {
                 S.convertTo(S, CV_32F);
             }
+            else
+            {
+                S = S.clone();
+            }
 
             const double betaMax = 100000;
+            const int cn = S.channels();
+            const int nstripes = std::max(1, getNumThreads()) * 4;
 
-            // gradient operators in frequency domain
-            Mat otfFx, otfFy;
+            // gradient operators in frequency domain (transient: released immediately after denomConst)
             float kernel[2] = {-1, 1};
-            float kernel_inv[2] = {1,-1};
-            psf2otf(Mat(1,2,CV_32FC1, kernel_inv), otfFx, S.rows, S.cols);
-            psf2otf(Mat(2,1,CV_32FC1, kernel_inv), otfFy, S.rows, S.cols);
-
-            vector<Mat> denomConst;
-            Mat tmp = pow2absComplex(otfFx) + pow2absComplex(otfFy);
-
-            for(int i = 0; i < S.channels(); i++)
+            float kernel_inv[2] = {1, -1};
+            Mat denomConst;
             {
-                denomConst.push_back(tmp);
+                Mat otf;
+                psf2otf(Mat(1, 2, CV_32FC1, kernel_inv), otf, S.rows, S.cols);
+                accumPow2AbsComplex(otf, denomConst, true);
+                psf2otf(Mat(2, 1, CV_32FC1, kernel_inv), otf, S.rows, S.cols);
+                accumPow2AbsComplex(otf, denomConst, false);
             }
 
             // input image in frequency domain
             vector<Mat> numerConst;
-            dftMultiChannel(S, numerConst);
+            packRealToComplexMultiChannel(S, numerConst);
+            parallel_for_(cv::Range(0, cn), ParallelDft(numerConst));
+
+            // preallocate reusable solver workspace once outside beta loop
+            Mat h(S.size(), S.type());
+            Mat v(S.size(), S.type());
+            vector<Mat> workFreq(cn);
+            for (int c = 0; c < cn; ++c)
+                workFreq[c].create(S.size(), CV_32FC2);
+
+            const Mat kFwdH(1, 2, CV_32FC1, kernel);
+            const Mat kFwdV(2, 1, CV_32FC1, kernel);
+            const Mat kInvH(1, 2, CV_32FC1, kernel_inv);
+            const Mat kInvV(2, 1, CV_32FC1, kernel_inv);
+
             /*********************************
             * solver
             *********************************/
             double beta = 2 * lambda;
-            while(beta < betaMax){
+            while(beta < betaMax)
+            {
                 // h, v subproblem
-                Mat h, v;
+                filter2D(S, h, -1, kFwdH, Point(0, 0), 0, BORDER_REPLICATE);
+                filter2D(S, v, -1, kFwdV, Point(0, 0), 0, BORDER_REPLICATE);
 
-                filter2D(S, h, -1, Mat(1, 2, CV_32FC1, kernel), Point(0, 0),
-                0, BORDER_REPLICATE);
-                filter2D(S, v, -1, Mat(2, 1, CV_32FC1, kernel), Point(0, 0),
-                0, BORDER_REPLICATE);
+                hardThresholdGradientsInPlace(h, v, static_cast<float>(lambda / beta));
 
-                Mat hvMag = h.mul(h) + v.mul(v);
+                // S subproblem: S is dead until IDFT unpack, so reuse S for hGrad and h for vGrad
+                filter2D(h, S, -1, kInvH);
+                filter2D(v, h, -1, kInvV);
 
-                Mat mask;
-                if(S.channels() == 1)
-                {
-                    threshold(hvMag, mask, lambda/beta, 1, THRESH_BINARY);
-                }
-                else if(S.channels() > 1)
-                {
-                    vector<Mat> channels(S.channels());
-                    split(hvMag, channels);
-                    hvMag = channels[0];
-
-                    for(int i = 1; i < S.channels(); i++)
-                    {
-                        hvMag = hvMag + channels[i];
-                    }
-
-                    threshold(hvMag, mask, lambda/beta, 1, THRESH_BINARY);
-
-                    Mat in[] = {mask, mask, mask};
-                    merge(in, 3, mask);
-                }
-
-                h = h.mul(mask);
-                v = v.mul(mask);
-
-                // S subproblem
-                vector<Mat> denom(S.channels());
-                for(int i = 0; i < S.channels(); i++)
-                {
-                    denom[i] = beta * denomConst[i] + 1;
-                }
-
-                Mat hGrad, vGrad;
-                filter2D(h, hGrad, -1, Mat(1, 2, CV_32FC1, kernel_inv));
-                filter2D(v, vGrad, -1, Mat(2, 1, CV_32FC1, kernel_inv));
-
-                vector<Mat> hvGradFreq;
-                dftMultiChannel(hGrad+vGrad, hvGradFreq);
-
-                vector<Mat> numer(S.channels());
-                for(int i = 0; i < S.channels(); i++)
-                {
-                    numer[i] = numerConst[i] + hvGradFreq[i] * beta;
-                }
-
-                vector<Mat> sFreq(S.channels());
-                divComplexByRealMultiChannel(numer, denom, sFreq);
-
-                idftMultiChannel(sFreq, S);
+                addGradAndPackComplexMultiChannel(S, h, workFreq);
+                parallel_for_(cv::Range(0, cn), ParallelDft(workFreq));
+                parallel_for_(cv::Range(0, S.rows),
+                              ParallelSpectrumSolve(numerConst, denomConst, workFreq, static_cast<float>(beta)),
+                              nstripes);
+                parallel_for_(cv::Range(0, cn), ParallelIdft(workFreq));
+                unpackRealFromComplexMultiChannel(workFreq, S);
 
                 beta = beta * kappa;
             }
+
+            h.release();
+            v.release();
+            workFreq.clear();
+            numerConst.clear();
+            denomConst.release();
 
             Mat D = dst.getMat();
             if(D.depth() == CV_8U)

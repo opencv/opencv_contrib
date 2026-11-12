@@ -79,5 +79,17 @@ TEST_P(L0SmoothTest, MultiThreadReproducibility)
 }
 INSTANTIATE_TEST_CASE_P(FullSet, L0SmoothTest,Combine(Values(szODD, szQVGA), SrcTypes::all()));
 
+TEST(L0SmoothTest, InPlace32FAndStepEdgePreservation)
+{
+    Mat stepImg(48, 64, CV_32FC3, Scalar(0.1f, 0.2f, 0.3f));
+    stepImg(Rect(32, 0, 32, 48)) = Scalar(0.8f, 0.7f, 0.6f);
+
+    Mat outSep, outInPlace = stepImg.clone();
+    l0Smooth(stepImg, outSep, 0.02, 2.0);
+    l0Smooth(outInPlace, outInPlace, 0.02, 2.0);
+
+    EXPECT_EQ(0.0, cv::norm(outSep, outInPlace, NORM_INF));
+    EXPECT_GT(cv::norm(outSep(Rect(40, 8, 16, 32)), outSep(Rect(8, 8, 16, 32)), NORM_INF), 0.3);
+}
 
 }} // namespace
