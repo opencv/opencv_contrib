@@ -24,25 +24,19 @@ int DecoderMgr::decodeImage(cv::Mat src, bool use_nn_detector, vector<string>& r
     if (width <= 20 || height <= 20)
         return -1;  // image data is not enough for providing reliable results
 
-    std::vector<uint8_t> scaled_img_data(src.data, src.data + width * height);
-    zxing::ArrayRef<uint8_t> scaled_img_zx =
-        zxing::ArrayRef<uint8_t>(new zxing::Array<uint8_t>(scaled_img_data));
+    if (!src.isContinuous())
+        src = src.clone();
 
     vector<zxing::Ref<zxing::Result>> zx_results;
 
     decode_hints_.setUseNNDetector(use_nn_detector);
 
-    Ref<ImgSource> source;
+    Ref<ImgSource> source = ImgSource::create(src.data, width, height);
     qbarUicomBlock_ = new UnicomBlock(height, width);
 
     // Four Binarizers
     int tryBinarizeTime = 4;
     for (int tb = 0; tb < tryBinarizeTime; tb++) {
-        if (source == NULL || height * width > source->getMaxSize()) {
-            source = ImgSource::create(scaled_img_zx.data(), width, height);
-        } else {
-            source->reset(scaled_img_zx.data(), width, height);
-        }
         int ret = TryDecode(source, zx_results);
         if (!ret) {
             for(size_t k = 0; k < zx_results.size(); k++) {

@@ -27,18 +27,14 @@ FastWindowBinarizer::FastWindowBinarizer(Ref<LuminanceSource> source)
     : GlobalHistogramBinarizer(source), matrix_(NULL), cached_row_(NULL) {
     width = source->getWidth();
     height = source->getHeight();
-    int aw = width / BLOCK_SIZE;
-    int ah = height / BLOCK_SIZE;
 
-    int ah2 = ah;
-    int ow2 = aw + 1;
+    // only binarizeImage0() uses these four arrays: they are created there, when it runs
+    _luminancesInt = NULL;
+    _blockTotals = NULL;
+    _totals = NULL;
+    _rowTotals = NULL;
 
-    _luminancesInt = new int[width * height];
-    _blockTotals = new int[ah * aw];
-    _totals = new int[(ah + 1) * (aw + 1)];
-    _rowTotals = new int[ah2 * ow2];
-
-    _internal = new unsigned int[(height + 1) * (width + 1)];
+    _internal = NULL;
 }
 
 FastWindowBinarizer::~FastWindowBinarizer() {
@@ -184,6 +180,8 @@ void FastWindowBinarizer::fastWindow(const unsigned char* src, unsigned char* ds
         matrix_ = GlobalHistogramBinarizer::getBlackMatrix(err_handler);
         return;
     }
+    if (!_internal)
+        _internal = new unsigned int[(height + 1) * (width + 1)];
     const unsigned char* _img = src;
     fastIntegral(_img, _internal);
     int aw = width / BLOCK_SIZE;
@@ -212,7 +210,8 @@ void FastWindowBinarizer::fastWindow(const unsigned char* src, unsigned char* ds
             }
         }
     }
-    // delete [] _internal;
+    delete[] _internal;
+    _internal = NULL;
     return;
 }
 
@@ -230,6 +229,14 @@ int FastWindowBinarizer::binarizeImage0(ErrorHandler& err_handler) {
         int ow = aw + 1;
 
         ArrayRef<char> _luminances = source.getMatrix();
+
+        if (!_luminancesInt)
+        {
+            _luminancesInt = new int[width * height];
+            _blockTotals = new int[ah * aw];
+            _totals = new int[(ah + 1) * (aw + 1)];
+            _rowTotals = new int[ah * ow];
+        }
 
         // Get luminances for int value first
         for (int i = 0; i < width * height; i++) {

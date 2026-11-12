@@ -50,7 +50,7 @@ void BitMatrix::initRowCounters() {
 
     row_counters = vector<COUNTER_TYPE>(width * height, 0);
     row_counters_offset = vector<COUNTER_TYPE>(width * height, 0);
-    row_point_offset = vector<COUNTER_TYPE>(width * height, 0);
+    row_point_offset.clear();
     row_counter_offset_end = vector<COUNTER_TYPE>(height, 0);
 
     row_counters_recorded = vector<bool>(height, false);
@@ -64,7 +64,7 @@ void BitMatrix::initColsCounters() {
 
     cols_counters = vector<COUNTER_TYPE>(width * height, 0);
     cols_counters_offset = vector<COUNTER_TYPE>(width * height, 0);
-    cols_point_offset = vector<COUNTER_TYPE>(width * height, 0);
+    cols_point_offset.clear();
     cols_counter_offset_end = vector<COUNTER_TYPE>(width, 0);
 
     cols_counters_recorded = vector<bool>(width, false);
@@ -248,7 +248,11 @@ int BitMatrix::getWidth() const { return width; }
 int BitMatrix::getHeight() const { return height; }
 
 COUNTER_TYPE* BitMatrix::getRowPointInRecords(int y) {
-    if (!row_point_offset[y]) {
+    if (row_point_offset.empty()) {
+        row_point_offset.assign(width * height, 0);
+        row_counters_recorded[y] = false;
+    }
+    if (!row_counters_recorded[y] || !row_point_offset[y]) {
         setRowRecords(y);
     }
     int offset = y * width;
@@ -294,7 +298,8 @@ COUNTER_TYPE BitMatrix::getRowCounterOffsetEnd(int y) {
 void BitMatrix::setRowRecords(int y) {
     COUNTER_TYPE* cur_row_counters = &row_counters[0] + y * width;
     COUNTER_TYPE* cur_row_counters_offset = &row_counters_offset[0] + y * width;
-    COUNTER_TYPE* cur_row_point_in_counters = &row_point_offset[0] + y * width;
+    COUNTER_TYPE* cur_row_point_in_counters =
+        row_point_offset.empty() ? NULL : (&row_point_offset[0] + y * width);
     int end = width;
 
     bool* rowBit = getRowBoolPtr(y);
@@ -315,7 +320,8 @@ void BitMatrix::setRowRecords(int y) {
                 cur_row_counters_offset[counterPosition] = i;
             }
         }
-        cur_row_point_in_counters[i] = counterPosition;
+        if (cur_row_point_in_counters)
+            cur_row_point_in_counters[i] = counterPosition;
         i++;
     }
 
@@ -328,7 +334,11 @@ void BitMatrix::setRowRecords(int y) {
 }
 
 COUNTER_TYPE* BitMatrix::getColsPointInRecords(int x) {
-    if (!cols_point_offset[x]) {
+    if (cols_point_offset.empty()) {
+        cols_point_offset.assign(width * height, 0);
+        cols_counters_recorded[x] = false;
+    }
+    if (!cols_counters_recorded[x] || !cols_point_offset[x]) {
         setColsRecords(x);
     }
     int offset = x * height;
@@ -364,7 +374,8 @@ COUNTER_TYPE BitMatrix::getColsCounterOffsetEnd(int x) {
 void BitMatrix::setColsRecords(int x) {
     COUNTER_TYPE* cur_cols_counters = &cols_counters[0] + x * height;
     COUNTER_TYPE* cur_cols_counters_offset = &cols_counters_offset[0] + x * height;
-    COUNTER_TYPE* cur_cols_point_in_counters = &cols_point_offset[0] + x * height;
+    COUNTER_TYPE* cur_cols_point_in_counters =
+        cols_point_offset.empty() ? NULL : (&cols_point_offset[0] + x * height);
     int end = height;
 
     bool* rowBit = getRowBoolPtr(0);
@@ -385,7 +396,8 @@ void BitMatrix::setColsRecords(int x) {
                 cur_cols_counters_offset[counterPosition] = i;
             }
         }
-        cur_cols_point_in_counters[i] = counterPosition;
+        if (cur_cols_point_in_counters)
+            cur_cols_point_in_counters[i] = counterPosition;
         i++;
         rowBit += width;
     }

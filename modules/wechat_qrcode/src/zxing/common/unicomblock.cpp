@@ -16,8 +16,8 @@ UnicomBlock::~UnicomBlock() {}
 
 void UnicomBlock::Init() {
     if (m_bInit) return;
-    m_vcIndex = std::vector<unsigned int>(m_iHeight * m_iWidth, 0);
-    m_vcCount = std::vector<unsigned int>(m_iHeight * m_iWidth, 0);
+    m_vcIndex = std::vector<unsigned short>(m_iHeight * m_iWidth, 0);
+    m_vcCount = std::vector<unsigned short>(m_iHeight * m_iWidth, 0);
     m_vcMinPnt = std::vector<int>(m_iHeight * m_iWidth, 0);
     m_vcMaxPnt = std::vector<int>(m_iHeight * m_iWidth, 0);
     m_vcQueue = std::vector<int>(m_iHeight * m_iWidth, 0);
@@ -71,7 +71,8 @@ int UnicomBlock::GetMaxPoint(int y, int x, int &iMaxY, int &iMaxX) {
 }
 
 void UnicomBlock::Bfs(int y, int x) {
-    m_iNowIdx++;
+    if (m_iNowIdx < 0xFFFF)
+        m_iNowIdx++;
 
     int iFront = 0;
     int iTail = 0;
