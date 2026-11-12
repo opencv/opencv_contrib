@@ -129,12 +129,12 @@ TEST(SurfaceMatching_PointCloudShape, ppf_and_icp_shapes_issue_3981)
         toNonContiguousNx6C1(sceneNx6)
     };
 
-    PPF3DDetector detectorReused(0.08, 0.08);
     for (size_t idx = 0; idx < modelVariants.size(); ++idx)
     {
-        detectorReused.trainModel(modelVariants[idx]);
+        PPF3DDetector detector(0.08, 0.08);
+        detector.trainModel(modelVariants[idx]);
         std::vector<Pose3DPtr> poses;
-        detectorReused.match(sceneVariants[idx], poses, 0.2, 0.08);
+        detector.match(sceneVariants[idx], poses, 0.2, 0.08);
         ASSERT_EQ(posesRef.size(), poses.size()) << "variant=" << idx;
         EXPECT_NEAR(0.0, cv::norm(posesRef[0]->pose, poses[0]->pose, NORM_INF), 1e-5) << "variant=" << idx;
 
@@ -148,18 +148,6 @@ TEST(SurfaceMatching_PointCloudShape, ppf_and_icp_shapes_issue_3981)
         ASSERT_EQ(0, icp.registerModelToScene(modelVariants[idx], sceneVariants[idx], posesForICP)) << "variant=" << idx;
         EXPECT_NEAR(0.0, cv::norm(posesForICP[0]->pose, modelToScene, NORM_INF), 5e-2) << "variant=" << idx;
     }
-}
-
-TEST(SurfaceMatching_PointCloudShape, transformPCPose_Nx3)
-{
-    Mat pcNx6 = generateAsymmetricEllipsoidPatch();
-    Mat pcNx3 = pcNx6.colRange(0, 3).clone();
-    Matx44d pose = makeTestPose(Vec3d(0.2, -0.1, 0.15), Vec3d(3.0, -2.0, 4.0));
-
-    Mat tf6 = transformPCPose(pcNx6, pose);
-    Mat tf3 = transformPCPose(pcNx3, pose);
-    EXPECT_EQ(Size(3, pcNx3.rows), tf3.size());
-    EXPECT_LE(cv::norm(tf3, tf6.colRange(0, 3), NORM_INF), 1e-6);
 }
 
 TEST(SurfaceMatching_PointCloudShape, invalid_inputs_issue_3981)

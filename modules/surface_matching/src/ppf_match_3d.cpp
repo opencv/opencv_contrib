@@ -203,7 +203,6 @@ PPF3DDetector::~PPF3DDetector()
 void PPF3DDetector::trainModel(const Mat &PC)
 {
   Mat pcNorm = normalizePointCloud(PC);
-  clearTrainingModels();
 
   // compute bbox
   Vec2f xRange, yRange, zRange;
