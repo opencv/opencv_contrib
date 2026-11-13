@@ -12,14 +12,30 @@ namespace intensity_transform {
 
 void logTransform(const Mat input, Mat& output)
 {
-    double maxVal;
-    minMaxLoc(input, NULL, &maxVal, NULL, NULL);
-    const double c = 255 / log(1 + maxVal);
+    CV_Assert(!input.empty());
+    double maxVal = 0.0;
+    minMaxLoc(input.reshape(1), NULL, &maxVal, NULL, NULL);
+    if (maxVal <= 0.0)
+    {
+        output.create(input.size(), input.type());
+        output.setTo(Scalar::all(0));
+        return;
+    }
+    const double c = 255.0 / std::log(1.0 + maxVal);
+    if (input.depth() == CV_8U)
+    {
+        Mat lut(1, 256, CV_8U);
+        uchar* p = lut.ptr<uchar>();
+        for (int i = 0; i < 256; ++i)
+            p[i] = saturate_cast<uchar>(c * std::log(1.0 + i));
+        LUT(input, lut, output);
+        return;
+    }
     Mat add_one_64f;
     input.convertTo(add_one_64f, CV_64F, 1, 1.0f);
     Mat log_64f;
     cv::log(add_one_64f, log_64f);
-    log_64f.convertTo(output, CV_8UC3, c, 0.0f);
+    log_64f.convertTo(output, CV_8U, c, 0.0f);
 }
 
 void gammaCorrection(const Mat input, Mat& output, const float gamma)

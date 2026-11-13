@@ -236,4 +236,26 @@ INSTANTIATE_TEST_CASE_P(/*nothing*/, intensity_transform_BIMEF,
     testing::ValuesIn(BIMEF_accuracy_cases)
 );
 
+TEST(intensity_transform_logTransform, bgr_and_zero)
+{
+    Mat bgr(16, 16, CV_8UC3);
+    randu(bgr, 0, 255);
+    Mat outBgr;
+    ASSERT_NO_THROW(cv::intensity_transform::logTransform(bgr, outBgr));
+    EXPECT_EQ(bgr.size(), outBgr.size());
+    EXPECT_EQ(CV_8UC3, outBgr.type());
+
+    double maxVal = 0.0;
+    minMaxLoc(bgr.reshape(1), NULL, &maxVal);
+    Mat f64, expected;
+    bgr.convertTo(f64, CV_64F, 1.0, 1.0);
+    cv::log(f64, f64);
+    f64.convertTo(expected, CV_8U, 255.0 / std::log(1.0 + maxVal), 0.0);
+    EXPECT_EQ(0.0, cvtest::norm(outBgr, expected, NORM_INF));
+
+    Mat zeros = Mat::zeros(8, 8, CV_8UC1), outZeros;
+    ASSERT_NO_THROW(cv::intensity_transform::logTransform(zeros, outZeros));
+    EXPECT_EQ(0, countNonZero(outZeros));
+}
+
 }} // namespace
