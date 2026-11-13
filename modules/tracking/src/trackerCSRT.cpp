@@ -42,6 +42,7 @@ public:
 protected:
     void update_csr_filter(const Mat &image, const Mat &my_mask);
     void update_histograms(const Mat &image, const Rect &region);
+    Rect segmentation_roi(const Size &img_sz, const Rect &region, float scale_factor) const;
     void extract_histograms(const Mat &image, cv::Rect region, Histogram &hf, Histogram &hb);
     std::vector<Mat> create_csr_filter(const std::vector<cv::Mat>
             img_features, const cv::Mat Y, const cv::Mat P);
@@ -75,6 +76,8 @@ protected:
     Mat default_mask;
     float default_mask_area;
     int cell_size;
+    Ptr<hal::DFT2D> dft_fwd_;
+    Ptr<hal::DFT2D> dft_inv_;
 };
 
 TrackerCSRTImpl::TrackerCSRTImpl(const TrackerCSRT::Params &parameters) :
@@ -105,26 +108,25 @@ Mat TrackerCSRTImpl::calculate_response(const Mat &image, const std::vector<Mat>
     resize(patch, patch, rescaled_template_size, 0, 0, INTER_CUBIC);
 
     std::vector<Mat> ftrs = get_features(patch, yf.size());
-    std::vector<Mat> Ffeatures = fourier_transform_features(ftrs);
-    Mat resp, res;
+    std::vector<Mat> Ffeatures = fourier_transform_features(ftrs, dft_fwd_);
+    Mat res_spec = Mat::zeros(Ffeatures[0].size(), CV_32FC2);
+    Mat resp_ch;
     if(params.use_channel_weights){
-        res = Mat::zeros(Ffeatures[0].size(), CV_32FC2);
-        Mat resp_ch;
-        Mat mul_mat;
         for(size_t i = 0; i < Ffeatures.size(); ++i) {
             mulSpectrums(Ffeatures[i], filter[i], resp_ch, 0, true);
-            res += (resp_ch * filter_weights[i]);
+            scaleAdd(resp_ch, filter_weights[i], res_spec, res_spec);
         }
-        idft(res, res, DFT_SCALE | DFT_REAL_OUTPUT);
     } else {
-        res = Mat::zeros(Ffeatures[0].size(), CV_32FC2);
-        Mat resp_ch;
         for(size_t i = 0; i < Ffeatures.size(); ++i) {
             mulSpectrums(Ffeatures[i], filter[i], resp_ch, 0 , true);
-            res = res + resp_ch;
+            add(res_spec, resp_ch, res_spec);
         }
-        idft(res, res, DFT_SCALE | DFT_REAL_OUTPUT);
     }
+    Mat res(res_spec.size(), CV_32FC1);
+    if (!dft_inv_.empty() && res_spec.isContinuous() && res.isContinuous())
+        dft_inv_->apply(res_spec.data, res_spec.step, res.data, res.step);
+    else
+        idft(res_spec, res, DFT_SCALE | DFT_REAL_OUTPUT);
     return res;
 }
 
@@ -135,17 +137,21 @@ void TrackerCSRTImpl::update_csr_filter(const Mat &image, const Mat &mask)
     resize(patch, patch, rescaled_template_size, 0, 0, INTER_CUBIC);
 
     std::vector<Mat> ftrs = get_features(patch, yf.size());
-    std::vector<Mat> Fftrs = fourier_transform_features(ftrs);
+    std::vector<Mat> Fftrs = fourier_transform_features(ftrs, dft_fwd_);
     std::vector<Mat> new_csr_filter = create_csr_filter(Fftrs, yf, mask);
     //calculate per channel weights
     if(params.use_channel_weights) {
-        Mat current_resp;
+        Mat current_spec(Fftrs[0].size(), CV_32FC2);
+        Mat current_resp(Fftrs[0].size(), CV_32FC1);
         double max_val;
         float sum_weights = 0;
         std::vector<float> new_filter_weights = std::vector<float>(new_csr_filter.size());
         for(size_t i = 0; i < new_csr_filter.size(); ++i) {
-            mulSpectrums(Fftrs[i], new_csr_filter[i], current_resp, 0, true);
-            idft(current_resp, current_resp, DFT_SCALE | DFT_REAL_OUTPUT);
+            mulSpectrums(Fftrs[i], new_csr_filter[i], current_spec, 0, true);
+            if (!dft_inv_.empty() && current_spec.isContinuous() && current_resp.isContinuous())
+                dft_inv_->apply(current_spec.data, current_spec.step, current_resp.data, current_resp.step);
+            else
+                idft(current_spec, current_resp, DFT_SCALE | DFT_REAL_OUTPUT);
             minMaxLoc(current_resp, NULL, &max_val, NULL, NULL);
             sum_weights += static_cast<float>(max_val);
             new_filter_weights[i] = static_cast<float>(max_val);
@@ -163,7 +169,7 @@ void TrackerCSRTImpl::update_csr_filter(const Mat &image, const Mat &mask)
         }
     }
     for(size_t i = 0; i < csr_filter.size(); ++i) {
-        csr_filter[i] = (1.0f - params.filter_lr)*csr_filter[i] + params.filter_lr * new_csr_filter[i];
+        addWeighted(csr_filter[i], 1.0 - params.filter_lr, new_csr_filter[i], params.filter_lr, 0.0, csr_filter[i]);
     }
     std::vector<Mat>().swap(ftrs);
     std::vector<Mat>().swap(Fftrs);
@@ -196,7 +202,7 @@ std::vector<Mat> TrackerCSRTImpl::get_features(const Mat &patch, const Size2i &f
     }
 
     for (size_t i = 0; i < features.size(); ++i) {
-        features.at(i) = features.at(i).mul(window);
+        multiply(features[i], window, features[i]);
     }
     return features;
 }
@@ -218,37 +224,91 @@ public:
     }
     virtual void operator ()(const Range& range) const CV_OVERRIDE
     {
+        if (range.start >= range.end)
+            return;
+        const Size sz = Y.size();
+        Ptr<hal::DFT2D> fwdPlan = hal::DFT2D::create(sz.width, sz.height, CV_32F, 1, 2, CV_HAL_DFT_IS_CONTINUOUS);
+        Ptr<hal::DFT2D> invPlan = hal::DFT2D::create(sz.width, sz.height, CV_32F, 2, 1,
+                CV_HAL_DFT_IS_CONTINUOUS | CV_HAL_DFT_INVERSE | CV_HAL_DFT_SCALE);
+
+        Mat Sxy(sz, CV_32FC2), Sxx(sz, CV_32FC2), H_real(sz, CV_32FC1), L(sz, CV_32FC2), G(sz, CV_32FC2), idft_in(sz, CV_32FC2);
         for (int i = range.start; i < range.end; i++) {
             float mu = 5.0f;
             float beta = 3.0f;
             float mu_max = 20.0f;
             float lambda = mu / 100.0f;
 
-            Mat F = img_features[i];
+            const Mat& F = img_features[i];
+            Mat& H = result_filter[i];
+            H.create(sz, CV_32FC2);
 
-            Mat Sxy, Sxx;
             mulSpectrums(F, Y, Sxy, 0, true);
             mulSpectrums(F, F, Sxx, 0, true);
 
-            Mat H;
-            H = divide_complex_matrices(Sxy, (Sxx + lambda));
-            idft(H, H, DFT_SCALE|DFT_REAL_OUTPUT);
-            H = H.mul(P);
-            dft(H, H, DFT_COMPLEX_OUTPUT);
-            Mat L = Mat::zeros(H.size(), H.type()); //Lagrangian multiplier
-            Mat G;
-            for(int iteration = 0; iteration < admm_iterations; ++iteration) {
-                G = divide_complex_matrices((Sxy + (mu * H) - L) , (Sxx + mu));
-                idft((mu * G) + L, H, DFT_SCALE | DFT_REAL_OUTPUT);
-                float lm = 1.0f / (lambda+mu);
-                H = H.mul(P*lm);
-                dft(H, H, DFT_COMPLEX_OUTPUT);
+            divide_complex_add_scalar(Sxy, Sxx, lambda, H);
+            if (!invPlan.empty())
+                invPlan->apply(H.data, H.step, H_real.data, H_real.step);
+            else
+                idft(H, H_real, DFT_SCALE | DFT_REAL_OUTPUT);
 
-                //Update variables for next iteration
-                L = L + mu * (G - H);
+            multiply(H_real, P, H_real);
+            if (!fwdPlan.empty())
+                fwdPlan->apply(H_real.data, H_real.step, H.data, H.step);
+            else
+                dft(H_real, H, DFT_COMPLEX_OUTPUT);
+
+            L.setTo(Scalar::all(0)); //Lagrangian multiplier
+            for(int iteration = 0; iteration < admm_iterations; ++iteration) {
+                for (int y = 0; y < sz.height; ++y) {
+                    const Vec2f* sxyRow = Sxy.ptr<Vec2f>(y);
+                    const Vec2f* sxxRow = Sxx.ptr<Vec2f>(y);
+                    const Vec2f* hRow = H.ptr<Vec2f>(y);
+                    const Vec2f* lRow = L.ptr<Vec2f>(y);
+                    Vec2f* gRow = G.ptr<Vec2f>(y);
+                    Vec2f* inRow = idft_in.ptr<Vec2f>(y);
+                    for (int x = 0; x < sz.width; ++x) {
+                        const float nr = sxyRow[x][0] + mu * hRow[x][0] - lRow[x][0];
+                        const float ni = sxyRow[x][1] + mu * hRow[x][1] - lRow[x][1];
+                        const float c = sxxRow[x][0] + mu;
+                        const float d = sxxRow[x][1];
+                        const float den = c * c + d * d;
+                        const float gr = (nr * c + ni * d) / den;
+                        const float gi = (ni * c - nr * d) / den;
+                        gRow[x] = Vec2f(gr, gi);
+                        inRow[x] = Vec2f(mu * gr + lRow[x][0], mu * gi + lRow[x][1]);
+                    }
+                }
+
+                if (!invPlan.empty())
+                    invPlan->apply(idft_in.data, idft_in.step, H_real.data, H_real.step);
+                else
+                    idft(idft_in, H_real, DFT_SCALE | DFT_REAL_OUTPUT);
+
+                const float lm = 1.0f / (lambda + mu);
+                for (int y = 0; y < sz.height; ++y) {
+                    float* hrRow = H_real.ptr<float>(y);
+                    const float* pRow = P.ptr<float>(y);
+                    for (int x = 0; x < sz.width; ++x)
+                        hrRow[x] *= pRow[x] * lm;
+                }
+
+                if (!fwdPlan.empty())
+                    fwdPlan->apply(H_real.data, H_real.step, H.data, H.step);
+                else
+                    dft(H_real, H, DFT_COMPLEX_OUTPUT);
+
+                //Update variables for next iteration: L += mu * (G - H)
+                for (int y = 0; y < sz.height; ++y) {
+                    const Vec2f* gRow = G.ptr<Vec2f>(y);
+                    const Vec2f* hRow = H.ptr<Vec2f>(y);
+                    Vec2f* lRow = L.ptr<Vec2f>(y);
+                    for (int x = 0; x < sz.width; ++x) {
+                        lRow[x][0] += mu * (gRow[x][0] - hRow[x][0]);
+                        lRow[x][1] += mu * (gRow[x][1] - hRow[x][1]);
+                    }
+                }
                 mu = min(mu_max, beta*mu);
             }
-            result_filter[i] = H;
         }
     }
 
@@ -274,7 +334,8 @@ std::vector<Mat> TrackerCSRTImpl::create_csr_filter(
     result_filter.resize(img_features.size());
     ParallelCreateCSRFilter parallelCreateCSRFilter(img_features, Y, P,
             params.admm_iterations, result_filter);
-    parallel_for_(Range(0, static_cast<int>(result_filter.size())), parallelCreateCSRFilter);
+    const double nstripes = std::min(4, std::max(1, cv::getNumThreads()));
+    parallel_for_(Range(0, static_cast<int>(result_filter.size())), parallelCreateCSRFilter, nstripes);
 
     return result_filter;
 }
@@ -333,11 +394,13 @@ Mat TrackerCSRTImpl::segment_region(
 
     std::vector<Mat> img_channels;
     split(patch, img_channels);
-    std::pair<Mat, Mat> probs = Segment::computePosteriors2(img_channels, 0, 0, patch.cols, patch.rows,
-                    p_b, fg_prior, 1.0-fg_prior, hist_foreground, hist_background);
+    Mat bg_prior;
+    subtract(Scalar::all(1.0), fg_prior, bg_prior);
+    Mat fg_prob = Segment::computeForegroundPosterior2(img_channels, 0, 0, patch.cols, patch.rows,
+                    p_b, fg_prior, bg_prior, hist_foreground, hist_background);
 
-    Mat mask = Mat::zeros(probs.first.size(), probs.first.type());
-    probs.first(valid_pixels).copyTo(mask(valid_pixels));
+    Mat mask = Mat::zeros(fg_prob.size(), fg_prob.type());
+    fg_prob(valid_pixels).copyTo(mask(valid_pixels));
     double max_resp = get_max(mask);
     threshold(mask, mask, max_resp / 2.0, 1, THRESH_BINARY);
     mask.convertTo(mask, CV_32FC1, 1.0);
@@ -369,13 +432,46 @@ void TrackerCSRTImpl::extract_histograms(const Mat &image, cv::Rect region, Hist
     std::vector<Mat> img_channels(image.channels());
     split(image, img_channels);
     for(size_t k=0; k<img_channels.size(); k++) {
-        img_channels.at(k).convertTo(img_channels.at(k), CV_8UC1);
+        if (img_channels.at(k).type() != CV_8UC1)
+            img_channels.at(k).convertTo(img_channels.at(k), CV_8UC1);
     }
 
     hf.extractForegroundHistogram(img_channels, Mat(), false, x1, y1, x2, y2);
     hb.extractBackGroundHistogram(img_channels, x1, y1, x2, y2,
         outer_x1, outer_y1, outer_x2, outer_y2);
     std::vector<Mat>().swap(img_channels);
+}
+
+// Smallest part of the frame that extract_histograms() and the segment_region() patch read, computed with
+// the same arithmetic as those functions. Converting only this part to HSV gives the same values as
+// converting the whole frame, without full-frame buffers.
+Rect TrackerCSRTImpl::segmentation_roi(const Size &img_sz, const Rect &region, float scale_factor) const
+{
+    int x1 = std::min(std::max(0, region.x), img_sz.width-1);
+    int y1 = std::min(std::max(0, region.y), img_sz.height-1);
+    int x2 = std::min(std::max(0, region.x + region.width), img_sz.width-1);
+    int y2 = std::min(std::max(0, region.y + region.height), img_sz.height-1);
+    if (x2 < x1 || y2 < y1)
+        return Rect(Point(0, 0), img_sz);
+    int offsetX = (x2-x1+1) / params.background_ratio;
+    int offsetY = (y2-y1+1) / params.background_ratio;
+    int left = std::max(0, (int)(x1-offsetX));
+    int top = std::max(0, (int)(y1-offsetY));
+    int right = std::min(img_sz.width, (int)(x2+offsetX+1));
+    int bottom = std::min(img_sz.height, (int)(y2+offsetY+1));
+    int w = cvFloor(scale_factor * template_size.width);
+    int h = cvFloor(scale_factor * template_size.height);
+    int sx = cvFloor(object_center.x) + 1 - (cvFloor(w/2));
+    int sy = cvFloor(object_center.y) + 1 - (cvFloor(h/2));
+    left = std::min(left, std::max(0, sx));
+    top = std::min(top, std::max(0, sy));
+    right = std::max(right, std::min(img_sz.width, sx + w));
+    bottom = std::max(bottom, std::min(img_sz.height, sy + h));
+    left = std::min(std::max(0, left), img_sz.width - 1);
+    top = std::min(std::max(0, top), img_sz.height - 1);
+    right = std::min(std::max(left + 1, right), img_sz.width);
+    bottom = std::min(std::max(top + 1, bottom), img_sz.height);
+    return Rect(left, top, right - left, bottom - top);
 }
 
 void TrackerCSRTImpl::update_histograms(const Mat &image, const Rect &region)
@@ -468,9 +564,11 @@ bool TrackerCSRTImpl::update(InputArray image_, Rect& boundingBox)
 
     //update tracker
     if(params.use_segmentation) {
-        Mat hsv_img = bgr2hsv(image);
-        update_histograms(hsv_img, bounding_box);
-        filter_mask = segment_region(hsv_img, object_center,
+        Rect hist_region = bounding_box;
+        Rect roi = segmentation_roi(image.size(), hist_region, current_scale_factor);
+        Mat hsv_img = bgr2hsv(image(roi));
+        update_histograms(hsv_img, hist_region - roi.tl());
+        filter_mask = segment_region(hsv_img, object_center - Point2f((float)roi.x, (float)roi.y),
                 template_size,original_target_size, current_scale_factor);
         resize(filter_mask, filter_mask, yf.size(), 0, 0, INTER_NEAREST);
         if(check_mask_area(filter_mask, default_mask_area)) {
@@ -522,6 +620,9 @@ void TrackerCSRTImpl::init(InputArray image_, const Rect& boundingBox)
 
     yf = gaussian_shaped_labels(params.gsl_sigma,
             rescaled_template_size.width / cell_size, rescaled_template_size.height / cell_size);
+    dft_fwd_ = hal::DFT2D::create(yf.cols, yf.rows, CV_32F, 1, 2, CV_HAL_DFT_IS_CONTINUOUS);
+    dft_inv_ = hal::DFT2D::create(yf.cols, yf.rows, CV_32F, 2, 1,
+            CV_HAL_DFT_IS_CONTINUOUS | CV_HAL_DFT_INVERSE | CV_HAL_DFT_SCALE);
     if(params.window_function.compare("hann") == 0) {
         window = get_hann_win(Size(yf.cols,yf.rows));
     } else if(params.window_function.compare("cheb") == 0) {
@@ -543,11 +644,13 @@ void TrackerCSRTImpl::init(InputArray image_, const Rect& boundingBox)
 
     //initalize segmentation
     if(params.use_segmentation) {
-        Mat hsv_img = bgr2hsv(image);
+        Rect hist_region = bounding_box;
+        Rect roi = segmentation_roi(image.size(), hist_region, current_scale_factor);
+        Mat hsv_img = bgr2hsv(image(roi));
         hist_foreground = Histogram(hsv_img.channels(), params.histogram_bins);
         hist_background = Histogram(hsv_img.channels(), params.histogram_bins);
-        extract_histograms(hsv_img, bounding_box, hist_foreground, hist_background);
-        filter_mask = segment_region(hsv_img, object_center, template_size,
+        extract_histograms(hsv_img, hist_region - roi.tl(), hist_foreground, hist_background);
+        filter_mask = segment_region(hsv_img, object_center - Point2f((float)roi.x, (float)roi.y), template_size,
                 original_target_size, current_scale_factor);
         //update calculated mask with preset mask
         if(preset_mask.data){
@@ -575,16 +678,20 @@ void TrackerCSRTImpl::init(InputArray image_, const Rect& boundingBox)
         cvFloor(current_scale_factor * template_size.height));
     resize(patch, patch, rescaled_template_size, 0, 0, INTER_CUBIC);
     std::vector<Mat> patch_ftrs = get_features(patch, yf.size());
-    std::vector<Mat> Fftrs = fourier_transform_features(patch_ftrs);
+    std::vector<Mat> Fftrs = fourier_transform_features(patch_ftrs, dft_fwd_);
     csr_filter = create_csr_filter(Fftrs, yf, filter_mask);
 
     if(params.use_channel_weights) {
-        Mat current_resp;
+        Mat current_spec(Fftrs[0].size(), CV_32FC2);
+        Mat current_resp(Fftrs[0].size(), CV_32FC1);
         filter_weights = std::vector<float>(csr_filter.size());
         float chw_sum = 0;
         for (size_t i = 0; i < csr_filter.size(); ++i) {
-            mulSpectrums(Fftrs[i], csr_filter[i], current_resp, 0, true);
-            idft(current_resp, current_resp, DFT_SCALE | DFT_REAL_OUTPUT);
+            mulSpectrums(Fftrs[i], csr_filter[i], current_spec, 0, true);
+            if (!dft_inv_.empty() && current_spec.isContinuous() && current_resp.isContinuous())
+                dft_inv_->apply(current_spec.data, current_spec.step, current_resp.data, current_resp.step);
+            else
+                idft(current_spec, current_resp, DFT_SCALE | DFT_REAL_OUTPUT);
             double max_val;
             minMaxLoc(current_resp, NULL, &max_val, NULL , NULL);
             chw_sum += static_cast<float>(max_val);

@@ -271,6 +271,51 @@ INSTANTIATE_TEST_CASE_P(CUDA_OptFlow, PyrLKOpticalFlow, testing::Combine(
     testing::Values(Chan(1), Chan(3), Chan(4)),
     testing::Values(DataType(CV_8U), DataType(CV_16U), DataType(CV_32S), DataType(CV_32F))));
 
+namespace
+{
+    IMPLEMENT_PARAM_CLASS(MaxLevel, int)
+}
+
+PARAM_TEST_CASE(PyrLKOpticalFlowDense, cv::cuda::DeviceInfo, MaxLevel)
+{
+    cv::cuda::DeviceInfo devInfo;
+    int maxLevel;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        maxLevel = GET_PARAM(1);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(PyrLKOpticalFlowDense, Shift)
+{
+    cv::Mat frame0 = readImage("opticalflow/rubberwhale1.png", cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(frame0.empty());
+
+    // the second frame is the first one moved by a known subpixel shift
+    const cv::Point2f shift(1.5f, 1.0f);
+    cv::Mat M = (cv::Mat_<double>(2, 3) << 1.0, 0.0, shift.x, 0.0, 1.0, shift.y);
+    cv::Mat frame1;
+    cv::warpAffine(frame0, frame1, M, frame0.size(), cv::INTER_LINEAR, cv::BORDER_REFLECT);
+
+    cv::Ptr<cv::cuda::DensePyrLKOpticalFlow> pyrLK = cv::cuda::DensePyrLKOpticalFlow::create(cv::Size(13, 13), maxLevel);
+    cv::cuda::GpuMat d_flow;
+    pyrLK->calc(loadMat(frame0), loadMat(frame1), d_flow);
+
+    cv::Mat flow(d_flow);
+    const cv::Rect inner(32, 32, flow.cols - 64, flow.rows - 64);
+    const cv::Scalar meanFlow = cv::mean(flow(inner));
+    EXPECT_NEAR(shift.x, meanFlow[0], 0.1);
+    EXPECT_NEAR(shift.y, meanFlow[1], 0.1);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_OptFlow, PyrLKOpticalFlowDense, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(MaxLevel(0), MaxLevel(1), MaxLevel(2), MaxLevel(3))));
+
 
 
 //////////////////////////////////////////////////////
@@ -345,6 +390,71 @@ CUDA_TEST_P(FarnebackOpticalFlow, Accuracy)
     else
     {
         EXPECT_MAT_SIMILAR(flow, d_flow, 1e-4);
+    }
+}
+
+// Counts the device memory of the GpuMats allocated through it.
+struct CountingAllocator : cv::cuda::GpuMat::Allocator
+{
+    cv::cuda::GpuMat::Allocator* const base = cv::cuda::GpuMat::defaultAllocator();
+    std::map<uchar*, size_t> sizes;
+    size_t held = 0;
+    int allocations = 0;
+
+    bool allocate(cv::cuda::GpuMat* mat, int rows, int cols, size_t elemSize) override
+    {
+        if (!base->allocate(mat, rows, cols, elemSize))
+            return false;
+        sizes[mat->data] = mat->step * rows;
+        held += mat->step * rows;
+        ++allocations;
+        return true;
+    }
+
+    void free(cv::cuda::GpuMat* mat) override
+    {
+        held -= sizes[mat->datastart];
+        sizes.erase(mat->datastart);
+        base->free(mat);
+    }
+};
+
+// Makes the allocator the default one while it is in scope.
+struct DefaultAllocatorScope
+{
+    explicit DefaultAllocatorScope(CountingAllocator& allocator) : prev(allocator.base) { cv::cuda::GpuMat::setDefaultAllocator(&allocator); }
+    ~DefaultAllocatorScope() { cv::cuda::GpuMat::setDefaultAllocator(prev); }
+    cv::cuda::GpuMat::Allocator* const prev;
+};
+
+CUDA_TEST_P(FarnebackOpticalFlow, ReusesBuffers)
+{
+    cv::Mat frame0 = readImage("opticalflow/rubberwhale1.png", cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(frame0.empty());
+
+    cv::Mat frame1 = readImage("opticalflow/rubberwhale2.png", cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(frame1.empty());
+
+    cv::cuda::GpuMat d_frame0 = loadMat(frame0), d_frame1 = loadMat(frame1), d_flow;
+
+    CountingAllocator allocator;
+    {
+        DefaultAllocatorScope scope(allocator);
+        cv::Ptr<cv::cuda::FarnebackOpticalFlow> farn = cv::cuda::FarnebackOpticalFlow::create();
+        farn->setPyrScale(pyrScale);
+        farn->setPolyN(polyN);
+        farn->setPolySigma(polyN <= 5 ? 1.1 : 1.5);
+        farn->setFlags(flags);
+
+        farn->calc(d_frame0, d_frame1, d_flow);
+        if (useInitFlow)
+            farn->setFlags(farn->getFlags() | cv::OPTFLOW_USE_INITIAL_FLOW);
+        farn->calc(d_frame0, d_frame1, d_flow);
+
+        // later frames of the same size reuse the buffers
+        const int allocations = allocator.allocations;
+        farn->calc(d_frame0, d_frame1, d_flow);
+        EXPECT_EQ(allocations, allocator.allocations);
     }
 }
 

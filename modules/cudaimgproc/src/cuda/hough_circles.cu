@@ -168,6 +168,32 @@ namespace cv { namespace cuda { namespace device
         }
 
         ////////////////////////////////////////////////////////////////////////
+        // centersVotes
+
+        __global__ void centersVotes(const PtrStepi accum, const unsigned int* centers, const int count, int* votes)
+        {
+            const int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+            if (i < count)
+            {
+                const unsigned int val = centers[i];
+                const int x = val & 0xFFFF;
+                const int y = val >> 16;
+
+                votes[i] = accum(y + 1, x + 1);
+            }
+        }
+
+        void centersVotes_gpu(PtrStepSzi accum, const unsigned int* centers, int count, int* votes, cudaStream_t stream)
+        {
+            const dim3 block(256);
+            const dim3 grid(divUp(count, block.x));
+
+            centersVotes<<<grid, block, 0, stream>>>(accum, centers, count, votes);
+            cudaSafeCall( cudaGetLastError() );
+        }
+
+        ////////////////////////////////////////////////////////////////////////
         // circlesAccumRadius
 
         __global__ void circlesAccumRadius(const unsigned int* centers, const unsigned int* list, const int count,

@@ -5,10 +5,12 @@
 #ifndef OPENCV_TRACKER_CSRT_UTILS
 #define OPENCV_TRACKER_CSRT_UTILS
 
+#include <opencv2/core/hal/hal.hpp>
+#include <opencv2/core/hal/interface.h>
+
 #include <fstream>
 #include <iostream>
 #include <vector>
-#include <iostream>
 #include <algorithm>
 #include <iterator>
 
@@ -28,8 +30,33 @@ inline double kernel_epan(double x)
 
 Mat circshift(Mat matrix, int dx, int dy);
 Mat gaussian_shaped_labels(const float sigma, const int w, const int h);
-std::vector<Mat> fourier_transform_features(const std::vector<Mat> &M);
+std::vector<Mat> fourier_transform_features(const std::vector<Mat> &M, Ptr<hal::DFT2D> fwd_plan = Ptr<hal::DFT2D>());
 Mat divide_complex_matrices(const Mat &A, const Mat &B);
+
+// Computes res = A / (B + Scalar(b_add, 0)) for CV_32FC2 matrices with zero scratch allocations.
+// Matches stock CSRT's `divide_complex_matrices(A, B + b_add)` where OpenCV's `Mat + float`
+// constructs `Scalar(b_add)` and adds `b_add` only to the real channel `[0]`.
+inline void divide_complex_add_scalar(const Mat &A, const Mat &B, float b_add, Mat &res)
+{
+    CV_DbgAssert(A.type() == CV_32FC2 && B.type() == CV_32FC2 && A.size() == B.size());
+    res.create(A.size(), CV_32FC2);
+    for (int y = 0; y < A.rows; ++y)
+    {
+        const Vec2f* arow = A.ptr<Vec2f>(y);
+        const Vec2f* brow = B.ptr<Vec2f>(y);
+        Vec2f* rrow = res.ptr<Vec2f>(y);
+        for (int x = 0; x < A.cols; ++x)
+        {
+            const float a = arow[x][0], b = arow[x][1];
+            const float c = brow[x][0] + b_add, d = brow[x][1];
+            const float den = c * c + d * d;
+            rrow[x] = Vec2f((a * c + b * d) / den, (b * c - a * d) / den);
+        }
+    }
+}
+
+void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const int pad_x, const int pad_y,
+                   Mat &histM, Mat &normM);
 Mat get_subwindow(const Mat &image, const Point2f center,
         const int w, const int h,Rect *valid_pixels = NULL);
 

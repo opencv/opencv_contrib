@@ -932,8 +932,7 @@ Mat FacemarkAAMImpl::warpImage(
 {
     // TODO: this part can be optimized, collect tranformation pair form all triangles first, then do one time remapping
     Mat warped = Mat::zeros(res.height, res.width, CV_8U);
-    Mat warped2 = Mat::zeros(res.height, res.width, CV_8U);
-    Mat image,part, warped_part;
+    Mat image;
 
     if(img.channels()>1){
         cvtColor(img,image,COLOR_BGR2GRAY);
@@ -1007,10 +1006,9 @@ Mat FacemarkAAMImpl::warpImage(
             }
 
         }
-        warped.copyTo(warped2);
     }
 
-    return warped2.clone();
+    return warped;
 }
 
 template <class T>

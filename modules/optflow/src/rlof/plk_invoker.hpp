@@ -70,7 +70,8 @@ public:
 
         winSize = cv::Size(maxWinSize,maxWinSize);
         int winMaskwidth = roundUp(winSize.width, 16);
-        cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
+        cv::AutoBuffer<tMaskType, 2304> winMaskStorage(winMaskwidth * winMaskwidth);
+        cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType, winMaskStorage.data());
         winMaskMatBuf.setTo(1);
         const float FLT_SCALE = (1.f/(1 << 16));
 
@@ -82,7 +83,7 @@ public:
         Vec4f mismatchMat;
         Vec4f resultMat;
 
-        cv::AutoBuffer<deriv_type> _buf(winBufSize.area()*(cn + cn2));
+        cv::AutoBuffer<deriv_type, 9216> _buf(winBufSize.area()*(cn + cn2));
         int derivDepth = DataType<deriv_type>::depth;
 
         Mat IWinBuf(winBufSize, CV_MAKETYPE(derivDepth, cn), (deriv_type*)_buf.data());
@@ -563,7 +564,8 @@ public:
 
         winSize = cv::Size(maxWinSize,maxWinSize);
         int winMaskwidth = roundUp(winSize.width, 8) * 2;
-        cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
+        cv::AutoBuffer<tMaskType, 2304> winMaskStorage(winMaskwidth * winMaskwidth);
+        cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType, winMaskStorage.data());
         winMaskMatBuf.setTo(1);
 
         const float FLT_SCALE = (1.f/(1 << 20)); // 20
@@ -572,9 +574,9 @@ public:
         int winbufwidth = roundUp(winSize.width, 8);
         cv::Size winBufSize(winbufwidth,winbufwidth);
 
-        std::vector<short> _buf(winBufSize.area()*(cn + cn2));
-        Mat IWinBuf(winBufSize, CV_MAKETYPE(CV_16S, cn), &_buf[0]);
-        Mat derivIWinBuf(winBufSize, CV_MAKETYPE(CV_16S, cn2), &_buf[winBufSize.area()*cn]);
+        cv::AutoBuffer<short, 9216> _buf(winBufSize.area()*(cn + cn2));
+        Mat IWinBuf(winBufSize, CV_MAKETYPE(CV_16S, cn), _buf.data());
+        Mat derivIWinBuf(winBufSize, CV_MAKETYPE(CV_16S, cn2), _buf.data() + winBufSize.area()*cn);
 
         for( int ptidx = range.start; ptidx < range.end; ptidx++ )
         {

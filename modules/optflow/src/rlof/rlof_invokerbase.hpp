@@ -10,6 +10,8 @@
 #define FLT_RESCALE 1
 
 #include "rlof_localflow.h"
+#include <algorithm>
+#include <climits>
 #include <unordered_map>
 #include "opencv2/core/hal/intrin.hpp"
 using namespace std;
@@ -411,11 +413,23 @@ bool calcWinMaskMat(
     return true;
 }
 
+// Median of |residuals|. absBuf holds at least residuals.rows elements and is reused across calls.
+// The absolute value saturates like cv::abs, and nth_element returns the same order statistic as
+// quickselect, so the result is unchanged without the temporary matrices.
 static inline
-short estimateScale(cv::Mat & residuals)
+short estimateScale(const cv::Mat & residuals, cv::Mat & absBuf)
 {
-    cv::Mat absMat = cv::abs(residuals);
-    return quickselect<short>(absMat, absMat.rows / 2);
+    const int n = residuals.rows;
+    if (n <= 0)
+        return 0;
+    if (absBuf.rows < n || absBuf.cols < 1 || absBuf.type() != CV_16SC1 || !absBuf.isContinuous())
+        absBuf.create(n, 1, CV_16SC1);
+    const short* src = residuals.ptr<short>();
+    short* dst = absBuf.ptr<short>();
+    for (int i = 0; i < n; i++)
+        dst[i] = src[i] == SHRT_MIN ? SHRT_MAX : static_cast<short>(std::abs(src[i]));
+    std::nth_element(dst, dst + n / 2, dst + n);
+    return dst[n / 2];
 }
 
 }} // namespace

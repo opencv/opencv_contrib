@@ -105,7 +105,7 @@ namespace tvl1flow
 
     __global__ void warpBackwardKernel(
         const PtrStepSzf I0, const cv::cudev::TexturePtr<float> I1, const cv::cudev::TexturePtr<float> I1x, const cv::cudev::TexturePtr<float> I1y, const PtrStepf u1, const PtrStepf u2,
-        PtrStepf I1w, PtrStepf I1wx, PtrStepf I1wy, PtrStepf grad, PtrStepf rho)
+        PtrStepf I1wx, PtrStepf I1wy, PtrStepf grad, PtrStepf rho)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
         const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -144,11 +144,11 @@ namespace tvl1flow
 
         const float coeff = 1.0f / wsum;
 
-        const float I1wVal  = sum  * coeff;
+        // rounded on its own, as when the value was also stored, so that the result does not change
+        const float I1wVal  = __fmul_rn(sum, coeff);
         const float I1wxVal = sumx * coeff;
         const float I1wyVal = sumy * coeff;
 
-        I1w(y, x)  = I1wVal;
         I1wx(y, x) = I1wxVal;
         I1wy(y, x) = I1wyVal;
 
@@ -164,7 +164,7 @@ namespace tvl1flow
     }
 
     void warpBackward(PtrStepSzf I0, PtrStepSzf I1, PtrStepSzf I1x, PtrStepSzf I1y,
-                      PtrStepSzf u1, PtrStepSzf u2, PtrStepSzf I1w, PtrStepSzf I1wx,
+                      PtrStepSzf u1, PtrStepSzf u2, PtrStepSzf I1wx,
                       PtrStepSzf I1wy, PtrStepSzf grad, PtrStepSzf rho,
                       cudaStream_t stream)
     {
@@ -173,7 +173,7 @@ namespace tvl1flow
         cv::cudev::Texture<float> texI1y(I1y);
         const dim3 block(32, 8);
         const dim3 grid(divUp(I0.cols, block.x), divUp(I0.rows, block.y));
-        warpBackwardKernel<<<grid, block, 0, stream>>>(I0, texI1, texI1x, texI1y , u1, u2, I1w, I1wx, I1wy, grad, rho);
+        warpBackwardKernel<<<grid, block, 0, stream>>>(I0, texI1, texI1x, texI1y , u1, u2, I1wx, I1wy, grad, rho);
         if (!stream)
             cudaSafeCall(cudaDeviceSynchronize());
     }

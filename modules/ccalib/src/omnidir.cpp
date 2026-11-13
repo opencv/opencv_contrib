@@ -860,14 +860,6 @@ void cv::omnidir::internal::computeJacobian(InputArrayOfArrays objectPoints, Inp
     JTJ_inv = Mat::zeros(10 + 6*n, 10 + 6*n, CV_64F);
     JTE = Mat::zeros(10 + 6*n, 1, CV_64F);
 
-    int nPointsAll = 0;
-    for (int i = 0; i < n; ++i)
-    {
-        nPointsAll += (int)objectPoints.getMat(i).total();
-    }
-
-    Mat J = Mat::zeros(2*nPointsAll, 10+6*n, CV_64F);
-    Mat exAll = Mat::zeros(2*nPointsAll, 10+6*n, CV_64F);
     double *para = parameters.getMat().ptr<double>();
     Matx33d K(para[6*n], para[6*n+2], para[6*n+3],
         0,    para[6*n+1], para[6*n+4],

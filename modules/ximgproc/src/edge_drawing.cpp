@@ -189,6 +189,7 @@ private:
     void JoinCollinearLines();
 
     void ValidateLineSegments();
+    void updateNFATable();
     bool ValidateLineSegmentRect(int* x, int* y, EDLineSegment* ls);
     bool TryToJoinTwoLineSegments(EDLineSegment* ls1, EDLineSegment* ls2, int changeIndex);
 
@@ -1603,19 +1604,24 @@ void EdgeDrawingImpl::JoinCollinearLines()
     linesNo = lastLineIndex + 1;
 }
 
+// The NFA look-up table depends on the image size (through logNT): rebuild it when the size changes
+void EdgeDrawingImpl::updateNFATable()
+{
+    double logNT = 2.0 * (log10((double)width) + log10((double)height));
+    if (nfa->logNT != logNT)
+    {
+        delete nfa;
+        nfa = new NFALUT((width + height) / 8, 1.0 / 8, logNT);  // 1/8: probability of alignment
+    }
+}
+
 void EdgeDrawingImpl::ValidateLineSegments()
 {
 #define PRECISION_ANGLE 22.5
     precision = (PRECISION_ANGLE / 180) * CV_PI;
 #undef PRECISION_ANGLE
 
-    if (nfa->LUTSize == 1)
-    {
-        int lutSize = (width + height) / 8;
-        double prob = 1.0 / 8;  // probability of alignment
-        double logNT = 2.0 * (log10((double)width) + log10((double)height));
-        nfa = new NFALUT(lutSize, prob, logNT);
-    }
+    updateNFATable();
 
     int* x = new int[(width + height) * 4];
     int* y = new int[(width + height) * 4];
@@ -3214,13 +3220,8 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
     double *px = new double[points_buffer_size];
     double *py = new double[points_buffer_size];
 
-    if (nfa->LUTSize == 1 && params.NFAValidation)
-    {
-        int lutSize = (width + height) / 8;
-        double prob = 1.0 / 8;  // probability of alignment
-        double logNT = 2.0 * (log10((double)width) + log10((double)height));
-        nfa = new NFALUT(lutSize, prob, logNT); // create look up table
-    }
+    if (params.NFAValidation)
+        updateNFATable();
 
     // Validate circles & ellipses
     bool validateAgain;
@@ -5444,6 +5445,9 @@ void EdgeDrawingImpl::ComputeCirclePoints(double xc, double yc, double r, double
 
 bool EdgeDrawingImpl::EllipseFit(double* x, double* y, int noPoints, EllipseEquation* pResult, int mode)
 {
+    if (noPoints < 6)
+        return false;
+
     double** D = AllocateMatrix(noPoints + 1, 7);
     double** S = AllocateMatrix(7, 7);
     double** Const = AllocateMatrix(7, 7);
@@ -5471,9 +5475,6 @@ bool EdgeDrawingImpl::EllipseFit(double* x, double* y, int noPoints, EllipseEqua
         Const[2][2] = 1;
         Const[3][3] = 2;
     }
-
-    if (noPoints < 6)
-        return false;
 
     // Now first fill design matrix
     for (int i = 1; i <= noPoints; i++)

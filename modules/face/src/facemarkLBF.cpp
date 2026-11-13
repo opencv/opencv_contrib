@@ -1078,11 +1078,6 @@ void FacemarkLBFImpl::Regressor::initRegressor(Params config) {
     mean_shape.create(config.n_landmarks, 2, CV_64FC1);
 
     gl_regression_weights.resize(stages_n);
-    int F = config.n_landmarks * config.tree_n * (1 << (config.tree_depth - 1));
-
-    for (int i = 0; i < stages_n; i++) {
-        gl_regression_weights[i].create(2 * config.n_landmarks, F, CV_64FC1);
-    }
 }
 
 void FacemarkLBFImpl::Regressor::trainRegressor(std::vector<Mat> &imgs, std::vector<Mat> &gt_shapes, std::vector<Mat> &current_shapes,

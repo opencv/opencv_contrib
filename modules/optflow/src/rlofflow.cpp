@@ -147,11 +147,13 @@ public:
 
         Mat prevImage = I0.getMat();
         Mat currImage = I1.getMat();
-        int noPoints = prevImage.cols * prevImage.rows;
+        cv::Size grid_h = gridStep / 2;
+        int gridRows = prevImage.rows - 2 * grid_h.height > 0 ? (prevImage.rows - 2 * grid_h.height + gridStep.height - 1) / gridStep.height : 0;
+        int gridCols = prevImage.cols - 2 * grid_h.width > 0 ? (prevImage.cols - 2 * grid_h.width + gridStep.width - 1) / gridStep.width : 0;
+        int noPoints = gridRows * gridCols;
         std::vector<cv::Point2f> prevPoints(noPoints);
         std::vector<cv::Point2f> currPoints, refPoints;
         noPoints = 0;
-        cv::Size grid_h = gridStep / 2;
         for (int r = grid_h.height; r < prevImage.rows - grid_h.height; r += gridStep.height)
         {
             for (int c = grid_h.width; c < prevImage.cols - grid_h.width; c += gridStep.width)
@@ -161,6 +163,13 @@ public:
         }
         prevPoints.erase(prevPoints.begin() + noPoints, prevPoints.end());
         currPoints.resize(prevPoints.size());
+        for (int i = 0; i < 2; ++i)
+        {
+            if (prevPyramid[i].empty())
+                prevPyramid[i] = makePtr<CImageBuffer>();
+            if (currPyramid[i].empty())
+                currPyramid[i] = makePtr<CImageBuffer>();
+        }
         calcLocalOpticalFlow(prevImage, currImage, prevPyramid, currPyramid, prevPoints, currPoints, *(param.get()));
         flow.create(prevImage.size(), CV_32FC2);
         Mat dense_flow = flow.getMat();

@@ -30,42 +30,48 @@ Histogram::Histogram(int numDimensions, int numBinsPerDimension)
 void Histogram::extractForegroundHistogram(std::vector<cv::Mat> & imgChannels,
         cv::Mat weights, bool useMatWeights, int x1, int y1, int x2, int y2)
 {
-    //just for code clarity
-    cv::Mat & img = imgChannels[0];
-
-    if (!useMatWeights){
-        //weights are epanechnikov distr. with peek at the center of the image;
-        double cx = x1 + (x2-x1)/2.;
-        double cy = y1 + (y2-y1)/2.;
-        double kernelSize_width = 1.0/(0.5*static_cast<double>(x2-x1)*1.4142+1);  //sqrt(2)
-        double kernelSize_height = 1.0/(0.5*static_cast<double>(y2-y1)*1.4142+1);
-
-        cv::Mat kernelWeight(img.rows, img.cols, CV_64FC1);
-        for (int y = y1; y < y2+1; ++y){
-            double * weightPtr = kernelWeight.ptr<double>(y);
-            double tmp_y = std::pow((cy-y)*kernelSize_height, 2);
-            for (int x = x1; x < x2+1; ++x){
-                weightPtr[x] = kernelProfile_Epanechnikov(std::pow((cx-x)*kernelSize_width,2) + tmp_y);
-            }
-        }
-        weights = kernelWeight;
-    }
-    //extract pixel values and compute histogram
     double rangePerBinInverse = static_cast<double>(m_numBinsPerDim)/256.0;  // 1 / (imgRange/numBinsPerDim)
     double sum = 0;
-    for (int y = y1; y < y2+1; ++y){
-        std::vector<const uchar *> dataPtr(m_numDim);
-        for (int dim = 0; dim < m_numDim; ++dim)
-            dataPtr[dim] = imgChannels[dim].ptr<uchar>(y);
-        const double * weightPtr = weights.ptr<double>(y);
+    AutoBuffer<const uchar*, 4> dataPtr(m_numDim);
 
-        for (int x = x1; x < x2+1; ++x){
-            int id = 0;
-            for (int dim = 0; dim < m_numDim; ++dim){
-                id += p_dimIdCoef[dim]*cvFloor(rangePerBinInverse*dataPtr[dim][x]);
+    if (!useMatWeights) {
+        // Epanechnikov weights evaluated inline without allocating full-ROI CV_64FC1 matrix
+        double cx = x1 + (x2 - x1) / 2.;
+        double cy = y1 + (y2 - y1) / 2.;
+        double kernelSize_width = 1.0 / (0.5 * static_cast<double>(x2 - x1) * 1.4142 + 1);
+        double kernelSize_height = 1.0 / (0.5 * static_cast<double>(y2 - y1) * 1.4142 + 1);
+
+        for (int y = y1; y < y2 + 1; ++y) {
+            for (int dim = 0; dim < m_numDim; ++dim)
+                dataPtr[dim] = imgChannels[dim].ptr<uchar>(y);
+            const double dy = (cy - y) * kernelSize_height;
+            const double tmp_y = dy * dy;
+
+            for (int x = x1; x < x2 + 1; ++x) {
+                const double dx = (cx - x) * kernelSize_width;
+                const double w = kernelProfile_Epanechnikov(dx * dx + tmp_y);
+                int id = 0;
+                for (int dim = 0; dim < m_numDim; ++dim) {
+                    id += p_dimIdCoef[dim] * cvFloor(rangePerBinInverse * dataPtr[dim][x]);
+                }
+                p_bins[id] += w;
+                sum += w;
             }
-            p_bins[id] += weightPtr[x];
-            sum += weightPtr[x];
+        }
+    } else {
+        for (int y = y1; y < y2 + 1; ++y) {
+            for (int dim = 0; dim < m_numDim; ++dim)
+                dataPtr[dim] = imgChannels[dim].ptr<uchar>(y);
+            const double * weightPtr = weights.ptr<double>(y);
+
+            for (int x = x1; x < x2 + 1; ++x) {
+                int id = 0;
+                for (int dim = 0; dim < m_numDim; ++dim) {
+                    id += p_dimIdCoef[dim] * cvFloor(rangePerBinInverse * dataPtr[dim][x]);
+                }
+                p_bins[id] += weightPtr[x];
+                sum += weightPtr[x];
+            }
         }
     }
     //normalize
@@ -82,9 +88,8 @@ void Histogram::extractBackGroundHistogram(
     //extract pixel values and compute histogram
     double rangePerBinInverse = static_cast<double>(m_numBinsPerDim)/256.0;  // 1 / (imgRange/numBinsPerDim)
     double sum = 0;
+    AutoBuffer<const uchar*, 4> dataPtr(m_numDim);
     for (int y = outer_y1; y < outer_y2; ++y){
-
-        std::vector<const uchar *> dataPtr(m_numDim);
         for (int dim = 0; dim < m_numDim; ++dim)
             dataPtr[dim] = imgChannels[dim].ptr<uchar>(y);
 
@@ -106,17 +111,17 @@ void Histogram::extractBackGroundHistogram(
         p_bins[i] *= sum;
 }
 
-cv::Mat Histogram::backProject(std::vector<cv::Mat> & imgChannels)
+cv::Mat Histogram::backProject(const std::vector<cv::Mat> & imgChannels) const
 {
     //just for code clarity
-    cv::Mat & img = imgChannels[0];
+    const cv::Mat & img = imgChannels[0];
 
     cv::Mat backProject(img.rows, img.cols, CV_64FC1);
     double rangePerBinInverse = static_cast<double>(m_numBinsPerDim)/256.0;  // 1 / (imgRange/numBinsPerDim)
 
+    AutoBuffer<const uchar*, 4> dataPtr(m_numDim);
     for (int y = 0; y < img.rows; ++y){
         double * backProjectPtr = backProject.ptr<double>(y);
-        std::vector<const uchar *> dataPtr(m_numDim);
         for (int dim = 0; dim < m_numDim; ++dim)
             dataPtr[dim] = imgChannels[dim].ptr<uchar>(y);
 
@@ -227,7 +232,7 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors(
 
 std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(
     std::vector<cv::Mat> &imgChannels, int x1, int y1, int x2, int y2, double p_b,
-    cv::Mat fgPrior, cv::Mat bgPrior, Histogram hist_target, Histogram hist_background)
+    cv::Mat fgPrior, cv::Mat bgPrior, const Histogram &hist_target, const Histogram &hist_background)
 {
     //preprocess and normalize all data
     CV_Assert(imgChannels.size() > 0);
@@ -244,7 +249,6 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(
     w = std::min(std::max(w, 1), imgChannels[0].cols);
     h = std::min(std::max(h, 1), imgChannels[0].rows);
 
-    //double p_o = 1./(p_b + 1);
     double p_o = 1. - p_b;
 
     //compute resize factor so that the max area is 1000 (=avg. size ~ 32x32)
@@ -262,27 +266,29 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(
     //initialize priors if there is no external source and rescale
     cv::Mat fgPriorScaled;
     if (fgPrior.cols == 0)
-        fgPriorScaled = 0.5*cv::Mat::ones(newSize, CV_64FC1);
+        fgPriorScaled = cv::Mat(newSize, CV_64FC1, cv::Scalar(0.5));
     else
         cv::resize(fgPrior(roiRect_inner), fgPriorScaled, newSize);
     cv::Mat bgPriorScaled;
     if (bgPrior.cols == 0)
-        bgPriorScaled = 0.5*cv::Mat::ones(newSize, CV_64FC1);
+        bgPriorScaled = cv::Mat(newSize, CV_64FC1, cv::Scalar(0.5));
     else
         cv::resize(bgPrior(roiRect_inner), bgPriorScaled, newSize);
 
     //backproject pixels likelihood
-    cv::Mat foregroundLikelihood = hist_target.backProject(imgChannelsROI_inner).mul(fgPriorScaled);
-    cv::Mat backgroundLikelihood = hist_background.backProject(imgChannelsROI_inner).mul(bgPriorScaled);
+    cv::Mat foregroundLikelihood = hist_target.backProject(imgChannelsROI_inner);
+    cv::multiply(foregroundLikelihood, fgPriorScaled, foregroundLikelihood);
+    cv::Mat backgroundLikelihood = hist_background.backProject(imgChannelsROI_inner);
+    cv::multiply(backgroundLikelihood, bgPriorScaled, backgroundLikelihood);
 
     //convert likelihoods to posterior prob. (Bayes rule)
     cv::Mat prob_o(newSize, foregroundLikelihood.type());
     prob_o = p_o*foregroundLikelihood / (p_o*foregroundLikelihood + p_b*backgroundLikelihood);
-    cv::Mat prob_b = 1.0 - prob_o;
+    cv::Mat prob_b;
+    cv::subtract(cv::Scalar::all(1.0), prob_o, prob_b);
 
     std::pair<cv::Mat, cv::Mat> sizedProbs = getRegularizedSegmentation(prob_o, prob_b,
             fgPriorScaled, bgPriorScaled);
-    //std::pair<cv::Mat, cv::Mat> sizedProbs = std::pair<cv::Mat, cv::Mat>(prob_o, prob_b);
 
     //resize probs to original size
     std::pair<cv::Mat, cv::Mat> probs;
@@ -292,8 +298,72 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(
     return probs;
 }
 
+cv::Mat Segment::computeForegroundPosterior2(
+    std::vector<cv::Mat> &imgChannels, int x1, int y1, int x2, int y2, double p_b,
+    cv::Mat fgPrior, cv::Mat bgPrior, const Histogram &hist_target, const Histogram &hist_background)
+{
+    CV_Assert(imgChannels.size() > 0);
+
+    x1 = std::min(std::max(x1, 0), imgChannels[0].cols-1);
+    y1 = std::min(std::max(y1, 0), imgChannels[0].rows-1);
+    x2 = std::max(std::min(x2, imgChannels[0].cols-1), 0);
+    y2 = std::max(std::min(y2, imgChannels[0].rows-1), 0);
+
+    int w = std::min(std::max(x2 - x1 + 1, 1), imgChannels[0].cols);
+    int h = std::min(std::max(y2 - y1 + 1, 1), imgChannels[0].rows);
+    double p_o = 1. - p_b;
+
+    double factor = sqrt(1000.0/(w*h));
+    if (factor > 1)
+        factor = 1.0;
+    cv::Size newSize(cvFloor(w*factor), cvFloor(h*factor));
+
+    cv::Rect roiRect_inner = cv::Rect(x1, y1, w, h);
+    std::vector<cv::Mat> imgChannelsROI_inner(imgChannels.size());
+    for (size_t i = 0; i < imgChannels.size(); ++i)
+        cv::resize(imgChannels[i](roiRect_inner), imgChannelsROI_inner[i], newSize);
+
+    cv::Mat fgPriorScaled;
+    if (fgPrior.cols == 0)
+        fgPriorScaled = cv::Mat(newSize, CV_64FC1, cv::Scalar(0.5));
+    else
+        cv::resize(fgPrior(roiRect_inner), fgPriorScaled, newSize);
+    cv::Mat bgPriorScaled;
+    if (bgPrior.cols == 0)
+        bgPriorScaled = cv::Mat(newSize, CV_64FC1, cv::Scalar(0.5));
+    else
+        cv::resize(bgPrior(roiRect_inner), bgPriorScaled, newSize);
+
+    cv::Mat foregroundLikelihood = hist_target.backProject(imgChannelsROI_inner);
+    cv::multiply(foregroundLikelihood, fgPriorScaled, foregroundLikelihood);
+    cv::Mat backgroundLikelihood = hist_background.backProject(imgChannelsROI_inner);
+    cv::multiply(backgroundLikelihood, bgPriorScaled, backgroundLikelihood);
+
+    cv::Mat prob_o(newSize, foregroundLikelihood.type());
+    cv::Mat prob_b(newSize, foregroundLikelihood.type());
+    for (int y = 0; y < newSize.height; ++y) {
+        const double* fl = foregroundLikelihood.ptr<double>(y);
+        const double* bl = backgroundLikelihood.ptr<double>(y);
+        double* po = prob_o.ptr<double>(y);
+        double* pb = prob_b.ptr<double>(y);
+        for (int x = 0; x < newSize.width; ++x) {
+            const double num = p_o * fl[x];
+            const double val = num / (num + p_b * bl[x]);
+            po[x] = val;
+            pb[x] = 1.0 - val;
+        }
+    }
+
+    std::pair<cv::Mat, cv::Mat> sizedProbs = getRegularizedSegmentation(prob_o, prob_b,
+            fgPriorScaled, bgPriorScaled);
+
+    cv::Mat fgProb;
+    cv::resize(sizedProbs.first, fgProb, cv::Size(roiRect_inner.width, roiRect_inner.height));
+    return fgProb;
+}
+
 std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(std::vector<cv::Mat> &imgChannels,
-        cv::Mat fgPrior, cv::Mat bgPrior, Histogram hist_target, Histogram hist_background)
+        cv::Mat fgPrior, cv::Mat bgPrior, const Histogram &hist_target, const Histogram &hist_background)
 {
     //preprocess and normalize all data
     CV_Assert(imgChannels.size() > 0);
@@ -400,44 +470,59 @@ std::pair<cv::Mat, cv::Mat> Segment::getRegularizedSegmentation(
     cv::Mat Qi_b(prior_o.rows, prior_o.cols, prior_o.type());
     cv::Mat logQo(prior_o.rows, prior_o.cols, prior_o.type());
     cv::Mat logQb(prior_o.rows, prior_o.cols, prior_o.type());
+    cv::Mat P_Io(prior_o.rows, prior_o.cols, prior_o.type());
+    cv::Mat P_Ib(prior_o.rows, prior_o.cols, prior_o.type());
+    cv::Mat normSi(prior_o.rows, prior_o.cols, prior_o.type());
+    cv::Mat normQi(prior_o.rows, prior_o.cols, prior_o.type());
+    cv::Mat normPI(prior_o.rows, prior_o.cols, prior_o.type());
+    cv::Mat logQ_sum(prior_o.rows, prior_o.cols, prior_o.type());
+    cv::Mat tmp_prod(prior_o.rows, prior_o.cols, prior_o.type());
 
     int i;
     for (i = 0; i < maxIter; ++i){
         //follows the equations from Kristan et al. ACCV2014 paper
         //"A graphical model for rapid obstacle image-map estimation from unmanned surface vehicles"
-        cv::Mat P_Io = prior_o.mul(prob_o) + std::numeric_limits<double>::epsilon();
-        cv::Mat P_Ib = prior_b.mul(prob_b) + std::numeric_limits<double>::epsilon();
+        cv::multiply(prior_o, prob_o, tmp_prod);
+        cv::add(tmp_prod, cv::Scalar::all(std::numeric_limits<double>::epsilon()), P_Io);
+        cv::multiply(prior_b, prob_b, tmp_prod);
+        cv::add(tmp_prod, cv::Scalar::all(std::numeric_limits<double>::epsilon()), P_Ib);
 
         cv::filter2D(prior_o, Si_o, -1, lambda, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
         cv::filter2D(prior_b, Si_b, -1, lambda, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
-        Si_o = Si_o.mul(prior_o);
-        Si_b = Si_b.mul(prior_b);
-        cv::Mat normSi = 1.0/(Si_o + Si_b);
-        Si_o = Si_o.mul(normSi);
-        Si_b = Si_b.mul(normSi);
+        cv::multiply(Si_o, prior_o, Si_o);
+        cv::multiply(Si_b, prior_b, Si_b);
+        cv::add(Si_o, Si_b, normSi);
+        cv::divide(1.0, normSi, normSi);
+        cv::multiply(Si_o, normSi, Si_o);
+        cv::multiply(Si_b, normSi, Si_b);
         cv::filter2D(Si_o, Ssum_o, -1, lambda2, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
         cv::filter2D(Si_b, Ssum_b, -1, lambda2, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
 
         cv::filter2D(P_Io, Qi_o, -1, lambda, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
         cv::filter2D(P_Ib, Qi_b, -1, lambda, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
-        Qi_o = Qi_o.mul(P_Io);
-        Qi_b = Qi_b.mul(P_Ib);
-        cv::Mat normQi = 1.0/(Qi_o + Qi_b);
-        Qi_o = Qi_o.mul(normQi);
-        Qi_b = Qi_b.mul(normQi);
+        cv::multiply(Qi_o, P_Io, Qi_o);
+        cv::multiply(Qi_b, P_Ib, Qi_b);
+        cv::add(Qi_o, Qi_b, normQi);
+        cv::divide(1.0, normQi, normQi);
+        cv::multiply(Qi_o, normQi, Qi_o);
+        cv::multiply(Qi_b, normQi, Qi_b);
         cv::filter2D(Qi_o, Qsum_o, -1, lambda2, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
         cv::filter2D(Qi_b, Qsum_b, -1, lambda2, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
 
-        prior_o = (Qsum_o + Ssum_o)*0.25;
-        prior_b = (Qsum_b + Ssum_b)*0.25;
-        cv::Mat normPI = 1.0/(prior_o + prior_b);
-        prior_o = prior_o.mul(normPI);
-        prior_b = prior_b.mul(normPI);
+        cv::add(Qsum_o, Ssum_o, prior_o);
+        prior_o *= 0.25;
+        cv::add(Qsum_b, Ssum_b, prior_b);
+        prior_b *= 0.25;
+        cv::add(prior_o, prior_b, normPI);
+        cv::divide(1.0, normPI, normPI);
+        cv::multiply(prior_o, normPI, prior_o);
+        cv::multiply(prior_b, normPI, prior_b);
 
         //converge ?
         cv::log(Qsum_o, logQo);
         cv::log(Qsum_b, logQb);
-        cv::Scalar mean = cv::sum(logQo+logQb);
+        cv::add(logQo, logQb, logQ_sum);
+        cv::Scalar mean = cv::sum(logQ_sum);
         double logLikeNew = -mean.val[0]/(2*Qsum_o.rows*Qsum_o.cols);
         if (std::abs(logLike - logLikeNew) < terminateThr)
             break;

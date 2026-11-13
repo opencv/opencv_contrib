@@ -577,4 +577,60 @@ TEST( BinaryDescriptor_Matcher, regression)
   test.safe_run();
 }
 
+static void sortedMatches( std::vector<std::vector<DMatch> >& m )
+{
+  for ( size_t i = 0; i < m.size(); i++ )
+    std::sort( m[i].begin(), m[i].end(), []( const DMatch& a, const DMatch& b ) { return a.trainIdx < b.trainIdx; } );
+}
+
+TEST( BinaryDescriptor_Matcher, radiusMatch_dataset_after_train )
+{
+  // the dataset overload calls train() itself; a second train() used to reset the dataset size to 0, so the
+  // query wrote its results into an empty buffer and returned no match
+  Mat query( 40, 32, CV_8UC1 ), train( 60, 32, CV_8UC1 );
+  theRNG().fill( query, RNG::UNIFORM, 0, 256 );
+  theRNG().fill( train, RNG::UNIFORM, 0, 256 );
+  Ptr<BinaryDescriptorMatcher> bdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+  std::vector<std::vector<DMatch> > expected, first, second;
+  bdm->radiusMatch( query, train, expected, 120.f );
+  bdm->add( std::vector<Mat>( 1, train ) );
+  bdm->train();
+  bdm->radiusMatch( query, first, 120.f );
+  bdm->radiusMatch( query, second, 120.f );
+  sortedMatches( expected ); sortedMatches( first ); sortedMatches( second );
+  ASSERT_EQ( expected.size(), (size_t)query.rows );
+  ASSERT_EQ( first.size(), expected.size() );
+  ASSERT_EQ( second.size(), expected.size() );
+  size_t total = 0;
+  for ( size_t i = 0; i < expected.size(); i++ )
+  {
+    ASSERT_EQ( first[i].size(), expected[i].size() ) << "query " << i;
+    ASSERT_EQ( second[i].size(), expected[i].size() ) << "query " << i;
+    for ( size_t j = 0; j < expected[i].size(); j++ )
+    {
+      EXPECT_EQ( first[i][j].trainIdx, expected[i][j].trainIdx );
+      EXPECT_EQ( first[i][j].distance, expected[i][j].distance );
+      EXPECT_EQ( second[i][j].trainIdx, expected[i][j].trainIdx );
+    }
+    total += expected[i].size();
+  }
+  EXPECT_GT( total, 0u );
+}
+
+TEST( BinaryDescriptor_Matcher, pair_overloads_reject_short_mask )
+{
+  // a mask with one column but fewer rows than queries used to pass the size check and was read past its end
+  Mat query( 40, 32, CV_8UC1 ), train( 60, 32, CV_8UC1 );
+  theRNG().fill( query, RNG::UNIFORM, 0, 256 );
+  theRNG().fill( train, RNG::UNIFORM, 0, 256 );
+  Mat mask = Mat::ones( 5, 1, CV_8UC1 );
+  Ptr<BinaryDescriptorMatcher> bdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+  std::vector<DMatch> matches;
+  bdm->match( query, train, matches, mask );
+  EXPECT_TRUE( matches.empty() );
+  std::vector<std::vector<DMatch> > rmatches;
+  bdm->radiusMatch( query, train, rmatches, 120.f, mask );
+  EXPECT_TRUE( rmatches.empty() );
+}
+
 }} // namespace

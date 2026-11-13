@@ -147,7 +147,6 @@ bool FacemarkKazemiImpl::getPixelIntensities(Mat img,vector<Point2f> pixel_coord
     }
     Mat transform_mat;
     convertToActual(face,transform_mat);
-    Mat dst = img.clone();
     Mat C,D;
     for(size_t j=0;j<pixel_coordinates.size();j++){
         C = (Mat_<double>(3,1) << pixel_coordinates[j].x, pixel_coordinates[j].y, 1);

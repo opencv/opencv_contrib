@@ -145,4 +145,20 @@ TEST(Features2d_Detector_Keypoints_TBMRDetector, validation)
     test.safe_run();
 }
 
+TEST(Features2d_Detector_Keypoints_TBMRDetector, detectAndCompute_lifetime)
+{
+    Mat img(256, 256, CV_8UC1, Scalar(20));
+    circle(img, Point(64, 64), 10, Scalar(220), FILLED);
+    circle(img, Point(160, 140), 12, Scalar(230), FILLED);
+    GaussianBlur(img, img, Size(5, 5), 1.5);
+
+    Ptr<xfeatures2d::TBMR> tbmr = xfeatures2d::TBMR::create(20, 0.25f);
+    std::vector<xfeatures2d::Elliptic_KeyPoint> kpts;
+    Mat descriptors;
+    tbmr->detectAndCompute(img, Mat(), kpts, descriptors);
+    EXPECT_FALSE(kpts.empty());
+    EXPECT_EQ(descriptors.rows, (int)kpts.size());
+    tbmr.release();
+}
+
 }} // namespace

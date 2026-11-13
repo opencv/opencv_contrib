@@ -448,5 +448,42 @@ INSTANTIATE_TEST_CASE_P(TypicalSet, GuidedFilterTest,
     Values("cv/shared/lena.png", "cv/shared/baboon.png")
 ));
 
+TEST(GuidedFilterSyntheticTest, MultiChannelInPlaceAndSubsampledParity)
+{
+    RNG& rng = theRNG();
+    for (int gCn : { 1, 2, 3 })
+    {
+        Mat guide(73, 91, CV_MAKE_TYPE(CV_8U, gCn));
+        rng.fill(guide, RNG::UNIFORM, 0, 256);
+
+        Ptr<GuidedFilter> gf = createGuidedFilter(guide, 4, 25.0, 1.0);
+        Ptr<GuidedFilter> gfRef(new GuidedFilterRefImpl(guide, 4, 25.0));
+
+        for (int sCn : { 1, 3 })
+        {
+            Mat src(73, 91, CV_MAKE_TYPE(CV_8U, sCn));
+            rng.fill(src, RNG::UNIFORM, 0, 256);
+
+            Mat res, resRef;
+            gf->filter(src, res);
+            gfRef->filter(src, resRef);
+            EXPECT_LE(cv::norm(res, resRef, NORM_INF), 1.0);
+
+            // In-place src == dst check with same depth and different dDepth
+            Mat inPlace = src.clone();
+            gf->filter(inPlace, inPlace);
+            EXPECT_EQ(0.0, cv::norm(res, inPlace, NORM_INF));
+
+            Mat inPlace32f = src.clone();
+            gf->filter(inPlace32f, inPlace32f, CV_32F);
+            EXPECT_EQ(CV_MAKE_TYPE(CV_32F, sCn), inPlace32f.type());
+
+            Mat subOut;
+            ximgproc::guidedFilter(guide, src, subOut, 4, 25.0, -1, 0.5);
+            EXPECT_EQ(src.size(), subOut.size());
+            EXPECT_EQ(src.type(), subOut.type());
+        }
+    }
+}
 
 }} // namespace

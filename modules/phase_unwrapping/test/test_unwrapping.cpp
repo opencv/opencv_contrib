@@ -63,4 +63,28 @@ TEST( HistogramPhaseUnwrapping, unwrapPhaseMap )
     test.safe_run();
 }
 
+TEST( HistogramPhaseUnwrapping, reuse_instance_parity )
+{
+    const int w = 48, h = 48;
+    Mat phase(h, w, CV_32FC1);
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x)
+            phase.at<float>(y, x) = static_cast<float>(std::fmod((x + y) * 0.3, 2 * CV_PI) - CV_PI);
+
+    phase_unwrapping::HistogramPhaseUnwrapping::Params params;
+    params.width = w;
+    params.height = h;
+    Ptr<phase_unwrapping::HistogramPhaseUnwrapping> pu =
+        phase_unwrapping::HistogramPhaseUnwrapping::create(params);
+
+    Mat unwrapped1, unwrapped2, rel1, rel2;
+    pu->unwrapPhaseMap(phase, unwrapped1);
+    pu->getInverseReliabilityMap(rel1);
+    pu->unwrapPhaseMap(phase, unwrapped2);
+    pu->getInverseReliabilityMap(rel2);
+
+    EXPECT_EQ(0.0, cvtest::norm(unwrapped1, unwrapped2, NORM_INF));
+    EXPECT_EQ(0.0, cvtest::norm(rel1, rel2, NORM_INF));
+}
+
 }} // namespace

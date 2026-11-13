@@ -21,8 +21,7 @@ namespace wechat_qrcode {
 // Initialize the ImgSource
 ImgSource::ImgSource(unsigned char* pixels, int width, int height)
     : Super(width, height) {
-    luminances = new unsigned char[width * height];
-    memset(luminances, 0, width * height);
+    luminances = NULL;
 
     rgbs = pixels;
 
@@ -40,6 +39,7 @@ ImgSource::ImgSource(unsigned char* pixels, int width, int height, int left_, in
                      int cropWidth, int cropHeight,
                      ErrorHandler& err_handler)
     : Super(cropWidth, cropHeight) {
+    luminances = NULL;
     rgbs = pixels;
 
     dataWidth = width;
@@ -54,8 +54,6 @@ ImgSource::ImgSource(unsigned char* pixels, int width, int height, int left_, in
             zxing::IllegalArgumentErrorHandler("Crop rectangle does not fit within image data.");
         return;
     }
-
-    luminances = new unsigned char[width * height];
 
     // Make gray luminances first
     makeGray();
@@ -103,7 +101,11 @@ ArrayRef<char> ImgSource::getRow(int y, zxing::ArrayRef<char> row,
     int offset = (y + top) * dataWidth + left;
 
     char* rowPtr = &row[0];
-    arrayCopy(luminances, offset, rowPtr, 0, width);
+    if (luminances != NULL) {
+        arrayCopy(luminances, offset, rowPtr, 0, width);
+    } else {
+        memset(rowPtr, 0, width * sizeof(unsigned char));
+    }
 
     return row;
 }

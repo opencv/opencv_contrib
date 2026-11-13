@@ -386,4 +386,47 @@ TEST_F(ximgproc_ED, inputNotModifiedWithSigmaBelowOne)
     EXPECT_EQ(0, countNonZero(img != circ))
         << "detectEllipses() modified the caller's input image after Sigma was raised";
 }
+
+// The NFA table that validates lines depends on the image size. It used to be built once per detector, so a
+// detector that had seen a small image validated a large image's lines against the small image's size.
+TEST_F(ximgproc_ED, reusedDetectorMatchesFreshOne)
+{
+    auto pattern = [](int w, int h) {
+        Mat m(h, w, CV_8UC1);
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                m.at<uchar>(y, x) = (uchar)(((x / 3 + y / 5) % 2) * 200 + (x * 7 + y * 3) % 40);
+        return m;
+    };
+    Mat small = pattern(64, 48), big;
+    resize(pattern(160, 120), big, Size(1280, 960), 0, 0, INTER_LINEAR);
+    GaussianBlur(big, big, Size(5, 5), 1.5);
+
+    Ptr<EdgeDrawing> reused = createEdgeDrawing(), fresh = createEdgeDrawing();
+    vector<Vec4f> smallLines, reusedLines, freshLines;
+    reused->detectEdges(small);
+    reused->detectLines(smallLines);
+    reused->detectEdges(big);
+    reused->detectLines(reusedLines);
+    fresh->detectEdges(big);
+    fresh->detectLines(freshLines);
+    ASSERT_EQ(freshLines.size(), reusedLines.size());
+    for (size_t i = 0; i < freshLines.size(); i++)
+        EXPECT_EQ(freshLines[i], reusedLines[i]) << "line " << i;
+}
+
+TEST_F(ximgproc_ED, detectEllipses_syntheticShortArcs)
+{
+    Mat img(128, 128, CV_8UC1, Scalar(0));
+    // Short line/dot features mixed with an ellipse exercise short-segment rejection in EllipseFit
+    ellipse(img, Point(64, 64), Size(28, 18), 25.0, 0.0, 360.0, Scalar(255), 2);
+    line(img, Point(10, 10), Point(13, 12), Scalar(255), 1);
+    line(img, Point(100, 15), Point(104, 15), Scalar(255), 1);
+
+    Ptr<EdgeDrawing> ed = createEdgeDrawing();
+    ed->detectEdges(img);
+    std::vector<Vec6d> ellipses;
+    ed->detectEllipses(ellipses);
+    EXPECT_FALSE(ellipses.empty());
+}
 }} // namespace

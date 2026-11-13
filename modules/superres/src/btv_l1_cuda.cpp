@@ -114,20 +114,6 @@ namespace
         }
     }
 
-    void upscaleMotions(const std::vector<std::pair<GpuMat, GpuMat> >& lowResMotions, std::vector<std::pair<GpuMat, GpuMat> >& highResMotions, int scale)
-    {
-        highResMotions.resize(lowResMotions.size());
-
-        for (size_t i = 0; i < lowResMotions.size(); ++i)
-        {
-            cuda::resize(lowResMotions[i].first, highResMotions[i].first, Size(), scale, scale, INTER_CUBIC);
-            cuda::resize(lowResMotions[i].second, highResMotions[i].second, Size(), scale, scale, INTER_CUBIC);
-
-            cuda::multiply(highResMotions[i].first, Scalar::all(scale), highResMotions[i].first);
-            cuda::multiply(highResMotions[i].second, Scalar::all(scale), highResMotions[i].second);
-        }
-    }
-
     void buildMotionMaps(const std::pair<GpuMat, GpuMat>& forwardMotion, const std::pair<GpuMat, GpuMat>& backwardMotion,
                          std::pair<GpuMat, GpuMat>& forwardMap, std::pair<GpuMat, GpuMat>& backwardMap)
     {
@@ -263,9 +249,6 @@ namespace
         std::vector<std::pair<GpuMat, GpuMat> > lowResForwardMotions_;
         std::vector<std::pair<GpuMat, GpuMat> > lowResBackwardMotions_;
 
-        std::vector<std::pair<GpuMat, GpuMat> > highResForwardMotions_;
-        std::vector<std::pair<GpuMat, GpuMat> > highResBackwardMotions_;
-
         std::vector<std::pair<GpuMat, GpuMat> > forwardMaps_;
         std::vector<std::pair<GpuMat, GpuMat> > backwardMaps_;
 
@@ -274,7 +257,6 @@ namespace
         std::vector<Stream> streams_;
         std::vector<GpuMat> diffTerms_;
         std::vector<GpuMat> a_, b_, c_;
-        GpuMat regTerm_;
     };
 
     BTVL1_CUDA_Base::BTVL1_CUDA_Base()
@@ -338,13 +320,27 @@ namespace
 
         calcRelativeMotions(forwardMotions, backwardMotions, lowResForwardMotions_, lowResBackwardMotions_, baseIdx, src[0].size());
 
-        upscaleMotions(lowResForwardMotions_, highResForwardMotions_, scale_);
-        upscaleMotions(lowResBackwardMotions_, highResBackwardMotions_, scale_);
+        forwardMaps_.resize(lowResForwardMotions_.size());
+        backwardMaps_.resize(lowResForwardMotions_.size());
+        {
+            std::pair<GpuMat, GpuMat> highResForwardMotion, highResBackwardMotion;
+            for (size_t i = 0; i < lowResForwardMotions_.size(); ++i)
+            {
+                cuda::resize(lowResForwardMotions_[i].first, highResForwardMotion.first, Size(), scale_, scale_, INTER_CUBIC);
+                cuda::resize(lowResForwardMotions_[i].second, highResForwardMotion.second, Size(), scale_, scale_, INTER_CUBIC);
+                cuda::multiply(highResForwardMotion.first, Scalar::all(scale_), highResForwardMotion.first);
+                cuda::multiply(highResForwardMotion.second, Scalar::all(scale_), highResForwardMotion.second);
 
-        forwardMaps_.resize(highResForwardMotions_.size());
-        backwardMaps_.resize(highResForwardMotions_.size());
-        for (size_t i = 0; i < highResForwardMotions_.size(); ++i)
-            buildMotionMaps(highResForwardMotions_[i], highResBackwardMotions_[i], forwardMaps_[i], backwardMaps_[i]);
+                cuda::resize(lowResBackwardMotions_[i].first, highResBackwardMotion.first, Size(), scale_, scale_, INTER_CUBIC);
+                cuda::resize(lowResBackwardMotions_[i].second, highResBackwardMotion.second, Size(), scale_, scale_, INTER_CUBIC);
+                cuda::multiply(highResBackwardMotion.first, Scalar::all(scale_), highResBackwardMotion.first);
+                cuda::multiply(highResBackwardMotion.second, Scalar::all(scale_), highResBackwardMotion.second);
+
+                buildMotionMaps(highResForwardMotion, highResBackwardMotion, forwardMaps_[i], backwardMaps_[i]);
+            }
+        }
+        lowResForwardMotions_.clear();
+        lowResBackwardMotions_.clear();
 
         // initial estimation
 
@@ -382,17 +378,17 @@ namespace
                 cuda::remap(b_[k], diffTerms_[k], forwardMaps_[k].first, forwardMaps_[k].second, INTER_NEAREST, BORDER_REPLICATE, Scalar(), streams_[k]);
             }
 
+            for (size_t k = 0; k < src.size(); ++k)
+                streams_[k].waitForCompletion();
+
             if (lambda_ > 0)
             {
-                calcBtvRegularization(highRes_, regTerm_, btvKernelSize_);
-                cuda::addWeighted(highRes_, 1.0, regTerm_, -tau_ * lambda_, 0.0, highRes_);
+                calcBtvRegularization(highRes_, a_[0], btvKernelSize_);
+                cuda::addWeighted(highRes_, 1.0, a_[0], -tau_ * lambda_, 0.0, highRes_);
             }
 
             for (size_t k = 0; k < src.size(); ++k)
-            {
-                streams_[k].waitForCompletion();
                 cuda::addWeighted(highRes_, 1.0, diffTerms_[k], tau_, 0.0, highRes_);
-            }
         }
 
         Rect inner(btvKernelSize_, btvKernelSize_, highRes_.cols - 2 * btvKernelSize_, highRes_.rows - 2 * btvKernelSize_);
@@ -402,23 +398,23 @@ namespace
     void BTVL1_CUDA_Base::collectGarbage()
     {
         filters_.clear();
+        btvWeights_.clear();
+        curBtvKernelSize_ = -1;
+        curAlpha_ = -1.0;
 
         lowResForwardMotions_.clear();
         lowResBackwardMotions_.clear();
-
-        highResForwardMotions_.clear();
-        highResBackwardMotions_.clear();
 
         forwardMaps_.clear();
         backwardMaps_.clear();
 
         highRes_.release();
 
+        streams_.clear();
         diffTerms_.clear();
         a_.clear();
         b_.clear();
         c_.clear();
-        regTerm_.release();
     }
 
 ////////////////////////////////////////////////////////////

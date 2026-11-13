@@ -281,6 +281,7 @@ namespace
     {
         srcExt_.release();
         lut_.release();
+        hist_.release();
     }
 }
 

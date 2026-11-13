@@ -4,6 +4,7 @@
 
 #include "precomp.hpp"
 #include "hfs_core.hpp"
+#include <algorithm>
 #include <vector>
 using namespace std;
 
@@ -327,6 +328,21 @@ void HfsCore::getSegmentationI( const Mat &lab3u, const Mat &mag1u,
     num_css = idx;
 }
 
+namespace
+{
+struct StageIIBoundaryNeighbor
+{
+    int neighbor;
+    int count;
+    float gradSum;
+};
+
+static bool stageIINeighborLess(const StageIIBoundaryNeighbor& a, const StageIIBoundaryNeighbor& b)
+{
+    return a.neighbor < b.neighbor;
+}
+} // anonymous namespace
+
 void HfsCore::getSegmentationII(
     const Mat &lab3u, const Mat &mag1u, const Mat &idx_mat,
     float c, int min_size, Mat &seg, int &num_css)
@@ -334,14 +350,91 @@ void HfsCore::getSegmentationII(
     const int _h = lab3u.rows;
     const int _w = lab3u.cols;
 
-    vector<Mat> mag1us, gradients;
-    Mat bd_num, texture;
-    mag1us.push_back(mag1u);
-    int num = getAvgGradientBdry(idx_mat, mag1us,
-        num_css, bd_num, gradients);
-    // const int size = (int)gradients.size();
-    CV_Assert(num % 2 == 0);
-    num /= 2;
+    vector<vector<StageIIBoundaryNeighbor> > adj(num_css);
+    for (int r = 1; r < _h - 1; r++)
+    for (int c_ = 1; c_ < _w - 1; c_++)
+    {
+        ushort curr = idx_mat.at<ushort>(r, c_);
+        ushort pre, tmp = 0, v[4];
+        Point p1(c_, r), p2;
+        for (int k = 0; k < 4; k++)
+        {
+            p2 = p1 + DIRECTION4[k];
+            pre = idx_mat.at<ushort>(p2);
+            if (pre != curr)
+            {
+                bool flag = true;
+                for (int t = 0; t < tmp; t++)
+                {
+                    if (v[t] == pre)
+                        flag = false;
+                }
+                if (flag)
+                    v[tmp++] = pre;
+            }
+        }
+
+        if (tmp > 0)
+        {
+            int u[13];
+            float m[13];
+            for (int k = 0; k < 13; k++)
+            {
+                p2 = p1 + CIRCLE2[k];
+                if (!(p2.x >= 0 && p2.x < _w && p2.y >= 0 && p2.y < _h))
+                {
+                    u[k] = -1;
+                    m[k] = 0;
+                    continue;
+                }
+                u[k] = idx_mat.at<ushort>(p2);
+                m[k] = mag1u.at<uchar>(p2);
+            }
+
+            for (int t = 0; t < tmp; t++)
+            {
+                float m_max = 0;
+                for (int k = 0; k < 13; k++)
+                {
+                    if ((u[k] == curr || u[k] == v[t]) && m[k] > m_max)
+                        m_max = m[k];
+                }
+
+                const int hi = std::max<int>(curr, v[t]);
+                const int lo = std::min<int>(curr, v[t]);
+                vector<StageIIBoundaryNeighbor>& bucket = adj[hi];
+                bool found = false;
+                for (size_t b = 0; b < bucket.size(); ++b)
+                {
+                    if (bucket[b].neighbor == lo)
+                    {
+                        bucket[b].count += 1;
+                        bucket[b].gradSum += m_max;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                {
+                    StageIIBoundaryNeighbor nb;
+                    nb.neighbor = lo;
+                    nb.count = 1;
+                    nb.gradSum = m_max;
+                    bucket.push_back(nb);
+                }
+            }
+        }
+    }
+
+    int num = 0;
+    for (int r_ = 0; r_ < num_css; ++r_)
+    {
+        if (!adj[r_].empty())
+        {
+            std::sort(adj[r_].begin(), adj[r_].end(), stageIINeighborLess);
+            num += (int)adj[r_].size();
+        }
+    }
 
     vector<int> num_pix(num_css, 0);
     vector<Vec3f> avg_color(num_css, Vec3f(0, 0, 0));
@@ -358,17 +451,21 @@ void HfsCore::getSegmentationII(
     vector<Edge> edges(num);
     int index = 0;
     for (int r_ = 0; r_ < num_css; r_++)
-    for (int c_ = 0; c_ < r_; c_++)
     {
-        if (bd_num.at<int>(r_, c_) == 0) continue;
-        edges[index].a = r_;
-        edges[index].b = c_;
-        Vec4f fcolor = getColorFeature(avg_color[r_], avg_color[c_]);
-        edges[index].w =
-            fcolor[0] * w2[0] + fcolor[1] * w2[1]+
-            fcolor[2] * w2[2] + fcolor[3] * w2[3];
-        edges[index].w += gradients[0].at<float>(r_, c_)*w2[4];
-        index++;
+        const vector<StageIIBoundaryNeighbor>& bucket = adj[r_];
+        for (size_t b = 0; b < bucket.size(); ++b)
+        {
+            const int c_ = bucket[b].neighbor;
+            const float avgGrad = bucket[b].gradSum / static_cast<float>(bucket[b].count);
+            edges[index].a = r_;
+            edges[index].b = c_;
+            Vec4f fcolor = getColorFeature(avg_color[r_], avg_color[c_]);
+            edges[index].w =
+                fcolor[0] * w2[0] + fcolor[1] * w2[1]+
+                fcolor[2] * w2[2] + fcolor[3] * w2[3];
+            edges[index].w += avgGrad * w2[4];
+            index++;
+        }
     }
     CV_Assert(num == index);
 

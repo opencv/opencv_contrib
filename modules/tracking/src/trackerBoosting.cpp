@@ -128,10 +128,9 @@ bool TrackerBoostingImpl::initImpl( const Mat& image, const Rect2d& boundingBox 
   srand (1);
   //sampling
   Mat_<int> intImage;
-  Mat_<double> intSqImage;
   Mat image_;
   cvtColor( image, image_, COLOR_BGR2GRAY );
-  integral( image_, intImage, intSqImage, CV_32S );
+  integral( image_, intImage, CV_32S );
   TrackerSamplerCS::Params CSparameters;
   CSparameters.overlap = params.samplerOverlap;
   CSparameters.searchFactor = params.samplerSearchFactor;
@@ -210,10 +209,9 @@ bool TrackerBoostingImpl::initImpl( const Mat& image, const Rect2d& boundingBox 
 bool TrackerBoostingImpl::updateImpl( const Mat& image, Rect2d& boundingBox )
 {
   Mat_<int> intImage;
-  Mat_<double> intSqImage;
   Mat image_;
   cvtColor( image, image_, COLOR_BGR2GRAY );
-  integral( image_, intImage, intSqImage, CV_32S );
+  integral( image_, intImage, CV_32S );
   //get the last location [AAM] X(k-1)
   Ptr<TrackerTargetState> lastLocation = model->getLastTargetState();
   Rect lastBoundingBox( (int)lastLocation->getTargetPosition().x, (int)lastLocation->getTargetPosition().y, lastLocation->getTargetWidth(),

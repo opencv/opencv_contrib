@@ -137,4 +137,45 @@ TEST(BackgroundSubtractor_LSBP, Accuracy)
     EXPECT_GE(evaluateBGSAlgorithm(bgsegm::createBackgroundSubtractorLSBP()), 0.25);
 }
 
+TEST(BackgroundSubtractor_LSBP, SyntheticGSOCAndLSBPMotionCompensationModes)
+{
+    RNG& rng = theRNG();
+    Mat bg(64, 80, CV_8UC3);
+    rng.fill(bg, RNG::UNIFORM, 20, 180);
+
+    const int modes[2] = {
+        bgsegm::LSBP_CAMERA_MOTION_COMPENSATION_NONE,
+        bgsegm::LSBP_CAMERA_MOTION_COMPENSATION_LK
+    };
+
+    for (int m = 0; m < 2; ++m)
+    {
+        Ptr<bgsegm::BackgroundSubtractorGSOC> gsoc = bgsegm::createBackgroundSubtractorGSOC(modes[m], 10);
+        Ptr<bgsegm::BackgroundSubtractorLSBP> lsbp = bgsegm::createBackgroundSubtractorLSBP(modes[m], 10);
+
+        Mat maskGsoc, maskLsbp;
+        for (int f = 0; f < 12; ++f)
+        {
+            Mat frame = bg.clone();
+            if (f >= 8)
+                rectangle(frame, Rect(20 + f, 18, 16, 16), Scalar(250, 250, 250), FILLED);
+            gsoc->apply(frame, maskGsoc);
+            lsbp->apply(frame, maskLsbp);
+        }
+
+        EXPECT_EQ(bg.size(), maskGsoc.size());
+        EXPECT_EQ(CV_8UC1, maskGsoc.type());
+        EXPECT_GT(countNonZero(maskGsoc), 0);
+
+        EXPECT_EQ(bg.size(), maskLsbp.size());
+        EXPECT_EQ(CV_8UC1, maskLsbp.type());
+
+        Mat bgImgGsoc, bgImgLsbp;
+        gsoc->getBackgroundImage(bgImgGsoc);
+        lsbp->getBackgroundImage(bgImgLsbp);
+        EXPECT_EQ(bg.size(), bgImgGsoc.size());
+        EXPECT_EQ(bg.size(), bgImgLsbp.size());
+    }
+}
+
 }} // namespace

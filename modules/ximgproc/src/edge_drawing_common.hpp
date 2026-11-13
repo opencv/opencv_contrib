@@ -73,7 +73,7 @@ private:
 NFALUT::NFALUT(int size, double _prob, double _logNT)
 {
     LUTSize = size > 60 ? 60 : size;
-    LUT = new int[LUTSize];
+    LUT = new int[LUTSize > 0 ? LUTSize : 1];  // LUT[0] is written below
     prob = _prob;
     logNT = _logNT;
 

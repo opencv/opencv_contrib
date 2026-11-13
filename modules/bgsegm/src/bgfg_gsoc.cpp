@@ -192,11 +192,10 @@ void FindSparseCorrLK(const Mat& src, const Mat& dst, std::vector<Point2f>& srcP
 class BackgroundSampleGSOC {
 public:
     Point3f color;
-    int desc;
-    uint64 time;
-    uint64 hits;
+    uint32_t time;
+    uint32_t hits;
 
-    BackgroundSampleGSOC(Point3f c = Point3f(), int d = 0, uint64 t = 0, uint64 h = 0) : color(c), desc(d), time(t), hits(h) {}
+    BackgroundSampleGSOC(Point3f c = Point3f(), uint32_t t = 0, uint32_t h = 0) : color(c), time(t), hits(h) {}
 };
 
 class BackgroundSampleLSBP {
@@ -293,7 +292,7 @@ public:
         samples[minInd] = sample;
     }
 
-    Point3f getMean(int i, int j, uint64 threshold) const {
+    Point3f getMean(int i, int j, uint32_t threshold) const {
         const int end = i * stride + (j + 1) * nSamples;
         Point3f acc(0, 0, 0);
         int cnt = 0;
@@ -461,12 +460,12 @@ class BackgroundSubtractorGSOCImpl CV_FINAL : public BackgroundSubtractorGSOC {
 private:
     Ptr<BackgroundModelGSOC> backgroundModel;
     Ptr<BackgroundModelGSOC> backgroundModelPrev;
-    uint64 currentTime;
+    uint32_t currentTime;
     const int motionCompensation;
     const int nSamples;
     const float replaceRate;
     const float propagationRate;
-    const uint64 hitsThreshold;
+    const uint32_t hitsThreshold;
     const float alpha;
     const float beta;
     const float blinkingSupressionDecay;
@@ -584,7 +583,7 @@ public:
                 fgMask.at<uchar>(i, j) = 255;
 
                 if (bgs->rng.uniform(0.0f, 1.0f) < bgs->replaceRate)
-                    backgroundModel->replaceOldest(i, j, BackgroundSampleGSOC(frame.at<Point3f>(i, j), 0, bgs->currentTime));
+                    backgroundModel->replaceOldest(i, j, BackgroundSampleGSOC(frame.at<Point3f>(i, j), bgs->currentTime));
             }
             else {
                 sample.color *= 1 - learningRate;
@@ -732,17 +731,19 @@ void BackgroundSubtractorGSOCImpl::apply(InputArray _image, OutputArray _fgmask,
 
     if (backgroundModel.empty()) {
         backgroundModel = makePtr<BackgroundModelGSOC>(sz, nSamples);
-        backgroundModelPrev = makePtr<BackgroundModelGSOC>(sz, nSamples);
+        if (motionCompensation)
+            backgroundModelPrev = makePtr<BackgroundModelGSOC>(sz, nSamples);
         distMovingAvg = Mat(sz, CV_32F, Scalar::all(0.005f));
         prevFgMask = Mat(sz, CV_8U, Scalar::all(0));
         blinkingSupression = Mat(sz, CV_32F, Scalar::all(0.0f));
 
         for (int i = 0; i < sz.height; ++i)
             for (int j = 0; j < sz.width; ++j) {
-                BackgroundSampleGSOC sample(frame.at<Point3f>(i, j), 0);
+                BackgroundSampleGSOC sample(frame.at<Point3f>(i, j));
                 for (int k = 0; k < nSamples; ++k) {
                     (* backgroundModel)(i, j, k) = sample;
-                    (* backgroundModelPrev)(i, j, k) = sample;
+                    if (motionCompensation)
+                        (* backgroundModelPrev)(i, j, k) = sample;
                 }
             }
     }
@@ -783,15 +784,21 @@ void BackgroundSubtractorGSOCImpl::apply(InputArray _image, OutputArray _fgmask,
 
     ++currentTime;
 
-    cv::add(blinkingSupression, (fgMask != prevFgMask) / 255, blinkingSupression, cv::noArray(), CV_32F);
-    blinkingSupression *= blinkingSupressionDecay;
-    fgMask.copyTo(prevFgMask);
-    Mat prob = blinkingSupression * (blinkingSupressionMultiplier * (1 - blinkingSupressionDecay) / blinkingSupressionDecay);
-
-    for (int i = 0; i < sz.height; ++i)
-        for (int j = 0; j < sz.width; ++j)
-            if (rng.uniform(0.0f, 1.0f) < prob.at<float>(i, j))
-                backgroundModel->replaceOldest(i, j, BackgroundSampleGSOC(frame.at<Point3f>(i, j), 0, currentTime));
+    const float probScale = blinkingSupressionMultiplier * (1.0f - blinkingSupressionDecay) / blinkingSupressionDecay;
+    for (int i = 0; i < sz.height; ++i) {
+        const uchar* fgRow = fgMask.ptr<uchar>(i);
+        uchar* prevFgRow = prevFgMask.ptr<uchar>(i);
+        float* bsRow = blinkingSupression.ptr<float>(i);
+        const Point3f* frameRow = frame.ptr<Point3f>(i);
+        for (int j = 0; j < sz.width; ++j) {
+            const float diff = (fgRow[j] != prevFgRow[j]) ? 1.0f : 0.0f;
+            const float bs = (bsRow[j] + diff) * blinkingSupressionDecay;
+            bsRow[j] = bs;
+            prevFgRow[j] = fgRow[j];
+            if (rng.uniform(0.0f, 1.0f) < bs * probScale)
+                backgroundModel->replaceOldest(i, j, BackgroundSampleGSOC(frameRow[j], currentTime));
+        }
+    }
 
     this->postprocessing(fgMask);
 }
@@ -887,7 +894,8 @@ void BackgroundSubtractorLSBPImpl::apply(InputArray _image, OutputArray _fgmask,
 
     if (backgroundModel.empty()) {
         backgroundModel = makePtr<BackgroundModelLSBP>(sz, nSamples);
-        backgroundModelPrev = makePtr<BackgroundModelLSBP>(sz, nSamples);
+        if (motionCompensation)
+            backgroundModelPrev = makePtr<BackgroundModelLSBP>(sz, nSamples);
         T = Mat(sz, CV_32F);
         T = (Tlower + Tupper) * 0.5f;
         R = Mat(sz, CV_32F);
@@ -898,7 +906,8 @@ void BackgroundSubtractorLSBPImpl::apply(InputArray _image, OutputArray _fgmask,
                 BackgroundSampleLSBP sample(frame.at<Point3f>(i, j), LSBPDesc.at<int>(i, j));
                 for (int k = 0; k < nSamples; ++k) {
                     (* backgroundModel)(i, j, k) = sample;
-                    (* backgroundModelPrev)(i, j, k) = sample;
+                    if (motionCompensation)
+                        (* backgroundModelPrev)(i, j, k) = sample;
                 }
             }
     }

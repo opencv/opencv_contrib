@@ -89,17 +89,13 @@ void cv::cuda::sqrIntegral(InputArray _src, OutputArray _dst, Stream& stream)
 
     CV_Assert( src.type() == CV_8UC1 );
 
-    BufferPool pool(Stream::Null());
-    GpuMat_<double> res(pool.getBuffer(src.size(), CV_64FC1));
-
-    gridIntegral(sqr_(cvt_<int>(globPtr<uchar>(src))), res, stream);
-
     GpuMat dst = getOutputMat(_dst, src.rows + 1, src.cols + 1, CV_64FC1, stream);
 
     dst.setTo(Scalar::all(0), stream);
 
-    GpuMat inner = dst(Rect(1, 1, src.cols, src.rows));
-    res.copyTo(inner, stream);
+    // the integral goes straight into dst below its first row and column
+    GpuMat_<double> inner(dst(Rect(1, 1, src.cols, src.rows)));
+    gridIntegral(sqr_(cvt_<int>(globPtr<uchar>(src))), inner, stream);
 
     syncOutput(dst, _dst, stream);
 }

@@ -258,16 +258,19 @@ namespace
             cuda::pyrDown(nextPyr_[level - 1], nextPyr_[level], stream);
         }
 
+        // the levels alternate between two buffers and the finest one ends in slot maxLevel_ & 1,
+        // so that slot is the caller's u and v and no copy is needed at the end
+        const int last = maxLevel_ & 1;
+        u.create(prevImg.size(), CV_32FC1);
+        v.create(prevImg.size(), CV_32FC1);
+
         BufferPool pool(stream);
 
-        GpuMat uPyr[] = {
-            pool.getBuffer(prevImg.size(), CV_32FC1),
-            pool.getBuffer(prevImg.size(), CV_32FC1),
-        };
-        GpuMat vPyr[] = {
-            pool.getBuffer(prevImg.size(), CV_32FC1),
-            pool.getBuffer(prevImg.size(), CV_32FC1),
-        };
+        GpuMat uPyr[2], vPyr[2];
+        uPyr[last] = u;
+        vPyr[last] = v;
+        uPyr[1 - last] = pool.getBuffer(prevImg.size(), CV_32FC1);
+        vPyr[1 - last] = pool.getBuffer(prevImg.size(), CV_32FC1);
 
         uPyr[0].setTo(Scalar::all(0), stream);
         vPyr[0].setTo(Scalar::all(0), stream);
@@ -293,9 +296,6 @@ namespace
             if (level > 0)
                 idx = idx2;
         }
-
-        uPyr[idx].copyTo(u, stream);
-        vPyr[idx].copyTo(v, stream);
     }
 
     class SparsePyrLKOpticalFlowImpl : public cv::cuda::SparsePyrLKOpticalFlow, private PyrLKOpticalFlowBase

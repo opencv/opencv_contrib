@@ -204,6 +204,9 @@ void PPF3DDetector::trainModel(const Mat &PC)
 {
   CV_Assert(PC.type() == CV_32F || PC.type() == CV_32FC1);
 
+  clearTrainingModels();
+  trained = false;
+
   // compute bbox
   Vec2f xRange, yRange, zRange;
   computeBboxStd(PC, xRange, yRange, zRange);
@@ -218,18 +221,25 @@ void PPF3DDetector::trainModel(const Mat &PC)
 
   Mat sampled = samplePCByQuantization(PC, xRange, yRange, zRange, (float)sampling_step_relative,0);
 
-  int size = sampled.rows*sampled.rows;
-
-  hashtable_int* hashTable = hashtableCreate(size, NULL);
-
-  int numPPF = sampled.rows*sampled.rows;
-  ppf = Mat(numPPF, PPF_LENGTH, CV_32FC1);
-
-  // TODO: Maybe I could sample 1/5th of them here. Check the performance later.
   int numRefPoints = sampled.rows;
+  size_t totalPPF = static_cast<size_t>(numRefPoints) * static_cast<size_t>(numRefPoints);
+  CV_CheckLT(totalPPF, static_cast<size_t>(INT_MAX), "Sampled point cloud is too large for PPF table");
+  int numPPF = static_cast<int>(totalPPF);
 
-  // pre-allocate the hash nodes
-  hash_nodes = (THash*)calloc(numRefPoints*numRefPoints, sizeof(THash));
+  hashtable_int* hashTable = hashtableCreate(numPPF, NULL);
+  CV_Assert(hashTable != NULL);
+
+  // pre-allocate the hash nodes before Mat allocation; clean up hashTable on failure
+  THash* newHashNodes = (THash*)calloc(totalPPF > 0 ? totalPPF : 1, sizeof(THash));
+  if (!newHashNodes)
+  {
+    hashtableDestroy(hashTable);
+    CV_Error(Error::StsNoMem, "Failed to allocate PPF hash nodes");
+  }
+  hash_nodes = newHashNodes;
+  hash_table = hashTable;
+
+  ppf = Mat(numPPF, PPF_LENGTH, CV_32FC1);
 
   // TODO : This can easily be parallelized. But we have to lock hashtable_insert.
   // I realized that performance drops when this loop is parallelized (unordered
@@ -271,7 +281,6 @@ void PPF3DDetector::trainModel(const Mat &PC)
 
   angle_step = angle_step_radians;
   distance_step = distanceStep;
-  hash_table = hashTable;
   num_ref_points = numRefPoints;
   sampled_pc = sampled;
   trained = true;
@@ -444,9 +453,17 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
   #endif*/
 
   poseList.reserve((sampled.rows/sceneSamplingStep)+4);
+  const size_t accSize = static_cast<size_t>(numAngles) * static_cast<size_t>(n);
 
 #if defined _OPENMP
-#pragma omp parallel for
+#pragma omp parallel
+  {
+    std::vector<uint> accBuf(accSize, 0);
+    uint* accumulator = accBuf.data();
+#pragma omp for
+#else
+  std::vector<uint> accBuf(accSize, 0);
+  uint* accumulator = accBuf.data();
 #endif
   for (int i = 0; i < sampled.rows; i += sceneSamplingStep)
   {
@@ -458,7 +475,6 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
     Vec3d tsg = Vec3d::all(0);
     Matx33d Rsg = Matx33d::all(0), RInv = Matx33d::all(0);
 
-    uint* accumulator = (uint*)calloc(numAngles*n, sizeof(uint));
     computeTransformRT(p1, n1, Rsg, tsg);
 
     // Tolga Birdal's notice:
@@ -513,6 +529,10 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
 
           //printf("%f\n", alpha);
           int alpha_index = (int)(numAngles*(alpha + 2*M_PI) / (4*M_PI));
+          if (alpha_index >= numAngles)
+            alpha_index = numAngles - 1;
+          else if (alpha_index < 0)
+            alpha_index = 0;
 
           uint accIndex = corrI * numAngles + alpha_index;
 
@@ -522,7 +542,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
       }
     }
 
-    // Maximize the accumulator
+    // Maximize the accumulator and clear in-place for the next scene point
     for (uint k = 0; k < n; k++)
     {
       for (int j = 0; j < numAngles; j++)
@@ -535,10 +555,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
           refIndMax = k;
           alphaIndMax = j;
         }
-
-#if !defined (_OPENMP)
-        accumulator[accInd ] = 0;
-#endif
+        accumulator[accInd] = 0;
       }
     }
 
@@ -582,9 +599,10 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
     {
       poseList.push_back(pose);
     }
-
-    free(accumulator);
   }
+#if defined _OPENMP
+  }
+#endif
 
   // TODO : Make the parameters relative if not arguments.
   //double MinMatchScore = 0.5;

@@ -325,6 +325,7 @@ HistogramPhaseUnwrapping_Impl::Histogram::Histogram()
 void HistogramPhaseUnwrapping_Impl::Histogram::createBins( float t, int nbrOfBinsBeforeThresh,
                                                            int nbrOfBinsAfterThresh )
 {
+    bins.clear();
     thresh = t;
 
     nbrOfSmallBins = nbrOfBinsBeforeThresh;
@@ -417,6 +418,7 @@ void HistogramPhaseUnwrapping_Impl::unwrapPhaseMap( InputArray wrappedPhaseMap,
 void HistogramPhaseUnwrapping_Impl::computePixelsReliability( InputArray wrappedPhaseMap,
                                                               InputArray shadowMask )
 {
+    pixels.clear();
     int rows = params.height;
     int cols = params.width;
 

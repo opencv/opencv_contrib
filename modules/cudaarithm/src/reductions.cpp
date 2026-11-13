@@ -179,7 +179,7 @@ void cv::cuda::meanStdDev(InputArray src, OutputArray dst, Stream& stream)
 
     BufferPool pool(stream);
     CV_Assert(bufSize <= std::numeric_limits<int>::max());
-    GpuMat buf = pool.getBuffer(1, static_cast<int>(bufSize), gsrc.type());
+    GpuMat buf = pool.getBuffer(1, static_cast<int>(bufSize), CV_8UC1);  // bufSize is in bytes
 #if USE_NPP_STREAM_CTX
     if (gsrc.type() == CV_8UC1)
         nppSafeCall(nppiMean_StdDev_8u_C1R_Ctx(gsrc.ptr<Npp8u>(), static_cast<int>(gsrc.step), sz, buf.ptr<Npp8u>(), gdst.ptr<Npp64f>(), gdst.ptr<Npp64f>() + 1, h));
@@ -273,7 +273,7 @@ void cv::cuda::meanStdDev(InputArray src, OutputArray dst, InputArray mask, Stre
 
     BufferPool pool(stream);
     CV_Assert(bufSize <= std::numeric_limits<int>::max());
-    GpuMat buf = pool.getBuffer(1, static_cast<int>(bufSize), gsrc.type());
+    GpuMat buf = pool.getBuffer(1, static_cast<int>(bufSize), CV_8UC1);
 
 #if USE_NPP_STREAM_CTX
     if (gsrc.type() == CV_8UC1)

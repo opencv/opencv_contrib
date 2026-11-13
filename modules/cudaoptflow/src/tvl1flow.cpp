@@ -60,7 +60,7 @@ namespace tvl1flow
     void centeredGradient(PtrStepSzf src, PtrStepSzf dx, PtrStepSzf dy, cudaStream_t stream);
     void warpBackward(PtrStepSzf I0, PtrStepSzf I1, PtrStepSzf I1x, PtrStepSzf I1y,
                       PtrStepSzf u1, PtrStepSzf u2,
-                      PtrStepSzf I1w, PtrStepSzf I1wx, PtrStepSzf I1wy,
+                      PtrStepSzf I1wx, PtrStepSzf I1wy,
                       PtrStepSzf grad, PtrStepSzf rho,
                       cudaStream_t stream);
     void estimateU(PtrStepSzf I1wx, PtrStepSzf I1wy,
@@ -147,7 +147,6 @@ namespace
         GpuMat I1x_buf;
         GpuMat I1y_buf;
 
-        GpuMat I1w_buf;
         GpuMat I1wx_buf;
         GpuMat I1wy_buf;
 
@@ -216,7 +215,6 @@ namespace
         I1x_buf.create(I0.size(), CV_32FC1);
         I1y_buf.create(I0.size(), CV_32FC1);
 
-        I1w_buf.create(I0.size(), CV_32FC1);
         I1wx_buf.create(I0.size(), CV_32FC1);
         I1wy_buf.create(I0.size(), CV_32FC1);
 
@@ -318,7 +316,6 @@ namespace
         GpuMat I1y = I1y_buf(Rect(0, 0, I0.cols, I0.rows));
         centeredGradient(I1, I1x, I1y, stream);
 
-        GpuMat I1w = I1w_buf(Rect(0, 0, I0.cols, I0.rows));
         GpuMat I1wx = I1wx_buf(Rect(0, 0, I0.cols, I0.rows));
         GpuMat I1wy = I1wy_buf(Rect(0, 0, I0.cols, I0.rows));
 
@@ -352,7 +349,7 @@ namespace
 
         for (int warpings = 0; warpings < warps_; ++warpings)
         {
-            warpBackward(I0, I1, I1x, I1y, u1, u2, I1w, I1wx, I1wy, grad, rho_c, stream);
+            warpBackward(I0, I1, I1x, I1y, u1, u2, I1wx, I1wy, grad, rho_c, stream);
 
             double error = std::numeric_limits<double>::max();
             double prevError = 0.0;

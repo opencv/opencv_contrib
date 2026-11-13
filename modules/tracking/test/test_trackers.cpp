@@ -233,4 +233,75 @@ TEST_P(DistanceAndOverlap, Scaled_Data_CSRT_legacy)
 
 INSTANTIATE_TEST_CASE_P(Tracking, DistanceAndOverlap, TESTSET_NAMES);
 
+TEST(Tracking_CSRT, synthetic_sequence_and_border_roi)
+{
+    Mat base(240, 320, CV_8UC3);
+    RNG& rng = theRNG();
+    rng.fill(base, RNG::UNIFORM, 20, 80);
+    GaussianBlur(base, base, Size(9, 9), 2.0);
+
+    Mat patch(64, 64, CV_8UC3);
+    rng.fill(patch, RNG::UNIFORM, 40, 250);
+    GaussianBlur(patch, patch, Size(3, 3), 0.8);
+    rectangle(patch, Rect(8, 8, 48, 48), Scalar(250, 220, 40), 3);
+    circle(patch, Point(32, 32), 16, Scalar(30, 60, 240), -1);
+    line(patch, Point(12, 32), Point(52, 32), Scalar(240, 250, 240), 2);
+    line(patch, Point(32, 12), Point(32, 52), Scalar(240, 250, 240), 2);
+
+    Ptr<TrackerCSRT> tracker = TrackerCSRT::create();
+    Rect bbox(110, 70, 64, 64);
+    Mat frame0 = base.clone();
+    patch.copyTo(frame0(bbox));
+    tracker->init(frame0, bbox);
+
+    for (int step = 1; step <= 5; ++step)
+    {
+        Mat frame = base.clone();
+        Rect gt(bbox.x + step * 2, bbox.y + step, bbox.width, bbox.height);
+        patch.copyTo(frame(gt));
+        Rect pred;
+        ASSERT_TRUE(tracker->update(frame, pred));
+        EXPECT_NEAR(pred.x, gt.x, 3);
+        EXPECT_NEAR(pred.y, gt.y, 3);
+    }
+
+    // Also test target touching and partially outside image border (exercises segmentation_roi clamping)
+    Ptr<TrackerCSRT> borderTracker = TrackerCSRT::create();
+    Rect borderBox(0, 0, 48, 48);
+    Mat borderFrame = base.clone();
+    patch(Rect(0, 0, 48, 48)).copyTo(borderFrame(borderBox));
+    borderTracker->init(borderFrame, borderBox);
+    Rect borderPred;
+    EXPECT_TRUE(borderTracker->update(borderFrame, borderPred));
+}
+
+#ifdef TEST_LEGACY
+TEST(Tracking_TLD_MultiTracker, synthetic_two_targets_smoke)
+{
+    RNG& rng = theRNG();
+    Mat base(240, 320, CV_8UC3);
+    rng.fill(base, RNG::UNIFORM, 20, 100);
+    GaussianBlur(base, base, Size(5, 5), 1.2);
+
+    Mat f0 = base.clone();
+    Rect2d b0(40, 50, 44, 44), b1(190, 110, 44, 44);
+    rectangle(f0, b0, Scalar(245, 210, 30), FILLED);
+    circle(f0, Point(62, 72), 12, Scalar(20, 40, 230), FILLED);
+    rectangle(f0, b1, Scalar(30, 220, 240), FILLED);
+    circle(f0, Point(212, 132), 12, Scalar(230, 30, 180), FILLED);
+
+    legacy::MultiTrackerTLD mt;
+    ASSERT_TRUE(mt.addTarget(f0, b0, legacy::TrackerTLD::create()));
+    ASSERT_TRUE(mt.addTarget(f0, b1, legacy::TrackerTLD::create()));
+
+    Mat f1 = base.clone();
+    rectangle(f1, Rect(42, 51, 44, 44), Scalar(245, 210, 30), FILLED);
+    circle(f1, Point(64, 73), 12, Scalar(20, 40, 230), FILLED);
+    rectangle(f1, Rect(192, 111, 44, 44), Scalar(30, 220, 240), FILLED);
+    circle(f1, Point(214, 133), 12, Scalar(230, 30, 180), FILLED);
+
+    EXPECT_TRUE(mt.update_opt(f1));
+}
+#endif
+
 }} // namespace

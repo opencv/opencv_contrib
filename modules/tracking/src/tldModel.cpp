@@ -244,8 +244,10 @@ namespace tld {
 			//Prepare batch of patches
 			int numOfPatches = (int)eForModel.size();
 			Mat_<uchar> stdPatches(numOfPatches, 225);
-			double *resultSr = new double[numOfPatches];
-			double *resultSc = new double[numOfPatches];
+			AutoBuffer<double> resultSrBuf(numOfPatches);
+			AutoBuffer<double> resultScBuf(numOfPatches);
+			double *resultSr = resultSrBuf.data();
+			double *resultSc = resultScBuf.data();
 			uchar *patchesData = stdPatches.data;
 			for (int i = 0; i < numOfPatches; i++)
 			{
