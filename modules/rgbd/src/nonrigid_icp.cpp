@@ -173,8 +173,6 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
         }
     }
 
-    Mat_<float> J_reg(6*numEdges, 6*totalNodes, 0.f);
-
     std::cout << "Total reg energy: " << RegEnergy << ", Average: " << RegEnergy/numEdges << std::endl;
 
     float reg_med = median(reg_residuals);
