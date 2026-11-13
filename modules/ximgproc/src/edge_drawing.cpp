@@ -5445,6 +5445,9 @@ void EdgeDrawingImpl::ComputeCirclePoints(double xc, double yc, double r, double
 
 bool EdgeDrawingImpl::EllipseFit(double* x, double* y, int noPoints, EllipseEquation* pResult, int mode)
 {
+    if (noPoints < 6)
+        return false;
+
     double** D = AllocateMatrix(noPoints + 1, 7);
     double** S = AllocateMatrix(7, 7);
     double** Const = AllocateMatrix(7, 7);
@@ -5472,9 +5475,6 @@ bool EdgeDrawingImpl::EllipseFit(double* x, double* y, int noPoints, EllipseEqua
         Const[2][2] = 1;
         Const[3][3] = 2;
     }
-
-    if (noPoints < 6)
-        return false;
 
     // Now first fill design matrix
     for (int i = 1; i <= noPoints; i++)

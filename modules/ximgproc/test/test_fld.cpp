@@ -414,4 +414,19 @@ TEST_F(ximgproc_ED, reusedDetectorMatchesFreshOne)
     for (size_t i = 0; i < freshLines.size(); i++)
         EXPECT_EQ(freshLines[i], reusedLines[i]) << "line " << i;
 }
+
+TEST_F(ximgproc_ED, detectEllipses_syntheticShortArcs)
+{
+    Mat img(128, 128, CV_8UC1, Scalar(0));
+    // Short line/dot features mixed with an ellipse exercise short-segment rejection in EllipseFit
+    ellipse(img, Point(64, 64), Size(28, 18), 25.0, 0.0, 360.0, Scalar(255), 2);
+    line(img, Point(10, 10), Point(13, 12), Scalar(255), 1);
+    line(img, Point(100, 15), Point(104, 15), Scalar(255), 1);
+
+    Ptr<EdgeDrawing> ed = createEdgeDrawing();
+    ed->detectEdges(img);
+    std::vector<Vec6d> ellipses;
+    ed->detectEllipses(ellipses);
+    EXPECT_FALSE(ellipses.empty());
+}
 }} // namespace
