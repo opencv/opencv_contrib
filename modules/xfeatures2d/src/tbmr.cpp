@@ -568,7 +568,7 @@ void TBMR_Impl::detectAndCompute(
 {
     // We can use SIFT to compute descriptors for the extracted keypoints...
     auto sift = SIFT::create();
-    auto dac = AffineFeature2D::create(this, sift);
+    auto dac = AffineFeature2D::create(Ptr<FeatureDetector>(this, [](FeatureDetector*) {}), sift);
     dac->detectAndCompute(image, mask, keypoints, descriptors,
                           useProvidedKeypoints);
 }

@@ -337,15 +337,6 @@ namespace {
         for( i = -255; i <= 255; i++ )
             threshold_tab[i+255] = (uchar)(i < -threshold ? 1 : i > threshold ? 2 : 0);
 
-        AutoBuffer<uchar> _buf((img.cols+16)*3*(sizeof(int) + sizeof(uchar)) + 128);
-        uchar* buf[3];
-        buf[0] = _buf.data(); buf[1] = buf[0] + img.cols; buf[2] = buf[1] + img.cols;
-        int* cpbuf[3];
-        cpbuf[0] = (int*)alignPtr(buf[2] + img.cols, sizeof(int)) + 1;
-        cpbuf[1] = cpbuf[0] + img.cols + 1;
-        cpbuf[2] = cpbuf[1] + img.cols + 1;
-        memset(buf[0], 0, img.cols*3);
-
         // Calculate threshold for the keypoints
         for (size_t keyPointIdx=0; keyPointIdx < keypoints.size(); keyPointIdx++) {
             // Set response to -1:
