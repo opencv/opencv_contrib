@@ -127,6 +127,65 @@ namespace
         }
     }
 
+#ifdef HAVE_OPENCL
+
+    bool ocl_buildMotionMaps(InputArray _forwardMotion, InputArray _backwardMotion,
+                             OutputArray _forwardMap, OutputArray _backwardMap)
+    {
+        ocl::Kernel k("buildMotionMaps", ocl::superres::superres_btvl1_oclsrc);
+        if (k.empty())
+            return false;
+
+        UMat forwardMotion = _forwardMotion.getUMat(), backwardMotion = _backwardMotion.getUMat();
+        Size size = forwardMotion.size();
+
+        _forwardMap.create(size, CV_32FC2);
+        _backwardMap.create(size, CV_32FC2);
+
+        UMat forwardMap = _forwardMap.getUMat(), backwardMap = _backwardMap.getUMat();
+
+        k.args(ocl::KernelArg::ReadOnlyNoSize(forwardMotion),
+               ocl::KernelArg::ReadOnlyNoSize(backwardMotion),
+               ocl::KernelArg::WriteOnlyNoSize(forwardMap),
+               ocl::KernelArg::WriteOnly(backwardMap));
+
+        size_t globalsize[2] = { (size_t)size.width, (size_t)size.height };
+        return k.run(2, globalsize, NULL, false);
+    }
+
+    void buildMotionMaps(InputArray _forwardMotion, InputArray _backwardMotion,
+                         OutputArray _forwardMap, OutputArray _backwardMap)
+    {
+        CV_OCL_RUN(_forwardMap.isUMat() && _backwardMap.isUMat(),
+                   ocl_buildMotionMaps(_forwardMotion, _backwardMotion, _forwardMap,
+                                       _backwardMap));
+
+        Mat forwardMotion = _forwardMotion.getMat(), backwardMotion = _backwardMotion.getMat();
+
+        _forwardMap.create(forwardMotion.size(), CV_32FC2);
+        _backwardMap.create(forwardMotion.size(), CV_32FC2);
+
+        Mat forwardMap = _forwardMap.getMat(), backwardMap = _backwardMap.getMat();
+
+        for (int y = 0; y < forwardMotion.rows; ++y)
+        {
+            const Point2f* forwardMotionRow = forwardMotion.ptr<Point2f>(y);
+            const Point2f* backwardMotionRow = backwardMotion.ptr<Point2f>(y);
+            Point2f* forwardMapRow = forwardMap.ptr<Point2f>(y);
+            Point2f* backwardMapRow = backwardMap.ptr<Point2f>(y);
+
+            for (int x = 0; x < forwardMotion.cols; ++x)
+            {
+                Point2f base(static_cast<float>(x), static_cast<float>(y));
+
+                forwardMapRow[x] = base + backwardMotionRow[x];
+                backwardMapRow[x] = base + forwardMotionRow[x];
+            }
+        }
+    }
+
+#endif
+
     template <typename T>
     void upscaleImpl(InputArray _src, OutputArray _dst, int scale)
     {
