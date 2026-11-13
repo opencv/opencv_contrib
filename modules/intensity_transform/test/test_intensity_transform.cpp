@@ -255,7 +255,13 @@ TEST(intensity_transform_logTransform, bgr_and_zero)
 
     Mat zeros = Mat::zeros(8, 8, CV_8UC1), outZeros;
     ASSERT_NO_THROW(cv::intensity_transform::logTransform(zeros, outZeros));
+    EXPECT_EQ(CV_8UC1, outZeros.type());
     EXPECT_EQ(0, countNonZero(outZeros));
+
+    Mat zeros16 = Mat::zeros(8, 8, CV_16UC3), outZeros16;
+    ASSERT_NO_THROW(cv::intensity_transform::logTransform(zeros16, outZeros16));
+    EXPECT_EQ(CV_8UC3, outZeros16.type());
+    EXPECT_EQ(0, countNonZero(outZeros16.reshape(1)));
 }
 
 }} // namespace

@@ -17,7 +17,7 @@ void logTransform(const Mat input, Mat& output)
     minMaxLoc(input.reshape(1), NULL, &maxVal, NULL, NULL);
     if (maxVal <= 0.0)
     {
-        output.create(input.size(), input.type());
+        output.create(input.size(), CV_MAKETYPE(CV_8U, input.channels()));
         output.setTo(Scalar::all(0));
         return;
     }
