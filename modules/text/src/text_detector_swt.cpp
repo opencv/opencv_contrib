@@ -68,7 +68,6 @@ const Scalar GREEN(0, 255, 0);
 const Scalar RED  (0, 0, 255);
 void SWTFirstPass (const Mat& edgeImage, const Mat& gradientX, const Mat& gradientY, bool dark_on_light, Mat & SWTImage, std::vector<Ray> & rays);
 void SWTSecondPass (Mat & SWTImage, std::vector<Ray> & rays);
-void normalizeAndScale (const Mat& SWTImage, Mat& output);
 std::vector<std::vector<SWTPoint>> getComponents (const Mat& SWTImage);
 ComponentAttr getAttributes(const vector<SWTPoint>& component, const Mat& SWTImage);
 void renderComponents (const Mat& SWTImage, const std::vector<Component>& components, Mat& output);
@@ -230,39 +229,6 @@ void SWTSecondPass (Mat & SWTImage, std::vector<Ray> & rays) {
             SWTImage.at<float>(pit->y, pit->x) = std::min(pit->SWT, median);
         }
     }
-}
-
-void normalizeAndScale (const Mat& SWTImage, Mat& output) {
-    CV_CheckTypeEQ(SWTImage.type(), CV_32FC1, "");
-    CV_CheckTypeEQ(output.type(), CV_8UC1, "");
-
-    Mat outputTemp(output.size(), CV_32FC1);
-
-    float maxSWT = 0;
-    float minSWT = (float) FLT_MAX;
-    for(int row = 0; row < SWTImage.rows; row++){
-        for (int col = 0; col < SWTImage.cols; col++){
-            float val = SWTImage.at<float>(row, col);
-            if (val < 0)
-                continue;
-            maxSWT = std::max(val, maxSWT);
-            minSWT = std::min(val, minSWT);
-        }
-    }
-
-    float amplitude = maxSWT - minSWT;
-    for(int row = 0; row < SWTImage.rows; row++){
-        for (int col = 0; col < SWTImage.cols; col++){
-            float val = SWTImage.at<float>(row, col);
-            if (val < 0) {
-                outputTemp.at<float>(row, col) = 1;
-            }
-            else {
-                outputTemp.at<float>(row, col) = (val - minSWT) / amplitude;
-            }
-        }
-    }
-    outputTemp.convertTo(output, CV_8UC1, 255);
 }
 
 std::vector<std::vector<SWTPoint>> getComponents (const Mat& SWTImage) {
@@ -841,9 +807,6 @@ void detectTextSWT(InputArray input_, CV_OUT std::vector<cv::Rect>& result, bool
     SWTFirstPass (canny_edge_image, gradientX, gradientY, dark_on_light, SWTImage, rays );
 
     SWTSecondPass ( SWTImage, rays );
-
-    Mat normalised_image(input.size(), CV_8UC1);
-    normalizeAndScale(SWTImage, normalised_image);
 
     // Calculate legally connected components from SWT and gradient image.
     // return type is a vector of vectors, where each outer vector is a component and
