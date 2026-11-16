@@ -72,7 +72,7 @@ private:
 
 NFALUT::NFALUT(int size, double _prob, double _logNT)
 {
-    LUTSize = std::max(1, std::min(60, size));
+    LUTSize = size > 60 ? 60 : size;
     LUT = new int[LUTSize];
     prob = _prob;
     logNT = _logNT;

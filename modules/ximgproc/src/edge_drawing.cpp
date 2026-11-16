@@ -358,7 +358,7 @@ void EdgeDrawingImpl::write(cv::FileStorage& fs) const
 EdgeDrawingImpl::EdgeDrawingImpl()
 {
     params = EdgeDrawing::Params();
-    nfa = new NFALUT(1, 1.0 / 8, 0.5);
+    nfa = new NFALUT(1, 1/8, 0.5);
     nfaWidth = 0;
     nfaHeight = 0;
     dH = new double[ED_MAX_GRAD_VALUE];

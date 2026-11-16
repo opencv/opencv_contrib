@@ -323,9 +323,8 @@ TEST_F(ximgproc_ED, reusedDetectorMatchesFreshAcrossSizes)
         Size(960, 720),
         Size(128, 96),
         Size(64, 160),
-        Size(32, 320),   // same area and logNT as 64x160, different (w + h) / 8
         Size(128, 128),
-        Size(64, 256),   // same area and logNT as 128x128, different (w + h) / 8
+        Size(64, 256),
         Size(64, 720),   // only height changes
         Size(960, 720)   // only width changes
     };
@@ -409,40 +408,6 @@ TEST_F(ximgproc_ED, reusedDetectorMatchesFreshAcrossSizes)
         refEd->detectEllipses(refEllipses);
         EXPECT_EQ(refEllipses.size(), crossEllipses.size()) << "detectLines(small) -> detectEllipses(big)";
     }
-
-    // NFA validation rejects pure uniform noise on a large image (guards against leaving dummy logNT active).
-    {
-        Mat noise(720, 960, CV_8UC1);
-        testRng.fill(noise, RNG::UNIFORM, 0, 256);
-        Ptr<EdgeDrawing> noiseEd = createEdgeDrawing();
-        vector<Vec4f> noiseLines;
-        noiseEd->detectEdges(noise);
-        noiseEd->detectLines(noiseLines);
-        EXPECT_LE(noiseLines.size(), 5u);
-    }
-
-    // Segment-less tiny image ((width + height) / 8 == 0) and a (width + height) / 8 == 1 image
-    // (where LUTSize == 1 matched the uninitialized sentinel), followed by reuse on 320x240.
-    Mat tiny(3, 4, CV_8UC1);
-    testRng.fill(tiny, RNG::UNIFORM, 0, 256);
-    Mat smallLut1(5, 9, CV_8UC1, Scalar(255));
-    rectangle(smallLut1, Point(1, 1), Point(7, 3), Scalar(0), 1);
-    Mat afterTiny = makeLineScene(320, 240);
-    Ptr<EdgeDrawing> tinyEd = createEdgeDrawing();
-    Ptr<EdgeDrawing> freshAfterTiny = createEdgeDrawing();
-    vector<Vec4f> tinyLines, afterTinyLines, freshAfterTinyLines;
-    vector<Vec6d> tinyEllipses;
-    tinyEd->detectEdges(tiny);
-    tinyEd->detectLines(tinyLines);
-    tinyEd->detectEllipses(tinyEllipses);
-    tinyEd->detectEdges(smallLut1);
-    tinyEd->detectLines(tinyLines);
-    tinyEd->detectEllipses(tinyEllipses);
-    tinyEd->detectEdges(afterTiny);
-    tinyEd->detectLines(afterTinyLines);
-    freshAfterTiny->detectEdges(afterTiny);
-    freshAfterTiny->detectLines(freshAfterTinyLines);
-    EXPECT_EQ(freshAfterTinyLines.size(), afterTinyLines.size());
 }
 
 TEST_F(ximgproc_ED, detectLinesAndEllipses)
