@@ -428,8 +428,8 @@ namespace
 
         if (votes.needed())
         {
-            ensureSizeIsEnough(1, posCount_, CV_32FC3, votes);
-            GpuMat(1, posCount_, CV_32FC4, outBuf_.ptr(1), outBuf_.step).copyTo(votes);
+            ensureSizeIsEnough(1, posCount_, CV_32SC3, votes);
+            GpuMat(1, posCount_, CV_32SC3, outBuf_.ptr(1), outBuf_.step).copyTo(votes);
         }
     }
 }

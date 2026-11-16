@@ -335,13 +335,24 @@ CUDA_TEST_P(GeneralizedHough, Ballard)
 
     alg->setTemplate(loadMat(templ, useRoi));
 
-    cv::cuda::GpuMat d_pos;
-    alg->detect(loadMat(image, useRoi), d_pos);
+    cv::cuda::GpuMat d_pos, d_votes;
+    alg->detect(loadMat(image, useRoi), d_pos, d_votes);
 
     std::vector<cv::Vec4f> pos;
     d_pos.download(pos);
 
     ASSERT_EQ(gold_count, pos.size());
+
+    ASSERT_EQ(CV_32SC3, d_votes.type());
+    std::vector<cv::Vec3i> votes;
+    d_votes.download(votes);
+    ASSERT_EQ(gold_count, votes.size());
+    for (size_t i = 0; i < votes.size(); ++i)
+    {
+        EXPECT_GT(votes[i][0], 200);
+        EXPECT_EQ(0, votes[i][1]);
+        EXPECT_EQ(0, votes[i][2]);
+    }
 
     for (size_t i = 0; i < gold_count; ++i)
     {
@@ -362,6 +373,90 @@ CUDA_TEST_P(GeneralizedHough, Ballard)
 
         ASSERT_TRUE(found);
     }
+}
+
+CUDA_TEST_P(GeneralizedHough, Guil)
+{
+    const cv::cuda::DeviceInfo devInfo = GET_PARAM(0);
+    cv::cuda::setDevice(devInfo.deviceID());
+    const bool useRoi = GET_PARAM(1);
+
+    cv::Mat templ(48, 48, CV_8UC1, cv::Scalar::all(0));
+    cv::rectangle(templ, cv::Rect(8, 8, 12, 32), cv::Scalar::all(255), cv::FILLED);
+    cv::rectangle(templ, cv::Rect(8, 28, 32, 12), cv::Scalar::all(255), cv::FILLED);
+
+    cv::Point templCenter(templ.cols / 2, templ.rows / 2);
+
+    const size_t gold_count = 2;
+    cv::Point pos_gold[gold_count];
+    pos_gold[0] = cv::Point(templCenter.x + 16, templCenter.y + 16);
+    pos_gold[1] = cv::Point(2 * templCenter.x + 40, 2 * templCenter.y + 32);
+
+    cv::Mat image(templ.rows * 3, templ.cols * 3, CV_8UC1, cv::Scalar::all(0));
+    for (size_t i = 0; i < gold_count; ++i)
+    {
+        cv::Rect rec(pos_gold[i].x - templCenter.x, pos_gold[i].y - templCenter.y, templ.cols, templ.rows);
+        templ.copyTo(image(rec));
+    }
+
+    cv::Ptr<cv::GeneralizedHoughGuil> alg = cv::cuda::createGeneralizedHoughGuil();
+    alg->setMinDist(20.0);
+    alg->setMinAngle(0.0);
+    alg->setMaxAngle(90.0);
+    alg->setAngleStep(2.0);
+    alg->setAngleThresh(10000);
+    alg->setMinScale(0.5);
+    alg->setMaxScale(1.5);
+    alg->setScaleStep(0.25);
+    alg->setScaleThresh(3000);
+    alg->setPosThresh(1000);
+
+    alg->setTemplate(loadMat(templ, useRoi));
+
+    cv::cuda::GpuMat d_pos, d_votes;
+    alg->detect(loadMat(image, useRoi), d_pos, d_votes);
+
+    std::vector<cv::Vec4f> pos;
+    d_pos.download(pos);
+
+    ASSERT_EQ(gold_count, pos.size());
+
+    ASSERT_EQ(CV_32SC3, d_votes.type());
+    std::vector<cv::Vec3i> votes;
+    d_votes.download(votes);
+    ASSERT_EQ(gold_count, votes.size());
+    for (size_t i = 0; i < votes.size(); ++i)
+    {
+        EXPECT_GT(votes[i][0], 1000);
+        EXPECT_GE(votes[i][1], 3000);
+        EXPECT_GE(votes[i][2], 10000);
+    }
+
+    for (size_t i = 0; i < gold_count; ++i)
+    {
+        cv::Point gold = pos_gold[i];
+
+        bool found = false;
+
+        for (size_t j = 0; j < pos.size(); ++j)
+        {
+            cv::Point2f p(pos[j][0], pos[j][1]);
+
+            if (std::fabs(p.x - gold.x) < 2 && std::fabs(p.y - gold.y) < 2 &&
+                std::fabs(pos[j][2] - 1.0f) < 1e-2f && std::fabs(pos[j][3]) < 2.0f)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        ASSERT_TRUE(found);
+    }
+
+    cv::Mat blank(image.size(), CV_8UC1, cv::Scalar::all(0));
+    alg->detect(loadMat(blank, useRoi), d_pos, d_votes);
+    EXPECT_TRUE(d_pos.empty());
+    EXPECT_TRUE(d_votes.empty());
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, GeneralizedHough, testing::Combine(
