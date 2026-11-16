@@ -276,6 +276,175 @@ TEST_F(ximgproc_ED, rotatedRect)
     ASSERT_EQ(EPOCHS, passedtests);
 }
 
+TEST_F(ximgproc_ED, reusedDetectorMatchesFreshAcrossSizes)
+{
+    RNG& testRng = theRNG();
+
+    auto makeLineScene = [&testRng](int w, int h) {
+        int bw = std::min(w, 160);
+        int bh = std::min(h, 120);
+        Mat base(bh, bw, CV_8UC1);
+        testRng.fill(base, RNG::UNIFORM, 0, 40);
+        for (int y = 0; y < bh; ++y)
+            for (int x = 0; x < bw; ++x)
+                base.at<uchar>(y, x) = saturate_cast<uchar>(
+                    base.at<uchar>(y, x) + (((x / 3 + y / 5) % 2) * 195));
+        if (w == bw && h == bh)
+            return base;
+        Mat out;
+        resize(base, out, Size(w, h), 0, 0, INTER_LINEAR);
+        GaussianBlur(out, out, Size(5, 5), 1.5);
+        return out;
+    };
+
+    auto makeArcScene = [&testRng](int w, int h) {
+        Mat img(h, w, CV_8UC1);
+        testRng.fill(img, RNG::UNIFORM, 120, 136);
+        if (w < 120 || h < 120)
+        {
+            int r = std::max(8, std::min(w, h) / 3);
+            circle(img, Point(w / 2, h / 2), r, Scalar(15), 2, LINE_8);
+            return img;
+        }
+        for (int cy = 40; cy + 40 < h; cy += 72)
+        {
+            for (int cx = 40; cx + 40 < w; cx += 72)
+            {
+                double startAngle = testRng.uniform(0.0, 180.0);
+                ellipse(img, Point(cx, cy), Size(26, 26), 0.0,
+                        startAngle, startAngle + 122.0, Scalar(15), 2, LINE_8);
+            }
+        }
+        return img;
+    };
+
+    const Size seq[] = {
+        Size(64, 48),
+        Size(960, 720),
+        Size(128, 96),
+        Size(64, 160),
+        Size(32, 320),   // same area and logNT as 64x160, different (w + h) / 8
+        Size(128, 128),
+        Size(64, 256),   // same area and logNT as 128x128, different (w + h) / 8
+        Size(64, 720),   // only height changes
+        Size(960, 720)   // only width changes
+    };
+
+    Ptr<EdgeDrawing> reusedLineEd = createEdgeDrawing();
+    for (size_t idx = 0; idx < sizeof(seq) / sizeof(seq[0]); ++idx)
+    {
+        Mat img = makeLineScene(seq[idx].width, seq[idx].height);
+        vector<Vec4f> reusedLines, freshLines;
+        reusedLineEd->detectEdges(img);
+        reusedLineEd->detectLines(reusedLines);
+
+        Ptr<EdgeDrawing> freshEd = createEdgeDrawing();
+        freshEd->detectEdges(img);
+        freshEd->detectLines(freshLines);
+
+        EXPECT_EQ(freshLines.size(), reusedLines.size()) << "detectLines size at " << seq[idx];
+        EXPECT_EQ(freshEd->getSegmentIndicesOfLines(), reusedLineEd->getSegmentIndicesOfLines())
+            << "segmentIndicesOfLines at " << seq[idx];
+        if (freshLines.size() == reusedLines.size())
+        {
+            for (size_t i = 0; i < freshLines.size(); ++i)
+                EXPECT_EQ(freshLines[i], reusedLines[i]) << "line " << i << " at " << seq[idx];
+        }
+    }
+
+    Ptr<EdgeDrawing> reusedArcEd = createEdgeDrawing();
+    for (size_t idx = 0; idx < sizeof(seq) / sizeof(seq[0]); ++idx)
+    {
+        Mat img = makeArcScene(seq[idx].width, seq[idx].height);
+        vector<Vec6d> reusedEllipses, freshEllipses;
+        reusedArcEd->detectEdges(img);
+        reusedArcEd->detectEllipses(reusedEllipses);
+
+        Ptr<EdgeDrawing> freshEd = createEdgeDrawing();
+        freshEd->detectEdges(img);
+        freshEd->detectEllipses(freshEllipses);
+
+        EXPECT_EQ(freshEllipses.size(), reusedEllipses.size()) << "detectEllipses size at " << seq[idx];
+        if (freshEllipses.size() == reusedEllipses.size())
+        {
+            for (size_t i = 0; i < freshEllipses.size(); ++i)
+                EXPECT_EQ(freshEllipses[i], reusedEllipses[i]) << "ellipse " << i << " at " << seq[idx];
+        }
+    }
+
+    // Cross-method reuse: detectEllipses(small) -> detectLines(big) and detectLines(small) -> detectEllipses(big).
+    {
+        Mat smallArc = makeArcScene(64, 48);
+        Mat bigLine = makeLineScene(960, 720);
+        vector<Vec6d> tmpEllipses;
+        vector<Vec4f> crossLines, refLines;
+
+        Ptr<EdgeDrawing> crossEd = createEdgeDrawing();
+        crossEd->detectEdges(smallArc);
+        crossEd->detectEllipses(tmpEllipses);
+        crossEd->detectEdges(bigLine);
+        crossEd->detectLines(crossLines);
+
+        Ptr<EdgeDrawing> refEd = createEdgeDrawing();
+        refEd->detectEdges(bigLine);
+        refEd->detectEllipses(tmpEllipses);
+        refEd->detectLines(refLines);
+        EXPECT_EQ(refLines.size(), crossLines.size()) << "detectEllipses(small) -> detectLines(big)";
+    }
+    {
+        Mat smallLine = makeLineScene(64, 48);
+        Mat bigArc = makeArcScene(960, 720);
+        vector<Vec4f> tmpLines;
+        vector<Vec6d> crossEllipses, refEllipses;
+
+        Ptr<EdgeDrawing> crossEd = createEdgeDrawing();
+        crossEd->detectEdges(smallLine);
+        crossEd->detectLines(tmpLines);
+        crossEd->detectEdges(bigArc);
+        crossEd->detectEllipses(crossEllipses);
+
+        Ptr<EdgeDrawing> refEd = createEdgeDrawing();
+        refEd->detectEdges(bigArc);
+        refEd->detectLines(tmpLines);
+        refEd->detectEllipses(refEllipses);
+        EXPECT_EQ(refEllipses.size(), crossEllipses.size()) << "detectLines(small) -> detectEllipses(big)";
+    }
+
+    // NFA validation rejects pure uniform noise on a large image (guards against leaving dummy logNT active).
+    {
+        Mat noise(720, 960, CV_8UC1);
+        testRng.fill(noise, RNG::UNIFORM, 0, 256);
+        Ptr<EdgeDrawing> noiseEd = createEdgeDrawing();
+        vector<Vec4f> noiseLines;
+        noiseEd->detectEdges(noise);
+        noiseEd->detectLines(noiseLines);
+        EXPECT_LE(noiseLines.size(), 5u);
+    }
+
+    // Segment-less tiny image ((width + height) / 8 == 0) and a (width + height) / 8 == 1 image
+    // (where LUTSize == 1 matched the uninitialized sentinel), followed by reuse on 320x240.
+    Mat tiny(3, 4, CV_8UC1);
+    testRng.fill(tiny, RNG::UNIFORM, 0, 256);
+    Mat smallLut1(5, 9, CV_8UC1, Scalar(255));
+    rectangle(smallLut1, Point(1, 1), Point(7, 3), Scalar(0), 1);
+    Mat afterTiny = makeLineScene(320, 240);
+    Ptr<EdgeDrawing> tinyEd = createEdgeDrawing();
+    Ptr<EdgeDrawing> freshAfterTiny = createEdgeDrawing();
+    vector<Vec4f> tinyLines, afterTinyLines, freshAfterTinyLines;
+    vector<Vec6d> tinyEllipses;
+    tinyEd->detectEdges(tiny);
+    tinyEd->detectLines(tinyLines);
+    tinyEd->detectEllipses(tinyEllipses);
+    tinyEd->detectEdges(smallLut1);
+    tinyEd->detectLines(tinyLines);
+    tinyEd->detectEllipses(tinyEllipses);
+    tinyEd->detectEdges(afterTiny);
+    tinyEd->detectLines(afterTinyLines);
+    freshAfterTiny->detectEdges(afterTiny);
+    freshAfterTiny->detectLines(freshAfterTinyLines);
+    EXPECT_EQ(freshAfterTinyLines.size(), afterTinyLines.size());
+}
+
 TEST_F(ximgproc_ED, detectLinesAndEllipses)
 {
     Mat gray_image;
