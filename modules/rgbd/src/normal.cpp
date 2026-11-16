@@ -664,35 +664,9 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
   void delete_normals_impl(void *rgbd_normals_impl_, int method_, int depth);
   void delete_normals_impl(void *rgbd_normals_impl_, int method_, int depth)
   {
-    if (rgbd_normals_impl_ == 0)
-      return;
-    switch (method_)
-    {
-      case RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD:
-      {
-        if (depth == CV_32F)
-          delete reinterpret_cast<const LINEMOD<float> *>(rgbd_normals_impl_);
-        else
-          delete reinterpret_cast<const LINEMOD<double> *>(rgbd_normals_impl_);
-        break;
-      }
-      case RgbdNormals::RGBD_NORMALS_METHOD_SRI:
-      {
-        if (depth == CV_32F)
-          delete reinterpret_cast<const SRI<float> *>(rgbd_normals_impl_);
-        else
-          delete reinterpret_cast<const SRI<double> *>(rgbd_normals_impl_);
-        break;
-      }
-      case (RgbdNormals::RGBD_NORMALS_METHOD_FALS):
-      {
-        if (depth == CV_32F)
-          delete reinterpret_cast<const FALS<float> *>(rgbd_normals_impl_);
-        else
-          delete reinterpret_cast<const FALS<double> *>(rgbd_normals_impl_);
-        break;
-      }
-    }
+    CV_UNUSED(method_);
+    CV_UNUSED(depth);
+    delete reinterpret_cast<RgbdNormalsImpl *>(rgbd_normals_impl_);
   }
 
   /** Destructor
@@ -754,6 +728,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
     else if (!reinterpret_cast<RgbdNormalsImpl *>(rgbd_normals_impl_)->validate(rows_, cols_, depth_, K_, window_size_,
                                                                                 method_)) {
       delete_normals_impl(rgbd_normals_impl_, method_, depth_);
+      rgbd_normals_impl_ = 0;
       initialize_normals_impl(rows_, cols_, depth_, K_, window_size_, method_);
     }
   }
