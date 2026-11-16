@@ -452,4 +452,49 @@ TEST(Rgbd_Plane, regression_2309_valgrind_check)
     plane_detector(points, mask, planes);  // Will corrupt memory; valgrind gets triggered
 }
 
+TEST(Rgbd_Normals, rejected_window_size_reinit)
+{
+    const int rows = 48, cols = 64;
+    Mat intrinsics(Matx33d(525.0, 0.0, 31.5, 0.0, 525.0, 23.5, 0.0, 0.0, 1.0));
+    Mat depth(rows, cols, CV_32FC1);
+    theRNG().fill(depth, RNG::UNIFORM, 0.5f, 3.0f);
+    Mat points;
+    rgbd::depthTo3d(depth, intrinsics, points);
+
+    {
+        Mat normals;
+        Ptr<rgbd::RgbdNormals> computer = rgbd::RgbdNormals::create(
+            rows, cols, CV_32F, intrinsics, 5, rgbd::RgbdNormals::RGBD_NORMALS_METHOD_FALS);
+        (*computer)(points, normals);
+        computer->setWindowSize(4);
+        EXPECT_ANY_THROW((*computer)(points, normals));
+    }
+
+    {
+        Mat normals, ref_normals;
+        Ptr<rgbd::RgbdNormals> computer = rgbd::RgbdNormals::create(
+            rows, cols, CV_32F, intrinsics, 5, rgbd::RgbdNormals::RGBD_NORMALS_METHOD_FALS);
+        (*computer)(points, normals);
+        computer->setWindowSize(4);
+        EXPECT_ANY_THROW((*computer)(points, normals));
+
+        computer->setWindowSize(3);
+        (*computer)(points, normals);
+
+        Ptr<rgbd::RgbdNormals> fresh = rgbd::RgbdNormals::create(
+            rows, cols, CV_32F, intrinsics, 3, rgbd::RgbdNormals::RGBD_NORMALS_METHOD_FALS);
+        (*fresh)(points, ref_normals);
+        ASSERT_TRUE(checkRange(normals));
+        EXPECT_EQ(0.0, cv::norm(normals, ref_normals, NORM_INF));
+
+        computer->setMethod(rgbd::RgbdNormals::RGBD_NORMALS_METHOD_SRI);
+        computer->setDepth(CV_64F);
+        (*computer)(points, normals);
+        EXPECT_EQ(CV_64FC3, normals.type());
+
+        computer->setMethod(-1);
+        EXPECT_ANY_THROW(computer->initialize());
+    }
+}
+
 }} // namespace
