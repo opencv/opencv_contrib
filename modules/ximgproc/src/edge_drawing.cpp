@@ -183,12 +183,15 @@ private:
     double max_error;
     double precision;
     NFALUT* nfa;
+    int nfaWidth;
+    int nfaHeight;
 
     int ComputeMinLineLength();
     void SplitSegment2Lines(double* x, double* y, int noPixels, int segmentNo);
     void JoinCollinearLines();
 
     void ValidateLineSegments();
+    void updateNFATable();
     bool ValidateLineSegmentRect(int* x, int* y, EDLineSegment* ls);
     bool TryToJoinTwoLineSegments(EDLineSegment* ls1, EDLineSegment* ls2, int changeIndex);
 
@@ -356,6 +359,8 @@ EdgeDrawingImpl::EdgeDrawingImpl()
 {
     params = EdgeDrawing::Params();
     nfa = new NFALUT(1, 1/8, 0.5);
+    nfaWidth = 0;
+    nfaHeight = 0;
     dH = new double[ED_MAX_GRAD_VALUE];
     grads = new int[ED_MAX_GRAD_VALUE];
 }
@@ -1603,19 +1608,26 @@ void EdgeDrawingImpl::JoinCollinearLines()
     linesNo = lastLineIndex + 1;
 }
 
+void EdgeDrawingImpl::updateNFATable()
+{
+    if (nfaWidth != width || nfaHeight != height)
+    {
+        double logNT = 2.0 * (log10((double)width) + log10((double)height));
+        NFALUT* nextNfa = new NFALUT((width + height) / 8, 1.0 / 8, logNT);
+        delete nfa;
+        nfa = nextNfa;
+        nfaWidth = width;
+        nfaHeight = height;
+    }
+}
+
 void EdgeDrawingImpl::ValidateLineSegments()
 {
 #define PRECISION_ANGLE 22.5
     precision = (PRECISION_ANGLE / 180) * CV_PI;
 #undef PRECISION_ANGLE
 
-    if (nfa->LUTSize == 1)
-    {
-        int lutSize = (width + height) / 8;
-        double prob = 1.0 / 8;  // probability of alignment
-        double logNT = 2.0 * (log10((double)width) + log10((double)height));
-        nfa = new NFALUT(lutSize, prob, logNT);
-    }
+    updateNFATable();
 
     int* x = new int[(width + height) * 4];
     int* y = new int[(width + height) * 4];
@@ -3214,13 +3226,8 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
     double *px = new double[points_buffer_size];
     double *py = new double[points_buffer_size];
 
-    if (nfa->LUTSize == 1 && params.NFAValidation)
-    {
-        int lutSize = (width + height) / 8;
-        double prob = 1.0 / 8;  // probability of alignment
-        double logNT = 2.0 * (log10((double)width) + log10((double)height));
-        nfa = new NFALUT(lutSize, prob, logNT); // create look up table
-    }
+    if (validate)
+        updateNFATable();
 
     // Validate circles & ellipses
     bool validateAgain;
