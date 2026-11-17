@@ -577,4 +577,132 @@ TEST( BinaryDescriptor_Matcher, regression)
   test.safe_run();
 }
 
+static void sortMatchesByTrainIdx( std::vector<std::vector<DMatch> >& m )
+{
+  for ( size_t i = 0; i < m.size(); i++ )
+  {
+    std::sort( m[i].begin(), m[i].end(), []( const DMatch& a, const DMatch& b ) {
+      if( a.imgIdx != b.imgIdx )
+        return a.imgIdx < b.imgIdx;
+      return a.trainIdx < b.trainIdx;
+    } );
+  }
+}
+
+TEST( BinaryDescriptor_Matcher, radiusMatch_dataset_after_train )
+{
+  Mat query( 40, 32, CV_8UC1 ), train( 35, 32, CV_8UC1 );
+  theRNG().fill( query, RNG::UNIFORM, 0, 256 );
+  theRNG().fill( train, RNG::UNIFORM, 0, 256 );
+
+  Ptr<BinaryDescriptorMatcher> bdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+  std::vector<std::vector<DMatch> > expected, first, second;
+  bdm->radiusMatch( query, train, expected, 120.f );
+
+  // radiusMatch() calls train() again; nothing new was added, so the dataset must stay usable
+  bdm->add( std::vector<Mat>( 1, train ) );
+  bdm->train();
+  bdm->radiusMatch( query, first, 120.f );
+  bdm->radiusMatch( query, second, 120.f );
+
+  sortMatchesByTrainIdx( expected );
+  sortMatchesByTrainIdx( first );
+  sortMatchesByTrainIdx( second );
+  ASSERT_EQ( expected.size(), static_cast<size_t>( query.rows ) );
+  ASSERT_EQ( first.size(), expected.size() );
+  ASSERT_EQ( second.size(), expected.size() );
+  size_t total = 0;
+  for ( size_t i = 0; i < expected.size(); i++ )
+  {
+    ASSERT_EQ( first[i].size(), expected[i].size() ) << "query " << i;
+    ASSERT_EQ( second[i].size(), expected[i].size() ) << "query " << i;
+    for ( size_t j = 0; j < expected[i].size(); j++ )
+    {
+      EXPECT_EQ( first[i][j].trainIdx, expected[i][j].trainIdx );
+      EXPECT_EQ( first[i][j].imgIdx, 0 );
+      EXPECT_EQ( first[i][j].distance, expected[i][j].distance );
+      EXPECT_EQ( second[i][j].trainIdx, expected[i][j].trainIdx );
+      EXPECT_EQ( second[i][j].distance, expected[i][j].distance );
+    }
+    total += expected[i].size();
+  }
+  EXPECT_GT( total, 0u );
+}
+
+TEST( BinaryDescriptor_Matcher, knnMatch_more_neighbours_than_descriptors )
+{
+  Mat query( 40, 32, CV_8UC1 ), train( 3, 32, CV_8UC1 );
+  theRNG().fill( query, RNG::UNIFORM, 0, 256 );
+  theRNG().fill( train, RNG::UNIFORM, 0, 256 );
+  Ptr<BinaryDescriptorMatcher> bdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+
+  std::vector<std::vector<DMatch> > pairMatches, datasetMatches;
+  bdm->knnMatch( query, train, pairMatches, 5 );
+  ASSERT_EQ( pairMatches.size(), static_cast<size_t>( query.rows ) );
+  for ( size_t i = 0; i < pairMatches.size(); i++ )
+    EXPECT_EQ( pairMatches[i].size(), 3u );
+
+  bdm->add( std::vector<Mat>( 1, train ) );
+  bdm->knnMatch( query, datasetMatches, 5 );
+  ASSERT_EQ( datasetMatches.size(), static_cast<size_t>( query.rows ) );
+  for ( size_t i = 0; i < datasetMatches.size(); i++ )
+    EXPECT_EQ( datasetMatches[i].size(), 3u );
+}
+
+TEST( BinaryDescriptor_Matcher, empty_matcher )
+{
+  Mat query( 40, 32, CV_8UC1 );
+  theRNG().fill( query, RNG::UNIFORM, 0, 256 );
+  Ptr<BinaryDescriptorMatcher> bdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+
+  std::vector<DMatch> matches;
+  std::vector<std::vector<DMatch> > kmatches, rmatches;
+  bdm->match( query, matches );
+  bdm->knnMatch( query, kmatches, 2 );
+  bdm->radiusMatch( query, rmatches, 120.f );
+  EXPECT_TRUE( matches.empty() );
+  EXPECT_TRUE( kmatches.empty() );
+  EXPECT_TRUE( rmatches.empty() );
+}
+
+// k = 0 asks for no neighbours; without the check Mihasher::query() writes into a zero-size result array
+TEST( BinaryDescriptor_Matcher, knnMatch_zero_neighbours )
+{
+  Mat query( 16, 32, CV_8UC1 ), train( 40, 32, CV_8UC1 );
+  theRNG().fill( query, RNG::UNIFORM, 0, 256 );
+  theRNG().fill( train, RNG::UNIFORM, 0, 256 );
+  Ptr<BinaryDescriptorMatcher> bdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+
+  std::vector<std::vector<DMatch> > kmatches;
+  bdm->knnMatch( query, train, kmatches, 0 );
+  EXPECT_TRUE( kmatches.empty() );
+
+  bdm->add( std::vector<Mat>( 1, train ) );
+  bdm->train();
+  bdm->knnMatch( query, kmatches, 0 );
+  EXPECT_TRUE( kmatches.empty() );
+}
+
+TEST( BinaryDescriptor_Matcher, reject_invalid_masks )
+{
+  Mat query( 64, 32, CV_8UC1 ), train( 60, 32, CV_8UC1 );
+  theRNG().fill( query, RNG::UNIFORM, 0, 256 );
+  theRNG().fill( train, RNG::UNIFORM, 0, 256 );
+  Ptr<BinaryDescriptorMatcher> bdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+
+  // a mask needs one row per query and one column
+  const Mat badMasks[] = { Mat::ones( 5, 1, CV_8UC1 ), Mat::ones( query.rows, train.rows, CV_8UC1 ) };
+  for ( const Mat& mask : badMasks )
+  {
+    std::vector<DMatch> matches;
+    std::vector<std::vector<DMatch> > kmatches, rmatches;
+    bdm->match( query, train, matches, mask );
+    bdm->knnMatch( query, train, kmatches, 2, mask );
+    bdm->radiusMatch( query, train, rmatches, 120.f, mask );
+    EXPECT_TRUE( matches.empty() ) << mask.size;
+    EXPECT_TRUE( kmatches.empty() ) << mask.size;
+    EXPECT_TRUE( rmatches.empty() ) << mask.size;
+  }
+}
+
 }} // namespace
