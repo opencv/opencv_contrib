@@ -264,9 +264,15 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, const Mat& 
 
 {
   /* check data validity */
-  if( queryDescriptors.rows == 0 || trainDescriptors.rows == 0 || k <= 0 )
+  if( queryDescriptors.rows == 0 || trainDescriptors.rows == 0 )
   {
     std::cout << "Error: descriptors matrices cannot be void" << std::endl;
+    return;
+  }
+
+  if( k <= 0 )
+  {
+    std::cout << "Error: k must be greater than zero" << std::endl;
     return;
   }
 
@@ -348,9 +354,15 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
 {
 
   /* check data validity */
-  if( queryDescriptors.rows == 0 || k <= 0 )
+  if( queryDescriptors.rows == 0 )
   {
     std::cout << "Error: descriptors matrix cannot be void" << std::endl;
+    return;
+  }
+
+  if( k <= 0 )
+  {
+    std::cout << "Error: k must be greater than zero" << std::endl;
     return;
   }
 

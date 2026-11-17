@@ -665,6 +665,24 @@ TEST( BinaryDescriptor_Matcher, empty_matcher )
   EXPECT_TRUE( rmatches.empty() );
 }
 
+// k = 0 asks for no neighbours; without the check Mihasher::query() writes into a zero-size result array
+TEST( BinaryDescriptor_Matcher, knnMatch_zero_neighbours )
+{
+  Mat query( 16, 32, CV_8UC1 ), train( 40, 32, CV_8UC1 );
+  theRNG().fill( query, RNG::UNIFORM, 0, 256 );
+  theRNG().fill( train, RNG::UNIFORM, 0, 256 );
+  Ptr<BinaryDescriptorMatcher> bdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+
+  std::vector<std::vector<DMatch> > kmatches;
+  bdm->knnMatch( query, train, kmatches, 0 );
+  EXPECT_TRUE( kmatches.empty() );
+
+  bdm->add( std::vector<Mat>( 1, train ) );
+  bdm->train();
+  bdm->knnMatch( query, kmatches, 0 );
+  EXPECT_TRUE( kmatches.empty() );
+}
+
 TEST( BinaryDescriptor_Matcher, reject_invalid_masks )
 {
   Mat query( 64, 32, CV_8UC1 ), train( 60, 32, CV_8UC1 );
