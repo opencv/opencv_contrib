@@ -90,6 +90,8 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **tracking**: Vision Based Object Tracking -- Use and/or evaluate different visual object tracking techniques.
 
+- **[triton](triton/README.md)**: Optional Triton-backed GPU resize, colour conversion and affine warping with CUDA and HIP backends.
+
 - **videostab**: Video Stabilization
 
 - **viz**: 3D Visualizer
