@@ -47,15 +47,17 @@ The following CUDA example translates a host image:
 #include <opencv2/triton.hpp>
 
 cv::cuda::GpuMat src(host), dst;  // host is a cv::Mat
-cv::cuda::Stream stream;
+cv::cuda::Stream stream;  // Optional: omitting it uses the default CUDA stream.
 const cv::Matx23d matrix(1, 0, 8, 0, 1, 4);
 cv::triton::warpAffine(src, dst, matrix, host.size(), cv::INTER_LINEAR,
                        cv::BORDER_REPLICATE, cv::Scalar(), stream);
 stream.waitForCompletion();
 ```
 
-The destination is allocated or reused. Calls are asynchronous; retain both
-allocations until the stream completes. HIP uses the `DeviceImage` overload in
+The destination is allocated or reused. The CUDA stream argument is optional
+and defaults to `cv::cuda::Stream::Null()`; pass one to order the transform with
+other asynchronous work. Calls are asynchronous; retain both allocations until
+the selected stream completes. HIP uses the `DeviceImage` overload in
 `opencv2/triton/device.hpp`, with preallocated output, six row-major matrix
 coefficients and a native stream handle. See `samples/hip/device.cpp`
 (`example_triton_device warp`) for allocation and data transfers.

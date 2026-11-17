@@ -2,7 +2,8 @@ Building and using the HIP backend {#tutorial_triton_hip_first_use}
 ==================================
 
 Build the HIP backend and call the C++ `DeviceImage` overloads. The caller owns
-storage and passes a native stream. Python provides backend queries and explicit
+storage and must pass a native stream argument (`0` selects the default stream).
+Python provides backend queries and explicit
 refusals for numerical GpuMat calls; there is no HIP Python device-buffer wrapper.
 PyTorch is not required.
 

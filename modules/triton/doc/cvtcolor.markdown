@@ -29,13 +29,15 @@ The following CUDA example converts a host BGR image to device-resident gray:
 #include <opencv2/triton.hpp>
 
 cv::cuda::GpuMat src(host), gray;  // host is a CV_8UC3 cv::Mat
-cv::cuda::Stream stream;
+cv::cuda::Stream stream;  // Optional: omitting it uses the default CUDA stream.
 cv::triton::cvtColor(src, gray, cv::COLOR_BGR2GRAY, stream);
 stream.waitForCompletion();
 ```
 
-The destination is allocated or reused. Calls are asynchronous; retain both
-allocations until the stream completes. HIP uses the `DeviceImage` overload
+The destination is allocated or reused. The CUDA stream argument is optional
+and defaults to `cv::cuda::Stream::Null()`; pass one to order the conversion
+with other asynchronous work. Calls are asynchronous; retain both allocations
+until the selected stream completes. HIP uses the `DeviceImage` overload
 from `opencv2/triton/device.hpp`, with preallocated output and a native stream
 handle. The complete allocation/upload/download example is
 `samples/hip/device.cpp` (`example_triton_device cvtcolor`).

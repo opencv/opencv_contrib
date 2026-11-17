@@ -6,7 +6,9 @@
 // asynchronous and do not fall back to CPU. Retain all storage until completion.
 // Source, destination and stream must belong to the selected device/context.
 // device is the backend device index. stream is hipStream_t/CUstream encoded as
-// an integer, or 0 for the default stream. Source and destination must not overlap.
+// an integer, or 0 for the default stream. Unlike the CUDA GpuMat overloads, each
+// DeviceImage call requires an explicit stream argument; pass 0 for the default.
+// Source and destination must not overlap.
 #ifndef OPENCV_TRITON_DEVICE_HPP
 #define OPENCV_TRITON_DEVICE_HPP
 #include <cstddef>
@@ -41,7 +43,7 @@ CV_EXPORTS bool haveDevice(int device);
  * @param dsize Positive output size.
  * @param interpolation INTER_NEAREST, INTER_LINEAR, INTER_CUBIC or INTER_AREA.
  * @param device Backend device index owning both images and stream.
- * @param stream Native hipStream_t/CUstream encoded as an integer; 0 selects the default.
+ * @param stream Required native hipStream_t/CUstream encoded as an integer; 0 selects default.
  * Retain image storage until stream completion.
  */
 CV_EXPORTS void resize(const DeviceImage &src, const DeviceImage &dst, Size dsize,
@@ -55,7 +57,7 @@ CV_EXPORTS void resize(const DeviceImage &src, const DeviceImage &dst, Size dsiz
  * @param fy Vertical scale; finite and positive when dsize is empty, otherwise ignored.
  * @param interpolation INTER_NEAREST, INTER_LINEAR, INTER_CUBIC or INTER_AREA.
  * @param device Backend device index owning both images and stream.
- * @param stream Native stream handle; 0 selects the default. Retain storage until completion.
+ * @param stream Required native stream handle; 0 selects default. Retain storage until completion.
  */
 CV_EXPORTS void resize(const DeviceImage &src, const DeviceImage &dst, Size dsize, double fx,
                        double fy, int interpolation, int device, std::uintptr_t stream);
@@ -66,7 +68,7 @@ CV_EXPORTS void resize(const DeviceImage &src, const DeviceImage &dst, Size dsiz
  *            output has 2/3 of src.rows; other conversions preserve size.
  * @param code Supported cv::COLOR_* value; see @ref tutorial_triton_cvtcolor.
  * @param device Backend device index owning both images and stream.
- * @param stream Native stream handle; 0 selects the default. Retain storage until completion.
+ * @param stream Required native stream handle; 0 selects default. Retain storage until completion.
  */
 CV_EXPORTS void cvtColor(const DeviceImage &src, const DeviceImage &dst, int code, int device,
                          std::uintptr_t stream);
@@ -80,7 +82,7 @@ CV_EXPORTS void cvtColor(const DeviceImage &src, const DeviceImage &dst, int cod
  * @param borderMode Supported border mode; see cv::triton::warpAffine.
  * @param borderValue Per-channel value used by BORDER_CONSTANT.
  * @param device Backend device index owning both images and stream.
- * @param stream Native stream handle; 0 selects the default. Retain storage until completion.
+ * @param stream Required native stream handle; 0 selects default. Retain storage until completion.
  */
 CV_EXPORTS void warpAffine(const DeviceImage &src, const DeviceImage &dst, const double M[6],
                            int flags, int borderMode, const Scalar &borderValue, int device,

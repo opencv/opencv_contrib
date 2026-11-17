@@ -70,7 +70,9 @@ CV_EXPORTS_W void releaseGraphResources();
  * @param fx Horizontal scale; finite and positive when dsize is empty, otherwise ignored.
  * @param fy Vertical scale; finite and positive when dsize is empty, otherwise ignored.
  * @param interpolation INTER_NEAREST, INTER_LINEAR, INTER_CUBIC or INTER_AREA.
- * @param stream Caller stream. Retain input/output storage until it completes.
+ * @param stream Optional CUDA stream. If omitted, the default stream
+ *               (`cuda::Stream::Null()`) is used. Calls are asynchronous;
+ *               retain input/output storage until this stream completes.
  */
 CV_EXPORTS void resize(InputArray src, OutputArray dst, Size dsize, double fx = 0, double fy = 0,
                        int interpolation = INTER_LINEAR,
@@ -101,7 +103,9 @@ CV_EXPORTS void resize(const cuda::GpuMat &src, CV_OUT cuda::GpuMat &dst, Size d
  * @param dst Destination GpuMat; allocated or reused at the code's output size/type.
  *            Source and destination must not overlap.
  * @param code Supported cv::COLOR_* value; no dstCn override is provided.
- * @param stream Caller stream. Retain input/output storage until it completes.
+ * @param stream Optional CUDA stream. If omitted, the default stream
+ *               (`cuda::Stream::Null()`) is used. Calls are asynchronous;
+ *               retain input/output storage until this stream completes.
  */
 CV_EXPORTS void cvtColor(InputArray src, OutputArray dst, int code,
                          cuda::Stream &stream = cuda::Stream::Null());
@@ -114,7 +118,8 @@ CV_EXPORTS void cvtColor(const cuda::GpuMat &src, CV_OUT cuda::GpuMat &dst, int 
                          cuda::Stream &stream = cuda::Stream::Null());
 
 /** @brief Convert a CUDA GpuMat; see cvtColor for supported inputs and conversions.
- * The Python adapter accepts Ptr<cuda::Stream> so an omitted stream can select the default.
+ * The Python stream argument is optional; omitted or `None` selects the default
+ * CUDA stream. Calls are asynchronous.
  */
 CV_EXPORTS_AS(cvtColor)
 void cvtColorForPython(const cuda::GpuMat &src, CV_OUT cuda::GpuMat &dst, int code,
@@ -143,7 +148,9 @@ void cvtColorForPython(const cuda::GpuMat &src, CV_OUT cuda::GpuMat &dst, int co
  * @param borderMode BORDER_CONSTANT, BORDER_REPLICATE, BORDER_REFLECT, BORDER_REFLECT_101,
  *                   BORDER_WRAP or BORDER_TRANSPARENT. CUBIC with TRANSPARENT is unsupported.
  * @param borderValue Constant-border value per channel; Scalar(v) means (v, 0, 0, 0).
- * @param stream Caller stream. Retain input/output storage until it completes.
+ * @param stream Optional CUDA stream. If omitted, the default stream
+ *               (`cuda::Stream::Null()`) is used. Calls are asynchronous;
+ *               retain input/output storage until this stream completes.
  */
 CV_EXPORTS void warpAffine(InputArray src, OutputArray dst, InputArray M, Size dsize,
                            int flags = INTER_LINEAR, int borderMode = BORDER_CONSTANT,
@@ -161,7 +168,8 @@ CV_EXPORTS void warpAffine(const cuda::GpuMat &src, CV_OUT cuda::GpuMat &dst, In
                            cuda::Stream &stream = cuda::Stream::Null());
 
 /** @brief Resize a CUDA GpuMat; see resize for supported inputs and interpolation.
- * The Python adapter accepts Ptr<cuda::Stream> so an omitted stream can select the default.
+ * The Python stream argument is optional; omitted or `None` selects the default
+ * CUDA stream. Calls are asynchronous.
  */
 CV_EXPORTS_AS(resize)
 void resizeForPython(const cuda::GpuMat &src, CV_OUT cuda::GpuMat &dst, Size dsize, double fx = 0,
@@ -169,7 +177,8 @@ void resizeForPython(const cuda::GpuMat &src, CV_OUT cuda::GpuMat &dst, Size dsi
                      Ptr<cuda::Stream> stream = Ptr<cuda::Stream>());
 
 /** @brief Transform a CUDA GpuMat; see warpAffine for sampling and border behavior.
- * The Python adapter accepts Ptr<cuda::Stream> so an omitted stream can select the default.
+ * The Python stream argument is optional; omitted or `None` selects the default
+ * CUDA stream. Calls are asynchronous.
  */
 CV_EXPORTS_AS(warpAffine)
 void warpAffineForPython(const cuda::GpuMat &src, CV_OUT cuda::GpuMat &dst, InputArray M,

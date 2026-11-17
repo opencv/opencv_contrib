@@ -185,7 +185,7 @@ int main()
     if (!cv::triton::haveBackend()) return 1;
     cv::Mat host(96, 128, CV_8UC3, cv::Scalar(64, 128, 192));
     cv::cuda::GpuMat src(host), dst;
-    cv::cuda::Stream stream;
+    cv::cuda::Stream stream;  // Optional: omit the argument to use the default stream.
     cv::triton::resize(src, dst, cv::Size(64, 48), 0, 0,
                        cv::INTER_LINEAR, stream);
     stream.waitForCompletion();

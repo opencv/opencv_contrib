@@ -60,6 +60,12 @@ The operator guides define border modes, shape rules and numerical tolerances.
 The module targets selected CPU behavior to make compatibility expectations
 explicit; this does not imply equality with every CPU build or `cv::cuda`.
 
+CUDA `GpuMat` calls accept an optional stream; omitting it uses the default
+CUDA stream. Pass a stream to order Triton work with other asynchronous work.
+HIP `DeviceImage` calls require a native stream argument; pass `0` for the
+default stream. All calls are asynchronous, so keep image storage alive until
+the selected stream completes.
+
 | Backend | Public interface | Toolchain / target examples | Validation scope |
 |---|---|---|---|
 | CUDA | C++ GpuMat and DeviceImage; Python GpuMat | CUDA 12.8, Triton 3.6.0; H20 `sm_90` | H20 is a documented configuration. Validate the installed build on the selected machine. |

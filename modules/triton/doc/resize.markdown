@@ -57,14 +57,16 @@ The following CUDA example resizes a host image to half its dimensions:
 #include <opencv2/triton.hpp>
 
 cv::cuda::GpuMat src(host), dst;  // host is a cv::Mat
-cv::cuda::Stream stream;
+cv::cuda::Stream stream;  // Optional: omitting it uses the default CUDA stream.
 cv::triton::resize(src, dst, cv::Size(host.cols / 2, host.rows / 2),
                    0, 0, cv::INTER_LINEAR, stream);
 stream.waitForCompletion();
 ```
 
-The function submits work asynchronously. Retain input and output allocations
-until the stream completes. HIP applications use the `DeviceImage` overloads of
+The CUDA stream argument is optional; omitting it uses
+`cv::cuda::Stream::Null()`. Pass an explicit stream to order this resize with
+other asynchronous work. Retain input and output allocations until the selected
+stream completes. HIP applications use the `DeviceImage` overloads of
 `cv::triton::resize` from `opencv2/triton/device.hpp` with preallocated output
 and a native stream handle. See `samples/hip/device.cpp`
 (`example_triton_device resize`) for allocation and data transfers.
