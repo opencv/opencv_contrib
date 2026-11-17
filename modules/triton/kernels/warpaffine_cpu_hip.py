@@ -1,8 +1,9 @@
 # Generated HIP warpaffine kernels; regenerate with tools/make_kernels_cpu_hip.py.
-# source_sha256: d65191438d1dd43dd1f85c6d3e81d11918e1371ba2a10ef7f0995f45f58377df
+# source_sha256: c20d55a8d91a4170705780573662cb11c0d00a06c8279a7a4153f6d0b769711c
 # This file is part of OpenCV project.
 # It is subject to the license terms in the LICENSE file found in the top-level directory
 # of this distribution and at http://opencv.org/license.html.
+# Copyright 2026, The FlagOS Contributors.
 #
 # GPU affine sampling with the selected OpenCV CPU coordinate and rounding rules.
 # The cpu prefix describes the arithmetic, not where execution takes place.

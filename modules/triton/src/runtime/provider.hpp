@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Module-private request, launch and resource interfaces. These declarations are not
 // installed and do not define a cross-version plugin ABI. Adapters translate public
 // image and stream types into these backend-neutral structures.

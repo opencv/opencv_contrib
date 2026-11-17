@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Standalone CPU control, deliberately outside the native test target's source list.
 // Build/run with tools/check_source.py; no OpenCV, GPU SDK or Triton dependency.
 #include "compile_protocol.hpp"

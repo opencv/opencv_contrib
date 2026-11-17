@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Supplemental HIP accuracy/lifecycle checks through the public DeviceImage overloads.
 //
 // Standard shared cases run in opencv_test_triton on either backend. CUDA-specific fixtures

@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Internal HIP graph timing of the Triton implementation. No Torch, alternate kernel or
 // dispatch table: every recorded operation uses the public production DeviceImage
 // entry. All graph-bound buffers/streams/modules/tables outlive completed replays.

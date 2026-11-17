@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Triton-backed image operations. See the module README and usage guides for
 // supported inputs, numerical behavior and build requirements.
 #ifndef OPENCV_TRITON_HPP

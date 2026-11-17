@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Test/perf support only; never installed or linked into the production module.
 // Backend source is selected once by CMake. Calls go through the public operator API:
 // GpuMat overloads on CUDA and DeviceImage overloads on HIP.

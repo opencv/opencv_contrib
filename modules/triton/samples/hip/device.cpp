@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // HIP DeviceImage example: caller-owned buffers and an explicit stream, no Torch or GpuMat.
 #include <hip/hip_runtime_api.h>
 #include <opencv2/core.hpp>

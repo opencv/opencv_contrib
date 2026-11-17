@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // The GpuMat entries of opencv2/triton.hpp on a build without cv::cuda (TRITON_BACKEND=hip).
 // Compiled INSTEAD of cuda_resize_adapter.cpp, never alongside it: both define the same
 // symbols, so the public API is identical across backends.

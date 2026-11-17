@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Pure parts of the provider protocol: request normalisation and validation, the explicit
 // compile key, launch geometry. No device access. See provider.hpp.
 // Standalone CPU controls and test support do not use library-private headers.

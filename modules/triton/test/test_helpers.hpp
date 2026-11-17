@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Shared by test_resize.cpp and test_runtime.cpp.
 #ifndef OPENCV_TRITON_TEST_HELPERS_HPP
 #define OPENCV_TRITON_TEST_HELPERS_HPP

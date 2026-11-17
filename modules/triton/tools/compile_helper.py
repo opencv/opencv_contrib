@@ -3,6 +3,7 @@
 # It is subject to the license terms in the LICENSE file found in the top-level directory
 # of this distribution and at http://opencv.org/license.html.
 
+# Copyright 2026, The FlagOS Contributors.
 """Compile helper for the Triton module runtime JIT (protocol opencv-triton-compile/1).
 
 The module never embeds Python. On a cache miss its C++ runtime (compile_protocol.cpp) runs

@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Public GpuMat resize tests against the portable CPU reference, including
 // copy and all four interpolation modes, CV_8U/CV_32F, C1/C3/C4, pitched ROIs,
 // output reuse and guard bands. The linked cv::resize may select different

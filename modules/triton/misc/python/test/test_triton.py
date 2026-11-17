@@ -3,6 +3,7 @@
 # It is subject to the license terms in the LICENSE file found in the top-level directory
 # of this distribution and at http://opencv.org/license.html.
 
+# Copyright 2026, The FlagOS Contributors.
 import cv2 as cv
 import numpy as np
 from unittest import mock

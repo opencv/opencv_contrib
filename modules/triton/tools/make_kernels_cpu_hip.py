@@ -3,6 +3,7 @@
 # It is subject to the license terms in the LICENSE file found in the top-level directory
 # of this distribution and at http://opencv.org/license.html.
 
+# Copyright 2026, The FlagOS Contributors.
 """Generate HIP kernel sources from the module's CUDA-compatible sources.
 
 Run without arguments to write kernels/<op>_cpu_hip.py, or use --check to verify

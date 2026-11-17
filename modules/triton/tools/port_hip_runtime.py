@@ -3,6 +3,7 @@
 # It is subject to the license terms in the LICENSE file found in the top-level directory
 # of this distribution and at http://opencv.org/license.html.
 
+# Copyright 2026, The FlagOS Contributors.
 """Derive src/runtime/hip_runtime.cpp from src/runtime/cuda_runtime.cpp.
 
     port_hip_runtime.py            write src/runtime/hip_runtime.cpp

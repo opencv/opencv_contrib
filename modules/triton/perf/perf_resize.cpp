@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Warmed public-call timing, including submission and stream completion, not isolated
 // kernel or graph time. Compilation, first load and reusable output allocation precede
 // the timed cycle. Optional native CUDA rows live in baseline/.

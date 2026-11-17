@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // The device-pointer entries (opencv2/triton/device.hpp). Backend-neutral: compiled into every
 // build. The checks are the GpuMat entries' own (cuda_resize_adapter.cpp), stated again here
 // because those entries validate GpuMat arguments this layer does not have; the runtime then

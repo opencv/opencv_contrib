@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Optional native CUDA public-call timing on the same device/workload subset.
 // Explicit stream, preallocated output, 20 warmups, and call+completion timing
 // match the Triton rows. Sampling/rounding may differ; this is not an accuracy oracle.

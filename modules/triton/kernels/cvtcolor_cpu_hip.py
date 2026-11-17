@@ -1,8 +1,9 @@
 # Generated HIP cvtcolor kernels; regenerate with tools/make_kernels_cpu_hip.py.
-# source_sha256: 3836188c45d23f89dfbe917020ed76d1e496c9202a72af754396179000d75592
+# source_sha256: 11459efd435000b9abf40f93c7d300f7fdfc653fe0058a51559af17d95652c02
 # This file is part of OpenCV project.
 # It is subject to the license terms in the LICENSE file found in the top-level directory
 # of this distribution and at http://opencv.org/license.html.
+# Copyright 2026, The FlagOS Contributors.
 #
 # GPU colour conversions reproducing selected OpenCV CPU arithmetic.
 # The cpu prefix denotes numerical compatibility; this file runs on the GPU.
@@ -1036,6 +1037,7 @@ def _cvtcolor_cpu_kernel(src, dst, cols, src_rs, dst_rs, sdiv, hdiv, uv_rs, rows
 # This file is part of OpenCV project.
 # It is subject to the license terms in the LICENSE file found in the top-level directory
 # of this distribution and at http://opencv.org/license.html.
+# Copyright 2026, The FlagOS Contributors.
 #
 # HIP GPU fast path: convert four aligned uint8 BGR pixels to grayscale per lane.
 # The generator appends this fragment to cvtcolor_cpu_hip.py, inheriting its imports.

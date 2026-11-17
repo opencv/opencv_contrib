@@ -1,6 +1,7 @@
 # This file is part of OpenCV project.
 # It is subject to the license terms in the LICENSE file found in the top-level directory
 # of this distribution and at http://opencv.org/license.html.
+# Copyright 2026, The FlagOS Contributors.
 #
 # HIP GPU fast path: convert four aligned uint8 BGR pixels to grayscale per lane.
 # The generator appends this fragment to cvtcolor_cpu_hip.py, inheriting its imports.

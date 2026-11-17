@@ -1,6 +1,7 @@
 // This file is part of OpenCV project.
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
+// Copyright 2026, The FlagOS Contributors.
 // CPU-only controls for the internal graph helper's request parser and execution identity.
 // These checks allocate no GPU buffers and do not prove graph capture/replay support.
 #include "../../perf/hip/graph_request.hpp"

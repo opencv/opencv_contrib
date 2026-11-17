@@ -1,6 +1,7 @@
 # This file is part of OpenCV project.
 # It is subject to the license terms in the LICENSE file found in the top-level directory
 # of this distribution and at http://opencv.org/license.html.
+# Copyright 2026, The FlagOS Contributors.
 #
 # HIP GPU resize fast paths for complete 2x2 area windows in uint8 images.
 # Host predicates admit only supported channel counts, alignment and full windows.

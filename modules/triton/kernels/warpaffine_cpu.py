@@ -1,6 +1,7 @@
 # This file is part of OpenCV project.
 # It is subject to the license terms in the LICENSE file found in the top-level directory
 # of this distribution and at http://opencv.org/license.html.
+# Copyright 2026, The FlagOS Contributors.
 #
 # GPU affine sampling with the selected OpenCV CPU coordinate and rounding rules.
 # The cpu prefix describes the arithmetic, not where execution takes place.

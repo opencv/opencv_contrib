@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Pure code/depth admission, request validation and explicit compile keys.
 // No device access: CPU controls can exercise normalize without launching work.
 //

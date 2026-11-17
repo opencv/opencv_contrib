@@ -1,6 +1,7 @@
 // This file is part of OpenCV project.
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
+// Copyright 2026, The FlagOS Contributors.
 // CPU-only decisions and ownership controls using injected callbacks, not real GPU faults.
 // Run through tools/check_source.py; driver-bound code is checked separately by
 // check_native_lifetime.py.

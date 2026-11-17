@@ -1,8 +1,9 @@
 # Generated HIP resize kernels; regenerate with tools/make_kernels_cpu_hip.py.
-# source_sha256: e570e25fbcf090ef3e6f6d0345c643fb322d73e7dffb74165cf6321b927c115c
+# source_sha256: 90ec11aca630724d245112237e64927c6ff3860adbfe1964e5f6f91f7d667398
 # This file is part of OpenCV project.
 # It is subject to the license terms in the LICENSE file found in the top-level directory
 # of this distribution and at http://opencv.org/license.html.
+# Copyright 2026, The FlagOS Contributors.
 #
 # GPU resize kernels reproducing the selected OpenCV CPU sampling and rounding.
 # The cpu prefix describes numerical behavior; every kernel here runs on the GPU.
@@ -598,6 +599,7 @@ def _resize_cpu_area_kernel(src, dst, xs, xa, xc, ys, ya, yc, KX, KY,
 # This file is part of OpenCV project.
 # It is subject to the license terms in the LICENSE file found in the top-level directory
 # of this distribution and at http://opencv.org/license.html.
+# Copyright 2026, The FlagOS Contributors.
 #
 # HIP GPU resize fast paths for complete 2x2 area windows in uint8 images.
 # Host predicates admit only supported channel counts, alignment and full windows.

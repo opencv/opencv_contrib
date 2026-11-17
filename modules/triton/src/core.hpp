@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Private backend-neutral image views and resize entry. Not installed.
 // Public adapters validate native buffers and streams before calling the runtime.
 #ifndef OPENCV_TRITON_CORE_INTERNAL_HPP

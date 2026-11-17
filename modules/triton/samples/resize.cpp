@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // CUDA GpuMat example: upload -> cv::triton::resize -> download.
 #include <iostream>
 #include <opencv2/core.hpp>

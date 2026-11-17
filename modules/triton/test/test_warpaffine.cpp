@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Public GpuMat accuracy tests against the linked CPU implementation.
 // NEAREST/LINEAR/AREA use its padded vector-path reference; CUBIC uses a natural-
 // width call. Fused versus separate arithmetic is identified from CPU outputs

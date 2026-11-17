@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+// Copyright 2026, The FlagOS Contributors.
 // Caller-owned GPU images and native streams. Output is preallocated; calls are
 // asynchronous and do not fall back to CPU. Retain all storage until completion.
 // Source, destination and stream must belong to the selected device/context.
