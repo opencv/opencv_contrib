@@ -65,4 +65,27 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "c_utils.hpp"
 
+namespace cv
+{
+namespace ppf_match_3d
+{
+
+// Accepts NxC (C >= 6) CV_32FC1, Nx1/1xN CV_32FC6 (a (N,1,6) NumPy array) and {N,1,6}/{1,N,6} CV_32FC1,
+// returns a CV_32FC1 header with one point per row (copy only for a non-continuous multi-channel or 3D input).
+static inline Mat normalizePointCloud(const Mat& pc)
+{
+  if (pc.dims == 2 && pc.channels() == 1)
+  {
+    CV_CheckTypeEQ(pc.type(), CV_32FC1, "Point cloud must be CV_32F");
+    CV_Check(pc.cols, pc.rows > 0 && pc.cols >= 6, "Point cloud must be Nx6 (x, y, z, nx, ny, nz)");
+    return pc;
+  }
+  const int n = pc.checkVector(6, CV_32F, false);
+  CV_Check(n, n > 0, "Point cloud must be Nx6 CV_32FC1 or Nx1/1xN CV_32FC6 (x, y, z, nx, ny, nz)");
+  return (pc.isContinuous() ? pc : pc.clone()).reshape(1, n);
+}
+
+} // namespace ppf_match_3d
+} // namespace cv
+
 #endif /* __OPENCV_SURFACE_MATCHING_PRECOMP_HPP__ */
