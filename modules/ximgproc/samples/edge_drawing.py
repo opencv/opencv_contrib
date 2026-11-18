@@ -76,18 +76,18 @@ def EdgeDrawingDemo(src, ed, EDParams, convert_to_gray):
     if lines is not None:  # Check if the lines have been found and only then iterate over these and add them to the image
         lines = np.uint16(np.around(lines))
         for line in lines:
-            cv.line(lsrc, (line[0][0], line[0][1]), (line[0][2], line[0][3]), (0, 0, 255), 1, cv.LINE_AA)
+            cv.line(lsrc, (line[0], line[1]), (line[2], line[3]), (0, 0, 255), 1, cv.LINE_AA)
 
     cv.imshow("detected lines", lsrc)
 
     # Draw detected circles and ellipses
     if ellipses is not None:  # Check if circles and ellipses have been found and only then iterate over these and add them to the image
         for ellipse in ellipses:
-            center = (int(ellipse[0][0]), int(ellipse[0][1]))
-            axes = (int(ellipse[0][2] + ellipse[0][3]), int(ellipse[0][2] + ellipse[0][4]))
-            angle = ellipse[0][5]
+            center = (int(ellipse[0]), int(ellipse[1]))
+            axes = (int(ellipse[2] + ellipse[3]), int(ellipse[2] + ellipse[4]))
+            angle = ellipse[5]
 
-            color = (0, 255, 0) if ellipse[0][2] == 0 else (0, 0, 255)
+            color = (0, 255, 0) if ellipse[2] == 0 else (0, 0, 255)
 
             cv.ellipse(esrc, center, axes, angle, 0, 360, color, 2, cv.LINE_AA)
 
