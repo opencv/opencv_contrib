@@ -435,6 +435,227 @@ TEST(Rgbd_Normals, compute)
   test.safe_run();
 }
 
+TEST(Rgbd_Normals, wrong_input_size_throws)
+{
+  const int cfgRows = 48, cfgCols = 64;
+  Mat intrinsics(Matx33d(525.0, 0.0, 31.5, 0.0, 525.0, 23.5, 0.0, 0.0, 1.0));
+  const int depths[] = { CV_32F, CV_64F };
+  const int methods[] = {
+    rgbd::RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD,
+    rgbd::RgbdNormals::RGBD_NORMALS_METHOD_SRI,
+    rgbd::RgbdNormals::RGBD_NORMALS_METHOD_FALS
+  };
+  const int badSizes[][2] = {
+    { 96, 128 },
+    { 24, 64 },
+    { 48, 32 },
+    { 24, 32 }
+  };
+
+  for (int d : depths)
+  {
+    for (int m : methods)
+    {
+      Ptr<rgbd::RgbdNormals> computer = rgbd::RgbdNormals::create(cfgRows, cfgCols, d, intrinsics, 5, m);
+      for (int s = 0; s < 4; s++)
+      {
+        const int r = badSizes[s][0], c = badSizes[s][1];
+        Mat depth(r, c, CV_32FC1);
+        theRNG().fill(depth, RNG::UNIFORM, 0.5f, 3.0f);
+        Mat input3d;
+        rgbd::depthTo3d(depth, intrinsics, input3d);
+        if (d == CV_64F)
+        {
+          input3d.convertTo(input3d, CV_64FC3);
+          depth.convertTo(depth, CV_64FC1);
+        }
+        Mat normals;
+        EXPECT_THROW((*computer)(input3d, normals), cv::Exception) << "method=" << m << " depth=" << d << " size=" << r << "x" << c;
+        if (m == rgbd::RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD)
+        {
+          EXPECT_THROW((*computer)(depth, normals), cv::Exception) << "LINEMOD 1ch depth=" << d << " size=" << r << "x" << c;
+          Mat depth16(r, c, CV_16UC1, Scalar(2000));
+          EXPECT_THROW((*computer)(depth16, normals), cv::Exception) << "LINEMOD 16U size=" << r << "x" << c;
+        }
+      }
+    }
+  }
+}
+
+TEST(Rgbd_Normals, linemod_3ch_matches_1ch_depth)
+{
+  const int rows = 48, cols = 64;
+  Mat intrinsics(Matx33d(525.0, 0.0, 31.5, 0.0, 525.0, 23.5, 0.0, 0.0, 1.0));
+  const int depths[] = { CV_32F, CV_64F };
+
+  for (int d : depths)
+  {
+    Mat depth(rows, cols, CV_32FC1);
+    theRNG().fill(depth, RNG::UNIFORM, 1.0f, 3.0f);
+    Mat points;
+    rgbd::depthTo3d(depth, intrinsics, points);
+    if (d == CV_64F)
+    {
+      points.convertTo(points, CV_64FC3);
+      std::vector<Mat> ch;
+      split(points, ch);
+      depth = ch[2];
+    }
+
+    Mat bigPoints(rows + 16, cols + 16, points.type(), Scalar::all(0));
+    Mat roiPoints = bigPoints(Rect(7, 5, cols, rows));
+    points.copyTo(roiPoints);
+    ASSERT_FALSE(roiPoints.isContinuous());
+
+    Ptr<rgbd::RgbdNormals> computer = rgbd::RgbdNormals::create(
+        rows, cols, d, intrinsics, 5, rgbd::RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD);
+    Mat norm1ch, norm3ch, normRoi;
+    (*computer)(depth, norm1ch);
+    (*computer)(points, norm3ch);
+    (*computer)(roiPoints, normRoi);
+
+    ASSERT_EQ(norm1ch.size(), Size(cols, rows));
+    ASSERT_EQ(norm3ch.size(), Size(cols, rows));
+    ASSERT_EQ(normRoi.size(), Size(cols, rows));
+    EXPECT_EQ(norm3ch.type(), CV_MAKETYPE(d, 3));
+    EXPECT_EQ(normRoi.type(), CV_MAKETYPE(d, 3));
+
+    int finiteCount = 0;
+    for (int y = 0; y < rows; y++)
+    {
+      for (int x = 0; x < cols; x++)
+      {
+        for (int c = 0; c < 3; c++)
+        {
+          double a = (d == CV_32F) ? norm1ch.at<Vec3f>(y, x)[c] : norm1ch.at<Vec3d>(y, x)[c];
+          double b = (d == CV_32F) ? norm3ch.at<Vec3f>(y, x)[c] : norm3ch.at<Vec3d>(y, x)[c];
+          double r = (d == CV_32F) ? normRoi.at<Vec3f>(y, x)[c] : normRoi.at<Vec3d>(y, x)[c];
+          if (cvIsNaN(a))
+          {
+            EXPECT_TRUE(cvIsNaN(b));
+            EXPECT_TRUE(cvIsNaN(r));
+          }
+          else
+          {
+            EXPECT_EQ(b, a);
+            EXPECT_EQ(r, a);
+            if (c == 0)
+              finiteCount++;
+          }
+        }
+      }
+    }
+    EXPECT_GT(finiteCount, (rows - 12) * (cols - 12));
+  }
+
+  // Mixed input/output depth: CV_32FC3 points on a CV_64F LINEMOD computer
+  {
+    Mat depth32(rows, cols, CV_32FC1);
+    theRNG().fill(depth32, RNG::UNIFORM, 1.0f, 3.0f);
+    Mat points32;
+    rgbd::depthTo3d(depth32, intrinsics, points32);
+    Ptr<rgbd::RgbdNormals> comp64 = rgbd::RgbdNormals::create(
+        rows, cols, CV_64F, intrinsics, 5, rgbd::RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD);
+    Mat n1, n3;
+    (*comp64)(depth32, n1);
+    (*comp64)(points32, n3);
+    ASSERT_EQ(n3.type(), CV_64FC3);
+    for (int y = 5; y < rows - 6; y++)
+      for (int x = 5; x < cols - 6; x++)
+        for (int c = 0; c < 3; c++)
+          if (!cvIsNaN(n1.at<Vec3d>(y, x)[c]))
+          {
+            EXPECT_EQ(n3.at<Vec3d>(y, x)[c], n1.at<Vec3d>(y, x)[c]);
+          }
+  }
+}
+
+TEST(Rgbd_Normals, copy_and_assign_independent)
+{
+  const int rows = 48, cols = 64;
+  Mat intrinsics(Matx33d(525.0, 0.0, 31.5, 0.0, 525.0, 23.5, 0.0, 0.0, 1.0));
+  Mat depth(rows, cols, CV_32FC1);
+  theRNG().fill(depth, RNG::UNIFORM, 1.0f, 3.0f);
+  Mat points;
+  rgbd::depthTo3d(depth, intrinsics, points);
+
+  // Copy before initialization
+  rgbd::RgbdNormals uninitSrc(rows, cols, CV_32F, intrinsics.clone(), 5, rgbd::RgbdNormals::RGBD_NORMALS_METHOD_FALS);
+  rgbd::RgbdNormals uninitCopy(uninitSrc);
+  Mat srcKBeforeInit = uninitSrc.getK();
+  srcKBeforeInit.setTo(Scalar::all(0));
+  uninitSrc.setK(intrinsics.clone());
+  Mat nUninitSrc, nUninitCopy;
+  uninitSrc(points, nUninitSrc);
+  uninitCopy(points, nUninitCopy);
+  ASSERT_TRUE(checkRange(nUninitSrc));
+  ASSERT_TRUE(checkRange(nUninitCopy));
+  EXPECT_GT(cv::norm(nUninitSrc, NORM_INF), 0.5);
+  EXPECT_EQ(0.0, cv::norm(nUninitSrc, nUninitCopy, NORM_INF));
+
+  // Copy after initialization (destroying the copy must not affect the source)
+  Mat nCopyAfter;
+  {
+    rgbd::RgbdNormals scopedCopy(uninitSrc);
+    scopedCopy(points, nCopyAfter);
+    ASSERT_TRUE(checkRange(nCopyAfter));
+    EXPECT_EQ(0.0, cv::norm(nUninitSrc, nCopyAfter, NORM_INF));
+  }
+  Mat nSrcAfterScoped;
+  uninitSrc(points, nSrcAfterScoped);
+  ASSERT_TRUE(checkRange(nSrcAfterScoped));
+  EXPECT_EQ(0.0, cv::norm(nUninitSrc, nSrcAfterScoped, NORM_INF));
+
+  // Assign from an uninitialized source onto an already-initialized instance of another method/depth/size/window/K
+  Mat smallK(Matx33d(250.0, 0.0, 15.5, 0.0, 250.0, 11.5, 0.0, 0.0, 1.0));
+  Mat smallDepth(24, 32, CV_64FC1, Scalar::all(2.0));
+  Mat smallPoints, smallNormals;
+  rgbd::depthTo3d(smallDepth, smallK, smallPoints);
+  rgbd::RgbdNormals assigned(24, 32, CV_64F, smallK, 3, rgbd::RgbdNormals::RGBD_NORMALS_METHOD_SRI);
+  assigned(smallPoints, smallNormals);
+
+  rgbd::RgbdNormals paramSrc(rows, cols, CV_32F, intrinsics.clone(), 5, rgbd::RgbdNormals::RGBD_NORMALS_METHOD_FALS);
+  assigned = paramSrc;
+
+  // Mutate uninitialized source's K data and parameters in place to verify independence
+  Mat paramK = paramSrc.getK();
+  paramK.setTo(Scalar::all(0));
+  paramSrc.setMethod(rgbd::RgbdNormals::RGBD_NORMALS_METHOD_SRI);
+
+  Mat nAssigned;
+  assigned(points, nAssigned);
+  ASSERT_TRUE(checkRange(nAssigned));
+  EXPECT_EQ(0.0, cv::norm(nUninitSrc, nAssigned, NORM_INF));
+
+  // Assign from an initialized source onto an already-initialized instance
+  rgbd::RgbdNormals assignedInit(rows, cols, CV_32F, intrinsics, 5, rgbd::RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD);
+  assignedInit(depth, nAssigned);
+  assignedInit = uninitSrc;
+  Mat nAssignedInit;
+  assignedInit(points, nAssignedInit);
+  ASSERT_TRUE(checkRange(nAssignedInit));
+  EXPECT_EQ(0.0, cv::norm(nUninitSrc, nAssignedInit, NORM_INF));
+
+  // Self-assignment keeps the object usable
+  rgbd::RgbdNormals& alias = assigned;
+  assigned = alias;
+  Mat nSelf;
+  assigned(points, nSelf);
+  ASSERT_TRUE(checkRange(nSelf));
+  EXPECT_EQ(0.0, cv::norm(nUninitSrc, nSelf, NORM_INF));
+
+  // Reallocation inside std::vector after initialization
+  std::vector<rgbd::RgbdNormals> vec;
+  vec.push_back(assigned);
+  Mat nVec0, nVecRealloc;
+  vec[0](points, nVec0);
+  for (int i = 0; i < 4; i++)
+    vec.push_back(assigned);
+  vec[0](points, nVecRealloc);
+  ASSERT_TRUE(checkRange(nVecRealloc));
+  EXPECT_EQ(0.0, cv::norm(nUninitSrc, nVecRealloc, NORM_INF));
+}
+
 TEST(Rgbd_Plane, compute)
 {
   CV_RgbdPlaneTest test;

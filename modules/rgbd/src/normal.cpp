@@ -702,6 +702,32 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
     delete_normals_impl(rgbd_normals_impl_, method_, depth_);
   }
 
+  RgbdNormals::RgbdNormals(const RgbdNormals& other)
+      : Algorithm(other),
+        rows_(other.rows_),
+        cols_(other.cols_),
+        depth_(other.depth_),
+        K_(other.K_.clone()),
+        window_size_(other.window_size_),
+        method_(other.method_),
+        rgbd_normals_impl_(0)
+  {
+  }
+
+  RgbdNormals&
+  RgbdNormals::operator=(const RgbdNormals& other)
+  {
+    RgbdNormals tmp(other);
+    std::swap(rows_, tmp.rows_);
+    std::swap(cols_, tmp.cols_);
+    std::swap(depth_, tmp.depth_);
+    std::swap(K_, tmp.K_);
+    std::swap(window_size_, tmp.window_size_);
+    std::swap(method_, tmp.method_);
+    std::swap(rgbd_normals_impl_, tmp.rgbd_normals_impl_);
+    return *this;
+  }
+
   void
   RgbdNormals::initialize_normals_impl(int rows, int cols, int depth, const Mat & K, int window_size,
                                        int method_in) const
@@ -790,6 +816,9 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
       }
     }
 
+    CV_CheckEQ(points3d_ori.rows, rows_, "Invalid input height for RgbdNormals");
+    CV_CheckEQ(points3d_ori.cols, cols_, "Invalid input width for RgbdNormals");
+
     // Initialize the pimpl
     initialize();
 
@@ -833,7 +862,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
         if (points3d_ori.channels() == 3)
         {
           std::vector<Mat> channels;
-          split(points3d, channels);
+          split(points3d_ori, channels);
           depth = channels[2];
         }
         else
