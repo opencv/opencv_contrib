@@ -71,6 +71,12 @@ namespace cv { namespace
         double dxi;
         Matx14d dkp;    // distortion k1,k2,p1,p2
     };
+
+    static Mat getContinuousMat(InputArray arr)
+    {
+        Mat m = arr.getMat();
+        return m.isContinuous() ? m : m.clone();
+    }
 }}
 
 /////////////////////////////////////////////////////////////////////////////
@@ -95,8 +101,10 @@ void cv::omnidir::projectPoints(InputArray objectPoints, OutputArray imagePoints
 
     int n = (int)objectPoints.total();
 
-    Vec3d om = rvec.depth() == CV_32F ? (Vec3d)*rvec.getMat().ptr<Vec3f>() : *rvec.getMat().ptr<Vec3d>();
-    Vec3d T  = tvec.depth() == CV_32F ? (Vec3d)*tvec.getMat().ptr<Vec3f>() : *tvec.getMat().ptr<Vec3d>();
+    Mat rvecMat = getContinuousMat(rvec);
+    Mat tvecMat = getContinuousMat(tvec);
+    Vec3d om = rvecMat.depth() == CV_32F ? (Vec3d)*rvecMat.ptr<Vec3f>() : *rvecMat.ptr<Vec3d>();
+    Vec3d T  = tvecMat.depth() == CV_32F ? (Vec3d)*tvecMat.ptr<Vec3f>() : *tvecMat.ptr<Vec3d>();
 
     Vec2d f,c;
     double s;
@@ -115,24 +123,32 @@ void cv::omnidir::projectPoints(InputArray objectPoints, OutputArray imagePoints
         s = Kc(0,1);
     }
 
-    Vec4d kp = D.depth() == CV_32F ? (Vec4d)*D.getMat().ptr<Vec4f>() : *D.getMat().ptr<Vec4d>();
+    Mat DMat = getContinuousMat(D);
+    Vec4d kp = DMat.depth() == CV_32F ? (Vec4d)*DMat.ptr<Vec4f>() : *DMat.ptr<Vec4d>();
     //Vec<double, 4> kp= (Vec<double,4>)*D.getMat().ptr<Vec<double,4> >();
 
-    const Vec3d* Xw_alld = objectPoints.getMat().ptr<Vec3d>();
-    const Vec3f* Xw_allf = objectPoints.getMat().ptr<Vec3f>();
-    Vec2d* xpd = imagePoints.getMat().ptr<Vec2d>();
-    Vec2f* xpf = imagePoints.getMat().ptr<Vec2f>();
+    Mat objMat = getContinuousMat(objectPoints);
+    Mat imgOut = imagePoints.getMat();
+    Mat imgBuf = imgOut.isContinuous() ? imgOut : Mat(imgOut.size(), imgOut.type());
+
+    const Vec3d* Xw_alld = objMat.ptr<Vec3d>();
+    const Vec3f* Xw_allf = objMat.ptr<Vec3f>();
+    Vec2d* xpd = imgBuf.ptr<Vec2d>();
+    Vec2f* xpf = imgBuf.ptr<Vec2f>();
 
     Matx33d R;
     Matx<double, 3, 9> dRdom;
     Rodrigues(om, R, dRdom);
 
+    Mat jacOut, jacBuf;
     JacobianRow *Jn = 0;
     if (jacobian.needed())
     {
         int nvars = 2+2+1+4+3+3+1; // f,c,s,kp,om,T,xi
         jacobian.create(2*int(n), nvars, CV_64F);
-        Jn = jacobian.getMat().ptr<JacobianRow>(0);
+        jacOut = jacobian.getMat();
+        jacBuf = jacOut.isContinuous() ? jacOut : Mat(jacOut.size(), jacOut.type());
+        Jn = jacBuf.ptr<JacobianRow>(0);
     }
 
     double k1=kp[0],k2=kp[1];
@@ -242,6 +258,11 @@ void cv::omnidir::projectPoints(InputArray objectPoints, OutputArray imagePoints
             Jn += 2;
          }
     }
+
+    if (imgBuf.data != imgOut.data)
+        imgBuf.copyTo(imgOut);
+    if (jacobian.needed() && jacBuf.data != jacOut.data)
+        jacBuf.copyTo(jacOut);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -275,7 +296,8 @@ void cv::omnidir::undistortPoints( InputArray distorted, OutputArray undistorted
         s = camMat(0,1);
     }
 
-    Vec4d kp = D.depth()==CV_32F ? (Vec4d)*D.getMat().ptr<Vec4f>():(Vec4d)*D.getMat().ptr<Vec4d>();
+    Mat DMat = getContinuousMat(D);
+    Vec4d kp = DMat.depth()==CV_32F ? (Vec4d)*DMat.ptr<Vec4f>():(Vec4d)*DMat.ptr<Vec4d>();
     Vec2d k = Vec2d(kp[0], kp[1]);
     Vec2d p = Vec2d(kp[2], kp[3]);
 
@@ -293,11 +315,15 @@ void cv::omnidir::undistortPoints( InputArray distorted, OutputArray undistorted
         R.getMat().convertTo(RR, CV_64F);
     }
 
-    const cv::Vec2d *srcd = distorted.getMat().ptr<cv::Vec2d>();
-    const cv::Vec2f *srcf = distorted.getMat().ptr<cv::Vec2f>();
+    Mat distMat = getContinuousMat(distorted);
+    Mat undistOut = undistorted.getMat();
+    Mat undistBuf = undistOut.isContinuous() ? undistOut : Mat(undistOut.size(), undistOut.type());
 
-    cv::Vec2d *dstd = undistorted.getMat().ptr<cv::Vec2d>();
-    cv::Vec2f *dstf = undistorted.getMat().ptr<cv::Vec2f>();
+    const cv::Vec2d *srcd = distMat.ptr<cv::Vec2d>();
+    const cv::Vec2f *srcf = distMat.ptr<cv::Vec2f>();
+
+    cv::Vec2d *dstd = undistBuf.ptr<cv::Vec2d>();
+    cv::Vec2f *dstf = undistBuf.ptr<cv::Vec2f>();
 
     int n = (int)distorted.total();
     for (int i = 0; i < n; i++)
@@ -340,6 +366,9 @@ void cv::omnidir::undistortPoints( InputArray distorted, OutputArray undistorted
             dstd[i] = Vec2d(ppu[0], ppu[1]);
         }
     }
+
+    if (undistBuf.data != undistOut.data)
+        undistBuf.copyTo(undistOut);
 }
 
 
@@ -381,7 +410,10 @@ void cv::omnidir::initUndistortRectifyMap(InputArray K, InputArray D, InputArray
 
     Vec4d kp = Vec4d::all(0);
     if (!D.empty())
-        kp = D.depth() == CV_32F ? (Vec4d)*D.getMat().ptr<Vec4f>(): *D.getMat().ptr<Vec4d>();
+    {
+        Mat DMat = getContinuousMat(D);
+        kp = DMat.depth() == CV_32F ? (Vec4d)*DMat.ptr<Vec4f>(): *DMat.ptr<Vec4d>();
+    }
     double _xi = xi.depth() == CV_32F ? (double)*xi.getMat().ptr<float>() : *xi.getMat().ptr<double>();
     Vec2d k = Vec2d(kp[0], kp[1]);
     Vec2d p = Vec2d(kp[2], kp[3]);
