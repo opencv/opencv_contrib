@@ -103,6 +103,9 @@ namespace rgbd
     RgbdNormals(int rows, int cols, int depth, InputArray K, int window_size = 5, int method =
         RgbdNormals::RGBD_NORMALS_METHOD_FALS);
 
+    RgbdNormals(const RgbdNormals& other);
+    RgbdNormals& operator=(const RgbdNormals& other);
+
     ~RgbdNormals();
 
     CV_WRAP static Ptr<RgbdNormals> create(int rows, int cols, int depth, InputArray K, int window_size = 5, int method =
