@@ -75,11 +75,12 @@ void Point::nearestNeighboursNaive(const std::vector<Point*>& vP, int index, int
     }
 
     std::sort(minMatch.begin(), minMatch.end(), cMP);
-    nnVector.resize(static_cast<size_t>(N));
-    int count = 0;
-    for (std::vector<MatchPoint>::const_iterator mmit = minMatch.begin(); count < N; ++mmit, count++)
+    // A safer handle:
+    const size_t nnCount = std::min(static_cast<size_t>(N), minMatch.size());
+    nnVector.resize(nnCount);
+    for (size_t count = 0; count < nnCount; count++)
     {
-        nnVector[static_cast<size_t>(count)] = vP[static_cast<size_t>(mmit->index)];
+        nnVector[count] = vP[static_cast<size_t>(minMatch[count].index)];
     }
 
     nnFound = true;

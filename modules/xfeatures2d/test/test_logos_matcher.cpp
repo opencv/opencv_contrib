@@ -149,4 +149,24 @@ TEST(XFeatures2d_LogosMatcher, logos_matcher_regression)
             << " ; correctMatches: " << correctMatches;
 }
 
+TEST(XFeatures2d_LogosMatcher, regression_4174_small_label_group) {
+    std::vector<cv::KeyPoint> keypoints1, keypoints2;
+    for (int i = 0; i < 3; i++) {
+        keypoints1.emplace_back(cv::KeyPoint(10.f * i, 10.f * i, 1));
+        keypoints2.emplace_back(cv::KeyPoint(10.f * i, 10.f * i, 1));
+    }
+    std::vector<int> nn1 = {0, 0, 0};
+    std::vector<int> nn2 = {0, 0, 0};
+    std::vector<cv::DMatch> matches;
+
+    cv::xfeatures2d::matchLOGOS(keypoints1, keypoints2, nn1, nn2, matches);
+
+    for (size_t i = 0; i < matches.size(); i++) {
+        EXPECT_GE(matches[i].queryIdx, 0);
+        EXPECT_LT(matches[i].queryIdx, static_cast<int>(keypoints1.size()));
+        EXPECT_GE(matches[i].trainIdx, 0);
+        EXPECT_LT(matches[i].trainIdx, static_cast<int>(keypoints2.size()));
+    }
+}
+
 }} // namespace
