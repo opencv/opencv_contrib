@@ -455,6 +455,50 @@ TEST_P(Objdetect_QRCode_Easy_Multi, regression) {
 std::string qrcode_model_path[] = {"", "dnn/wechat_2021-01"};
 INSTANTIATE_TEST_CASE_P(/**/, Objdetect_QRCode_Easy_Multi, testing::ValuesIn(qrcode_model_path));
 
+TEST(Objdetect_QRCode_bug, issue_3816_non_continuous) {
+    const std::string expect_msg = "OpenCV_non_continuous_step_3816";
+    QRCodeEncoder::Params params;
+    params.version = 5;
+    Ptr<QRCodeEncoder> qrcode_enc = cv::QRCodeEncoder::create(params);
+    Mat qrRaw;
+    qrcode_enc->encode(expect_msg, qrRaw);
+
+    Mat baseImg(360, 360, CV_8UC1, Scalar(255));
+    qrRaw.copyTo(baseImg(Rect(40, 40, qrRaw.cols, qrRaw.rows)));
+
+    wechat_qrcode::WeChatQRCode detector;
+    std::vector<Mat> ptsCont, ptsStepped, ptsRoi;
+    std::vector<std::string> resCont = detector.detectAndDecode(baseImg, ptsCont);
+    ASSERT_EQ(1u, resCont.size());
+    EXPECT_EQ(expect_msg, resCont[0]);
+
+    // 1. Custom row stride (step != cols, e.g. QImage bytesPerLine alignment)
+    const size_t customStep = static_cast<size_t>(baseImg.cols) + 13;
+    std::vector<uchar> buffer(customStep * static_cast<size_t>(baseImg.rows), 127);
+    Mat steppedImg(baseImg.rows, baseImg.cols, CV_8UC1, buffer.data(), customStep);
+    baseImg.copyTo(steppedImg);
+    ASSERT_FALSE(steppedImg.isContinuous());
+
+    std::vector<std::string> resStepped = detector.detectAndDecode(steppedImg, ptsStepped);
+    ASSERT_EQ(1u, resStepped.size());
+    EXPECT_EQ(expect_msg, resStepped[0]);
+    ASSERT_EQ(ptsCont.size(), ptsStepped.size());
+    EXPECT_EQ(0.0, cv::norm(ptsCont[0], ptsStepped[0], NORM_INF));
+
+    // 2. Non-continuous ROI submatrix inside a larger image
+    Mat canvas(500, 500, CV_8UC1, Scalar(64));
+    Rect roi(37, 29, baseImg.cols, baseImg.rows);
+    baseImg.copyTo(canvas(roi));
+    Mat roiImg = canvas(roi);
+    ASSERT_FALSE(roiImg.isContinuous());
+
+    std::vector<std::string> resRoi = detector.detectAndDecode(roiImg, ptsRoi);
+    ASSERT_EQ(1u, resRoi.size());
+    EXPECT_EQ(expect_msg, resRoi[0]);
+    ASSERT_EQ(ptsCont.size(), ptsRoi.size());
+    EXPECT_EQ(0.0, cv::norm(ptsCont[0], ptsRoi[0], NORM_INF));
+}
+
 TEST(Objdetect_QRCode_bug, issue_3478) {
     auto detector = wechat_qrcode::WeChatQRCode();
     std::string image_path = findDataFile("qrcode/issue_3478.png");
