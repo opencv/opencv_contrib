@@ -82,10 +82,12 @@ void BinaryDescriptorMatcher::add( const std::vector<Mat>& descriptors )
 
   for ( size_t i = 0; i < descriptors.size(); i++ )
   {
-    descriptorsMat.push_back( descriptors[i] );
-
-    indexesMap.insert( std::pair<int, int>( nextAddedIndex, numImages ) );
-    nextAddedIndex += descriptors[i].rows;
+    if( descriptors[i].rows > 0 )
+    {
+      descriptorsMat.push_back( descriptors[i] );
+      indexesMap.insert( std::pair<int, int>( nextAddedIndex, numImages ) );
+      nextAddedIndex += descriptors[i].rows;
+    }
     numImages++;
   }
 }
@@ -93,25 +95,26 @@ void BinaryDescriptorMatcher::add( const std::vector<Mat>& descriptors )
 /* store new descriptors into dataset */
 void BinaryDescriptorMatcher::train()
 {
-  if( !dataset )
-    dataset = Ptr<Mihasher>(new Mihasher( 256, 32 ));
-
   if( descriptorsMat.rows > 0 )
   {
+    Ptr<Mihasher> rebuilt( new Mihasher( 256, 32 ) );
     if( descrInDS > 0 )
     {
       Mat allDescriptors;
       vconcat( dataset->codes, descriptorsMat, allDescriptors );
-      Ptr<Mihasher> rebuilt( new Mihasher( 256, 32 ) );
       rebuilt->populate( allDescriptors, allDescriptors.rows, allDescriptors.cols );
-      dataset = rebuilt;
     }
     else
     {
-      dataset->populate( descriptorsMat, descriptorsMat.rows, descriptorsMat.cols );
+      rebuilt->populate( descriptorsMat, descriptorsMat.rows, descriptorsMat.cols );
     }
+    dataset = rebuilt;
     descrInDS = static_cast<int>( dataset->N );
     descriptorsMat.release();
+  }
+  else if( !dataset )
+  {
+    dataset = Ptr<Mihasher>(new Mihasher( 256, 32 ));
   }
 }
 

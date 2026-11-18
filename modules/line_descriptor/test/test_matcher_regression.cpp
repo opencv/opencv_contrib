@@ -832,6 +832,48 @@ TEST( BinaryDescriptor_Matcher, incremental_add_and_train )
     roiBdm->match( wideQuery.colRange( 0, 32 ), roiM );
     expectMatchesEqual( refM, roiM );
   }
+
+  // Empty (0x32 and 0x0) images before and between non-empty batches preserve imgIdx and masks
+  {
+    Mat batchA( 5, 32, CV_8UC1 ), batchB( 5, 32, CV_8UC1 );
+    theRNG().fill( batchA, RNG::UNIFORM, 0, 256 );
+    theRNG().fill( batchB, RNG::UNIFORM, 0, 256 );
+    Mat empty32( 0, 32, CV_8UC1 ), empty0;
+
+    Ptr<BinaryDescriptorMatcher> bdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+    bdm->add( std::vector<Mat>( 1, empty32 ) ); // imgIdx 0
+    bdm->add( std::vector<Mat>( 1, batchA ) );  // imgIdx 1
+    bdm->train();
+    bdm->add( std::vector<Mat>( 1, empty0 ) );  // imgIdx 2
+    bdm->train();
+    bdm->add( std::vector<Mat>( 1, batchB ) );  // imgIdx 3
+    bdm->train();
+
+    std::vector<DMatch> matchesA, matchesB;
+    bdm->match( batchA, matchesA );
+    bdm->match( batchB, matchesB );
+    ASSERT_EQ( matchesA.size(), 5u );
+    ASSERT_EQ( matchesB.size(), 5u );
+    for ( size_t i = 0; i < 5; i++ )
+    {
+      EXPECT_EQ( matchesA[i].imgIdx, 1 );
+      EXPECT_EQ( matchesA[i].trainIdx, static_cast<int>( i ) );
+      EXPECT_EQ( matchesA[i].distance, 0.f );
+      EXPECT_EQ( matchesB[i].imgIdx, 3 );
+      EXPECT_EQ( matchesB[i].trainIdx, static_cast<int>( 5 + i ) );
+      EXPECT_EQ( matchesB[i].distance, 0.f );
+    }
+
+    std::vector<Mat> masks = {
+      Mat::zeros( 5, 1, CV_8UC1 ), Mat::ones( 5, 1, CV_8UC1 ),
+      Mat::zeros( 5, 1, CV_8UC1 ), Mat::ones( 5, 1, CV_8UC1 )
+    };
+    std::vector<DMatch> maskedA, maskedB;
+    bdm->match( batchA, maskedA, masks );
+    bdm->match( batchB, maskedB, masks );
+    expectMatchesEqual( matchesA, maskedA );
+    expectMatchesEqual( matchesB, maskedB );
+  }
 }
 
 TEST( BinaryDescriptor_Matcher, reject_invalid_descriptor_width_and_type )
@@ -854,6 +896,8 @@ TEST( BinaryDescriptor_Matcher, reject_invalid_descriptor_width_and_type )
   badMats.push_back( Mat::zeros( 10, 0, CV_8UC1 ) );
   badMats.push_back( Mat::zeros( 10, 32, CV_32FC1 ) );
   badMats.push_back( Mat::zeros( 10, 32, CV_8UC2 ) );
+  const int dims1 = 32;
+  badMats.push_back( Mat::zeros( 1, &dims1, CV_8UC1 ) );
   const int dims3[] = { 2, 5, 32 };
   badMats.push_back( Mat::zeros( 3, dims3, CV_8UC1 ) );
 
@@ -882,7 +926,7 @@ TEST( BinaryDescriptor_Matcher, reject_invalid_descriptor_width_and_type )
   trained->match( q32, afterFailedAdd );
   expectMatchesEqual( baseMatches, afterFailedAdd );
 
-  // Valid empty (0 x 32) CV_8UC1 descriptor matrix returns cleanly without matches
+  // Regression guard (passes on base): valid empty (0 x 32) CV_8UC1 descriptor matrix returns cleanly
   Mat empty32( 0, 32, CV_8UC1 );
   std::vector<DMatch> emptyM;
   trained->match( empty32, t32, emptyM );
