@@ -668,6 +668,19 @@ namespace
             iters_ = 1;
         }
 
+#if (NPP_VERSION >= 13000)
+        // NPP 13 erodes and dilates 8-bit images over a wrong window when a square mask of 5x5 or more
+        // is anchored at its centre. Two empty mask rows make the mask non-square and keep the result.
+        if (CV_MAT_DEPTH(srcType) == CV_8U && kernel.rows == kernel.cols && kernel.rows >= 5 &&
+            anchor_ == Point(kernel.cols / 2, kernel.rows / 2))
+        {
+            Mat padded = Mat::zeros(kernel.rows + 2, kernel.cols, kernel.type());
+            kernel.copyTo(padded(Rect(0, 1, kernel.cols, kernel.rows)));
+            kernel = padded;
+            anchor_.y += 1;
+        }
+#endif
+
         CV_Assert( kernel.channels() == 1 );
 
         Mat kernel8U;
