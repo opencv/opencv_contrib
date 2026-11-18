@@ -1105,8 +1105,8 @@ void add( const std::vector<Mat>& descriptors );
 
 /** @brief Update dataset by inserting into it all descriptors that were stored locally by *add* function.
 
-@note Every time this function is invoked, current dataset is deleted and locally stored descriptors
-are inserted into dataset. The locally stored copy of just inserted descriptors is then removed.
+@note When newly added descriptors are present, the dataset is rebuilt over the existing and
+newly added descriptors, and the locally stored copy of pending descriptors is then removed.
  */
 void train();
 
