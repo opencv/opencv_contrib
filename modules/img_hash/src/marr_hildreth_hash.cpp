@@ -26,7 +26,7 @@ void getMHKernel(float alpha, float level, cv::Mat &kernel)
         {
             float const xpos = ratio * static_cast<float>((col - sigma));
             float const a = xpos * xpos + yposPow2;
-            kPtr[col] = (2-a)*std::exp(a/2);
+            kPtr[col] = (2-a)*std::exp(-a/2);
         }
     }
 }
