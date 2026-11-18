@@ -705,4 +705,189 @@ TEST( BinaryDescriptor_Matcher, reject_invalid_masks )
   }
 }
 
+static void expectMatchesEqual( const std::vector<DMatch>& expected, const std::vector<DMatch>& actual )
+{
+  ASSERT_EQ( actual.size(), expected.size() );
+  for ( size_t i = 0; i < expected.size(); i++ )
+  {
+    EXPECT_EQ( actual[i].queryIdx, expected[i].queryIdx );
+    EXPECT_EQ( actual[i].trainIdx, expected[i].trainIdx );
+    EXPECT_EQ( actual[i].imgIdx, expected[i].imgIdx );
+    EXPECT_EQ( actual[i].distance, expected[i].distance );
+  }
+}
+
+static void expectMatchVectorsEqual( std::vector<std::vector<DMatch> > expected, std::vector<std::vector<DMatch> > actual )
+{
+  sortMatchesByTrainIdx( expected );
+  sortMatchesByTrainIdx( actual );
+  ASSERT_EQ( actual.size(), expected.size() );
+  for ( size_t i = 0; i < expected.size(); i++ )
+    expectMatchesEqual( expected[i], actual[i] );
+}
+
+TEST( BinaryDescriptor_Matcher, incremental_add_and_train )
+{
+  const int cases[][2] = { { 100, 5 }, { 5, 100 } };
+  for ( int c = 0; c < 2; c++ )
+  {
+    const int n1 = cases[c][0], n2 = cases[c][1];
+    Mat first( n1, 32, CV_8UC1 ), second( n2, 32, CV_8UC1 ), extraQuery( 10, 32, CV_8UC1 );
+    theRNG().fill( first, RNG::UNIFORM, 0, 256 );
+    theRNG().fill( second, RNG::UNIFORM, 0, 256 );
+    theRNG().fill( extraQuery, RNG::UNIFORM, 0, 256 );
+
+    std::vector<int> expectedBatch, expectedRow;
+    Mat query;
+    for ( int i = 0; i < 5; i++ )
+    {
+      int r = i * ( n1 / 5 );
+      query.push_back( first.row( r ) );
+      expectedBatch.push_back( 0 );
+      expectedRow.push_back( r );
+    }
+    for ( int i = 0; i < 5; i++ )
+    {
+      int r = i * ( n2 / 5 );
+      query.push_back( second.row( r ) );
+      expectedBatch.push_back( 1 );
+      expectedRow.push_back( n1 + r );
+    }
+    query.push_back( extraQuery );
+
+    Ptr<BinaryDescriptorMatcher> refBdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+    refBdm->add( std::vector<Mat>{ first, second } );
+    refBdm->train();
+
+    std::vector<DMatch> refM;
+    std::vector<std::vector<DMatch> > refK, refR;
+    refBdm->match( query, refM );
+    refBdm->knnMatch( query, refK, 3 );
+    refBdm->radiusMatch( query, refR, 120.f );
+
+    ASSERT_EQ( refM.size(), static_cast<size_t>( query.rows ) );
+    for ( size_t q = 0; q < expectedBatch.size(); q++ )
+    {
+      EXPECT_EQ( refM[q].imgIdx, expectedBatch[q] );
+      EXPECT_EQ( refM[q].trainIdx, expectedRow[q] );
+      EXPECT_EQ( refM[q].distance, 0.f );
+    }
+
+    // Explicit train() between add() calls, plus no-op train() with no pending descriptors
+    Ptr<BinaryDescriptorMatcher> bdm1 = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+    bdm1->add( std::vector<Mat>( 1, first ) );
+    bdm1->train();
+    bdm1->add( std::vector<Mat>( 1, second ) );
+    bdm1->train();
+    bdm1->train();
+
+    std::vector<DMatch> m1;
+    std::vector<std::vector<DMatch> > k1, r1;
+    bdm1->match( query, m1 );
+    bdm1->knnMatch( query, k1, 3 );
+    bdm1->radiusMatch( query, r1, 120.f );
+    expectMatchesEqual( refM, m1 );
+    expectMatchVectorsEqual( refK, k1 );
+    expectMatchVectorsEqual( refR, r1 );
+
+    // Implicit train() triggered by match() between add() calls
+    Ptr<BinaryDescriptorMatcher> bdm2 = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+    bdm2->add( std::vector<Mat>( 1, first ) );
+    std::vector<DMatch> warmupM;
+    bdm2->match( query.rowRange( 0, 2 ), warmupM );
+    EXPECT_EQ( warmupM.size(), 2u );
+    bdm2->add( std::vector<Mat>( 1, second ) );
+
+    std::vector<DMatch> m2;
+    std::vector<std::vector<DMatch> > k2, r2;
+    bdm2->match( query, m2 );
+    bdm2->knnMatch( query, k2, 3 );
+    bdm2->radiusMatch( query, r2, 120.f );
+    expectMatchesEqual( refM, m2 );
+    expectMatchVectorsEqual( refK, k2 );
+    expectMatchVectorsEqual( refR, r2 );
+
+    // Per-image masks across incremental batches
+    std::vector<Mat> masks = { Mat::zeros( query.rows, 1, CV_8UC1 ), Mat::zeros( query.rows, 1, CV_8UC1 ) };
+    for ( int q = 0; q < query.rows; q++ )
+      masks[q % 2].at<uchar>( q ) = 1;
+    std::vector<DMatch> refMasked, gotMasked;
+    refBdm->match( query, refMasked, masks );
+    bdm1->match( query, gotMasked, masks );
+    expectMatchesEqual( refMasked, gotMasked );
+
+    // Non-continuous ROI submatrices (64-col parent sliced to 32 cols) across train()
+    Mat wideFirst( first.rows, 64, CV_8UC1 ), wideSecond( second.rows, 64, CV_8UC1 ), wideQuery( query.rows, 64, CV_8UC1 );
+    theRNG().fill( wideFirst, RNG::UNIFORM, 0, 256 );
+    theRNG().fill( wideSecond, RNG::UNIFORM, 0, 256 );
+    theRNG().fill( wideQuery, RNG::UNIFORM, 0, 256 );
+    first.copyTo( wideFirst.colRange( 0, 32 ) );
+    second.copyTo( wideSecond.colRange( 0, 32 ) );
+    query.copyTo( wideQuery.colRange( 0, 32 ) );
+    Ptr<BinaryDescriptorMatcher> roiBdm = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+    roiBdm->add( std::vector<Mat>( 1, wideFirst.colRange( 0, 32 ) ) );
+    roiBdm->train();
+    roiBdm->add( std::vector<Mat>( 1, wideSecond.colRange( 0, 32 ) ) );
+    std::vector<DMatch> roiM;
+    roiBdm->match( wideQuery.colRange( 0, 32 ), roiM );
+    expectMatchesEqual( refM, roiM );
+  }
+}
+
+TEST( BinaryDescriptor_Matcher, reject_invalid_descriptor_width_and_type )
+{
+  Mat q32( 10, 32, CV_8UC1 ), t32( 10, 32, CV_8UC1 );
+  theRNG().fill( q32, RNG::UNIFORM, 0, 256 );
+  theRNG().fill( t32, RNG::UNIFORM, 0, 256 );
+
+  Ptr<BinaryDescriptorMatcher> trained = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+  trained->add( std::vector<Mat>( 1, t32 ) );
+  trained->train();
+  std::vector<DMatch> baseMatches;
+  trained->match( q32, baseMatches );
+
+  const int badWidths[] = { 8, 16, 31, 33, 64 };
+  std::vector<Mat> badMats;
+  for ( int w : badWidths )
+    badMats.push_back( Mat::zeros( 10, w, CV_8UC1 ) );
+  badMats.push_back( Mat::zeros( 0, 16, CV_8UC1 ) );
+  badMats.push_back( Mat::zeros( 10, 0, CV_8UC1 ) );
+  badMats.push_back( Mat::zeros( 10, 32, CV_32FC1 ) );
+  badMats.push_back( Mat::zeros( 10, 32, CV_8UC2 ) );
+  const int dims3[] = { 2, 5, 32 };
+  badMats.push_back( Mat::zeros( 3, dims3, CV_8UC1 ) );
+
+  for ( const Mat& bad : badMats )
+  {
+    Ptr<BinaryDescriptorMatcher> fresh = BinaryDescriptorMatcher::createBinaryDescriptorMatcher();
+    std::vector<DMatch> m;
+    std::vector<std::vector<DMatch> > mm;
+
+    EXPECT_THROW( fresh->add( std::vector<Mat>( 1, bad ) ), cv::Exception ) << bad.size << " type=" << bad.type();
+    EXPECT_THROW( fresh->match( bad, t32, m ), cv::Exception ) << bad.size << " type=" << bad.type();
+    EXPECT_THROW( fresh->match( q32, bad, m ), cv::Exception ) << bad.size << " type=" << bad.type();
+    EXPECT_THROW( fresh->knnMatch( bad, t32, mm, 2 ), cv::Exception ) << bad.size << " type=" << bad.type();
+    EXPECT_THROW( fresh->knnMatch( q32, bad, mm, 2 ), cv::Exception ) << bad.size << " type=" << bad.type();
+    EXPECT_THROW( fresh->radiusMatch( bad, t32, mm, 120.f ), cv::Exception ) << bad.size << " type=" << bad.type();
+    EXPECT_THROW( fresh->radiusMatch( q32, bad, mm, 120.f ), cv::Exception ) << bad.size << " type=" << bad.type();
+
+    EXPECT_THROW( trained->match( bad, m ), cv::Exception ) << bad.size << " type=" << bad.type();
+    EXPECT_THROW( trained->knnMatch( bad, mm, 2 ), cv::Exception ) << bad.size << " type=" << bad.type();
+    EXPECT_THROW( trained->radiusMatch( bad, mm, 120.f ), cv::Exception ) << bad.size << " type=" << bad.type();
+  }
+
+  // Failed multi-matrix add() leaves existing dataset unchanged
+  EXPECT_THROW( trained->add( std::vector<Mat>{ t32, Mat::zeros( 5, 16, CV_8UC1 ) } ), cv::Exception );
+  std::vector<DMatch> afterFailedAdd;
+  trained->match( q32, afterFailedAdd );
+  expectMatchesEqual( baseMatches, afterFailedAdd );
+
+  // Valid empty (0 x 32) CV_8UC1 descriptor matrix returns cleanly without matches
+  Mat empty32( 0, 32, CV_8UC1 );
+  std::vector<DMatch> emptyM;
+  trained->match( empty32, t32, emptyM );
+  trained->match( empty32, emptyM );
+  EXPECT_TRUE( emptyM.empty() );
+}
+
 }} // namespace

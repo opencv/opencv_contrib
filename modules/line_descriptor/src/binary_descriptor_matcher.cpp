@@ -66,9 +66,20 @@ Ptr<BinaryDescriptorMatcher> BinaryDescriptorMatcher::createBinaryDescriptorMatc
   return Ptr < BinaryDescriptorMatcher > ( new BinaryDescriptorMatcher() );
 }
 
+static void checkDescriptorMatrix( const Mat& descriptors )
+{
+  if( descriptors.rows == 0 && descriptors.cols == 0 )
+    return;
+  CV_CheckTypeEQ( descriptors.type(), CV_8UC1, "BinaryDescriptorMatcher requires CV_8UC1 descriptors" );
+  CV_CheckEQ( descriptors.cols, 32, "BinaryDescriptorMatcher requires 32-byte (256-bit) descriptors" );
+}
+
 /* store new descriptors to be inserted in dataset */
 void BinaryDescriptorMatcher::add( const std::vector<Mat>& descriptors )
 {
+  for ( size_t i = 0; i < descriptors.size(); i++ )
+    checkDescriptorMatrix( descriptors[i] );
+
   for ( size_t i = 0; i < descriptors.size(); i++ )
   {
     descriptorsMat.push_back( descriptors[i] );
@@ -87,8 +98,19 @@ void BinaryDescriptorMatcher::train()
 
   if( descriptorsMat.rows > 0 )
   {
-    dataset->populate( descriptorsMat, descriptorsMat.rows, descriptorsMat.cols );
-    descrInDS = descriptorsMat.rows;
+    if( descrInDS > 0 )
+    {
+      Mat allDescriptors;
+      vconcat( dataset->codes, descriptorsMat, allDescriptors );
+      Ptr<Mihasher> rebuilt( new Mihasher( 256, 32 ) );
+      rebuilt->populate( allDescriptors, allDescriptors.rows, allDescriptors.cols );
+      dataset = rebuilt;
+    }
+    else
+    {
+      dataset->populate( descriptorsMat, descriptorsMat.rows, descriptorsMat.cols );
+    }
+    descrInDS = static_cast<int>( dataset->N );
     descriptorsMat.release();
   }
 }
@@ -128,6 +150,8 @@ void BinaryDescriptorMatcher::checkKDistances( UINT32 * numres, int k, std::vect
 void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DMatch>& matches, const std::vector<Mat>& masks )
 {
   /* check data validity */
+  checkDescriptorMatrix( queryDescriptors );
+
   if( queryDescriptors.rows == 0 )
   {
     std::cout << "Error: query descriptors'matrix is empty" << std::endl;
@@ -202,6 +226,9 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, const Mat& tra
 {
 
   /* check data validity */
+  checkDescriptorMatrix( queryDescriptors );
+  checkDescriptorMatrix( trainDescriptors );
+
   if( queryDescriptors.rows == 0 || trainDescriptors.rows == 0 )
   {
     std::cout << "Error: descriptors matrices cannot be void" << std::endl;
@@ -264,6 +291,9 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, const Mat& 
 
 {
   /* check data validity */
+  checkDescriptorMatrix( queryDescriptors );
+  checkDescriptorMatrix( trainDescriptors );
+
   if( queryDescriptors.rows == 0 || trainDescriptors.rows == 0 )
   {
     std::cout << "Error: descriptors matrices cannot be void" << std::endl;
@@ -354,6 +384,8 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
 {
 
   /* check data validity */
+  checkDescriptorMatrix( queryDescriptors );
+
   if( queryDescriptors.rows == 0 )
   {
     std::cout << "Error: descriptors matrix cannot be void" << std::endl;
@@ -456,6 +488,9 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
 {
 
   /* check data validity */
+  checkDescriptorMatrix( queryDescriptors );
+  checkDescriptorMatrix( trainDescriptors );
+
   if( queryDescriptors.rows == 0 || trainDescriptors.rows == 0 )
   {
     std::cout << "Error: descriptors matrices cannot be void" << std::endl;
@@ -535,6 +570,8 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
 {
 
   /* check data validity */
+  checkDescriptorMatrix( queryDescriptors );
+
   if( queryDescriptors.rows == 0 )
   {
     std::cout << "Error: descriptors matrices cannot be void" << std::endl;
