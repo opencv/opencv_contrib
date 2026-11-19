@@ -10,3 +10,7 @@ tags
 tegra/
 *.i
 .download*
+.opencode*
+.paper
+build/
+modules/slam/SLAM_LEARNING_DOC.md
