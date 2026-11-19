@@ -202,7 +202,7 @@ namespace xfeatures2d
                 KeyPointsFilter::runByPixelsMask(keypoints, mask.getMat());
             }
 
-            if (max_points > 0 && (int)keypoints.size() > max_points) {
+            if (!useProvidedKeypoints && max_points > 0 && (int)keypoints.size() > max_points) {
                 std::partial_sort(keypoints.begin(), keypoints.begin() + max_points, keypoints.end(),
                     [](const cv::KeyPoint& k1, const cv::KeyPoint& k2) {return k1.response > k2.response;});
                 keypoints.erase(keypoints.begin() + max_points, keypoints.end());
