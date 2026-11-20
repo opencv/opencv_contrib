@@ -95,7 +95,7 @@ CV_EXPORTS_W void remap(InputArray src, OutputArray dst, InputArray xmap, InputA
 
 /** @brief Resizes an image.
 
-@param src Source image.
+@param src Source image. Two-channel images are supported for CV_8U depth.
 @param dst Destination image with the same type as src . The size is dsize (when it is non-zero)
 or the size is computed from src.size() , fx , and fy .
 @param dsize Destination image size. If it is zero, it is computed as:
