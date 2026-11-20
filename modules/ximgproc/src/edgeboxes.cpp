@@ -84,7 +84,7 @@ public:
     void setAlpha(float value) CV_OVERRIDE
     {
       _alpha = value;
-      _sxStep = sqrt(1 / _alpha);
+      _sxStep = std::sqrt(1 / _alpha);
       _ayStep = (1 + _alpha) / (2 * _alpha);
       _xyStepRatio = (1 - _alpha) / (1 + _alpha);
     }
@@ -124,7 +124,7 @@ public:
     {
       _kappa = value;
       _scaleNorm.resize(10000);
-      for (int i = 0; i < 10000; i++) _scaleNorm[i] = pow(1.f / i, _kappa);
+      for (int i = 0; i < 10000; i++) _scaleNorm[i] = std::pow(1.f / i, _kappa);
     }
 
     //! the destructor
@@ -204,13 +204,13 @@ EdgeBoxesImpl::EdgeBoxesImpl(float alpha,
 
 {
   // initialize step sizes
-  _sxStep = sqrt(1 / _alpha);
+  _sxStep = std::sqrt(1 / _alpha);
   _ayStep = (1 + _alpha) / (2 * _alpha);
   _xyStepRatio = (1 - _alpha) / (1 + _alpha);
 
   // create _scaleNorm
   _scaleNorm.resize(10000);
-  for (int i = 0; i < 10000; i++) _scaleNorm[i] = pow(1.f / i, _kappa);
+  for (int i = 0; i < 10000; i++) _scaleNorm[i] = std::pow(1.f / i, _kappa);
 
 }
 
@@ -462,7 +462,7 @@ void EdgeBoxesImpl::clusterEdges(Mat &edgeMap, Mat &orientationMap)
                     if (found) continue;
                     float o = atan2(meanY[s0] - meanY[s1], meanX[s0] - meanX[s1]) + (float)CV_PI / 2.0f;
                     float a = fabs(cos(meanO[s0] - o) * cos(meanO[s1] - o));
-                    a = pow(a, _gamma);
+                    a = std::pow(a, _gamma);
                     _segAff[s0].push_back(a);
                     _segAffIdx[s0].push_back(s1);
                     _segAff[s1].push_back(a);
@@ -683,7 +683,7 @@ void EdgeBoxesImpl::scoreBox(Box &box)
                 if (wq > sWts[sMap[q]])
                 {
                     sWts[sMap[q]] = wq;
-                    i = min(i, sMap[q] - 1);
+                    i = std::min(i, sMap[q] - 1);
                 }
             }
             else if (_segP[q].x >= x0 && _segP[q].x <= x1 && _segP[q].y >= y0 && _segP[q].y <= y1)
@@ -718,8 +718,8 @@ void EdgeBoxesImpl::refineBox(Box &box)
         yStep /= 2;
         xStep /= 2;
         if (yStep <= 2 && xStep <= 2) break;
-        yStep = max(1, yStep);
-        xStep = max(1, xStep);
+        yStep = std::max(1, yStep);
+        xStep = std::max(1, xStep);
         Box B;
         // search over y start
         B = box;
@@ -782,9 +782,9 @@ void EdgeBoxesImpl::scoreAllBoxes(Boxes &boxes)
     // get list of all boxes roughly distributed in grid
     boxes.resize(0);
     int ayRad, sxNum;
-    float minSize = sqrt(_minBoxArea);
-    ayRad = (int)(log(_maxAspectRatio) / log(_ayStep * _ayStep));
-    sxNum = (int)(ceil(log(max(w, h) / minSize) / log(_sxStep)));
+    float minSize = std::sqrt(_minBoxArea);
+    ayRad = (int)(std::log(_maxAspectRatio) / std::log(_ayStep * _ayStep));
+    sxNum = (int)(ceil(std::log(std::max(w, h) / minSize) / std::log(_sxStep)));
 
     for (int s = 0; s < sxNum; s++)
     {
@@ -792,12 +792,12 @@ void EdgeBoxesImpl::scoreAllBoxes(Boxes &boxes)
         float ay, sx;
         for (a = 0; a < 2 * ayRad + 1; a++)
         {
-            ay = pow(_ayStep, float(a - ayRad));
-            sx = minSize * pow(_sxStep, float(s));
+            ay = std::pow(_ayStep, float(a - ayRad));
+            sx = minSize * std::pow(_sxStep, float(s));
             bh = (int)(sx / ay);
-            ky = max(2, (int)(bh * _xyStepRatio));
+            ky = std::max(2, (int)(bh * _xyStepRatio));
             bw = (int)(sx * ay);
-            kx = max(2, (int)(bw * _xyStepRatio));
+            kx = std::max(2, (int)(bw * _xyStepRatio));
             for (x = 0; x < w - bw + kx; x += kx)
             {
                 for (y = 0; y < h - bh + ky; y += ky)
@@ -840,12 +840,12 @@ float EdgeBoxesImpl::boxesOverlap(Box &a, Box &b)
     if (a.y >= y1j || a.x >= x1j) return 0;
 
     areai = (float) a.w * a.h;
-    y0 = max(a.y, b.y);
-    y1 = min(y1i, y1j);
+    y0 = std::max(a.y, b.y);
+    y1 = std::min(y1i, y1j);
     areaj = (float) b.w * b.h;
-    x0 = max(a.x, b.x);
-    x1 = min(x1i, x1j);
-    areaij = (float) max(0, y1 - y0) * max(0, x1 - x0);
+    x0 = std::max(a.x, b.x);
+    x1 = std::min(x1i, x1j);
+    areaij = (float) std::max(0, y1 - y0) * std::max(0, x1 - x0);
     return areaij / (areai + areaj - areaij);
 }
 
@@ -857,7 +857,7 @@ void EdgeBoxesImpl::boxesNms(Boxes &boxes, float thr, float eta, int maxBoxes)
 
     const int nBin = 10000;
     const float step = 1 / thr;
-    const float lstep = log(step);
+    const float lstep = std::log(step);
 
     vector<Boxes> kept;
     kept.resize(nBin + 1);
@@ -872,7 +872,7 @@ void EdgeBoxesImpl::boxesNms(Boxes &boxes, float thr, float eta, int maxBoxes)
         b = boxes[i].w * boxes[i].h;
 
         bool keep = 1;
-        b = clamp((int)(ceil(log(float(b)) / lstep)), d, nBin - d);
+        b = clamp((int)(ceil(std::log(float(b)) / lstep)), d, nBin - d);
         for (j = b - d; j <= b + d; j++)
         {
             for (k = 0; k < (int)kept[j].size(); k++)
@@ -892,7 +892,7 @@ void EdgeBoxesImpl::boxesNms(Boxes &boxes, float thr, float eta, int maxBoxes)
         if (keep && eta < 1.0f && thr > .5f)
         {
             thr *= eta;
-            d = (int)ceil(log(1.0f / thr) / lstep);
+            d = (int)ceil(std::log(1.0f / thr) / lstep);
         }
     }
 

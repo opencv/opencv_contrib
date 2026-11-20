@@ -308,8 +308,8 @@ bool GrayCodePattern_Impl::decode( const std::vector< std::vector<Mat> >& patter
 // Computes the required number of pattern images
 void GrayCodePattern_Impl::computeNumberOfPatternImages()
 {
-  numOfColImgs = ( size_t ) ceil( log( double( params.width ) ) / log( 2.0 ) );
-  numOfRowImgs = ( size_t ) ceil( log( double( params.height ) ) / log( 2.0 ) );
+  numOfColImgs = ( size_t ) ceil( std::log2( double( params.width ) ) );
+  numOfRowImgs = ( size_t ) ceil( std::log2( double( params.height ) ) );
   numOfPatternImages = 2 * numOfColImgs + 2 * numOfRowImgs;
 }
 
@@ -435,14 +435,14 @@ int GrayCodePattern_Impl::grayToDec( const std::vector<uchar>& gray ) const
   uchar tmp = gray[0];
 
   if( tmp )
-    dec += ( int ) pow( ( float ) 2, int( gray.size() - 1 ) );
+    dec += ( int ) std::pow( ( float ) 2, int( gray.size() - 1 ) );
 
   for( int i = 1; i < (int) gray.size(); i++ )
   {
     // XOR operation
     tmp = tmp ^ gray[i];
     if( tmp )
-      dec += (int) pow( ( float ) 2, int( gray.size() - i - 1 ) );
+      dec += (int) std::pow( ( float ) 2, int( gray.size() - i - 1 ) );
   }
 
   return dec;

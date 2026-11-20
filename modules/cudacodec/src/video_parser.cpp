@@ -139,7 +139,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
     newFormat.width = newFormat.targetSz.width ? newFormat.targetSz.width : format->coded_width;
     newFormat.height = newFormat.targetSz.height ? newFormat.targetSz.height : format->coded_height;
     newFormat.targetRoi = thiz->videoDecoder_->getTargetRoi();
-    newFormat.ulNumDecodeSurfaces = min(!thiz->allowFrameDrop_ ? max(thiz->videoDecoder_->nDecodeSurfaces(), static_cast<int>(format->min_num_decode_surfaces)) :
+    newFormat.ulNumDecodeSurfaces = std::min(!thiz->allowFrameDrop_ ? std::max(thiz->videoDecoder_->nDecodeSurfaces(), static_cast<int>(format->min_num_decode_surfaces)) :
         format->min_num_decode_surfaces * 2, 32);
     if (format->progressive_sequence)
         newFormat.deinterlaceMode = Weave;

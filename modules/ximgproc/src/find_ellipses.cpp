@@ -165,12 +165,12 @@ static float getMinAnglePI(float alpha, float beta) {
         b -= pi;
 
     if (a > b)
-        swap(a, b);
+        std::swap(a, b);
 
     float diff1 = b - a;
     float diff2 = pi - diff1;
 
-    return min(diff1, diff2);
+    return std::min(diff1, diff2);
 }
 
 // ellipse data
@@ -734,7 +734,7 @@ void EllipseDetectorImpl::detectEdges13(Mat1b &DP, VVP &points_1, VVP &points_3)
 
         // selection strategy - constraint on axes aspect ratio
         RotatedRect oriented = minAreaRect(edgeSegment);
-        float orMin = min(oriented.size.width, oriented.size.height);
+        float orMin = std::min(oriented.size.width, oriented.size.height);
 
         if (orMin < _minOrientedRectSide) {
             continue;
@@ -782,7 +782,7 @@ void EllipseDetectorImpl::detectEdges24(Mat1b &DN, VVP &points_2, VVP &points_4)
 
         // selection strategy - constraint on axes aspect ratio
         RotatedRect oriented = minAreaRect(edgeSegment);
-        float orMin = min(oriented.size.width, oriented.size.height);
+        float orMin = std::min(oriented.size.width, oriented.size.height);
 
         if (orMin < _minOrientedRectSide) {
             continue;
@@ -1252,7 +1252,7 @@ void EllipseDetectorImpl::preProcessing(Mat1b &src, Mat1b &dp, Mat1b &dn) {
 
     // compute histogram
     int binSize = cvFloor(maxGrad / float(NUM_BINS) + 0.5f) + 1;
-    binSize = max(1, binSize);
+    binSize = std::max(1, binSize);
     int bins[NUM_BINS] = {0};
     for (int i = 0; i < imgSize.height; i++) {
         auto *tmpMag = magGrad.ptr<float>(i);
@@ -1486,7 +1486,7 @@ void EllipseDetectorImpl::detect(Mat1b &image, std::vector<Ellipse> &ellipses) {
     Mat1b dn = Mat1b::zeros(_imgSize); // arcs along negative diagonal
 
     // initialize accumulator dimensions
-    ACC_N_SIZE = 101, ACC_R_SIZE = 180, ACC_A_SIZE = max(_imgSize.height, _imgSize.width);
+    ACC_N_SIZE = 101, ACC_R_SIZE = 180, ACC_A_SIZE = std::max(_imgSize.height, _imgSize.width);
 
     // allocate accumulators
     accN = new int[ACC_N_SIZE], accR = new int[ACC_R_SIZE], accA = new int[ACC_A_SIZE];
@@ -1570,13 +1570,13 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
 
                 float a = (q1xq2 - q3xq4); // gama
                 float b = (q3xq4 + 1) * (q1 + q2) - (q1xq2 + 1) * (q3 + q4); // beta
-                float Kp = (-b + sqrt(b * b + 4 * a * a)) / (2 * a); // K+
+                float Kp = (-b + std::sqrt(b * b + 4 * a * a)) / (2 * a); // K+
                 float zplus = ((q1 - Kp) * (q2 - Kp)) / ((1 + q1 * Kp) * (1 + q2 * Kp));
 
                 // available or not
                 if (zplus >= 0.0f) continue;
 
-                float Np = sqrt(-zplus); // N+
+                float Np = std::sqrt(-zplus); // N+
                 float rho = atan(Kp); // rho tmp
                 int rhoDeg;
                 if (Np > 1.f) {
@@ -1606,13 +1606,13 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
 
                 float a = (q1xq2 - q5xq4);
                 float b = (q5xq4 + 1) * (q1 + q2) - (q1xq2 + 1) * (q5 + q4);
-                float Kp = (-b + sqrt(b * b + 4 * a * a)) / (2 * a);
+                float Kp = (-b + std::sqrt(b * b + 4 * a * a)) / (2 * a);
                 float zplus = ((q1 - Kp) * (q2 - Kp)) / ((1 + q1 * Kp) * (1 + q2 * Kp));
 
                 if (zplus >= 0.0f)
                     continue;
 
-                float Np = sqrt(-zplus);
+                float Np = std::sqrt(-zplus);
                 float rho = atan(Kp);
                 int rhoDeg;
                 if (Np > 1.f) {
@@ -1655,13 +1655,13 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
 
                 float a = (q1xq2 - q3xq4);
                 float b = (q3xq4 + 1) * (q1 + q2) - (q1xq2 + 1) * (q3 + q4);
-                float Kp = (-b + sqrt(b * b + 4 * a * a)) / (2 * a);
+                float Kp = (-b + std::sqrt(b * b + 4 * a * a)) / (2 * a);
                 float zplus = ((q1 - Kp) * (q2 - Kp)) / ((1 + q1 * Kp) * (1 + q2 * Kp));
 
                 if (zplus >= 0.0f)
                     continue;
 
-                float Np = sqrt(-zplus);
+                float Np = std::sqrt(-zplus);
                 float rho = atan(Kp);
                 int rhoDeg;
                 if (Np > 1.f) {
@@ -1691,14 +1691,14 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
 
                 float a = (q1xq2 - q5xq4);
                 float b = (q5xq4 + 1) * (q1 + q2) - (q1xq2 + 1) * (q5 + q4);
-                float Kp = (-b + sqrt(b * b + 4 * a * a)) / (2 * a);
+                float Kp = (-b + std::sqrt(b * b + 4 * a * a)) / (2 * a);
                 float zplus = ((q1 - Kp) * (q2 - Kp)) / ((1 + q1 * Kp) * (1 + q2 * Kp));
 
                 if (zplus >= 0.0f) {
                     continue;
                 }
 
-                float Np = sqrt(-zplus);
+                float Np = std::sqrt(-zplus);
                 float rho = atan(Kp);
                 int rhoDeg;
                 if (Np > 1.f) {
@@ -1733,10 +1733,10 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
     // estimate A. See Eq. [19 - 22] in Sect [3.2.3] of the paper
     for (ushort l = 0; l < sz_ei; ++l) {
         Point &pp = edge_i[l];
-        float sk = 1.f / sqrt(Kp * Kp + 1.f); // cos rho
+        float sk = 1.f / std::sqrt(Kp * Kp + 1.f); // cos rho
         float x0 = ((pp.x - a0) * sk) + (((pp.y - b0) * Kp) * sk);
         float y0 = -(((pp.x - a0) * Kp) * sk) + ((pp.y - b0) * sk);
-        float Ax = sqrt((x0 * x0 * Np * Np + y0 * y0) / ((Np * Np) * (1.f + Kp * Kp)));
+        float Ax = std::sqrt((x0 * x0 * Np * Np + y0 * y0) / ((Np * Np) * (1.f + Kp * Kp)));
         int A = cvRound(abs(Ax / cos(rho)));
         if ((0 <= A) && (A < ACC_A_SIZE))
             ++accA[A];
@@ -1744,10 +1744,10 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
 
     for (ushort l = 0; l < sz_ej; ++l) {
         Point &pp = edge_j[l];
-        float sk = 1.f / sqrt(Kp * Kp + 1.f);
+        float sk = 1.f / std::sqrt(Kp * Kp + 1.f);
         float x0 = ((pp.x - a0) * sk) + (((pp.y - b0) * Kp) * sk);
         float y0 = -(((pp.x - a0) * Kp) * sk) + ((pp.y - b0) * sk);
-        float Ax = sqrt((x0 * x0 * Np * Np + y0 * y0) / ((Np * Np) * (1.f + Kp * Kp)));
+        float Ax = std::sqrt((x0 * x0 * Np * Np + y0 * y0) / ((Np * Np) * (1.f + Kp * Kp)));
         int A = cvRound(abs(Ax / cos(rho)));
         if ((0 <= A) && (A < ACC_A_SIZE))
             ++accA[A];
@@ -1755,10 +1755,10 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
 
     for (ushort l = 0; l < sz_ek; ++l) {
         Point &pp = edge_k[l];
-        float sk = 1.f / sqrt(Kp * Kp + 1.f);
+        float sk = 1.f / std::sqrt(Kp * Kp + 1.f);
         float x0 = ((pp.x - a0) * sk) + (((pp.y - b0) * Kp) * sk);
         float y0 = -(((pp.x - a0) * Kp) * sk) + ((pp.y - b0) * sk);
-        float Ax = sqrt((x0 * x0 * Np * Np + y0 * y0) / ((Np * Np) * (1.f + Kp * Kp)));
+        float Ax = std::sqrt((x0 * x0 * Np * Np + y0 * y0) / ((Np * Np) * (1.f + Kp * Kp)));
         int A = cvRound(abs(Ax / cos(rho)));
         if ((0 <= A) && (A < ACC_A_SIZE))
             ++accA[A];
@@ -1865,7 +1865,7 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
     }
 
     // this allows to get rid of thick edges
-    float rel = min(1.f, ((di + dj + dk) / (3 * (ell.a + ell.b))));
+    float rel = std::min(1.f, ((di + dj + dk) / (3 * (ell.a + ell.b))));
 
     if (rel < _minReliability)
         return;
@@ -1902,7 +1902,7 @@ void EllipseDetectorImpl::clusterEllipses(std::vector<Ellipse> &ellipses) {
             Ellipse &e2 = clusters[j];
             float ba_e2 = e2.b / e2.a;
 
-            float cDistanceThreshold = min(e1.b, e2.b) * DcRatioThreshold;
+            float cDistanceThreshold = std::min(e1.b, e2.b) * DcRatioThreshold;
             cDistanceThreshold = cDistanceThreshold * cDistanceThreshold;
 
             // filter centers
@@ -1912,12 +1912,12 @@ void EllipseDetectorImpl::clusterEllipses(std::vector<Ellipse> &ellipses) {
                 continue;
 
             // filter a
-            float aDistance = abs(e1.a - e2.a) / max(e1.a, e2.a);
+            float aDistance = abs(e1.a - e2.a) / std::max(e1.a, e2.a);
             if (aDistance > aDistanceThreshold)
                 continue;
 
             // filter b
-            float bDistance = abs(e1.b - e2.b) / min(e1.b, e2.b);
+            float bDistance = abs(e1.b - e2.b) / std::min(e1.b, e2.b);
             if (bDistance > bDistanceThreshold)
                 continue;
 
@@ -1959,7 +1959,7 @@ void findEllipses(
     // set class parameters
     Size imgSize = image.size();
     float maxCenterDistance =
-            sqrt(float(imgSize.width * imgSize.width + imgSize.height * imgSize.height)) *
+            std::sqrt(float(imgSize.width * imgSize.width + imgSize.height * imgSize.height)) *
             centerDistanceThreshold;
     EllipseDetectorImpl edi;
     edi.setParameters(maxCenterDistance, scoreThreshold, reliabilityThreshold);

@@ -76,7 +76,7 @@ namespace tld {
 			//Calculate the variance in initial BB
 			originalVariance_ = variance(image(boundingBox));
 			//Find the scale
-			double scale = scaleAndBlur(image, cvRound(log(1.0 * boundingBox.width / (minSize.width)) / log(SCALE_STEP)),
+			double scale = scaleAndBlur(image, cvRound(std::log(1.0 * boundingBox.width / (minSize.width)) / std::log(SCALE_STEP)),
 				scaledImg, blurredImg, GaussBlurKernelSize, SCALE_STEP);
 			GaussianBlur(image, image_blurred, GaussBlurKernelSize, 0.0);
 			TLDDetector::generateScanGrid(image.rows, image.cols, minSize_, scanGrid);

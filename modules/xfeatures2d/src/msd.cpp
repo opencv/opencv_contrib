@@ -209,7 +209,7 @@ namespace cv
 
                 cv::Mat img = _image.getMat();
                 if (m_n_scales == -1)
-                    m_cur_n_scales = cvFloor(std::log(cv::min(img.cols, img.rows) / ((m_patch_radius + m_search_area_radius)*2.0 + 1)) / std::log(m_scale_factor));
+                    m_cur_n_scales = cvFloor(std::log(std::min(img.cols, img.rows) / ((m_patch_radius + m_search_area_radius)*2.0 + 1)) / std::log(m_scale_factor));
                 else
                     m_cur_n_scales = m_n_scales;
 
@@ -714,7 +714,7 @@ namespace cv
 
                         bool is_max = true;
 
-                        for (int k = cv::max(0, r - m_nms_scale_radius); k <= cv::min(m_cur_n_scales - 1, r + m_nms_scale_radius); k++)
+                        for (int k = std::max(0, r - m_nms_scale_radius); k <= std::min(m_cur_n_scales - 1, r + m_nms_scale_radius); k++)
                         {
                             if (k != r)
                             {
@@ -729,9 +729,9 @@ namespace cv
                             }
                         }
 
-                        for (int v = cv::max(border, j - m_nms_radius); v <= cv::min(cH - border - 1, j + m_nms_radius); v++)
+                        for (int v = std::max(border, j - m_nms_radius); v <= std::min(cH - border - 1, j + m_nms_radius); v++)
                         {
-                            for (int u = cv::max(border, i - m_nms_radius); u <= cv::min(cW - border - 1, i + m_nms_radius); u++)
+                            for (int u = std::max(border, i - m_nms_radius); u <= std::min(cW - border - 1, i + m_nms_radius); u++)
                             {
                                 if (saliency[r][j * cW + i] < saliency[r][v * cW + u])
                                 {

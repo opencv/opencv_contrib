@@ -210,7 +210,7 @@ public:
                 v_int32x4 vdelta = v_setall_s32(1 << (W_BITS - 5 - 1));
                 v_int16x8 vmax_val_16 = v_setall_s16(std::numeric_limits<unsigned short>::max());
                 float gainVal = gainVec.x > 0 ? gainVec.x : -gainVec.x;
-                int bitShift = gainVec.x == 0 ? 1 : cvCeil(log(200.f / gainVal) / log(2.f));
+                int bitShift = gainVec.x == 0 ? 1 : cvCeil(std::log2(200.f / gainVal));
                 v_int16x8 vgain_value = v_setall_s16(static_cast<short>(gainVec.x * (float)(1 << bitShift)));
                 v_int16x8 vconst_value = v_setall_s16(static_cast<short>(gainVec.y));
 #endif

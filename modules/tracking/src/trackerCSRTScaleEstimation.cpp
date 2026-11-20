@@ -89,28 +89,28 @@ DSST::DSST(const Mat &image,
     if(scales_count % 2 == 0)
         scales_count++;
 
-    scale_sigma = static_cast<float>(sqrt(scales_count) * sigma_factor);
+    scale_sigma = static_cast<float>(std::sqrt(scales_count) * sigma_factor);
 
-    min_scale_factor = static_cast<float>(pow(scale_step,
-            cvCeil(log(max(5.0 / template_size.width, 5.0 / template_size.height)) / log(scale_step))));
-    max_scale_factor = static_cast<float>(pow(scale_step,
-            cvFloor(log(min((float)image.rows / (float)bounding_box.width,
-            (float)image.cols / (float)bounding_box.height)) / log(scale_step))));
+    min_scale_factor = static_cast<float>(std::pow(scale_step,
+            cvCeil(std::log(std::max(5.0 / template_size.width, 5.0 / template_size.height)) / std::log(scale_step))));
+    max_scale_factor = static_cast<float>(std::pow(scale_step,
+            cvFloor(std::log(std::min((float)image.rows / (float)bounding_box.width,
+            (float)image.cols / (float)bounding_box.height)) / std::log(scale_step))));
     ys = Mat(1, scales_count, CV_32FC1);
     float ss, sf;
     for(int i = 0; i < ys.cols; ++i) {
         ss = (float)(i+1) - cvCeil((float)scales_count / 2.0f);
-        ys.at<float>(0,i) = static_cast<float>(exp(-0.5 * pow(ss,2) / pow(scale_sigma,2)));
+        ys.at<float>(0,i) = static_cast<float>(std::exp(-0.5 * std::pow(ss,2) / std::pow(scale_sigma,2)));
         sf = static_cast<float>(i + 1);
-        scale_factors.push_back(pow(scale_step, cvCeil((float)scales_count / 2.0f) - sf));
+        scale_factors.push_back(std::pow(scale_step, cvCeil((float)scales_count / 2.0f) - sf));
     }
 
     scale_window = get_hann_win(Size(scales_count, 1));
 
     float scale_model_factor = 1.0;
-    if(template_size.width * template_size.height * pow(scale_model_factor, 2) > max_model_area)
+    if(template_size.width * template_size.height * std::pow(scale_model_factor, 2) > max_model_area)
     {
-        scale_model_factor = sqrt(max_model_area /
+        scale_model_factor = std::sqrt(max_model_area /
                 (template_size.width * template_size.height));
     }
     scale_model_sz = Size(cvFloor(template_size.width * scale_model_factor),

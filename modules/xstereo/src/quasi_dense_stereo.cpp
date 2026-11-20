@@ -267,7 +267,7 @@ public:
                 int dx = col-matchMap.at<cv::Point2i>(tmpPoint).x;
                 int dy = row-matchMap.at<cv::Point2i>(tmpPoint).y;
                 //calculate disparity of current pixel.
-                dispMat.at<float>(tmpPoint) = sqrt(float(dx*dx+dy*dy));
+                dispMat.at<float>(tmpPoint) = std::sqrt(float(dx*dx+dy*dy));
             }
         }
     }
@@ -300,8 +300,8 @@ public:
         m1 /= wa;
 
         // standard deviations
-        s0 = sqrt(s0-wa*m0*m0);
-        s1 = sqrt(s1-wa*m1*m1);
+        s0 = std::sqrt(s0-wa*m0*m0);
+        s1 = std::sqrt(s1-wa*m1*m1);
 
 
         for (int col=-wy; col<=wy; col++)
@@ -449,7 +449,7 @@ public:
                 c = (float)abs(center - left);
                 d = (float)abs(center - right);
                 //choose the biggest of them.
-                int val = (int) std::max(a, std::max(b, std::max(c, d)));
+                int val = (int) std::max({a, b, c, d});
                 descriptor.at<int>(row, col) = val;
             }
         }

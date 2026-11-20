@@ -172,11 +172,11 @@ __host__ __device__ __forceinline__ void rgb2CIELab( const Vector4u& pix_in,
     float _r = (float)pix_in.z / 255;
 
     if (_b <= 0.04045f)    _b = _b / 12.92f;
-    else                   _b = pow( (_b + 0.055f) / 1.055f, 2.4f );
+    else                   _b = std::pow( (_b + 0.055f) / 1.055f, 2.4f );
     if (_g <= 0.04045f)    _g = _g / 12.92f;
-    else                   _g = pow( (_g + 0.055f) / 1.055f, 2.4f );
+    else                   _g = std::pow( (_g + 0.055f) / 1.055f, 2.4f );
     if (_r <= 0.04045f)    _r = _r / 12.92f;
-    else                   _r = pow( (_r + 0.055f) / 1.055f, 2.4f );
+    else                   _r = std::pow( (_r + 0.055f) / 1.055f, 2.4f );
 
     float x = _r*0.4124564f + _g*0.3575761f + _b*0.1804375f;
     float y = _r*0.2126729f + _g*0.7151522f + _b*0.0721750f;
@@ -194,11 +194,11 @@ __host__ __device__ __forceinline__ void rgb2CIELab( const Vector4u& pix_in,
     float zr = z / Zr;
 
     float fx, fy, fz;
-    if ( xr > epsilon )    fx = pow( xr, 1.0f / 3.0f );
+    if ( xr > epsilon )    fx = std::pow( xr, 1.0f / 3.0f );
     else                fx = ( kappa*xr + 16.0f ) / 116.0f;
-    if ( yr > epsilon )    fy = pow( yr, 1.0f / 3.0f );
+    if ( yr > epsilon )    fy = std::pow( yr, 1.0f / 3.0f );
     else                fy = ( kappa*yr + 16.0f ) / 116.0f;
-    if ( zr > epsilon )    fz = pow( zr, 1.0f / 3.0f );
+    if ( zr > epsilon )    fz = std::pow( zr, 1.0f / 3.0f );
     else                fz = ( kappa*zr + 16.0f ) / 116.0f;
 
     pix_out.x = 116.0f*fy - 16.0f;

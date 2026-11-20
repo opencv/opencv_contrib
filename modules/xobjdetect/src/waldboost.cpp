@@ -243,7 +243,7 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
             minMaxIdx(err_backward, &err2, NULL, idx2);
 //#pragma omp critical
             {
-            if (min(err1, err2) < min_err) {
+            if (std::min(err1, err2) < min_err) {
                 if (err1 < err2) {
                     min_err = err1;
                     min_polarity = +1;
@@ -265,7 +265,7 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
         }
 
 
-        float alpha = .5f * (float)log((1 - min_err) / min_err);
+        float alpha = .5f * (float)std::log((1 - min_err) / min_err);
         alphas_.push_back(alpha);
         feature_indices_.push_back(min_feature_ind);
         thresholds_.push_back(min_threshold);
@@ -277,18 +277,18 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
         for (int j = 0; j < data_pos.cols; ++j) {
             int val = data_pos.at<unsigned char>(min_feature_ind, j);
             int label = min_polarity * (val - threshold_q) >= 0 ? +1 : -1;
-            pos_weights(0, j) *= exp(-alpha * label);
+            pos_weights(0, j) *= std::exp(-alpha * label);
             pos_trace(0, j) += alpha * label;
-            loss += exp(-pos_trace(0, j)) / (2.0f * data_pos.cols);
+            loss += std::exp(-pos_trace(0, j)) / (2.0f * data_pos.cols);
         }
 
         // Update negative weights
         for (int j = 0; j < data_neg.cols; ++j) {
             int val = data_neg.at<unsigned char>(min_feature_ind, j);
             int label = min_polarity * (val - threshold_q) >= 0 ? +1 : -1;
-            neg_weights(0, j) *= exp(alpha * label);
+            neg_weights(0, j) *= std::exp(alpha * label);
             neg_trace(0, j) += alpha * label;
-            loss += exp(+neg_trace(0, j)) / (2.0f * data_neg.cols);
+            loss += std::exp(+neg_trace(0, j)) / (2.0f * data_neg.cols);
         }
         double cascade_threshold = -1;
         minMaxIdx(pos_trace, &cascade_threshold);

@@ -206,7 +206,7 @@ void charbonnier_diffusivity(InputArray _Lx, InputArray _Ly, OutputArray _dst, f
     float* dst_row = dst.ptr<float>(y);
 
     for (int x = 0; x < sz.width; x++) {
-      float den = sqrt(1.0f+inv_k*(Lx_row[x]*Lx_row[x] + Ly_row[x]*Ly_row[x]));
+      float den = std::sqrt(1.0f+inv_k*(Lx_row[x]*Lx_row[x] + Ly_row[x]*Ly_row[x]));
       dst_row[x] = 1.0f / den;
     }
   }
@@ -262,7 +262,7 @@ float compute_k_percentile(const cv::Mat& img, float perc, float gscale, int nbi
             }
         }
     }
-    hmax = sqrt(hmax);
+    hmax = std::sqrt(hmax);
     // Skip the borders for computing the histogram
     for (int i = 1; i < gaussian.rows - 1; i++) {
         const float *lx = Lx.ptr<float>(i);
@@ -272,7 +272,7 @@ float compute_k_percentile(const cv::Mat& img, float perc, float gscale, int nbi
 
             // Find the correspondent bin
             if (modg != 0.0) {
-                nbin = (int)floor(nbins*(sqrt(modg) / hmax));
+                nbin = (int)floor(nbins*(std::sqrt(modg) / hmax));
 
                 if (nbin == nbins) {
                     nbin--;

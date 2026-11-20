@@ -179,7 +179,7 @@ public:
                 det *= w.at<double>(j);
 
             divide(1., w, w);
-            c.at<double>(cls) = det > 0 ? log(det) : -700;
+            c.at<double>(cls) = det > 0 ? std::log(det) : -700;
         }
 
         return true;
@@ -276,7 +276,7 @@ public:
                         cls = i;
                         opt = cur;
                     }
-                    probability = exp( -0.5 * cur );
+                    probability = std::exp( -0.5 * cur );
 
                     if( results_prob )
                     {

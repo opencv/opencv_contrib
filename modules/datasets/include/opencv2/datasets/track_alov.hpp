@@ -48,8 +48,6 @@
 #include "opencv2/datasets/dataset.hpp"
 #include "opencv2/datasets/util.hpp"
 
-using namespace std;
-
 namespace cv
 {
 namespace datasets
@@ -62,10 +60,10 @@ struct TRACK_alovObj : public Object
 {
     int id;
     std::string imagePath;
-    vector <Point2f> gtbb;
+    std::vector<Point2f> gtbb;
 };
 
-const string sectionNames[] = { "01-Light", "02-SurfaceCover", "03-Specularity", "04-Transparency", "05-Shape", "06-MotionSmoothness", "07-MotionCoherence",
+const std::string sectionNames[] = { "01-Light", "02-SurfaceCover", "03-Specularity", "04-Transparency", "05-Shape", "06-MotionSmoothness", "07-MotionCoherence",
 "08-Clutter", "09-Confusion", "10-LowContrast", "11-Occlusion", "12-MovingCamera", "13-ZoomingCamera", "14-LongDuration" };
 
 const int sectionSizes[] = { 33, 15, 18, 20, 24, 22, 12, 15, 37, 23, 34, 22, 29, 10 };
@@ -87,14 +85,14 @@ public:
     virtual bool initDataset(int id) = 0;
 
     virtual bool getNextFrame(Mat &frame) = 0;
-    virtual vector <Point2f> getNextGT() = 0;
+    virtual std::vector<Point2f> getNextGT() = 0;
 
     //Get frame/GT by datasetID (1..N) frameID (1..K)
     virtual bool getFrame(Mat &frame, int datasetID, int frameID) = 0;
-    virtual vector <Point2f> getGT(int datasetID, int frameID) = 0;
+    virtual std::vector<Point2f> getGT(int datasetID, int frameID) = 0;
 
 protected:
-    vector <vector <Ptr<TRACK_alovObj> > > data;
+    std::vector<std::vector<Ptr<TRACK_alovObj> > > data;
     int activeDatasetID;
     int frameCounter;
 };

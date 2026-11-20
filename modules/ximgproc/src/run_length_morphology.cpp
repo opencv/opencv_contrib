@@ -311,7 +311,7 @@ static void erode_rle (rlVec& regIn, rlVec& regOut, rlVec& se)
 
           // search for row with max( cb - se.cb) (the leftmost possible position of a result chord
           for (j=0;j<nRowsSE;j++)
-              nPossibleStart = max(nPossibleStart, regIn[pCurIdxRow[j]].cb - se[j].cb);
+              nPossibleStart = std::max(nPossibleStart, regIn[pCurIdxRow[j]].cb - se[j].cb);
 
           // for all rows skip chords whose end is left from the point
           // where it can contribute to a result
@@ -404,7 +404,7 @@ static void mergeNeighbouringChords(rlVec& rlIn, rlVec& rlOut)
         rlType& curIn = rlIn[i];
         rlType& lastAddedOut = rlOut.back();
         if (curIn.r == lastAddedOut.r && curIn.cb <= lastAddedOut.ce + 1)
-            lastAddedOut.ce = max(curIn.ce, lastAddedOut.ce);
+            lastAddedOut.ce = std::max(curIn.ce, lastAddedOut.ce);
         else
             rlOut.push_back(curIn);
     }
@@ -438,8 +438,8 @@ static void intersect(rlVec& reg1, rlVec& reg2, rlVec& regRes)
         else
         {
             assert(cur1->r == cur2->r);
-            int nStart = max(cur1->cb, cur2->cb);
-            int nEnd = min(cur1->ce, cur2->ce);
+            int nStart = std::max(cur1->cb, cur2->cb);
+            int nEnd = std::min(cur1->ce, cur2->ce);
             if (nStart > nEnd)
             {
                 assert(nStart <= nEnd);
@@ -490,10 +490,10 @@ static cv::Rect getBoundingRectangle(rlVec& reg)
     int i;
     for (i = 0; i<(int)reg.size(); i++)
     {
-        minX = min(minX, reg[i].cb);
-        maxX = max(maxX, reg[i].ce);
-        minY = min(minY, reg[i].r);
-        maxY = max(maxY, reg[i].r);
+        minX = std::min(minX, reg[i].cb);
+        maxX = std::max(maxX, reg[i].ce);
+        minY = std::min(minY, reg[i].r);
+        maxY = std::max(maxY, reg[i].r);
     }
 
     rect.x = minX;
@@ -524,8 +524,8 @@ static void erode_with_boundary_rle(rlVec& runsSource, int nWidth, int nHeight, 
 {
     cv::Rect rect = getBoundingRectangle(runsKernel);
     rlVec regExtended, regFrame, regResultRaw;
-    addBoundary(runsSource, nWidth, nHeight, max(0, -rect.x), max(0, -rect.y),
-        max(0, rect.x + rect.width), max(0, rect.y + rect.height), regExtended);
+    addBoundary(runsSource, nWidth, nHeight, std::max(0, -rect.x), std::max(0, -rect.y),
+        std::max(0, rect.x + rect.width), std::max(0, rect.y + rect.height), regExtended);
 
     erode_rle(regExtended, regResultRaw, runsKernel);
     createUprightRectangle(cv::Rect(0, 0, nWidth, nHeight), regFrame);

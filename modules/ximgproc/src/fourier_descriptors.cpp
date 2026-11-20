@@ -214,7 +214,7 @@ void fourierDescriptor(InputArray _src, OutputArray _dst, int nbElt, int nbFD)
     Mat  z = _src.getMat();
     CV_Assert(z.rows == 1 || z.cols == 1);
     if (nbElt==-1)
-        nbElt = getOptimalDFTSize(max(z.rows, z.cols));
+        nbElt = getOptimalDFTSize(std::max(z.rows, z.cols));
     CV_Assert((nbFD >= 1 && nbFD <=nbElt/2) || nbFD==-1);
     Mat  Z;
     if (z.rows*z.cols!=nbElt)

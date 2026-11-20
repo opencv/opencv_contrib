@@ -48,8 +48,6 @@
 #include "opencv2/datasets/dataset.hpp"
 #include "opencv2/datasets/util.hpp"
 
-using namespace std;
-
 namespace cv
 {
 namespace datasets
@@ -62,7 +60,7 @@ struct TRACK_votObj : public Object
 {
     int id;
     std::string imagePath;
-    vector <Point2d> gtbb;
+    std::vector<Point2d> gtbb;
 };
 
 class CV_EXPORTS TRACK_vot : public Dataset
@@ -80,10 +78,10 @@ public:
 
     virtual bool getNextFrame(Mat &frame) = 0;
 
-    virtual vector <Point2d> getGT() = 0;
+    virtual std::vector<Point2d> getGT() = 0;
 
 protected:
-    vector <vector <Ptr<TRACK_votObj> > > data;
+    std::vector<std::vector<Ptr<TRACK_votObj> > > data;
     int activeDatasetID;
     int frameCounter;
 };

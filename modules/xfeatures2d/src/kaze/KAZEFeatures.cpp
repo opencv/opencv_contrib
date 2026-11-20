@@ -68,7 +68,7 @@ void KAZEFeatures::Allocate_Memory_Evolution(void) {
             aux.Lt = Mat::zeros(options_.img_height, options_.img_width, CV_32F);
             aux.Lsmooth = Mat::zeros(options_.img_height, options_.img_width, CV_32F);
             aux.Ldet = Mat::zeros(options_.img_height, options_.img_width, CV_32F);
-            aux.esigma = options_.soffset*pow((float)2.0f, (float)(j) / (float)(options_.nsublevels)+i);
+            aux.esigma = options_.soffset*std::pow((float)2.0f, (float)(j) / (float)(options_.nsublevels)+i);
             aux.etime = 0.5f*(aux.esigma*aux.esigma);
             aux.sigma_size = cvRound(aux.esigma);
             aux.octave = i;
@@ -474,7 +474,7 @@ void KAZEFeatures::Do_Subpixel_Refinement(std::vector<KeyPoint> &kpts) {
                         dsc = kpts_[i].octave + (kpts_[i].angle + *(dst.ptr<float>(2))) / ((float)(options_.nsublevels));
 
             // In OpenCV the size of a keypoint is the diameter!!
-                        kpts_[i].size = 2.0f*options_.soffset*pow((float)2.0f, dsc);
+                        kpts_[i].size = 2.0f*options_.soffset*std::pow((float)2.0f, dsc);
             kpts_[i].angle = 0.0;
         }
         // Set the points to be deleted after the for loop
@@ -770,7 +770,7 @@ void KAZE_Descriptor_Invoker::Get_KAZE_Upright_Descriptor_64(const KeyPoint &kpt
     }
 
     // convert to unit vector
-    len = sqrt(len);
+    len = std::sqrt(len);
 
     for (i = 0; i < dsize; i++) {
         desc[i] /= len;
@@ -899,7 +899,7 @@ void KAZE_Descriptor_Invoker::Get_KAZE_Descriptor_64(const KeyPoint &kpt, float 
     }
 
     // convert to unit vector
-    len = sqrt(len);
+    len = std::sqrt(len);
 
     for (i = 0; i < dsize; i++) {
         desc[i] /= len;
@@ -1051,7 +1051,7 @@ void KAZE_Descriptor_Invoker::Get_KAZE_Upright_Descriptor_128(const KeyPoint &kp
     }
 
     // convert to unit vector
-    len = sqrt(len);
+    len = std::sqrt(len);
 
     for (i = 0; i < dsize; i++) {
         desc[i] /= len;
@@ -1208,7 +1208,7 @@ void KAZE_Descriptor_Invoker::Get_KAZE_Descriptor_128(const KeyPoint &kpt, float
     }
 
     // convert to unit vector
-    len = sqrt(len);
+    len = std::sqrt(len);
 
     for (i = 0; i < dsize; i++) {
         desc[i] /= len;

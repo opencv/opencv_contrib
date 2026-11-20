@@ -14,7 +14,7 @@ void logTransform(const Mat input, Mat& output)
 {
     double maxVal;
     minMaxLoc(input, NULL, &maxVal, NULL, NULL);
-    const double c = 255 / log(1 + maxVal);
+    const double c = 255 / std::log(1 + maxVal);
     Mat add_one_64f;
     input.convertTo(add_one_64f, CV_64F, 1, 1.0f);
     Mat log_64f;
@@ -27,7 +27,7 @@ void gammaCorrection(const Mat input, Mat& output, const float gamma)
     std::array<uchar, 256> table;
     for (int i = 0; i < 256; i++)
     {
-        table[i] = saturate_cast<uchar>(pow((i / 255.0), gamma) * 255.0);
+        table[i] = saturate_cast<uchar>(std::pow((i / 255.0), gamma) * 255.0);
     }
 
     LUT(input, table, output);

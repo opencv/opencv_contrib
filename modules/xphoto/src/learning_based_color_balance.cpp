@@ -205,7 +205,7 @@ void LearningBasedWBImpl::preprocessing(Mat &src)
 #endif
         for (; i < src_len; i++)
         {
-            local_max = max(src_ptr[3 * i], max(src_ptr[3 * i + 1], src_ptr[3 * i + 2]));
+            local_max = std::max({src_ptr[3 * i], src_ptr[3 * i + 1], src_ptr[3 * i + 2]});
             if (local_max > src_max_val)
                 src_max_val = local_max;
             if (local_max < thresh)
@@ -238,7 +238,7 @@ void LearningBasedWBImpl::preprocessing(Mat &src)
 #endif
         for (; i < src_len; i++)
         {
-            local_max = max(src_ptr[3 * i], max(src_ptr[3 * i + 1], src_ptr[3 * i + 2]));
+            local_max = std::max({src_ptr[3 * i], src_ptr[3 * i + 1], src_ptr[3 * i + 2]});
             if (local_max > src_max_val)
                 src_max_val = local_max;
             if (local_max < thresh)
@@ -344,7 +344,7 @@ void LearningBasedWBImpl::getAverageAndBrightestColorChromaticity(Vec2f &average
                 }
             }
         }
-        double maxRGB = (double)max(sumR, max(sumG, sumB));
+        double maxRGB = (double)std::max({sumR, sumG, sumB});
         getChromaticity(average_chromaticity, (float)(sumR / maxRGB), (float)(sumG / maxRGB), (float)(sumB / maxRGB));
         getChromaticity(brightest_chromaticity, (float)brightestR, (float)brightestG, (float)brightestB);
     }
@@ -440,7 +440,7 @@ void LearningBasedWBImpl::getAverageAndBrightestColorChromaticity(Vec2f &average
                 }
             }
         }
-        double maxRGB = (double)max(sumR, max(sumG, sumB));
+        double maxRGB = (double)std::max({sumR, sumG, sumB});
         getChromaticity(average_chromaticity, (float)(sumR / maxRGB), (float)(sumG / maxRGB), (float)(sumB / maxRGB));
         getChromaticity(brightest_chromaticity, (float)brightestR, (float)brightestG, (float)brightestB);
     }
@@ -463,7 +463,7 @@ void LearningBasedWBImpl::getColorPaletteMode(Vec2f &dst, hist_elem *palette)
         {
             cur_dist_sq = (palette[i].r - palette[j].r) * (palette[i].r - palette[j].r) +
                           (palette[i].g - palette[j].g) * (palette[i].g - palette[j].g);
-            cur_density += max((1.0f - (cur_dist_sq / denom)), 0.0f);
+            cur_density += std::max((1.0f - (cur_dist_sq / denom)), 0.0f);
         }
 
         if (cur_density > max_density)
@@ -481,7 +481,7 @@ void LearningBasedWBImpl::getHistogramBasedFeatures(Vec2f &dominant_chromaticity
     MatND hist;
     int channels[] = {0, 1, 2};
     int histSize[] = {hist_bin_num, hist_bin_num, hist_bin_num};
-    float range[] = {0, (float)max(hist_bin_num, src_max_val)};
+    float range[] = {0, (float)std::max(hist_bin_num, src_max_val)};
     const float *ranges[] = {range, range, range};
     calcHist(&src, 1, channels, mask, hist, 3, histSize, ranges);
 
@@ -558,7 +558,7 @@ Vec2f LearningBasedWBImpl::predictIlluminant(vector<Vec2f> features)
     int local_model_size = num_features * feature_model_size;
     int feature_model_size_leaf = 2 * num_tree_nodes;
     int local_model_size_leaf = num_features * feature_model_size_leaf;
-    tree_depth = cvRound( (log(static_cast<float>(num_tree_nodes)) / log(2.0f)) );
+    tree_depth = cvRound( std::log2(static_cast<float>(num_tree_nodes)) );
 
     vector<float> consensus_r, consensus_g;
     vector<float> all_r, all_g;

@@ -435,7 +435,7 @@ namespace tld {
 			for (int i = 0; i < (int)ensBuffer.size(); i++)
 			{
 				LabeledPatch labPatch;
-				double curScale = pow(SCALE_STEP, ensScaleIDs[i]);
+				double curScale = std::pow(SCALE_STEP, ensScaleIDs[i]);
 				labPatch.rect = Rect2d(ensBuffer[i].x*curScale, ensBuffer[i].y*curScale, initSize.width * curScale, initSize.height * curScale);
 
 				const double srValue = srValues[i];
@@ -545,7 +545,7 @@ namespace tld {
 			{
 				LabeledPatch labPatch;
 				standardPatch.data = &stdPatches.data[225 * i];
-				double curScale = pow(SCALE_STEP, ensScaleIDs[i]);
+				double curScale = std::pow(SCALE_STEP, ensScaleIDs[i]);
 				labPatch.rect = Rect2d(ensBuffer[i].x*curScale, ensBuffer[i].y*curScale, initSize.width * curScale, initSize.height * curScale);
 
 				double srValue, scValue;

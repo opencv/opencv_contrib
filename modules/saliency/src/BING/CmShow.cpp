@@ -65,7 +65,7 @@ Mat CmShow::HistBins( CMat& color3f, CMat& val, bool descendShow, CMat &with )
   color3f.convertTo( binColor3b, CV_8UC3, 255 );
   double maxVal, minVal;
   minMaxLoc( val, &minVal, &maxVal );
-  printf( "%g\n", H / max( maxVal, -minVal ) );
+  printf( "%g\n", H / std::max( maxVal, -minVal ) );
   val.convertTo( binVal1i, CV_32S, 20000 );
   Size szShow( W, H + spaceH + barH );
   szShow.height += minVal < 0 && !descendShow ? H + spaceH : 0;

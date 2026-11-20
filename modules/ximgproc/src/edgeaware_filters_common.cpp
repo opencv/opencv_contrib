@@ -503,7 +503,7 @@ void sqrt_(float *dst, float *src, int w)
     }
 #endif
     for (; j < w; j++)
-        dst[j] = sqrt(src[j]);
+        dst[j] = std::sqrt(src[j]);
 }
 
 void min_(float *dst, float *src1, float *src2, int w)

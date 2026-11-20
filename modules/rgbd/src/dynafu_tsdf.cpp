@@ -270,7 +270,7 @@ struct IntegrateInvoker : ParallelLoopBody
                         continue;
 
                     // norm(camPixVec) produces double which is too slow
-                    float pixNorm = sqrt(camPixVec.dot(camPixVec));
+                    float pixNorm = std::sqrt(camPixVec.dot(camPixVec));
                     // difference between distances of point and of surface to camera
                     volumeType sdf = pixNorm*(v*dfac - camSpacePt.z);
                     // possible alternative is:
@@ -289,7 +289,7 @@ struct IntegrateInvoker : ParallelLoopBody
                         if(warpfield->getNodesLen() >= (size_t)warpfield->k)
                         {
                             for(int i = 0; i < voxel.n; i++)
-                                newWeight += sqrt(voxel.neighbourDists[i]);
+                                newWeight += std::sqrt(voxel.neighbourDists[i]);
 
                             if(voxel.n > 0) newWeight /= voxel.n;
 
@@ -298,7 +298,7 @@ struct IntegrateInvoker : ParallelLoopBody
                         if((weight + newWeight) != 0)
                         {
                             value = (value*weight+tsdf*newWeight) / (weight+newWeight);
-                            weight = min(weight+newWeight, volume.maxWeight);
+                            weight = std::min(weight+newWeight, volume.maxWeight);
                         }
                     }
                 }
@@ -452,13 +452,13 @@ struct RaycastInvoker : ParallelLoopBody
                 Point3f ttop    = rayinv.mul(boxMax - orig);
 
                 // re-order intersections to find smallest and largest on each axis
-                Point3f minAx(min(ttop.x, tbottom.x), min(ttop.y, tbottom.y), min(ttop.z, tbottom.z));
-                Point3f maxAx(max(ttop.x, tbottom.x), max(ttop.y, tbottom.y), max(ttop.z, tbottom.z));
+                Point3f minAx(std::min(ttop.x, tbottom.x), std::min(ttop.y, tbottom.y), std::min(ttop.z, tbottom.z));
+                Point3f maxAx(std::max(ttop.x, tbottom.x), std::max(ttop.y, tbottom.y), std::max(ttop.z, tbottom.z));
 
                 // near clipping plane
                 const float clip = 0.f;
-                float tmin = max(max(max(minAx.x, minAx.y), max(minAx.x, minAx.z)), clip);
-                float tmax =     min(min(maxAx.x, maxAx.y), min(maxAx.x, maxAx.z));
+                float tmin = std::max({minAx.x, minAx.y, minAx.z, clip});
+                float tmax =     std::min({maxAx.x, maxAx.y, maxAx.z});
 
                 // precautions against getting coordinates out of bounds
                 tmin = tmin + tstep;

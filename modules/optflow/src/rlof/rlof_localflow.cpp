@@ -421,11 +421,11 @@ void calcLocalOpticalFlowCore(
     if ((criteria.type & TermCriteria::COUNT) == 0)
         criteria.maxCount = 30;
     else
-        criteria.maxCount = std::min(std::max(criteria.maxCount, 0), 100);
+        criteria.maxCount = std::clamp(criteria.maxCount, 0, 100);
     if ((criteria.type & TermCriteria::EPS) == 0)
         criteria.epsilon = 0.001;
     else
-        criteria.epsilon = std::min(std::max(criteria.epsilon, 0.), 10.);
+        criteria.epsilon = std::clamp(criteria.epsilon, 0., 10.);
     criteria.epsilon *= criteria.epsilon;
 
     // dI/dx ~ Ix, dI/dy ~ Iy
@@ -653,7 +653,7 @@ void preprocess(Ptr<CImageBuffer> prevPyramids[2],
 
     float medianDist = (param.globalMotionRansacThreshold == 0) ? 1.f :
         quickselect<float>(distMat, static_cast<int>(noPoints  * static_cast<float>(param.globalMotionRansacThreshold) / 100.f));
-    medianDist = sqrt(medianDist);
+    medianDist = std::sqrt(medianDist);
 
     if (noPoints < 8)
         return;

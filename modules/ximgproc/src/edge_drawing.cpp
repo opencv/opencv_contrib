@@ -72,7 +72,7 @@ void ComputeGradientBody::operator() (const Range& range) const
             if (SumFlag)
                 sum = gx + gy;
             else
-                sum = (int)sqrt((double)gx * gx + gy * gy);
+                sum = (int)std::sqrt((double)gx * gx + gy * gy);
 
             gradRow[x] = (ushort)sum;
 
@@ -1828,7 +1828,7 @@ double EdgeDrawingImpl::ComputeMinDistance(double x1, double y1, double a, doubl
         }
     }
 
-    return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+    return std::sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
 //---------------------------------------------------------------------------------
@@ -1998,7 +1998,7 @@ void EdgeDrawingImpl::LineFit(double* x, double* y, int count, double& a, double
             double dist = (x[i] - x2) * (x[i] - x2) + (y[i] - y2) * (y[i] - y2);
             error += dist;
         }
-        e = sqrt(error / count);
+        e = std::sqrt(error / count);
     }
 }
 
@@ -2017,11 +2017,11 @@ bool EdgeDrawingImpl::TryToJoinTwoLineSegments(EDLineSegment* ls1, EDLineSegment
     // Compute line lengths. Use the longer one as the ground truth
     double dx = ls1->sx - ls1->ex;
     double dy = ls1->sy - ls1->ey;
-    double prevLen = sqrt(dx * dx + dy * dy);
+    double prevLen = std::sqrt(dx * dx + dy * dy);
 
     dx = ls2->sx - ls2->ex;
     dy = ls2->sy - ls2->ey;
-    double nextLen = sqrt(dx * dx + dy * dy);
+    double nextLen = std::sqrt(dx * dx + dy * dy);
 
     // Use the longer line as the ground truth
     EDLineSegment* shorter = ls1;
@@ -2132,13 +2132,13 @@ double EdgeDrawingImpl::ComputeMinDistanceBetweenTwoLines(EDLineSegment* ls1, ED
 {
     double dx = ls1->sx - ls2->sx;
     double dy = ls1->sy - ls2->sy;
-    double d = sqrt(dx * dx + dy * dy);
+    double d = std::sqrt(dx * dx + dy * dy);
     double min = d;
     int which = ED_SOUTH_SOUTH;
 
     dx = ls1->sx - ls2->ex;
     dy = ls1->sy - ls2->ey;
-    d = sqrt(dx * dx + dy * dy);
+    d = std::sqrt(dx * dx + dy * dy);
     if (d < min)
     {
         min = d;
@@ -2147,7 +2147,7 @@ double EdgeDrawingImpl::ComputeMinDistanceBetweenTwoLines(EDLineSegment* ls1, ED
 
     dx = ls1->ex - ls2->sx;
     dy = ls1->ey - ls2->sy;
-    d = sqrt(dx * dx + dy * dy);
+    d = std::sqrt(dx * dx + dy * dy);
     if (d < min)
     {
         min = d;
@@ -2156,7 +2156,7 @@ double EdgeDrawingImpl::ComputeMinDistanceBetweenTwoLines(EDLineSegment* ls1, ED
 
     dx = ls1->ex - ls2->ex;
     dy = ls1->ey - ls2->ey;
-    d = sqrt(dx * dx + dy * dy);
+    d = std::sqrt(dx * dx + dy * dy);
     if (d < min)
     {
         min = d;
@@ -2223,7 +2223,7 @@ void EdgeDrawingImpl::EnumerateRectPoints(double sx, double sy, double ex, doubl
 
     double dx = x2 - x1;
     double dy = y2 - y1;
-    double vLen = sqrt(dx * dx + dy * dy);
+    double vLen = std::sqrt(dx * dx + dy * dy);
 
     // make unit vector
     dx = dx / vLen;
@@ -2583,7 +2583,7 @@ void EdgeDrawingImpl::detectEllipses(OutputArray ellipses)
             // If the end-points of the segment is close to each other, then assume a circular/elliptic structure
             double dx = x[0] - x[noPixels - 1];
             double dy = y[0] - y[noPixels - 1];
-            double d = sqrt(dx * dx + dy * dy);
+            double d = std::sqrt(dx * dx + dy * dy);
             double r = noPixels / CV_2PI;      // Assume a complete circle
 
             double maxDistanceBetweenEndPoints = std::max(3.0, r / 4.0);
@@ -2660,7 +2660,7 @@ void EdgeDrawingImpl::detectEllipses(OutputArray ellipses)
             // If the end points of the lines are far from each other, then stop at this line
             double dx = l1->ex - l2->sx;
             double dy = l1->ey - l2->sy;
-            double d = sqrt(dx * dx + dy * dy);
+            double d = std::sqrt(dx * dx + dy * dy);
             if (d >= 15)
             {
                 info[j].angle = 10;
@@ -2672,11 +2672,11 @@ void EdgeDrawingImpl::detectEllipses(OutputArray ellipses)
             // Compute the angle between the lines & their turn direction
             double v1x = l1->ex - l1->sx;
             double v1y = l1->ey - l1->sy;
-            double v1Len = sqrt(v1x * v1x + v1y * v1y);
+            double v1Len = std::sqrt(v1x * v1x + v1y * v1y);
 
             double v2x = l2->ex - l2->sx;
             double v2y = l2->ey - l2->sy;
-            double v2Len = sqrt(v2x * v2x + v2y * v2y);
+            double v2Len = std::sqrt(v2x * v2x + v2y * v2y);
 
             double dotProduct = (v1x * v2x + v1y * v2y) / (v1Len * v2Len);
             if (dotProduct > 1.0)
@@ -3054,7 +3054,7 @@ void EdgeDrawingImpl::DetectArcs()
                 // Check if this is an almost closed loop (i.e, if 60% of the circle is present). If so, try to fit an ellipse to the entire arc of lines
                 double dx = x[0] - x[noPixels - 1];
                 double dy = y[0] - y[noPixels - 1];
-                double distanceBetweenEndPoints = sqrt(dx * dx + dy * dy);
+                double distanceBetweenEndPoints = std::sqrt(dx * dx + dy * dy);
 
                 bool isAlmostClosedLoop = (distanceBetweenEndPoints <= 1.72 * radius && coverage >= FULL_CIRCLE_RATIO);
                 if (isAlmostClosedLoop || (iter == 1 && coverage >= 0.25))    // an arc covering at least 90 degrees
@@ -3530,7 +3530,7 @@ void EdgeDrawingImpl::JoinCircles()
 
             double dx = circles[i].xc - circles[j].xc;
             double dy = circles[i].yc - circles[j].yc;
-            double centerDistance = sqrt(dx * dx + dy * dy);
+            double centerDistance = std::sqrt(dx * dx + dy * dy);
             if (centerDistance > CENTER_DISTANCE_THRESHOLD)
                 continue;
 
@@ -3741,13 +3741,13 @@ void EdgeDrawingImpl::JoinArcs1()
                 // 1: (SX, SY)-(sx, sy)
                 double dx = SX - arcs[j].sx;
                 double dy = SY - arcs[j].sy;
-                double d = sqrt(dx * dx + dy * dy);
+                double d = std::sqrt(dx * dx + dy * dy);
                 int which = 1;
 
                 // 2: (SX, SY)-(ex, ey)
                 dx = SX - arcs[j].ex;
                 dy = SY - arcs[j].ey;
-                double d2 = sqrt(dx * dx + dy * dy);
+                double d2 = std::sqrt(dx * dx + dy * dy);
 
                 if (d2 < d)
                 {
@@ -3758,7 +3758,7 @@ void EdgeDrawingImpl::JoinArcs1()
                 // 3: (EX, EY)-(sx, sy)
                 dx = EX - arcs[j].sx;
                 dy = EY - arcs[j].sy;
-                d2 = sqrt(dx * dx + dy * dy);
+                d2 = std::sqrt(dx * dx + dy * dy);
 
                 if (d2 < d)
                 {
@@ -3769,7 +3769,7 @@ void EdgeDrawingImpl::JoinArcs1()
                 // 4: (EX, EY)-(ex, ey)
                 dx = EX - arcs[j].ex;
                 dy = EY - arcs[j].ey;
-                d2 = sqrt(dx * dx + dy * dy);
+                d2 = std::sqrt(dx * dx + dy * dy);
 
                 if (d2 < d)
                 {
@@ -4011,13 +4011,13 @@ void EdgeDrawingImpl::JoinArcs2()
                 // 1: (SX, SY)-(sx, sy)
                 double dx = SX - arcs[j].sx;
                 double dy = SY - arcs[j].sy;
-                double d = sqrt(dx * dx + dy * dy);
+                double d = std::sqrt(dx * dx + dy * dy);
                 int which = 1;
 
                 // 2: (SX, SY)-(ex, ey)
                 dx = SX - arcs[j].ex;
                 dy = SY - arcs[j].ey;
-                double d2 = sqrt(dx * dx + dy * dy);
+                double d2 = std::sqrt(dx * dx + dy * dy);
 
                 if (d2 < d)
                 {
@@ -4028,7 +4028,7 @@ void EdgeDrawingImpl::JoinArcs2()
                 // 3: (EX, EY)-(sx, sy)
                 dx = EX - arcs[j].sx;
                 dy = EY - arcs[j].sy;
-                d2 = sqrt(dx * dx + dy * dy);
+                d2 = std::sqrt(dx * dx + dy * dy);
 
                 if (d2 < d)
                 {
@@ -4039,7 +4039,7 @@ void EdgeDrawingImpl::JoinArcs2()
                 // 4: (EX, EY)-(ex, ey)
                 dx = EX - arcs[j].ex;
                 dy = EY - arcs[j].ey;
-                d2 = sqrt(dx * dx + dy * dy);
+                d2 = std::sqrt(dx * dx + dy * dy);
 
                 if (d2 < d)
                 {
@@ -4272,13 +4272,13 @@ void EdgeDrawingImpl::JoinArcs3()
                 // 1: (SX, SY)-(sx, sy)
                 double dx = SX - arcs[j].sx;
                 double dy = SY - arcs[j].sy;
-                double d = sqrt(dx * dx + dy * dy);
+                double d = std::sqrt(dx * dx + dy * dy);
                 int which = 1;
 
                 // 2: (SX, SY)-(ex, ey)
                 dx = SX - arcs[j].ex;
                 dy = SY - arcs[j].ey;
-                double d2 = sqrt(dx * dx + dy * dy);
+                double d2 = std::sqrt(dx * dx + dy * dy);
 
                 if (d2 < d)
                 {
@@ -4289,7 +4289,7 @@ void EdgeDrawingImpl::JoinArcs3()
                 // 3: (EX, EY)-(sx, sy)
                 dx = EX - arcs[j].sx;
                 dy = EY - arcs[j].sy;
-                d2 = sqrt(dx * dx + dy * dy);
+                d2 = std::sqrt(dx * dx + dy * dy);
 
                 if (d2 < d)
                 {
@@ -4300,7 +4300,7 @@ void EdgeDrawingImpl::JoinArcs3()
                 // 4: (EX, EY)-(ex, ey)
                 dx = EX - arcs[j].ex;
                 dy = EY - arcs[j].ey;
-                d2 = sqrt(dx * dx + dy * dy);
+                d2 = std::sqrt(dx * dx + dy * dy);
 
                 if (d2 < d)
                 {
@@ -4597,12 +4597,12 @@ double EdgeDrawingImpl::computeEllipsePerimeter(EllipseEquation* eq)
     cX = -(D3 / 2);   //center X
     cY = -(E3 / 2);   //center Y
 
-    F3 = A2 * pow(cX, 2.0) + C2 * pow(cY, 2.0) - F2;
+    F3 = A2 * std::pow(cX, 2.0) + C2 * std::pow(cY, 2.0) - F2;
 
     //semimajor axis
-    a = sqrt(F3 / A2);
+    a = std::sqrt(F3 / A2);
     //semiminor axis
-    b = sqrt(F3 / C2);
+    b = std::sqrt(F3 / C2);
 
     //Center coordinates have to be re-transformed if rotation is applied!
     if (rotation)
@@ -4613,10 +4613,10 @@ double EdgeDrawingImpl::computeEllipsePerimeter(EllipseEquation* eq)
     }
 
     //Perimeter Computation(s)
-    h = pow((a - b), 2.0) / pow((a + b), 2.0);
+    h = std::pow((a - b), 2.0) / std::pow((a + b), 2.0);
 
     //Ramajunan II
-    double P2 = CV_PI * (a + b) * (1 + 3 * h / (10 + sqrt(4 - 3 * h)));
+    double P2 = CV_PI * (a + b) * (1 + 3 * h / (10 + std::sqrt(4 - 3 * h)));
 
     return P2;
 }
@@ -4656,8 +4656,8 @@ double EdgeDrawingImpl::ComputeEllipseError(EllipseEquation* eq, double* px, dou
             double det = b * b - 4 * a * c;
             if (det < 0)
                 det = 0;
-            double x1 = -(b + sqrt(det)) / (2 * a);
-            double x2 = -(b - sqrt(det)) / (2 * a);
+            double x1 = -(b + std::sqrt(det)) / (2 * a);
+            double x2 = -(b - std::sqrt(det)) / (2 * a);
 
             double y1 = m * x1 + n;
             double y2 = m * x2 + n;
@@ -4694,8 +4694,8 @@ double EdgeDrawingImpl::ComputeEllipseError(EllipseEquation* eq, double* px, dou
             double det = b * b - 4 * a * c;
             if (det < 0)
                 det = 0;
-            double y1 = -(b + sqrt(det)) / (2 * a);
-            double y2 = -(b - sqrt(det)) / (2 * a);
+            double y1 = -(b + std::sqrt(det)) / (2 * a);
+            double y2 = -(b - std::sqrt(det)) / (2 * a);
 
             double x1 = m * y1 + n;
             double x2 = m * y2 + n;
@@ -4734,8 +4734,8 @@ double EdgeDrawingImpl::ComputeEllipseError(EllipseEquation* eq, double* px, dou
             if (det < 0)
                 det = 0;
 
-            double y1 = -(b + sqrt(det)) / (2 * a);
-            double y2 = -(b - sqrt(det)) / (2 * a);
+            double y1 = -(b + std::sqrt(det)) / (2 * a);
+            double y2 = -(b - std::sqrt(det)) / (2 * a);
 
             dx = px[i] - x;
             dy = py[i] - y1;
@@ -4768,8 +4768,8 @@ double EdgeDrawingImpl::ComputeEllipseError(EllipseEquation* eq, double* px, dou
             if (det < 0)
                 det = 0;
 
-            double y1 = -(b + sqrt(det)) / (2 * a);
-            double y2 = -(b - sqrt(det)) / (2 * a);
+            double y1 = -(b + std::sqrt(det)) / (2 * a);
+            double y2 = -(b - std::sqrt(det)) / (2 * a);
 
             dx = px[i] - x;
             dy = py[i] - y1;
@@ -4792,7 +4792,7 @@ double EdgeDrawingImpl::ComputeEllipseError(EllipseEquation* eq, double* px, dou
         error += min;
     }
 
-    error = sqrt(error / noPoints);
+    error = std::sqrt(error / noPoints);
 
     return error;
 }
@@ -4857,12 +4857,12 @@ double EdgeDrawingImpl::ComputeEllipseCenterAndAxisLengths(EllipseEquation* eq, 
     cX = -(D3 / 2);   //center X
     cY = -(E3 / 2);   //center Y
 
-    F3 = A2 * pow(cX, 2.0) + C2 * pow(cY, 2.0) - F2;
+    F3 = A2 * std::pow(cX, 2.0) + C2 * std::pow(cY, 2.0) - F2;
 
     //semimajor axis
-    a = sqrt(F3 / A2);
+    a = std::sqrt(F3 / A2);
     //semiminor axis
-    b = sqrt(F3 / C2);
+    b = std::sqrt(F3 / C2);
 
     //Center coordinates have to be re-transformed if rotation is applied!
     if (rotation)
@@ -4947,7 +4947,7 @@ void EdgeDrawingImpl::ComputeEllipsePoints(double* pvec, double* px, double* py,
     for (j = 1; j <= npts; j++)
     {
         if ((kk = (r1[1][1] / (uAiu[1][j] + uAiu[2][j]))) >= 0.0)
-            lambda[j] = sqrt(kk);
+            lambda[j] = std::sqrt(kk);
         else
             lambda[j] = -1.0;
     }
@@ -5039,7 +5039,7 @@ void EdgeDrawingImpl::joinLastTwoArcs(MyArc* arcs, int& noArcs)
     // End-point distance
     double dx = arcs[prev].ex - arcs[last].sx;
     double dy = arcs[prev].ey - arcs[last].sy;
-    double d = sqrt(dx * dx + dy * dy);
+    double d = std::sqrt(dx * dx + dy * dy);
 
     double endPointDiffThreshold = 10;
     if (d > endPointDiffThreshold)
@@ -5394,7 +5394,7 @@ bool EdgeDrawingImpl::CircleFit(double* x, double* y, int N, double* pxc, double
     double uc = (Svv * b1 - Suv * b2) / detA;
     double vc = (Suu * b2 - Suv * b1) / detA;
 
-    double R = sqrt(uc * uc + vc * vc + (Suu + Svv) / N);
+    double R = std::sqrt(uc * uc + vc * vc + (Suu + Svv) / N);
 
     *pxc = uc + xAvg;
     *pyc = vc + yAvg;
@@ -5405,12 +5405,12 @@ bool EdgeDrawingImpl::CircleFit(double* x, double* y, int N, double* pxc, double
     {
         double dx = x[i] - *pxc;
         double dy = y[i] - *pyc;
-        double d = sqrt(dx * dx + dy * dy) - R;
+        double d = std::sqrt(dx * dx + dy * dy) - R;
         error += d * d;
     }
 
     *pr = R;
-    *pe = sqrt(error / N);
+    *pe = std::sqrt(error / N);
 
     return true;
 }
@@ -5510,7 +5510,7 @@ bool EdgeDrawingImpl::EllipseFit(double* x, double* y, int noPoints, EllipseEqua
         for (int i = 1; i <= 6; i++)
             mod += sol[i][j] * sol[i][j];
         for (int i = 1; i <= 6; i++)
-            sol[i][j] /= sqrt(mod);
+            sol[i][j] /= std::sqrt(mod);
     }
 
     double zero = 10e-20;
@@ -5613,7 +5613,7 @@ void EdgeDrawingImpl::choldc(double** a, int n, double** l)
                 {
                 }
                 else
-                    p[i] = sqrt(sum);
+                    p[i] = std::sqrt(sum);
             }
             else
             {
@@ -5804,11 +5804,11 @@ void EdgeDrawingImpl::jacobi(double** a, int n, double d[], double** v)
                     else
                     {
                         theta = 0.5 * h / (a[ip][iq]);
-                        t = 1.0 / (fabs(theta) + sqrt(1.0 + theta * theta));
+                        t = 1.0 / (fabs(theta) + std::sqrt(1.0 + theta * theta));
                         if (theta < 0.0)
                             t = -t;
                     }
-                    c = 1.0 / sqrt(1 + t * t);
+                    c = 1.0 / std::sqrt(1 + t * t);
                     s = t * c;
                     tau = s / (1.0 + c);
                     h = t * a[ip][iq];
@@ -5984,14 +5984,14 @@ void EdgeDrawingImpl::ComputeGradientMapByDiZenzo()
 #if 1
             // Di Zenzo's formulas from Gonzales & Woods - Page 337
             double theta = atan2(2.0 * gxy, (double)(gxx - gyy)) / 2; // Gradient Direction
-            int grad = (int)(sqrt(((gxx + gyy) + (gxx - gyy) * cos(2 * theta) + 2 * gxy * sin(2 * theta)) / 2.0) + 0.5); // Gradient Magnitude
+            int grad = (int)(std::sqrt(((gxx + gyy) + (gxx - gyy) * cos(2 * theta) + 2 * gxy * sin(2 * theta)) / 2.0) + 0.5); // Gradient Magnitude
 #else
             // Koschan & Abidi - 2005 - Signal Processing Magazine
             double theta = atan2(2.0 * gxy, (double)(gxx - gyy)) / 2; // Gradient Direction
 
             double cosTheta = cos(theta);
             double sinTheta = sin(theta);
-            int grad = (int)(sqrt(gxx * cosTheta * cosTheta + 2 * gxy * sinTheta * cosTheta + gyy * sinTheta * sinTheta) + 0.5); // Gradient Magnitude
+            int grad = (int)(std::sqrt(gxx * cosTheta * cosTheta + 2 * gxy * sinTheta * cosTheta + gyy * sinTheta * sinTheta) + 0.5); // Gradient Magnitude
 #endif
 
             // Gradient is perpendicular to the edge passing through the pixel
@@ -6109,7 +6109,7 @@ void EdgeDrawingImpl::InitColorEDLib()
     for (int i = 0; i <= LUT_SIZE; i++) {
         double d = i * inc;
 
-        if (d >= 0.04045) LUT1[i] = pow(((d + 0.055) / 1.055), 2.4);
+        if (d >= 0.04045) LUT1[i] = std::pow(((d + 0.055) / 1.055), 2.4);
         else              LUT1[i] = d / 12.92;
     }
 
@@ -6117,7 +6117,7 @@ void EdgeDrawingImpl::InitColorEDLib()
     for (int i = 0; i <= LUT_SIZE; i++) {
         double d = i * inc;
 
-        if (d > 0.008856) LUT2[i] = pow(d, 1.0 / 3.0);
+        if (d > 0.008856) LUT2[i] = std::pow(d, 1.0 / 3.0);
         else              LUT2[i] = (7.787 * d) + (16.0 / 116.0);
     }
 

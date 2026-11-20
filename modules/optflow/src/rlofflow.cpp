@@ -419,7 +419,7 @@ class SparseRLOFOpticalFlowImpl : public SparseRLOFOpticalFlow
         for (unsigned int r = 0; r < refPoints.size(); r++)
         {
             Point2f diff = refPoints[r] - prevPoints[r];
-            errorMat.at<float>(r) = sqrt(diff.x * diff.x + diff.y * diff.y);
+            errorMat.at<float>(r) = std::sqrt(diff.x * diff.x + diff.y * diff.y);
             if (errorMat.at<float>(r) > forwardBackwardThreshold)
                 statusMat.at<uchar>(r) = 0;
         }

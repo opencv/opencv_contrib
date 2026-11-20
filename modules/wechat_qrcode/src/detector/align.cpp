@@ -7,8 +7,6 @@
 #include "../precomp.hpp"
 #include "align.hpp"
 
-using std::max;
-using std::min;
 namespace cv {
 namespace wechat_qrcode {
 Align::Align() { rotate90_ = false; }
@@ -47,13 +45,13 @@ Mat Align::crop(const Mat &inputImg, const Mat &srcPts, const float paddingW, co
     int width = x2 - x0 + 1;
     int height = y2 - y0 + 1;
 
-    int padx = max(paddingW * width, static_cast<float>(minPadding));
-    int pady = max(paddingH * height, static_cast<float>(minPadding));
+    int padx = std::max(paddingW * width, static_cast<float>(minPadding));
+    int pady = std::max(paddingH * height, static_cast<float>(minPadding));
 
-    crop_x_ = max(x0 - padx, 0);
-    crop_y_ = max(y0 - pady, 0);
-    int end_x = min(x2 + padx, inputImg.cols - 1);
-    int end_y = min(y2 + pady, inputImg.rows - 1);
+    crop_x_ = std::max(x0 - padx, 0);
+    crop_y_ = std::max(y0 - pady, 0);
+    int end_x = std::min(x2 + padx, inputImg.cols - 1);
+    int end_y = std::min(y2 + pady, inputImg.rows - 1);
 
     Rect crop_roi(crop_x_, crop_y_, end_x - crop_x_ + 1, end_y - crop_y_ + 1);
 

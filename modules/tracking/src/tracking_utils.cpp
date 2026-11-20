@@ -52,8 +52,8 @@ double tracking_internal::computeNCC(const Mat& patch1, const Mat& patch2)
             }
         }
 
-        double sq1 = sqrt(std::max(0.0, n1 - 1.0 * s1 * s1 / N));
-        double sq2 = sqrt(std::max(0.0, n2 - 1.0 * s2 * s2 / N));
+        double sq1 = std::sqrt(std::max(0.0, n1 - 1.0 * s1 * s1 / N));
+        double sq2 = std::sqrt(std::max(0.0, n2 - 1.0 * s2 * s2 / N));
         return (sq2 == 0) ? sq1 / abs(sq1) : (prod - 1.0 * s1 * s2 / N) / sq1 / sq2;
     }
     else
@@ -63,8 +63,8 @@ double tracking_internal::computeNCC(const Mat& patch1, const Mat& patch2)
         double n1 = norm(patch1, NORM_L2SQR);
         double n2 = norm(patch2, NORM_L2SQR);
         double prod=patch1.dot(patch2);
-        double sq1 = sqrt(std::max(0.0, n1 - 1.0 * s1 * s1 / N));
-        double sq2 = sqrt(std::max(0.0, n2 - 1.0 * s2 * s2 / N));
+        double sq1 = std::sqrt(std::max(0.0, n1 - 1.0 * s1 * s1 / N));
+        double sq2 = std::sqrt(std::max(0.0, n2 - 1.0 * s2 * s2 / N));
         return (sq2 == 0) ? sq1 / abs(sq1) : (prod - s1 * s2 / N) / sq1 / sq2;
     }
 }

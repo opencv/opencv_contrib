@@ -264,7 +264,7 @@ public:
                     v_float32x4 vqb0[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
                     v_float32x4 vqb1[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
                     v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
-                    int s2bitShift = normSigma2 == 0 ? 1 : cvCeil(log(200.f / std::fabs(normSigma2)) / log(2.f));
+                    int s2bitShift = normSigma2 == 0 ? 1 : cvCeil(std::log2(200.f / std::fabs(normSigma2)));
                     v_int32x4 vdelta = v_setall_s32(1 << (W_BITS - 5 - 1));
                     v_int16x8 vzero = v_setzero_s16();
                     v_int16x8 voness = v_setall_s16(1 << s2bitShift);
@@ -584,7 +584,7 @@ public:
                     hasSolved = false;
                     if ( e0 > 0)
                     {
-                        e0 = sqrt(e0);
+                        e0 = std::sqrt(e0);
                         float _y[2] = {-e1 - e0, e0 - e1};
                         float c0yc1[2] = {c[0] * _y[0] + c[1],
                                             c[0] * _y[1] + c[1]};
@@ -917,7 +917,7 @@ public:
                     v_float32x4 vsumIy = v_setzero_f32(), vsumIx = v_setzero_f32(), vsumI = v_setzero_f32(), vsumDI = v_setzero_f32();
                     v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
 
-                    int s2bitShift = normSigma2 == 0 ? 1 : cvCeil(log(200.f / std::fabs(normSigma2)) / log(2.f));
+                    int s2bitShift = normSigma2 == 0 ? 1 : cvCeil(std::log2(200.f / std::fabs(normSigma2)));
                     v_int32x4 vdelta = v_setall_s32(1 << (W_BITS - 5 - 1));
                     v_int16x8 vzero = v_setzero_s16();
                     v_int16x8 voness = v_setall_s16(1 << s2bitShift);
@@ -935,7 +935,7 @@ public:
                     v_float32x4 vparam2s2 = v_setall_f32(normSigma2 * normSigma2);
 
                     float gainVal = gainVec.x > 0 ? gainVec.x : -gainVec.x;
-                    int bitShift = gainVec.x == 0 ? 1 : cvCeil(log(200.f / gainVal) / log(2.f));
+                    int bitShift = gainVec.x == 0 ? 1 : cvCeil(std::log2(200.f / gainVal));
                     v_int16x8 vgain_value = v_setall_s16(static_cast<short>(gainVec.x * (float)(1 << bitShift)));
                     v_int16x8 vconst_value = v_setall_s16(static_cast<short>(gainVec.y));
 #endif
@@ -1358,7 +1358,7 @@ public:
                 hasSolved = false;
                 if ( e0 > 0)
                 {
-                    e0 = sqrt(e0);
+                    e0 = std::sqrt(e0);
                     float _y[2] = {-e1 - e0, e0 - e1};
                     float c0yc1[2] = {c[0] * _y[0] + c[1],
                                         c[0] * _y[1] + c[1]};
@@ -1745,7 +1745,7 @@ public:
                     e0 = e1 * e1 - e2;
                     if ( e0 >= 0)
                     {
-                        e0 = sqrt(e0);
+                        e0 = std::sqrt(e0);
                         float _y[2] = {-e1 - e0, e0 - e1};
                         float c0yc1[2] = {c[0] * _y[0] + c[1],
                                           c[0] * _y[1] + c[1]};
@@ -2048,7 +2048,7 @@ namespace radial {
                         v_int16x8 vmax_val_16 = v_setall_s16(std::numeric_limits<unsigned short>::max());
 
                         float gainVal = gainVec.x > 0 ? gainVec.x : -gainVec.x;
-                        int bitShift = gainVec.x == 0 ? 1 : cvCeil(log(200.f / gainVal) / log(2.f));
+                        int bitShift = gainVec.x == 0 ? 1 : cvCeil(std::log2(200.f / gainVal));
                         v_int16x8 vgain_value = v_setall_s16(static_cast<short>(gainVec.x * (float)(1 << bitShift)));
                         v_int16x8 vconst_value = v_setall_s16(static_cast<short>(gainVec.y));
 #endif
@@ -2353,7 +2353,7 @@ namespace radial {
                         hasSolved = false;
                         if (e0 > 0)
                         {
-                            e0 = sqrt(e0);
+                            e0 = std::sqrt(e0);
                             float _y[2] = { -e1 - e0, e0 - e1 };
                             float c0yc1[2] = { c[0] * _y[0] + c[1],
                                                 c[0] * _y[1] + c[1] };

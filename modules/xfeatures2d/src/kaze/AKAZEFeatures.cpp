@@ -75,7 +75,7 @@ void AKAZEFeatures::Allocate_Memory_Evolution(void) {
     for (int j = 0; j < options_.nsublevels; j++) {
       MEvolution step;
       step.size = Size(level_width, level_height);
-      step.esigma = options_.soffset*pow(2.f, (float)(j) / (float)(options_.nsublevels) + i);
+      step.esigma = options_.soffset*std::pow(2.f, (float)(j) / (float)(options_.nsublevels) + i);
       step.sigma_size = cvRound(step.esigma * options_.derivative_factor / power);  // In fact sigma_size only depends on j
       step.etime = 0.5f * (step.esigma * step.esigma);
       step.octave = i;
@@ -1599,7 +1599,7 @@ void MSURF_Upright_Descriptor_64_Invoker::Get_MSURF_Upright_Descriptor_64(const 
   CV_Assert(dcount == desc_size);
 
   // convert to unit vector
-  len = sqrt(len);
+  len = std::sqrt(len);
 
   const float len_inv = 1.0f / len;
   for (i = 0; i < dsize; i++) {
@@ -1736,7 +1736,7 @@ void MSURF_Descriptor_64_Invoker::Get_MSURF_Descriptor_64(const KeyPoint& kpt, f
   CV_Assert(dcount == desc_size);
 
   // convert to unit vector
-  len = sqrt(len);
+  len = std::sqrt(len);
 
   const float len_inv = 1.0f / len;
   for (i = 0; i < dsize; i++) {

@@ -184,7 +184,7 @@ void cv::omnidir::projectPoints(InputArray objectPoints, OutputArray imagePoints
             Matx<double,3, 9> dXcdR(dXcdR_a);
             Matx33d dXcdom = dXcdR * dRdom.t();
             double r_1 = 1.0/norm(Xc);
-            double r_3 = pow(r_1,3);
+            double r_3 = std::pow(r_1,3);
             Matx33d dXsdXc(r_1-Xc[0]*Xc[0]*r_3, -(Xc[0]*Xc[1])*r_3, -(Xc[0]*Xc[2])*r_3,
                            -(Xc[0]*Xc[1])*r_3, r_1-Xc[1]*Xc[1]*r_3, -(Xc[1]*Xc[2])*r_3,
                            -(Xc[0]*Xc[2])*r_3, -(Xc[1]*Xc[2])*r_3, r_1-Xc[2]*Xc[2]*r_3);
@@ -321,7 +321,7 @@ void cv::omnidir::undistortPoints( InputArray distorted, OutputArray undistorted
         double a = (r2 + 1);
         double b = 2*_xi*r2;
         double cc = r2*_xi*_xi-1;
-        double Zs = (-b + sqrt(b*b - 4*a*cc))/(2*a);
+        double Zs = (-b + std::sqrt(b*b - 4*a*cc))/(2*a);
         Vec3d Xw = Vec3d(pu[0]*(Zs + _xi), pu[1]*(Zs +_xi), Zs);
 
         // rotate
@@ -421,7 +421,7 @@ void cv::omnidir::initUndistortRectifyMap(InputArray K, InputArray D, InputArray
             for(int j = 0; j < size.width; ++j, _x+=iKR(0,0), _y+=iKR(1,0), _w+=iKR(2,0))
             {
                 // project back to unit sphere
-                double r = sqrt(_x*_x + _y*_y + _w*_w);
+                double r = std::sqrt(_x*_x + _y*_y + _w*_w);
                 double Xs = _x / r;
                 double Ys = _y / r;
                 double Zs = _w / r;
@@ -499,7 +499,7 @@ void cv::omnidir::initUndistortRectifyMap(InputArray K, InputArray D, InputArray
                 double _y = iR(1,0)*_xt + iR(1,1)*_yt + iR(1,2)*_wt;
                 double _w = iR(2,0)*_xt + iR(2,1)*_yt + iR(2,2)*_wt;
 
-                double r = sqrt(_x*_x + _y*_y + _w*_w);
+                double r = std::sqrt(_x*_x + _y*_y + _w*_w);
                 double Xs = _x / r;
                 double Ys = _y / r;
                 double Zs = _w / r;
@@ -618,9 +618,9 @@ void cv::omnidir::internal::initializeCalibration(InputArrayOfArrays patternPoin
             solvePoly(Matx13d(-(r11*r12+r21*r22)*(r11*r12+r21*r22), r11*r11+r21*r21-r12*r12-r22*r22, 1), roots);
 
             if (roots.at<Vec2d>(0)[0] > 0)
-                r31s = sqrt(roots.at<Vec2d>(0)[0]);
+                r31s = std::sqrt(roots.at<Vec2d>(0)[0]);
             else
-                r31s = sqrt(roots.at<Vec2d>(1)[0]);
+                r31s = std::sqrt(roots.at<Vec2d>(1)[0]);
 
             for (int coef2 = 1; coef2 >= -1; coef2-=2)
             {
@@ -661,7 +661,7 @@ void cv::omnidir::internal::initializeCalibration(InputArrayOfArrays patternPoin
                 Mat res = A.inv(DECOMP_SVD) * B;
                 res = res.mul(1/Mat(maxA));
 
-                double gamma = sqrt(res.at<double>(0) / res.at<double>(1));
+                double gamma = std::sqrt(res.at<double>(0) / res.at<double>(1));
                 t[2] = res.at<double>(2);
 
                 cv::Vec3d r3 = r1.cross(r2);
@@ -1779,7 +1779,7 @@ void cv::omnidir::internal::estimateUncertainties(InputArrayOfArrays objectPoint
     }
 
     meanStdDev(reprojError, noArray(), std_error);
-    std_error *= sqrt((double)reprojError.total()/((double)reprojError.total() - 1.0));
+    std_error *= std::sqrt((double)reprojError.total()/((double)reprojError.total() - 1.0));
 
     Mat sigma_x;
     meanStdDev(reprojError.reshape(1,1), noArray(), sigma_x);
@@ -1789,7 +1789,7 @@ void cv::omnidir::internal::estimateUncertainties(InputArrayOfArrays objectPoint
     sqrt(_JTJ_inv, _JTJ_inv);
 
     int nParams = _JTJ_inv.rows;
-    sigma_x *= sqrt(2.0*(double)reprojError.total()/(2.0*(double)reprojError.total() - nParams));
+    sigma_x *= std::sqrt(2.0*(double)reprojError.total()/(2.0*(double)reprojError.total() - nParams));
     double s = sigma_x.at<double>(0);
 
     errors = 3 * s * _JTJ_inv.diag();
@@ -1802,7 +1802,7 @@ void cv::omnidir::internal::estimateUncertainties(InputArrayOfArrays objectPoint
     }
 
     rms /= (double)reprojError.total();
-    rms = sqrt(rms);
+    rms = std::sqrt(rms);
 }
 
 // estimateUncertaintiesStereo
@@ -1867,7 +1867,7 @@ void cv::omnidir::internal::estimateUncertaintiesStereo(InputArrayOfArrays objec
     }
 
     meanStdDev(reprojErrorAll, cv::noArray(), std_error);
-    std_error *= sqrt((double)reprojErrorAll.total()/((double)reprojErrorAll.total() - 1.0));
+    std_error *= std::sqrt((double)reprojErrorAll.total()/((double)reprojErrorAll.total() - 1.0));
 
     Mat sigma_x;
     meanStdDev(reprojErrorAll.reshape(1,1), noArray(), sigma_x);
@@ -1877,7 +1877,7 @@ void cv::omnidir::internal::estimateUncertaintiesStereo(InputArrayOfArrays objec
     cv::sqrt(_JTJ_inv, _JTJ_inv);
 
     int nParams = _JTJ_inv.rows;
-    sigma_x *= sqrt(2.0*(double)reprojErrorAll.total()/(2.0*(double)reprojErrorAll.total() - nParams));
+    sigma_x *= std::sqrt(2.0*(double)reprojErrorAll.total()/(2.0*(double)reprojErrorAll.total() - nParams));
     double s = sigma_x.at<double>(0);
 
     errors = 3 * s * _JTJ_inv.diag();
@@ -1890,7 +1890,7 @@ void cv::omnidir::internal::estimateUncertaintiesStereo(InputArrayOfArrays objec
         rms += ptr_ex[i][0] * ptr_ex[i][0] + ptr_ex[i][1] * ptr_ex[i][1];
     }
     rms /= (double)reprojErrorAll.total();
-    rms = sqrt(rms);
+    rms = std::sqrt(rms);
 }
 
 //
@@ -1916,7 +1916,7 @@ double cv::omnidir::internal::computeMeanReproErr(InputArrayOfArrays imagePoints
             Vec2d* ptr_err = errorI.ptr<Vec2d>();
             for (int j = 0; j < (int)errorI.total(); j++)
             {
-                reprojError += sqrt(ptr_err[j][0]*ptr_err[j][0] + ptr_err[j][1]*ptr_err[j][1]);
+                reprojError += std::sqrt(ptr_err[j][0]*ptr_err[j][0] + ptr_err[j][1]*ptr_err[j][1]);
             }
         }
     }
@@ -1931,7 +1931,7 @@ double cv::omnidir::internal::computeMeanReproErr(InputArrayOfArrays imagePoints
         Vec2d* ptr_err = errorI.ptr<Vec2d>();
         for (int j = 0; j < (int)errorI.total(); j++)
         {
-            reprojError += sqrt(ptr_err[j][0]*ptr_err[j][0] + ptr_err[j][1]*ptr_err[j][1]);
+            reprojError += std::sqrt(ptr_err[j][0]*ptr_err[j][0] + ptr_err[j][1]*ptr_err[j][1]);
         }
     }
     double meanReprojError = reprojError / totalPoints;

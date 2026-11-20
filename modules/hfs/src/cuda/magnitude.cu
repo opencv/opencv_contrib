@@ -35,7 +35,7 @@ __global__ void derrivativeXYDevice(const uchar *gray_img,
         delta_y[idx] = gray_img[idx + img_size.x] - gray_img[idx - img_size.x];
 
     mag[idx] = (int)(0.5 +
-        sqrt((double)(delta_x[idx] * delta_x[idx] + delta_y[idx] * delta_y[idx])));
+        ::sqrt((double)(delta_x[idx] * delta_x[idx] + delta_y[idx] * delta_y[idx])));
 }
 
 __device__ __forceinline__ int dmin(int a, int b)

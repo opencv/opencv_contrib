@@ -178,8 +178,8 @@ void FastLineDetectorImpl::mergeLines(const SEGMENT& seg1, const SEGMENT& seg2, 
     float dljx = (dx - cx);
     float dljy = (dy - cy);
 
-    li = sqrt((double) (dlix * dlix) + (double) (dliy * dliy));
-    lj = sqrt((double) (dljx * dljx) + (double) (dljy * dljy));
+    li = std::sqrt((double) (dlix * dlix) + (double) (dliy * dliy));
+    lj = std::sqrt((double) (dljx * dljx) + (double) (dljy * dljy));
 
     xg = (li * (double) (ax + bx) + lj * (double) (cx + dx))
         / (double) (2.0 * (li + lj));
@@ -208,8 +208,8 @@ void FastLineDetectorImpl::mergeLines(const SEGMENT& seg1, const SEGMENT& seg2, 
     cxg = ((double) cy - yg) * sin(thr) + ((double) cx - xg) * cos(thr);
     dxg = ((double) dy - yg) * sin(thr) + ((double) dx - xg) * cos(thr);
 
-    delta1xg = min(axg,min(bxg,min(cxg,dxg)));
-    delta2xg = max(axg,max(bxg,max(cxg,dxg)));
+    delta1xg = std::min({axg,bxg,cxg,dxg});
+    delta2xg = std::max({axg,bxg,cxg,dxg});
 
     delta1x = delta1xg * cos(thr) + xg;
     delta1y = delta1xg * sin(thr) + yg;
@@ -226,7 +226,7 @@ double FastLineDetectorImpl::distPointLine(const Mat& p, Mat& l)
 {
     double x = l.at<double>(0,0);
     double y = l.at<double>(1,0);
-    double w = sqrt(x*x+y*y);
+    double w = std::sqrt(x*x+y*y);
 
     l.at<double>(0,0) = x / w;
     l.at<double>(1,0) = y / w;
@@ -263,9 +263,9 @@ bool FastLineDetectorImpl::mergeSegments(const SEGMENT& seg1, const SEGMENT& seg
     seg2mid.x = (seg2.x1 + seg2.x2) /2.0f;
     seg2mid.y = (seg2.y1 + seg2.y2) /2.0f;
 
-    float seg1len = sqrt((seg1.x1 - seg1.x2)*(seg1.x1 - seg1.x2)+(seg1.y1 - seg1.y2)*(seg1.y1 - seg1.y2));
-    float seg2len = sqrt((seg2.x1 - seg2.x2)*(seg2.x1 - seg2.x2)+(seg2.y1 - seg2.y2)*(seg2.y1 - seg2.y2));
-    float middist = sqrt((seg1mid.x - seg2mid.x)*(seg1mid.x - seg2mid.x) + (seg1mid.y - seg2mid.y)*(seg1mid.y - seg2mid.y));
+    float seg1len = std::sqrt((seg1.x1 - seg1.x2)*(seg1.x1 - seg1.x2)+(seg1.y1 - seg1.y2)*(seg1.y1 - seg1.y2));
+    float seg2len = std::sqrt((seg2.x1 - seg2.x2)*(seg2.x1 - seg2.x2)+(seg2.y1 - seg2.y2)*(seg2.y1 - seg2.y2));
+    float middist = std::sqrt((seg1mid.x - seg2mid.x)*(seg1mid.x - seg2mid.x) + (seg1mid.y - seg2mid.y)*(seg1mid.y - seg2mid.y));
     float angdiff = fabs(seg1.angle - seg2.angle);
 
     float dist = (float)distPointLine(ori, l1);
@@ -558,7 +558,7 @@ void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& s
             for ( int i = 0; i < (int)segments.size(); i++ )
             {
                 seg = segments[i];
-                float length = sqrt((seg.x1 - seg.x2)*(seg.x1 - seg.x2) +
+                float length = std::sqrt((seg.x1 - seg.x2)*(seg.x1 - seg.x2) +
                         (seg.y1 - seg.y2)*(seg.y1 - seg.y2));
                 if(length < threshold_length)
                     continue;

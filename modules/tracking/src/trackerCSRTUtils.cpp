@@ -33,7 +33,7 @@ Mat gaussian_shaped_labels(const float sigma, const int w, const int h)
     // calculate for each pixel separatelly
     for(int i=0; i<y.rows; i++) {
         for(int j=0; j<y.cols; j++) {
-            y.at<float>(i,j) = (float)exp((-0.5 / pow(sigma, 2)) * (pow((i+1-h2), 2) + pow((j+1-w2), 2)));
+            y.at<float>(i,j) = (float)std::exp((-0.5 / std::pow(sigma, 2)) * (std::pow((i+1-h2), 2) + std::pow((j+1-w2), 2)));
         }
     }
     // wrap-around with the circulat shifting
@@ -169,7 +169,7 @@ static Mat chebwin(int N, const float atten)
     Mat out(N , 1, CV_32FC1);
     int nn, i;
     float M, n, sum = 0, max=0;
-    float tg = static_cast<float>(pow(10,atten/20.0f));  /* 1/r term [2], 10^gamma [2] */
+    float tg = static_cast<float>(std::pow(10,atten/20.0f));  /* 1/r term [2], 10^gamma [2] */
     float x0 = cosh((1.0f/(N-1))*acosh(tg));
     M = (N-1)/2.0f;
     if(N%2==0)
@@ -202,7 +202,7 @@ static double modified_bessel(int order, double x)
     double gamma = 1.0;
     for(int i = 2; i <= order; ++i)
         gamma *= i;
-    double term = pow(x,order) / (pow(2,order) * gamma);
+    double term = std::pow(x,order) / (std::pow(2,order) * gamma);
 
     while(term  > eps * result) {
         result += term;
@@ -243,14 +243,14 @@ Mat get_kaiser_win(Size sz, float alpha)
 
     for(int n = 0; n <= N; ++n) {
         double K = (2.0 * n * 1.0/N) - 1.0;
-        double x = sqrt(1.0 - (K * K));
+        double x = std::sqrt(1.0 - (K * K));
         kaiser_rows.at<float>(n,0) = static_cast<float>(modified_bessel(0, shape * x) * den);
     }
 
     N = sz.width - 1;
     for(int n = 0; n <= N; ++n) {
         double K = (2.0 * n * 1.0/N) - 1.0;
-        double x = sqrt(1.0 - (K * K));
+        double x = std::sqrt(1.0 - (K * K));
         kaiser_cols.at<float>(0,n) = static_cast<float>(modified_bessel(0, shape * x) * den);
     }
 
@@ -289,8 +289,8 @@ static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const i
     int bH = cvFloor((double)imageSize.height/(double)sbin);
     const Size blockSize(bW, bH);
     // size of HOG features
-    int oW = max(blockSize.width-2, 0) + 2*pad_x;
-    int oH = max(blockSize.height-2, 0) + 2*pad_y;
+    int oW = std::max(blockSize.width-2, 0) + 2*pad_x;
+    int oH = std::max(blockSize.height-2, 0) + 2*pad_y;
     Size outSize = Size(oW, oH);
     // size of visible
     const Size visible = blockSize*sbin;
@@ -317,7 +317,7 @@ static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const i
         for (int x = 1; x < visible.width - 1; x++)
         {
             // OpenCV uses an interleaved format: BGR-BGR-BGR
-            const double* s = im + 3*min(x, imageM.cols-2) + min(y, imageM.rows-2)*imStride;
+            const double* s = im + 3*std::min(x, imageM.cols-2) + std::min(y, imageM.rows-2)*imStride;
 
             // blue image channel
             double dyb = *(s+imStride) - *(s-imStride);
@@ -367,7 +367,7 @@ static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const i
             double vx0 = xp - ixp;
             double vy1 = 1.0 - vy0;
             double vx1 = 1.0 - vx0;
-            v = sqrt(v);
+            v = std::sqrt(v);
 
             // fill the value into the 4 neighborhood cells
             if (iyp >= 0 && ixp >= 0)
@@ -416,13 +416,13 @@ static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const i
             const double* src;
 
             p = norm + (y - pad_y + 1)*normStride + (x - pad_x + 1);
-            n1 = 1.0f / sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
+            n1 = 1.0f / std::sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
             p = norm + (y - pad_y)*normStride + (x - pad_x + 1);
-            n2 = 1.0f / sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
+            n2 = 1.0f / std::sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
             p = norm + (y- pad_y + 1)*normStride + x - pad_x;
-            n3 = 1.0f / sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
+            n3 = 1.0f / std::sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
             p = norm + (y - pad_y)*normStride + x - pad_x;
-            n4 = 1.0f / sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
+            n4 = 1.0f / std::sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
 
             double t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0;
 
@@ -431,10 +431,10 @@ static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const i
             for (int o = 0; o < numOrient; o++)
             {
                 double val = *src;
-                double h1 = min(val*n1, 0.2);
-                double h2 = min(val*n2, 0.2);
-                double h3 = min(val*n3, 0.2);
-                double h4 = min(val*n4, 0.2);
+                double h1 = std::min(val*n1, 0.2);
+                double h2 = std::min(val*n2, 0.2);
+                double h3 = std::min(val*n3, 0.2);
+                double h4 = std::min(val*n4, 0.2);
                 *(dst++) = 0.5 * (h1 + h2 + h3 + h4);
 
                 src++;
@@ -449,10 +449,10 @@ static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const i
             for (int o = 0; o < numOrient/2; o++)
             {
                 double sum = *src + *(src + numOrient/2);
-                double h1 = min(sum * n1, 0.2);
-                double h2 = min(sum * n2, 0.2);
-                double h3 = min(sum * n3, 0.2);
-                double h4 = min(sum * n4, 0.2);
+                double h1 = std::min(sum * n1, 0.2);
+                double h2 = std::min(sum * n2, 0.2);
+                double h3 = std::min(sum * n3, 0.2);
+                double h4 = std::min(sum * n4, 0.2);
                 *(dst++) = 0.5 * (h1 + h2 + h3 + h4);
                 src++;
             }

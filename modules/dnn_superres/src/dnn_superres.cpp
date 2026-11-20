@@ -311,15 +311,15 @@ bool DepthToSpace::getMemoryShapes(const std::vector <MatShape> &inpShapes,
     int scale;
     if( inpShapes[0][1] == 4 || inpShapes[0][1] == 9 || inpShapes[0][1] == 16 ) //Only one image channel
     {
-        scale = static_cast<int>(sqrt(inpShapes[0][1]));
+        scale = static_cast<int>(std::sqrt(inpShapes[0][1]));
     }
     else // Three image channels
     {
-        scale = static_cast<int>(sqrt(inpShapes[0][1]/3));
+        scale = static_cast<int>(std::sqrt(inpShapes[0][1]/3));
     }
 
     outShape[0] = inpShapes[0][0];
-    outShape[1] = static_cast<int>(inpShapes[0][1] / pow(scale,2));
+    outShape[1] = static_cast<int>(inpShapes[0][1] / std::pow(scale,2));
     outShape[2] = static_cast<int>(scale * inpShapes[0][2]);
     outShape[3] = static_cast<int>(scale * inpShapes[0][3]);
 

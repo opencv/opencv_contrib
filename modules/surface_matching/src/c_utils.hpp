@@ -291,7 +291,7 @@ static inline void dcmToQuat(Matx33d& R, Vec4d& q)
     next = (curr + 1) % 3, prev = (curr + 2) % 3;
     q[(idx + i + 2) % 4] = R(next, prev) + (tr > 0.0 || idx == curr ? -1 : 1) * R(prev, next);
   }
-  q *= 0.5 / sqrt(norm4);
+  q *= 0.5 / std::sqrt(norm4);
 }
 
 /**

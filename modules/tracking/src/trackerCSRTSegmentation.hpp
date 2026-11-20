@@ -51,7 +51,7 @@ private:
             cv::Mat & prob_b, cv::Mat &prior_o, cv::Mat &prior_b);
 
     inline static double gaussian(double x2, double y2, double std2){
-        return exp(-(x2 + y2)/(2*std2))/(2*CV_PI*std2);
+        return std::exp(-(x2 + y2)/(2*std2))/(2*CV_PI*std2);
     }
 };
 

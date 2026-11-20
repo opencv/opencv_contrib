@@ -114,7 +114,7 @@ static void drawOpticalFlow(const Mat_<float>& flowx, const Mat_<float>& flowy
                 if (!isFlowCorrect(u))
                     continue;
 
-                maxrad = max(maxrad, sqrt(u.x * u.x + u.y * u.y));
+                maxrad = std::max(maxrad, std::sqrt(u.x * u.x + u.y * u.y));
             }
         }
     }

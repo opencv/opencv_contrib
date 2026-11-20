@@ -99,9 +99,9 @@ splitr FacemarkKazemiImpl::getTestSplits(vector<Point2f> pixel_coordinates,int s
         //select another random coordinate
         feat.index2   = rng.uniform(0,params.num_test_coordinates);
         Point2f pt = pixel_coordinates[(unsigned long)feat.index1]-pixel_coordinates[(unsigned long)feat.index2];
-        double distance = sqrt((pt.x*pt.x)+(pt.y*pt.y));
+        double distance = std::sqrt((pt.x*pt.x)+(pt.y*pt.y));
         //calculate the probability
-        probability = exp(-distance/params.lambda);
+        probability = std::exp(-distance/params.lambda);
         check = rng.uniform(double(0),double(1));
     }
     while(check>probability||feat.index1==feat.index2);
@@ -162,7 +162,7 @@ bool FacemarkKazemiImpl:: getBestSplit(vector<Point2f> pixel_coordinates, vector
             pt1.y = pt1.y + (float)(left_sum[k].y*left_sum[k].y);
             pt2.y = pt2.y + (float)(right_sum[k].y*right_sum[k].y);
         }
-        score = (double)sqrt(pt1.x+pt1.y)*(double)left_count[i] + (double)sqrt(pt2.x+pt2.y)*(double)right_cnt;
+        score = (double)std::sqrt(pt1.x+pt1.y)*(double)left_count[i] + (double)std::sqrt(pt2.x+pt2.y)*(double)right_cnt;
         if(score > best_score){
             best_score = score;
             best_feat = i;
@@ -230,7 +230,7 @@ bool FacemarkKazemiImpl :: buildRegtree(regtree& tree,vector<training_sample>& s
     queue<node_info> curr;
     node_info parent;
     vector< vector<Point2f> > sum;
-    const long numNodes =(long)pow(2,params.tree_depth);
+    const long numNodes =(long)std::pow(2,params.tree_depth);
     const long numSplitNodes = numNodes/2 - 1;
     sum.resize(numNodes+1);
     sum[0].resize(samples[0].shapeResiduals.size());

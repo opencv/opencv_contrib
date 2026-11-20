@@ -54,16 +54,16 @@ double generateRandomLaplacian(double b, double m)
     double n = (double)rand() / (RAND_MAX);
 
     if (t > 0.5)
-        return m + b*log(n);
+        return m + b*std::log(n);
     else
-        return m - b*log(n);
+        return m - b*std::log(n);
 }
 
 Rect2f anno2rect(std::vector<Point2f> annoBB)
 {
     Rect2f rectBB;
-    rectBB.x = min(annoBB[0].x, annoBB[1].x);
-    rectBB.y = min(annoBB[0].y, annoBB[2].y);
+    rectBB.x = std::min(annoBB[0].x, annoBB[1].x);
+    rectBB.y = std::min(annoBB[0].y, annoBB[2].y);
     rectBB.width = fabs(annoBB[0].x - annoBB[1].x);
     rectBB.height = fabs(annoBB[0].y - annoBB[2].y);
 
@@ -111,12 +111,12 @@ std::vector <TrainingSample> gatherFrameSamples(Mat prevFrame, Mat currFrame, Re
         ds = generateRandomLaplacian(bS, 1);
 
         //Limit coefficients
-        dx = min(dx, (double)prevBB.width);
-        dx = max(dx, (double)-prevBB.width);
-        dy = min(dy, (double)prevBB.height);
-        dy = max(dy, (double)-prevBB.height);
-        ds = min(ds, Ymax);
-        ds = max(ds, Ymin);
+        dx = std::min(dx, (double)prevBB.width);
+        dx = std::max(dx, (double)-prevBB.width);
+        dy = std::min(dy, (double)prevBB.height);
+        dy = std::max(dy, (double)-prevBB.height);
+        ds = std::min(ds, Ymax);
+        ds = std::max(ds, Ymin);
 
         searchPatchRect.width = (float)(prevBB.width*padSearch*ds);
         searchPatchRect.height =(float)(prevBB.height*padSearch*ds);

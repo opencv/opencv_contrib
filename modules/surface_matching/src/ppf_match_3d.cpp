@@ -212,7 +212,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
   float dx = xRange[1] - xRange[0];
   float dy = yRange[1] - yRange[0];
   float dz = zRange[1] - zRange[0];
-  float diameter = sqrt ( dx * dx + dy * dy + dz * dz );
+  float diameter = std::sqrt ( dx * dx + dy * dy + dz * dz );
 
   float distanceStep = (float)(diameter * sampling_step_relative);
 

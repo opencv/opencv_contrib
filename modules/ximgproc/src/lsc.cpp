@@ -869,7 +869,7 @@ inline void SuperpixelLSCImpl::PostEnforceLabelConnectivity( int threshold )
  */
 inline void SuperpixelLSCImpl::GetChSeeds()
 {
-    int ColNum = (int) sqrt( (double) m_numlabels
+    int ColNum = (int) std::sqrt( (double) m_numlabels
                * ((double)m_width / (double)m_height) );
     int RowNum = m_numlabels / ColNum;
 

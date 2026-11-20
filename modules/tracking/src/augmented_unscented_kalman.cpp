@@ -291,7 +291,7 @@ Mat AugmentedUnscentedKalmanFilterImpl::predict(InputArray _control)
 {
     Mat control = _control.getMat();
 // get sigma points from xa* and Pa
-    sigmaPoints = getSigmaPoints( stateAug, errorCovAug, sqrt( tmpLambda ) );
+    sigmaPoints = getSigmaPoints( stateAug, errorCovAug, std::sqrt( tmpLambda ) );
 
 // compute f-function values at sigma points
 // f_i = f(x_i[0:DP-1], control, x_i[DP:2*DP-1]), i = 0..2*DAug
@@ -323,7 +323,7 @@ Mat AugmentedUnscentedKalmanFilterImpl::correct(InputArray _measurement)
 {
     Mat measurement = _measurement.getMat();
 // get sigma points from xa* and Pa
-    sigmaPoints = getSigmaPoints( stateAug, errorCovAug, sqrt( tmpLambda ) );
+    sigmaPoints = getSigmaPoints( stateAug, errorCovAug, std::sqrt( tmpLambda ) );
 
 // compute h-function values at sigma points
 // h_i = h(x_i[0:DP-1], x_i[2*DP:DAug-1]), i = 0..2*DAug

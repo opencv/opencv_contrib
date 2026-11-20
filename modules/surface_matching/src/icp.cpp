@@ -101,7 +101,7 @@ static double computeDistToOrigin(Mat srcPC)
   for (int i=0; i<height; i++)
   {
     const float *row = srcPC.ptr<float>(i);
-    dist += sqrt(row[0]*row[0]+row[1]*row[1]+row[2]*row[2]);
+    dist += std::sqrt(row[0]*row[0]+row[1]*row[1]+row[2]*row[2]);
   }
 
   return dist;

@@ -228,8 +228,8 @@ static void computeGradientMaps( const Mat& im,
     {
       for ( int j = 0; j < im.cols; j++ )
       {
-        float gradMagnitude = sqrt( (*pDerivx) * (*pDerivx)
-                                  + (*pDerivy) * (*pDerivy) );
+        float gradMagnitude = std::sqrt( (*pDerivx) * (*pDerivx)
+                                       + (*pDerivy) * (*pDerivy) );
         if ( gradMagnitude > 20 )
         {
           double theta = atan2( *pDerivy, *pDerivx );

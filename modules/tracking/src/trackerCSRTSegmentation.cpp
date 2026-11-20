@@ -179,7 +179,7 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors(
             outer_x1, outer_y1, outer_x2, outer_y2);
 
     //compute resize factor so that the max area is 1000 (=avg. size ~ 32x32)
-    double factor = sqrt(1000.0/((x2-x1)*(y2-y1)));
+    double factor = std::sqrt(1000.0/((x2-x1)*(y2-y1)));
     if (factor > 1)
         factor = 1.0;
     cv::Size newSize(cvFloor((x2-x1)*factor), cvFloor((y2-y1)*factor));
@@ -248,7 +248,7 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(
     double p_o = 1. - p_b;
 
     //compute resize factor so that the max area is 1000 (=avg. size ~ 32x32)
-    double factor = sqrt(1000.0/(w*h));
+    double factor = std::sqrt(1000.0/(w*h));
     if (factor > 1)
         factor = 1.0;
     cv::Size newSize(cvFloor(w*factor), cvFloor(h*factor));
@@ -305,7 +305,7 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(std::vector<cv::Mat> &im
     int y2 = imgChannels[0].rows-1;
 
     //compute resize factor so that we control the max area ~32^2
-    double factor = sqrt(1000./((x2-x1)*(y2-y1)));
+    double factor = std::sqrt(1000./((x2-x1)*(y2-y1)));
     //double factor = 1;
     if (factor > 1)
         factor = 1.0;

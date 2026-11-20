@@ -170,7 +170,7 @@ void solveLSQR( const Mat &A, const Mat &b, OutputArray xOut, const double damp 
         v *= 1 / alfa;
     }
 
-    double rhobar1 = sqrt( rhobar * rhobar + damp * damp );
+    double rhobar1 = std::sqrt( rhobar * rhobar + damp * damp );
     double cs1 = rhobar / rhobar1;
     phibar = cs1 * phibar;
 
@@ -226,7 +226,7 @@ void reduceToFlow( const Mat &w1, const Mat &w2, Mat &flow, const Size &basisSiz
   Mat flowX( size, CV_32F, 0.0f );
   Mat flowY( size, CV_32F, 0.0f );
 
-  const float mult = sqrt( static_cast<float>(size.area()) ) * 0.5;
+  const float mult = std::sqrt( static_cast<float>(size.area()) ) * 0.5;
 
   for ( int i = 0; i < basisSize.width; ++i )
     for ( int j = 0; j < basisSize.height; ++j )
@@ -264,7 +264,7 @@ void OpticalFlowPCAFlow::findSparseFeatures( UMat &from, UMat &to, std::vector<P
   if ( maxFeatures > features.size() )
   {
     const unsigned missingPoints = maxFeatures - features.size();
-    const unsigned blockSize = sqrt( (float)size.area() / missingPoints );
+    const unsigned blockSize = std::sqrt( (float)size.area() / missingPoints );
     for ( int x = blockSize / 2; x < size.width; x += blockSize )
       for ( int y = blockSize / 2; y < size.height; y += blockSize )
         features.push_back( Point2f( x, y ) );
@@ -296,7 +296,7 @@ void OpticalFlowPCAFlow::removeOcclusions( UMat &from, UMat &to, std::vector<Poi
   calcOpticalFlowPyrLK( to, from, predictedFeatures, backwardFeatures, predictedStatus, predictedError );
 
   size_t j = 0;
-  const float threshold = occlusionsThreshold * sqrt( static_cast<float>(from.size().area()) );
+  const float threshold = occlusionsThreshold * std::sqrt( static_cast<float>(from.size().area()) );
   for ( size_t i = 0; i < predictedFeatures.size(); ++i )
   {
     if ( predictedStatus[i] )

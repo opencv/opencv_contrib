@@ -105,10 +105,10 @@ void NonMaximumSuppression::process(vector< vector< double > > &detections, doub
         for (int k = 0; k <= last - 1; k++)
         {
             int j = indices[k];
-            double xx1 = max(detections[i][0], detections[j][0]);
-            double yy1 = max(detections[i][1], detections[j][1]);
-            double xx2 = min(detections[i][2], detections[j][2]);
-            double yy2 = min(detections[i][3], detections[j][3]);
+            double xx1 = std::max(detections[i][0], detections[j][0]);
+            double yy1 = std::max(detections[i][1], detections[j][1]);
+            double xx2 = std::min(detections[i][2], detections[j][2]);
+            double yy2 = std::min(detections[i][3], detections[j][3]);
 
             double w = xx2 - xx1 + 1;
             double h = yy2 - yy1 + 1;

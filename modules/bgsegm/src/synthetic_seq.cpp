@@ -109,7 +109,7 @@ void waveDistortion(const uchar* src, uchar* dst, int width, int height, int byp
         for (int x = 0; x < width; x++) {
             const double dx = x * xscale;
             const double dy = y * yscale;
-            const double d = sqrt (dx * dx + dy * dy);
+            const double d = std::sqrt (dx * dx + dy * dy);
             const double amnt = amplitude * sin(((d / wavelength) * (2.0 * M_PI) + phase));
             const double needx = (amnt + dx) / xscale;
             const double needy = (amnt + dy) / yscale;

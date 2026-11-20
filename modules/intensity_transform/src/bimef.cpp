@@ -270,7 +270,7 @@ static Mat_<float> applyK(const Mat_<float>& I, float k, float a=-0.3293f, float
     const float* Iptr = I.ptr<float>();
     float* Jptr = J.ptr<float>();
     for (i = 0; i < npix; i++) {
-        Jptr[i] = pow(Iptr[i], gamma)*beta;
+        Jptr[i] = std::pow(Iptr[i], gamma)*beta;
     }
     return J;
 }
@@ -496,9 +496,9 @@ static void BIMEF_impl(InputArray input_, OutputArray output_, float mu, float *
     t_b.forEach(
         [&](float &pixel, const int* position) -> void
         {
-            pixel = std::max(std::max(imgDouble(position[0], position[1])[0],
-                                      imgDouble(position[0], position[1])[1]),
-                            imgDouble(position[0], position[1])[2]);
+            pixel = std::max({imgDouble(position[0], position[1])[0],
+                              imgDouble(position[0], position[1])[1],
+                              imgDouble(position[0], position[1])[2]});
         }
     );
 

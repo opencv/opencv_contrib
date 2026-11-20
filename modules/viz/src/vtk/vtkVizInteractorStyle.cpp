@@ -750,7 +750,7 @@ void cv::viz::vtkVizInteractorStyle::OnMouseWheelForward()
 
         GrabFocus(EventCallbackCommand);
         StartDolly();
-        Dolly(pow(1.1, MotionFactor * 0.2 * MouseWheelMotionFactor));
+        Dolly(std::pow(1.1, MotionFactor * 0.2 * MouseWheelMotionFactor));
         EndDolly();
         ReleaseFocus();
     }
@@ -789,7 +789,7 @@ void cv::viz::vtkVizInteractorStyle::OnMouseWheelBackward()
 
         GrabFocus(EventCallbackCommand);
         StartDolly();
-        Dolly(pow(1.1, MotionFactor * -0.2 * MouseWheelMotionFactor));
+        Dolly(std::pow(1.1, MotionFactor * -0.2 * MouseWheelMotionFactor));
         EndDolly();
         ReleaseFocus();
     }
@@ -901,7 +901,7 @@ void cv::viz::vtkVizInteractorStyle::Dolly()
         return;
 
     int dy = Interactor->GetEventPosition()[1] - Interactor->GetLastEventPosition()[1];
-    Dolly(pow(1.1, MotionFactor * dy / CurrentRenderer->GetCenter()[1]));
+    Dolly(std::pow(1.1, MotionFactor * dy / CurrentRenderer->GetCenter()[1]));
 }
 
 void cv::viz::vtkVizInteractorStyle::Dolly(double factor)

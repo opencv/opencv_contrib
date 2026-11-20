@@ -199,7 +199,7 @@ namespace cv {
                                     }
 
                                     float diff = 0;
-                                    diff = sqrt(tmp_total);
+                                    diff = std::sqrt(tmp_total);
 
                                     (*edges)[nb_edges].weight = diff;
                                     (*edges)[nb_edges].from = i * img_filtered.cols +  j;
@@ -381,7 +381,7 @@ namespace cv {
 
                 // Always target smaller set, to avoid redirection in getBasePoint
                 if (mapping[p_a].size < mapping[p_b].size)
-                    swap(p_a, p_b);
+                    std::swap(p_a, p_b);
 
                 mapping[p_b].p = p_a;
                 mapping[p_a].size += mapping[p_b].size;

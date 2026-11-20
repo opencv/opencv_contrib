@@ -75,9 +75,9 @@ void ParalComputePyramid::initialize()
     CV_Assert(params.interval > 0);
 
     // scale factor between two levels
-    params.sfactor = pow(2.0, 1.0/params.interval);
+    params.sfactor = std::pow(2.0, 1.0/params.interval);
     imSize = imageM.size();
-    params.maxScale = 1 + (int)floor(log(min(imSize.width, imSize.height)/(float)(params.binSize*5.0))/log(params.sfactor));
+    params.maxScale = 1 + (int)floor(std::log(std::min(imSize.width, imSize.height)/(float)(params.binSize*5.0))/std::log(params.sfactor));
 
     if (params.maxScale < params.interval)
     {
@@ -93,7 +93,7 @@ void ParalComputePyramid::operator() (const Range &range) const
 {
     for (int i = range.start; i != range.end; i++)
     {
-        const double scale = (double)(1.0f/pow(params.sfactor, i));
+        const double scale = (double)(1.0f/std::pow(params.sfactor, i));
         Mat imScaled;
         resize(imageM, imScaled, imSize * scale);
 
@@ -146,8 +146,8 @@ void Feature::computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const
     int bH = cvRound((double)imageSize.height/(double)sbin);
     const Size blockSize(bW, bH);
     // size of HOG features
-    int oW = max(blockSize.width-2, 0) + 2*pad_x;
-    int oH = max(blockSize.height-2, 0) + 2*pad_y;
+    int oW = std::max(blockSize.width-2, 0) + 2*pad_x;
+    int oH = std::max(blockSize.height-2, 0) + 2*pad_y;
     Size outSize = Size(oW, oH);
     // size of visible
     const Size visible = blockSize*sbin;
@@ -174,7 +174,7 @@ void Feature::computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const
         for (int x = 1; x < visible.width - 1; x++)
         {
             // OpenCV uses an interleaved format: BGR-BGR-BGR
-            const double* s = im + 3*min(x, imageM.cols-2) + min(y, imageM.rows-2)*imStride;
+            const double* s = im + 3*std::min(x, imageM.cols-2) + std::min(y, imageM.rows-2)*imStride;
 
             // blue image channel
             double dyb = *(s+imStride) - *(s-imStride);
@@ -224,7 +224,7 @@ void Feature::computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const
             double vx0 = xp - ixp;
             double vy1 = 1.0 - vy0;
             double vx1 = 1.0 - vx0;
-            v = sqrt(v);
+            v = std::sqrt(v);
 
             // fill the value into the 4 neighborhood cells
             if (iyp >= 0 && ixp >= 0)
@@ -273,13 +273,13 @@ void Feature::computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const
             const double* src;
 
             p = norm + (y - pad_y + 1)*normStride + (x - pad_x + 1);
-            n1 = 1.0f / sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
+            n1 = 1.0f / std::sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
             p = norm + (y - pad_y)*normStride + (x - pad_x + 1);
-            n2 = 1.0f / sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
+            n2 = 1.0f / std::sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
             p = norm + (y- pad_y + 1)*normStride + x - pad_x;
-            n3 = 1.0f / sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
+            n3 = 1.0f / std::sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
             p = norm + (y - pad_y)*normStride + x - pad_x;
-            n4 = 1.0f / sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
+            n4 = 1.0f / std::sqrt(*p + *(p + 1) + *(p + normStride) + *(p + normStride + 1) + eps);
 
             double t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0;
 
@@ -288,10 +288,10 @@ void Feature::computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const
             for (int o = 0; o < numOrient; o++)
             {
                 double val = *src;
-                double h1 = min(val*n1, 0.2);
-                double h2 = min(val*n2, 0.2);
-                double h3 = min(val*n3, 0.2);
-                double h4 = min(val*n4, 0.2);
+                double h1 = std::min(val*n1, 0.2);
+                double h2 = std::min(val*n2, 0.2);
+                double h3 = std::min(val*n3, 0.2);
+                double h4 = std::min(val*n4, 0.2);
                 *(dst++) = 0.5 * (h1 + h2 + h3 + h4);
                 src++;
                 t1 += h1;
@@ -305,10 +305,10 @@ void Feature::computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const
             for (int o = 0; o < numOrient/2; o++)
             {
                 double sum = *src + *(src + numOrient/2);
-                double h1 = min(sum * n1, 0.2);
-                double h2 = min(sum * n2, 0.2);
-                double h3 = min(sum * n3, 0.2);
-                double h4 = min(sum * n4, 0.2);
+                double h1 = std::min(sum * n1, 0.2);
+                double h2 = std::min(sum * n2, 0.2);
+                double h3 = std::min(sum * n3, 0.2);
+                double h4 = std::min(sum * n4, 0.2);
                 *(dst++) = 0.5 * (h1 + h2 + h3 + h4);
                 src++;
             }
@@ -390,19 +390,19 @@ void Feature::computeLocationFeatures(const int numLevels, Mat &locFeature)
     locFeature = Mat::zeros(Size(numLevels, 3), CV_64F);
 
     int b = 0;
-    int e = min(numLevels, params.interval);
+    int e = std::min(numLevels, params.interval);
 
     for (int x = b; x < e; x++)
         locFeature.at<double>(0, x) = 1;
 
     b = e;
-    e = min(numLevels, 2*e);
+    e = std::min(numLevels, 2*e);
 
     for (int x = b; x < e; x++)
         locFeature.at<double>(1, x) = 1;
 
     b = e;
-    e = min(numLevels, 3*e);
+    e = std::min(numLevels, 3*e);
 
     for (int x = b; x < e; x++)
         locFeature.at<double>(2, x) = 1;

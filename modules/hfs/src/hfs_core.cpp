@@ -239,7 +239,7 @@ void HfsCore::getSegmentationI( const Mat &lab3u, const Mat &mag1u,
             ushort pre = idx_mat.at<ushort>(p);
             if (curr > pre)
             {
-                float maxG = max(mag1u.at<uchar>(p), mag1u.at<uchar>(r_, c_));
+                float maxG = std::max(mag1u.at<uchar>(p), mag1u.at<uchar>(r_, c_));
                 vector<int>::iterator iter =
                     find(adjacent[curr].begin(), adjacent[curr].end(), pre);
                 if (iter == adjacent[curr].end())

@@ -101,13 +101,13 @@ namespace
             }
         }
 
-        lsigma_best = cv::pow(negsqsum / negcount, 0.5);
-        rsigma_best = cv::pow(possqsum / poscount, 0.5);
+        lsigma_best = std::sqrt(negsqsum / negcount);
+        rsigma_best = std::sqrt(possqsum / poscount);
 
         double gammahat = lsigma_best / rsigma_best;
         long int totalcount = (structdis.cols)*(structdis.rows);
-        double rhat = cv::pow(abssum / totalcount, static_cast<double>(2)) / ((negsqsum + possqsum) / totalcount);
-        double rhatnorm = rhat * (cv::pow(gammahat, 3) + 1)*(gammahat + 1) / pow(pow(gammahat, 2) + 1, 2);
+        double rhat = std::pow(abssum / totalcount, static_cast<double>(2)) / ((negsqsum + possqsum) / totalcount);
+        double rhatnorm = rhat * (std::pow(gammahat, 3) + 1)*(gammahat + 1) / pow(pow(gammahat, 2) + 1, 2);
 
         double prevgamma = 0;
         double prevdiff = 1e10;
@@ -138,7 +138,7 @@ namespace
         for (int itr_scale = 1; itr_scale <= scalenum; itr_scale++)
         {
             // resize image
-            cv::Size dst_size( int( orig_bw.cols / cv::pow((double)2, itr_scale - 1) ), int( orig_bw.rows / pow((double)2, itr_scale - 1)));
+            cv::Size dst_size( int( orig_bw.cols / std::pow((double)2, itr_scale - 1) ), int( orig_bw.rows / pow((double)2, itr_scale - 1)));
             brisque_mat_type imdist_scaled;
             cv::resize(orig_bw, imdist_scaled, dst_size, 0, 0, cv::INTER_CUBIC); // INTER_CUBIC
 
@@ -213,8 +213,8 @@ namespace
                 // push the calculated parameters from AGGD fit to pair-wise products
                 featurevector.push_back((brisque_calc_element_type)gamma_best);
                 featurevector.push_back((brisque_calc_element_type)meanparam);
-                featurevector.push_back( (brisque_calc_element_type) cv::pow(lsigma_best, 2));
-                featurevector.push_back( (brisque_calc_element_type) cv::pow(rsigma_best, 2));
+                featurevector.push_back( (brisque_calc_element_type) std::pow(lsigma_best, 2));
+                featurevector.push_back( (brisque_calc_element_type) std::pow(rsigma_best, 2));
             }
         }
 
@@ -230,7 +230,7 @@ namespace
 
         cv::Mat result;
         model->predict(feat_mat, result);
-        return std::min( std::max( result.at<float>(0), 0.f ), 100.f ); // clamp to [0-100]
+        return std::clamp( result.at<float>(0), 0.f, 100.f ); // clamp to [0-100]
     }
 
     // computes score for a single frame

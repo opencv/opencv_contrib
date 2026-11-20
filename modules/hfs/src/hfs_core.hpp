@@ -40,7 +40,7 @@ public:
     inline float getEulerDistance( cv::Vec3f in1, cv::Vec3f in2 )
     {
         cv::Vec3f diff = in1 - in2;
-        return sqrt(diff.dot(diff));
+        return std::sqrt(diff.dot(diff));
     }
 
     cv::Vec4f getColorFeature( const cv::Vec3f& in1, const cv::Vec3f& in2 );

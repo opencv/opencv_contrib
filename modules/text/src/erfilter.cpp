@@ -598,10 +598,10 @@ void ERFilterNM::er_add_pixel(ERStat *parent, int x, int y, int non_border_neigh
 
     parent->euler += (d_C1 - d_C2 + 2*d_C3) / 4;
 
-    int new_x1 = min(parent->rect.x,x);
-    int new_y1 = min(parent->rect.y,y);
-    int new_x2 = max(parent->rect.br().x-1,x);
-    int new_y2 = max(parent->rect.br().y-1,y);
+    int new_x1 = std::min(parent->rect.x,x);
+    int new_y1 = std::min(parent->rect.y,y);
+    int new_x2 = std::max(parent->rect.br().x-1,x);
+    int new_y2 = std::max(parent->rect.br().y-1,y);
     parent->rect.x = new_x1;
     parent->rect.y = new_y1;
     parent->rect.width  = new_x2-new_x1+1;
@@ -624,7 +624,7 @@ void ERFilterNM::er_merge(ERStat *parent, ERStat *child)
     parent->perimeter += child->perimeter;
 
 
-    for (int i=parent->rect.y; i<=min(parent->rect.br().y-1,child->rect.br().y-1); i++)
+    for (int i=parent->rect.y; i<=std::min(parent->rect.br().y-1,child->rect.br().y-1); i++)
         if (i-child->rect.y >= 0)
             parent->crossings->at(i-parent->rect.y) += child->crossings->at(i-child->rect.y);
 
@@ -637,15 +637,15 @@ void ERFilterNM::er_merge(ERStat *parent, ERStat *child)
     for (int i=parent->rect.br().y; i<child->rect.y; i++)
         parent->crossings->push_back(0);
 
-    for (int i=max(parent->rect.br().y,child->rect.y); i<=child->rect.br().y-1; i++)
+    for (int i=std::max(parent->rect.br().y,child->rect.y); i<=child->rect.br().y-1; i++)
         parent->crossings->push_back(child->crossings->at(i-child->rect.y));
 
     parent->euler += child->euler;
 
-    int new_x1 = min(parent->rect.x,child->rect.x);
-    int new_y1 = min(parent->rect.y,child->rect.y);
-    int new_x2 = max(parent->rect.br().x-1,child->rect.br().x-1);
-    int new_y2 = max(parent->rect.br().y-1,child->rect.br().y-1);
+    int new_x1 = std::min(parent->rect.x,child->rect.x);
+    int new_y1 = std::min(parent->rect.y,child->rect.y);
+    int new_x2 = std::max(parent->rect.br().x-1,child->rect.br().x-1);
+    int new_y2 = std::max(parent->rect.br().y-1,child->rect.br().y-1);
     parent->rect.x = new_x1;
     parent->rect.y = new_y1;
     parent->rect.width  = new_x2-new_x1+1;
@@ -810,7 +810,7 @@ ERStat* ERFilterNM::er_tree_filter ( InputArray image, ERStat * stat, ERStat *pa
     findContours( region, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE, Point(0, 0) );
     //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precision
     //     if the region is very small because otherwise we'll loose all the convexities
-    approxPolyDP( Mat(contours[0]), contour_poly, (float)min(rect.width,rect.height)/17, true );
+    approxPolyDP( Mat(contours[0]), contour_poly, (float)std::min(rect.width,rect.height)/17, true );
 
     bool was_convex = false;
     int  num_inflexion_points = 0;
@@ -1035,14 +1035,14 @@ double ERClassifierNM1::eval(const ERStat& stat)
 {
     //Classify
     Mat sample = Mat_<float>({1,4}, {(float)(stat.rect.width)/(stat.rect.height), // aspect ratio
-                     sqrt((float)(stat.area))/stat.perimeter, // compactness
+                     std::sqrt((float)(stat.area))/stat.perimeter, // compactness
                      (float)(1-stat.euler), //number of holes
                      stat.med_crossings});
 
     float votes = boost->predict( sample, noArray(), (int)DTrees::PREDICT_SUM | (int)StatModel::RAW_OUTPUT);
 
     // Logistic Correction returns a probability value (in the range(0,1))
-    return (double)1-(double)1/(1+exp(-2*votes));
+    return (double)1-(double)1/(1+std::exp(-2*votes));
 }
 
 
@@ -1066,7 +1066,7 @@ double ERClassifierNM2::eval(const ERStat& stat)
 {
     //Classify
     Mat sample = Mat_<float>({1,7}, {(float)(stat.rect.width)/(stat.rect.height), // aspect ratio
-                     sqrt((float)(stat.area))/stat.perimeter, // compactness
+                     std::sqrt((float)(stat.area))/stat.perimeter, // compactness
                      (float)(1-stat.euler), //number of holes
                      stat.med_crossings, stat.hole_area_ratio,
                      stat.convex_hull_ratio, stat.num_inflexion_points});
@@ -1074,7 +1074,7 @@ double ERClassifierNM2::eval(const ERStat& stat)
     float votes = boost->predict( sample, noArray(), (int)DTrees::PREDICT_SUM | (int)StatModel::RAW_OUTPUT);
 
     // Logistic Correction returns a probability value (in the range(0,1))
-    return (double)1-(double)1/(1+exp(-2*votes));
+    return (double)1-(double)1/(1+std::exp(-2*votes));
 }
 
 
@@ -1358,8 +1358,8 @@ void Minibox::check_in (vector<float> *p)
     }
     else for (int i=0; i<(int)p->size(); i++)
     {
-        edge_begin.at(i) = min(p->at(i),edge_begin.at(i));
-        edge_end.at(i) = max(p->at(i),edge_end.at(i));
+        edge_begin.at(i) = std::min(p->at(i),edge_begin.at(i));
+        edge_end.at(i) = std::max(p->at(i),edge_end.at(i));
     }
 }
 
@@ -2255,10 +2255,10 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
                 // both nodes are "sets" : we must evaluate the merging condition
                 if ( ( ( (use_full_merge_rule) &&
                          ((merge_info->at(i).nfa < merge_info->at(node1-N).nfa + merge_info->at(node2-N).nfa) &&
-                         (merge_info->at(i).nfa < min(merge_info->at(node1-N).min_nfa_in_branch,
+                         (merge_info->at(i).nfa < std::min(merge_info->at(node1-N).min_nfa_in_branch,
                                                     merge_info->at(node2-N).min_nfa_in_branch))) ) ||
                        ( (!use_full_merge_rule) &&
-                         ((merge_info->at(i).nfa < min(merge_info->at(node1-N).min_nfa_in_branch,
+                         ((merge_info->at(i).nfa < std::min(merge_info->at(node1-N).min_nfa_in_branch,
                                                      merge_info->at(node2-N).min_nfa_in_branch))) ) )
                      && (merge_info->at(i).probability > minProbability) )
                 {
@@ -2278,12 +2278,12 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
                                                            merge_info->at(node2-N).max_in_branch.begin(),
                                                            merge_info->at(node2-N).max_in_branch.end());
 
-                    if (merge_info->at(i).nfa < min(merge_info->at(node1-N).min_nfa_in_branch,
+                    if (merge_info->at(i).nfa < std::min(merge_info->at(node1-N).min_nfa_in_branch,
                                                     merge_info->at(node2-N).min_nfa_in_branch))
 
                         merge_info->at(i).min_nfa_in_branch = merge_info->at(i).nfa;
                     else
-                        merge_info->at(i).min_nfa_in_branch = min(merge_info->at(node1-N).min_nfa_in_branch,
+                        merge_info->at(i).min_nfa_in_branch = std::min(merge_info->at(node1-N).min_nfa_in_branch,
                                                                   merge_info->at(node2-N).min_nfa_in_branch);
                 }
             } else {
@@ -2305,7 +2305,7 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
                         merge_info->at(i).max_in_branch.insert(merge_info->at(i).max_in_branch.end(),
                                                                merge_info->at(node1-N).max_in_branch.begin(),
                                                                merge_info->at(node1-N).max_in_branch.end());
-                        merge_info->at(i).min_nfa_in_branch = min(merge_info->at(i).nfa,
+                        merge_info->at(i).min_nfa_in_branch = std::min(merge_info->at(i).nfa,
                                                                   merge_info->at(node1-N).min_nfa_in_branch);
                     }
                 } else {
@@ -2323,7 +2323,7 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
                         merge_info->at(i).max_in_branch.insert(merge_info->at(i).max_in_branch.end(),
                         merge_info->at(node2-N).max_in_branch.begin(),
                         merge_info->at(node2-N).max_in_branch.end());
-                        merge_info->at(i).min_nfa_in_branch = min(merge_info->at(i).nfa,
+                        merge_info->at(i).min_nfa_in_branch = std::min(merge_info->at(i).nfa,
                         merge_info->at(node2-N).min_nfa_in_branch);
                     }
                 }
@@ -2453,7 +2453,7 @@ double MaxMeaningfulClustering::probability(vector<int> &cluster)
     for (int i=(int)cluster.size()-1; i>=0; i--)
     {
 
-        diameters.at<float>(i,0)      = (float)max(regions.at(cluster.at(i)).rect.width,regions.at(cluster.at(i)).rect.height);
+        diameters.at<float>(i,0)      = (float)std::max(regions.at(cluster.at(i)).rect.width,regions.at(cluster.at(i)).rect.height);
         strokes.at<float>(i,0)        = (float)regions.at(cluster.at(i)).stroke_mean;
         gradients.at<float>(i,0)      = (float)regions.at(cluster.at(i)).gradient_mean;
         fg_intensities.at<float>(i,0) = (float)regions.at(cluster.at(i)).intensity_mean;
@@ -2477,7 +2477,7 @@ double MaxMeaningfulClustering::probability(vector<int> &cluster)
                 int area_j = regions.at(cluster.at(j)).rect.width * regions.at(cluster.at(j)).rect.height;
                 if (area_intersection > 0)
                 {
-                    float overlap = (float)area_intersection / min(area_i, area_j);
+                    float overlap = (float)area_intersection / std::min(area_i, area_j);
                     avgOverlap += overlap;
                 }
             }
@@ -2620,7 +2620,7 @@ double MaxMeaningfulClustering::probability(vector<int> &cluster)
 
     float votes_group = group_boost->predict( Mat(sample), noArray(), (int)DTrees::PREDICT_SUM | (int)StatModel::RAW_OUTPUT);
 
-    return (double)1-(double)1/(1+exp(-2*votes_group));
+    return (double)1-(double)1/(1+std::exp(-2*votes_group));
 }
 
 
@@ -2824,7 +2824,7 @@ static float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, 
 
             RotatedRect rrect = minAreaRect(contours0.at(0));
 
-            f.axial_ratio = max(rrect.size.width, rrect.size.height) / min(rrect.size.width, rrect.size.height);
+            f.axial_ratio = std::max(rrect.size.width, rrect.size.height) / std::min(rrect.size.width, rrect.size.height);
 
             Moments mu = moments(contours0.at(0));
             HuMoments (mu, f.hu_moments);
@@ -2836,7 +2836,7 @@ static float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, 
             vector<int> hull_idx;
             //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precision
             //     if the region is very small because otherwise we'll loose all the convexities
-            approxPolyDP( Mat(contours0[0]), contours0[0], (float)min(rrect.size.width,rrect.size.height)/17, true );
+            approxPolyDP( Mat(contours0[0]), contours0[0], (float)std::min(rrect.size.width,rrect.size.height)/17, true );
             convexHull(contours0[0],hull_idx,false,false);
             f.convexities = 0;
             if (hull_idx.size()>2)
@@ -2946,8 +2946,8 @@ static void erGroupingGK(InputArray _image, InputArrayOfArrays _src, vector<vect
             data[count+1] = (double)features.at(i).center.y/channel.rows*weight_param1;
             data[count+2] = (double)features.at(i).intensity_mean/255*weight_param2;
             data[count+3] = (double)features.at(i).boundary_intensity_mean/255*weight_param3;
-            data[count+4] = (double)max(features.at(i).rect.height,features.at(i).rect.width)/
-                                    max(channel.rows,channel.cols)*weight_param5;
+            data[count+4] = (double)std::max(features.at(i).rect.height,features.at(i).rect.width)/
+                                    std::max(channel.rows,channel.cols)*weight_param5;
             data[count+5] = (double)features.at(i).stroke_mean/max_stroke*weight_param6;
             data[count+6] = (double)features.at(i).gradient_mean/255*weight_param4;
 
@@ -3040,9 +3040,9 @@ float distanceLinesEstimates(line_estimates &a, line_estimates &b)
     if (a == b)
         return 0.0f;
 
-    int x_min = min(a.x_min, b.x_min);
-    int x_max = max(a.x_max, b.x_max);
-    int h_max = max(a.h_max, b.h_max);
+    int x_min = std::min(a.x_min, b.x_min);
+    int x_max = std::max(a.x_max, b.x_max);
+    int h_max = std::max(a.h_max, b.h_max);
 
     float dist_top = FLT_MAX, dist_bottom = FLT_MAX;
     for (int i=0; i<2; i++)
@@ -3078,14 +3078,14 @@ float distanceLinesEstimates(line_estimates &a, line_estimates &b)
 
             float x_min_dist = abs((top_a0+x_min*top_a1) - (top_b0+x_min*top_b1));
             float x_max_dist = abs((top_a0+x_max*top_a1) - (top_b0+x_max*top_b1));
-            dist_top    = min(dist_top, max(x_min_dist,x_max_dist)/h_max);
+            dist_top    = std::min(dist_top, std::max(x_min_dist,x_max_dist)/h_max);
 
             x_min_dist  = abs((bottom_a0+x_min*bottom_a1) - (bottom_b0+x_min*bottom_b1));
             x_max_dist  = abs((bottom_a0+x_max*bottom_a1) - (bottom_b0+x_max*bottom_b1));
-            dist_bottom = min(dist_bottom, max(x_min_dist,x_max_dist)/h_max);
+            dist_bottom = std::min(dist_bottom, std::max(x_min_dist,x_max_dist)/h_max);
         }
     }
-    return max(dist_top, dist_bottom);
+    return std::max(dist_top, dist_bottom);
 }
 
 // struct region_pair
@@ -3263,9 +3263,9 @@ bool fitLineEstimates(vector< vector<ERStat> > &regions, region_triplet &triplet
     char_boxes.push_back(regions[triplet.b[0]][triplet.b[1]].rect);
     char_boxes.push_back(regions[triplet.c[0]][triplet.c[1]].rect);
 
-    triplet.estimates.x_min = min(min(char_boxes[0].tl().x,char_boxes[1].tl().x), char_boxes[2].tl().x);
-    triplet.estimates.x_max = max(max(char_boxes[0].br().x,char_boxes[1].br().x), char_boxes[2].br().x);
-    triplet.estimates.h_max = max(max(char_boxes[0].height,char_boxes[1].height), char_boxes[2].height);
+    triplet.estimates.x_min = std::min({char_boxes[0].tl().x,char_boxes[1].tl().x, char_boxes[2].tl().x});
+    triplet.estimates.x_max = std::max({char_boxes[0].br().x,char_boxes[1].br().x, char_boxes[2].br().x});
+    triplet.estimates.h_max = std::max({char_boxes[0].height,char_boxes[1].height, char_boxes[2].height});
 
     // Fit one bottom line
     float err = fitLineLMS(char_boxes[0].br(), char_boxes[1].br(), char_boxes[2].br(),
@@ -3361,8 +3361,8 @@ bool isValidPair(Mat &grey, Mat &lab, Mat &mask, vector<Mat> &channels, vector< 
     if (j->rect.x == i->rect.x)
         return false;
 
-    float height_ratio = (float)min(i->rect.height,j->rect.height) /
-                                max(i->rect.height,j->rect.height);
+    float height_ratio = (float)std::min(i->rect.height,j->rect.height) /
+                                std::max(i->rect.height,j->rect.height);
 
     Point center_i(i->rect.x+i->rect.width/2, i->rect.y+i->rect.height/2);
     Point center_j(j->rect.x+j->rect.width/2, j->rect.y+j->rect.height/2);
@@ -3420,7 +3420,7 @@ bool isValidPair(Mat &grey, Mat &lab, Mat &mask, vector<Mat> &channels, vector< 
     if (abs(grey_mean1-grey_mean2) > PAIR_MAX_INTENSITY_DIST)
       return false;
 
-    if (sqrt(pow(a_mean1-a_mean2,2)+pow(b_mean1-b_mean2,2)) > PAIR_MAX_AB_DIST)
+    if (std::sqrt(std::pow(a_mean1-a_mean2,2)+std::pow(b_mean1-b_mean2,2)) > PAIR_MAX_AB_DIST)
       return false;
 
 
@@ -3520,8 +3520,8 @@ bool isValidTriplet(vector< vector<ERStat> >& regions, region_pair pair1, region
              (triplet.estimates.bottom2_a0 < triplet.estimates.top2_a0) )
             return false;
 
-        int central_height = (int)min(triplet.estimates.bottom1_a0, triplet.estimates.bottom2_a0) -
-                             (int)max(triplet.estimates.top1_a0,triplet.estimates.top2_a0);
+        int central_height = (int)std::min(triplet.estimates.bottom1_a0, triplet.estimates.bottom2_a0) -
+                             (int)std::max(triplet.estimates.top1_a0,triplet.estimates.top2_a0);
         int top_height     = (int)abs(triplet.estimates.top1_a0 - triplet.estimates.top2_a0);
         int bottom_height  = (int)abs(triplet.estimates.bottom1_a0 - triplet.estimates.bottom2_a0);
 
@@ -3553,9 +3553,9 @@ bool isValidSequence(region_sequence &sequence1, region_sequence &sequence2)
         {
             if ((distanceLinesEstimates(sequence2.triplets[i].estimates,
                                        sequence1.triplets[j].estimates) < SEQUENCE_MAX_TRIPLET_DIST) &&
-                ((float)max((sequence2.triplets[i].estimates.x_min-sequence1.triplets[j].estimates.x_max),
+                ((float)std::max((sequence2.triplets[i].estimates.x_min-sequence1.triplets[j].estimates.x_max),
                             (sequence1.triplets[j].estimates.x_min-sequence2.triplets[i].estimates.x_max))/
-                        max(sequence2.triplets[i].estimates.h_max,sequence1.triplets[j].estimates.h_max) < 3*PAIR_MAX_REGION_DIST))
+                        std::max(sequence2.triplets[i].estimates.h_max,sequence1.triplets[j].estimates.h_max) < 3*PAIR_MAX_REGION_DIST))
                 return true;
         }
     }
@@ -3778,10 +3778,10 @@ void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERSta
                 }
 
                 Rect rect = boundingRect(bbox_points);
-                rect.x = max(rect.x-10,0);
-                rect.y = max(rect.y-10,0);
-                rect.width = min(rect.width+20,src[c].cols-rect.x);
-                rect.height = min(rect.height+20,src[c].rows-rect.y);
+                rect.x = std::max(rect.x-10,0);
+                rect.y = std::max(rect.y-10,0);
+                rect.width = std::min(rect.width+20,src[c].cols-rect.x);
+                rect.height = std::min(rect.height+20,src[c].rows-rect.y);
 
                 vector<ERStat> aux_regions;
                 Mat tmp;

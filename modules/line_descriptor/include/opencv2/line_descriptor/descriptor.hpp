@@ -688,15 +688,15 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
     {
       static double q[7] =
       { 75122.6331530, 80916.6278952, 36308.2951477, 8687.24529705, 1168.92649479, 83.8676043424, 2.50662827511 };
-      double a = ( x + 0.5 ) * log( x + 5.5 ) - ( x + 5.5 );
+      double a = ( x + 0.5 ) * std::log( x + 5.5 ) - ( x + 5.5 );
       double b = 0.0;
       int n;
       for ( n = 0; n < 7; n++ )
       {
-        a -= log( x + (double) n );
-        b += q[n] * pow( x, (double) n );
+        a -= std::log( x + (double) n );
+        b += q[n] * std::pow( x, (double) n );
       }
-      return a + log( b );
+      return a + std::log( b );
     }
 
     /** Computes the natural logarithm of the absolute value of
@@ -716,7 +716,7 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
      */
     static double log_gamma_windschitl( double x )
     {
-      return 0.918938533204673 + ( x - 0.5 ) * log( x ) - x + 0.5 * x * log( x * std::sinh( 1 / x ) + 1 / ( 810.0 * pow( x, 6.0 ) ) );
+      return 0.918938533204673 + ( x - 0.5 ) * std::log( x ) - x + 0.5 * x * std::log( x * std::sinh( 1 / x ) + 1 / ( 810.0 * std::pow( x, 6.0 ) ) );
     }
 
     /** Computes -log10(NFA).
@@ -780,9 +780,9 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
        We use this to compute the first term. Actually the log of it.
        */
       log1term = log_gamma( (double) n + 1.0 )- log_gamma( (double ) k + 1.0 )- log_gamma( (double ) ( n - k ) + 1.0 )
-+ (double) k * log( p )
-+ (double) ( n - k ) * log( 1.0 - p );
-term = exp( log1term );
++ (double) k * std::log( p )
++ (double) ( n - k ) * std::log( 1.0 - p );
+term = std::exp( log1term );
 
 /* in some cases no more computations are needed */
 if( double_equal( term, 0.0 ) )
@@ -817,7 +817,7 @@ for ( i = k + 1; i <= n; i++ )
      Then, the error on the binomial tail when truncated at
      the i term can be bounded by a geometric series of form
      term_i * sum mult_term_i^j.                            */
-    err = term * ( ( 1.0 - pow( mult_term, (double) ( n - i + 1 ) ) ) / ( 1.0 - mult_term ) - 1.0 );
+    err = term * ( ( 1.0 - std::pow( mult_term, (double) ( n - i + 1 ) ) ) / ( 1.0 - mult_term ) - 1.0 );
     /* One wants an error at most of tolerance*final_result, or:
      tolerance * abs(-log10(bin_tail)-logNT).
      Now, the error that can be accepted on bin_tail is

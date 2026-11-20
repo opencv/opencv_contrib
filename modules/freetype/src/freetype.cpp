@@ -679,10 +679,10 @@ Size FreeType2Impl::getTextSize(
         currentPos.y += mFace->glyph->advance.y;
 
         // Update BoundaryBox ( in OpenCV coordinates )
-        xMin = cv::min ( xMin, ftd(bbox.xMin) );
-        xMax = cv::max ( xMax, ftd(bbox.xMax) );
-        yMin = cv::min ( yMin, ftd(bbox.yMin) );
-        yMax = cv::max ( yMax, ftd(bbox.yMax) );
+        xMin = std::min ( xMin, ftd(bbox.xMin) );
+        xMax = std::max ( xMax, ftd(bbox.xMax) );
+        yMin = std::min ( yMin, ftd(bbox.yMin) );
+        yMax = std::max ( yMax, ftd(bbox.yMax) );
     }
 
     hb_buffer_destroy (hb_buffer);

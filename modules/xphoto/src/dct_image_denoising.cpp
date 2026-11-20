@@ -134,9 +134,9 @@ namespace xphoto
     {
         CV_Assert( src.type() == CV_MAKE_TYPE(CV_32F, 3) );
 
-        cv::Matx33f mt(pow(3.0f, -0.5f),  pow(3.0f, -0.5f),       pow(3.0f, -0.5f),
-                       pow(2.0f, -0.5f),  0.0f,                 -pow(2.0f, -0.5f),
-                       pow(6.0f, -0.5f), -2.0f*pow(6.0f, -0.5f),  pow(6.0f, -0.5f));
+        cv::Matx33f mt(std::pow(3.0f, -0.5f),  std::pow(3.0f, -0.5f),       std::pow(3.0f, -0.5f),
+                       std::pow(2.0f, -0.5f),  0.0f,                 -std::pow(2.0f, -0.5f),
+                       std::pow(6.0f, -0.5f), -2.0f*std::pow(6.0f, -0.5f),  std::pow(6.0f, -0.5f));
 
         cv::transform(src, dst, mt);
 

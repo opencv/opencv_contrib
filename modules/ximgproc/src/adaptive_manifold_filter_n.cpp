@@ -71,7 +71,7 @@ inline int computeManifoldTreeHeight(double sigma_s, double sigma_r)
 {
     const double Hs = floor(Log2(sigma_s)) - 1.0;
     const double Lr = 1.0 - sigma_r;
-    return max(2, static_cast<int>(ceil(Hs * Lr)));
+    return std::max(2, static_cast<int>(ceil(Hs * Lr)));
 }
 
 static void splitChannels(InputArrayOfArrays src, vector<Mat>& dst)
@@ -177,9 +177,9 @@ private: /*inline functions*/
 
     double getResizeRatio()
     {
-        double df = min(sigma_s_ / 4.0, 256.0 * sigma_r_);
+        double df = std::min(sigma_s_ / 4.0, 256.0 * sigma_r_);
         df = floor_to_power_of_two(df);
-        df = max(1.0, df);
+        df = std::max(1.0, df);
         return df;
     }
 

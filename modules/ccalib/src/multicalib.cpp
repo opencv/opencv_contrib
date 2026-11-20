@@ -652,7 +652,7 @@ double MultiCameraCalibration::computeProjectError(Mat& parameters)
         Vec2f* ptr_err = error.ptr<Vec2f>();
         for (int i = 0; i < (int)error.total(); ++i)
         {
-            totalError += sqrt(ptr_err[i][0]*ptr_err[i][0] + ptr_err[i][1]*ptr_err[i][1]);
+            totalError += std::sqrt(ptr_err[i][0]*ptr_err[i][0] + ptr_err[i][1]*ptr_err[i][1]);
         }
         totalNPoints += (int)error.total();
     }

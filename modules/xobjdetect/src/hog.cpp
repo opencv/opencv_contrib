@@ -3474,7 +3474,7 @@ void HOGDescriptor::groupRectangles(std::vector<cv::Rect>& rectList, std::vector
         rrects[cls].y += rectList[i].y;
         rrects[cls].width += rectList[i].width;
         rrects[cls].height += rectList[i].height;
-        foundWeights[cls] = max(foundWeights[cls], weights[i]);
+        foundWeights[cls] = std::max(foundWeights[cls], weights[i]);
         numInClass[cls]++;
     }
 

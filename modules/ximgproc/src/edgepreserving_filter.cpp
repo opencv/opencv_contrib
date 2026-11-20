@@ -83,7 +83,7 @@ void edgePreservingFilter(InputArray _src, OutputArray _dst, int d,
                          ArithmeticMean[2]) *
                             ((double)intensity.val[2] -
                              ArithmeticMean[2]);
-                    distance = sqrt(distance);
+                    distance = std::sqrt(distance);
 
                     line.push_back(distance);
                 };

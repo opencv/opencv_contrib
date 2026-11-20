@@ -270,7 +270,7 @@ Mat UnscentedKalmanFilterImpl::predict(InputArray _control)
 {
     Mat control = _control.getMat();
 // get sigma points from x* and P
-    sigmaPoints = getSigmaPoints( state, errorCov, sqrt( tmpLambda ) );
+    sigmaPoints = getSigmaPoints( state, errorCov, std::sqrt( tmpLambda ) );
 
 // compute f-function values at sigma points
 // f_i = f(x_i, control, 0), i = 0..2*DP
@@ -300,7 +300,7 @@ Mat UnscentedKalmanFilterImpl::correct(InputArray _measurement)
 {
     Mat measurement = _measurement.getMat();
 // get sigma points from x* and P
-    sigmaPoints = getSigmaPoints( state, errorCov, sqrt( tmpLambda ) );
+    sigmaPoints = getSigmaPoints( state, errorCov, std::sqrt( tmpLambda ) );
 
 // compute h-function values at sigma points
 // h_i = h(x_i, 0), i = 0..2*DP

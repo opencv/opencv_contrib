@@ -6,7 +6,7 @@
 // Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
 #include "../precomp.hpp"
 #include "ssd_detector.hpp"
-#define CLIP(x, x1, x2) max(x1, min(x, x2))
+#define CLIP(x, x1, x2) std::max(x1, std::min(x, x2))
 namespace cv {
 namespace wechat_qrcode {
 int SSDDetector::init(const string& onnx_path) {

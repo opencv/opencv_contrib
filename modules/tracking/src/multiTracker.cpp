@@ -405,7 +405,7 @@ namespace impl {
 			for (int i = 0; i < (int)ensBuffer[k].size(); i++)
 			{
 				tld::TLDDetector::LabeledPatch labPatch;
-				double curScale = pow(tld::SCALE_STEP, ensScaleIDs[k][i]);
+				double curScale = std::pow(tld::SCALE_STEP, ensScaleIDs[k][i]);
 				labPatch.rect = Rect2d(ensBuffer[k][i].x*curScale, ensBuffer[k][i].y*curScale, initSize.width * curScale, initSize.height * curScale);
 				tld::resample(resized_imgs[ensScaleIDs[k][i]], Rect2d(ensBuffer[k][i], initSize), standardPatch);
 
@@ -607,7 +607,7 @@ namespace impl {
 			{
 				tld::TLDDetector::LabeledPatch labPatch;
 				standardPatch.data = &stdPatches.data[225 * i];
-				double curScale = pow(tld::SCALE_STEP, ensScaleIDs[k][i]);
+				double curScale = std::pow(tld::SCALE_STEP, ensScaleIDs[k][i]);
 				labPatch.rect = Rect2d(ensBuffer[k][i].x*curScale, ensBuffer[k][i].y*curScale, initSize.width * curScale, initSize.height * curScale);
 				tld::resample(resized_imgs[ensScaleIDs[k][i]], Rect2d(ensBuffer[k][i], initSize), standardPatch);
 
