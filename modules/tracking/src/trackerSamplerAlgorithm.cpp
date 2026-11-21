@@ -172,10 +172,10 @@ std::vector<Mat> TrackerContribSamplerCSC::sampleImage( const Mat& img, int x, i
   float outradsq = outrad * outrad;
   int dist;
 
-  uint minrow = max( 0, (int) y - (int) inrad );
-  uint maxrow = min( (int) rowsz - 1, (int) y + (int) inrad );
-  uint mincol = max( 0, (int) x - (int) inrad );
-  uint maxcol = min( (int) colsz - 1, (int) x + (int) inrad );
+  uint minrow = std::max( 0, (int) y - (int) inrad );
+  uint maxrow = std::min( (int) rowsz - 1, (int) y + (int) inrad );
+  uint mincol = std::max( 0, (int) x - (int) inrad );
+  uint maxcol = std::min( (int) colsz - 1, (int) x + (int) inrad );
 
   //fprintf(stderr,"inrad=%f minrow=%d maxrow=%d mincol=%d maxcol=%d\n",inrad,minrow,maxrow,mincol,maxcol);
 
@@ -196,7 +196,7 @@ std::vector<Mat> TrackerContribSamplerCSC::sampleImage( const Mat& img, int x, i
       }
     }
 
-  samples.resize( min( i, maxnum ) );
+  samples.resize( std::min( i, maxnum ) );
   return samples;
 }
 ;

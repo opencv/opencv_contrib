@@ -821,7 +821,7 @@ void SinusoidalPatternProfilometry_Impl::computeDataModulationTerm( InputArrayOf
                     i2 = patternImages_[1].at<uchar>(i, j);
                     i3 = patternImages_[2].at<uchar>(i, j);
 
-                    num = sqrt(3 * ( i1 - i3 ) * ( i1 - i3 ) + ( 2 * i2 - i1 - i3 ) * ( 2 * i2 - i1 - i3 ));
+                    num = std::sqrt(3 * ( i1 - i3 ) * ( i1 - i3 ) + ( 2 * i2 - i1 - i3 ) * ( 2 * i2 - i1 - i3 ));
                     den = i1 + i2 + i3;
                     dmt.at<float>(i, j) = 1 - num / den;
                 }

@@ -30,13 +30,13 @@ namespace cv { namespace ximgproc {
     Matx23d PeiLinNormalization ( InputArray I )
     {
         const Moments  M = moments ( I );
-        const double  l1 = ( M.mu20 / M.m00 + M.mu02 / M.m00 + sqrt ( ( M.mu20 / M.m00 - M.mu02 / M.m00 ) * ( M.mu20 / M.m00 - M.mu02 / M.m00 ) + 4 * M.mu11 / M.m00 * M.mu11 / M.m00 ) ) / 2;
-        const double  l2 = ( M.mu20 / M.m00 + M.mu02 / M.m00 - sqrt ( ( M.mu20 / M.m00 - M.mu02 / M.m00 ) * ( M.mu20 / M.m00 - M.mu02 / M.m00 ) + 4 * M.mu11 / M.m00 * M.mu11 / M.m00 ) ) / 2;
-        const double  ex = ( M.mu11 / M.m00 ) / sqrt ( ( l1 - M.mu20 / M.m00 ) * ( l1 - M.mu20 / M.m00 ) + M.mu11 / M.m00 * M.mu11 / M.m00 );
-        const double  ey = ( l1 - M.mu20 / M.m00 ) / sqrt ( ( l1 - M.mu20 / M.m00 ) * ( l1 - M.mu20 / M.m00 ) + M.mu11 / M.m00 * M.mu11 / M.m00 );
+        const double  l1 = ( M.mu20 / M.m00 + M.mu02 / M.m00 + std::sqrt ( ( M.mu20 / M.m00 - M.mu02 / M.m00 ) * ( M.mu20 / M.m00 - M.mu02 / M.m00 ) + 4 * M.mu11 / M.m00 * M.mu11 / M.m00 ) ) / 2;
+        const double  l2 = ( M.mu20 / M.m00 + M.mu02 / M.m00 - std::sqrt ( ( M.mu20 / M.m00 - M.mu02 / M.m00 ) * ( M.mu20 / M.m00 - M.mu02 / M.m00 ) + 4 * M.mu11 / M.m00 * M.mu11 / M.m00 ) ) / 2;
+        const double  ex = ( M.mu11 / M.m00 ) / std::sqrt ( ( l1 - M.mu20 / M.m00 ) * ( l1 - M.mu20 / M.m00 ) + M.mu11 / M.m00 * M.mu11 / M.m00 );
+        const double  ey = ( l1 - M.mu20 / M.m00 ) / std::sqrt ( ( l1 - M.mu20 / M.m00 ) * ( l1 - M.mu20 / M.m00 ) + M.mu11 / M.m00 * M.mu11 / M.m00 );
         const Matx22d  E = Matx22d ( ex, ey, -ey, ex );
-        const double   p = min ( I.size().height, I.size().width ) / 8;
-        const Matx22d  W = Matx22d ( p / sqrt ( l1 ), 0, 0, p / sqrt ( l2 ) );
+        const double   p = std::min ( I.size().height, I.size().width ) / 8;
+        const Matx22d  W = Matx22d ( p / std::sqrt ( l1 ), 0, 0, p / std::sqrt ( l2 ) );
         const Matx21d  c = Matx21d ( M.m10 / M.m00, M.m01 / M.m00 );
         const Matx21d  i = Matx21d ( I.size().width / 2, I.size().height / 2 );
         const Moments  N = M & W * E;

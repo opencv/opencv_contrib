@@ -75,7 +75,7 @@ void Magnitude::derrivativeXYCpu()
             else
                 dy_ptr[idx] = gray_ptr[idx + img_size.x] - gray_ptr[idx - img_size.x];
 
-            mag_ptr[idx] = (int)(0.5 + sqrt((double)(dx_ptr[idx] * dx_ptr[idx] + dy_ptr[idx] * dy_ptr[idx])));
+            mag_ptr[idx] = (int)(0.5 + std::sqrt((double)(dx_ptr[idx] * dx_ptr[idx] + dy_ptr[idx] * dy_ptr[idx])));
 
         }
     }
@@ -196,7 +196,7 @@ void Magnitude::nonMaxSuppCpu()
             if (mag1 > 0 || mag2 >= 0)
                 nms_ptr[idx] = 0;
             else
-                nms_ptr[idx] = (uchar)min(max(m00, 0), 255);
+                nms_ptr[idx] = (uchar)std::clamp(m00, 0, 255);
         }
     }
 }

@@ -57,9 +57,9 @@ VerticalIIRFilter(Mat &img, Mat &dst, const Range &range, double a,double w)
     int rows = img.rows, cols = img.cols;
 
     // Equation 12 p193
-    double                b1 = -2 * exp(-a)*cosh(w);
-    double                a1 = 2 * exp(-a)*cosh(w) - exp(-2 * a) - 1;
-    double                b2 = exp(-2 * a);
+    double                b1 = -2 * std::exp(-a)*cosh(w);
+    double                a1 = 2 * std::exp(-a)*cosh(w) - std::exp(-2 * a) - 1;
+    double                b2 = std::exp(-2 * a);
     for (int j = range.start; j < range.end; j++)
     {
         // Equation 26 p194
@@ -97,9 +97,9 @@ HorizontalIIRFilter(Mat &img, Mat &dst, const Range &range, double a, double w)
     float *f2;
 
     // Equation 12 p193
-    double                b1 = -2 * exp(-a)*cosh(w);
-    double                a1 = 2 * exp(-a)*cosh(w) - exp(-2 * a) - 1;
-    double                b2 = exp(-2 * a);
+    double                b1 = -2 * std::exp(-a)*cosh(w);
+    double                a1 = 2 * std::exp(-a)*cosh(w) - std::exp(-2 * a) - 1;
+    double                b2 = std::exp(-2 * a);
 
     for (int i = range.start; i<range.end; i++)
     {
@@ -215,15 +215,15 @@ public:
         int cols=img.cols;
 
         // Equation 13 p193
-        double                d=(1-2*exp(-a)*cosh(w)+exp(-2*a))/(2*a*exp(-a)*sinh(w)+w*(1-exp(-2*a)));
+        double                d=(1-2*std::exp(-a)*cosh(w)+std::exp(-2*a))/(2*a*std::exp(-a)*sinh(w)+w*(1-std::exp(-2*a)));
         double                c1=a*d;
         double                c2=w*d;
         // Equation 12 p193
-        double                b1=-2*exp(-a)*cosh(w);
-        double                b2=exp(-2*a);
+        double                b1=-2*std::exp(-a)*cosh(w);
+        double                b2=std::exp(-2*a);
         // Equation 14 p193
         double                a0p=c2;
-        double                a1p=(c1*sinh(w)-c2*cosh(w))*exp(-a);
+        double                a1p=(c1*sinh(w)-c2*cosh(w))*std::exp(-a);
         double                a1m=a1p-c2*b1;
         double                a2m=-c2*b2;
 
@@ -289,15 +289,15 @@ public:
         int rows = img.rows,cols=img.cols;
 
         // Equation 13 p193
-        double                d = (1 - 2 * exp(-a)*cosh(w) + exp(-2 * a)) / (2 * a*exp(-a)*sinh(w) + w*(1 - exp(-2 * a)));
+        double                d = (1 - 2 * std::exp(-a)*cosh(w) + std::exp(-2 * a)) / (2 * a*std::exp(-a)*sinh(w) + w*(1 - std::exp(-2 * a)));
         double                c1 = a*d;
         double                c2 = w*d;
         // Equation 12 p193
-        double                b1 = -2 * exp(-a)*cosh(w);
-        double                b2 = exp(-2 * a);
+        double                b1 = -2 * std::exp(-a)*cosh(w);
+        double                b2 = std::exp(-2 * a);
         // Equation 14 p193
         double                a0p = c2;
-        double                a1p = (c1*sinh(w) - c2*cosh(w))*exp(-a);
+        double                a1p = (c1*sinh(w) - c2*cosh(w))*std::exp(-a);
         double                a1m = a1p - c2*b1;
         double                a2m = -c2*b2;
 

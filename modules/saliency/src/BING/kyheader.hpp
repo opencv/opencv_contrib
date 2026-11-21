@@ -143,7 +143,7 @@ template<class T, int D> inline T vecSqrDist( const cv::Vec<T, D> &v1, const cv:
 }  // out of range risk for T = byte, ...
 template<class T, int D> inline T vecDist( const cv::Vec<T, D> &v1, const cv::Vec<T, D> &v2 )
 {
-  return sqrt( vecSqrDist( v1, v2 ) );
+  return std::sqrt( vecSqrDist( v1, v2 ) );
 }  // out of range risk for T = byte, ...
 
 inline cv::Rect Vec4i2Rect( cv::Vec4i &v )

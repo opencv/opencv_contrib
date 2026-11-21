@@ -34,7 +34,7 @@ namespace cv {namespace ximgproc {
 
         if (crop) {
             // crop the source into square
-            _row_num = min(_srcMat.rows, _srcMat.cols);
+            _row_num = std::min(_srcMat.rows, _srcMat.cols);
             cv::Rect _crop_ROI(
                 _srcMat.cols / 2 - _row_num / 2,
                 _srcMat.rows / 2 - _row_num / 2,
@@ -48,7 +48,7 @@ namespace cv {namespace ximgproc {
         }
         else {
             // avoid cropping corner when rotating
-            _row_num = cvCeil(sqrt(_srcMat.rows * _srcMat.rows + _srcMat.cols * _srcMat.cols));
+            _row_num = cvCeil(std::sqrt(_srcMat.rows * _srcMat.rows + _srcMat.cols * _srcMat.cols));
             _masked_src = Mat(Size(_row_num, _row_num), _srcMat.type(), Scalar(0));
             _center = Point(_masked_src.cols / 2, _masked_src.rows / 2);
             _srcMat.copyTo(_masked_src(Rect(

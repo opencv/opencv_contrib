@@ -175,8 +175,8 @@ void WBDetectorImpl::train(
                 sortIdx(confidences, indices,
                         SORT_EVERY_COLUMN + SORT_DESCENDING);
 
-                int win_count = min(max_per_image, confidences.rows);
-                win_count = min(win_count, stage_neg - bootstrap_count);
+                int win_count = std::min(max_per_image, confidences.rows);
+                win_count = std::min(win_count, stage_neg - bootstrap_count);
                 Mat window;
                 for (int k = 0; k < win_count; ++k) {
                     resize(img(bboxes[indices(k, 0)]), window, Size(24, 24), 0, 0, INTER_LINEAR_EXACT);

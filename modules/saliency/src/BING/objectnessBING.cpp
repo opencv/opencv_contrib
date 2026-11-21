@@ -62,9 +62,9 @@ ObjectnessBING::ObjectnessBING()
   _base = 2;  // base for window size quantization
   _W = 8;  // feature window size (W, W)
   _NSS = 2;  //non-maximal suppress size NSS
-  _logBase = log( _base );
-  _minT = cvCeil( log( 10. ) / _logBase );
-  _maxT = cvCeil( log( 500. ) / _logBase );
+  _logBase = std::log( _base );
+  _minT = cvCeil( std::log( 10. ) / _logBase );
+  _maxT = cvCeil( std::log( 500. ) / _logBase );
   _numT = _maxT - _minT + 1;
   _Clr = MAXBGR;
 
@@ -132,11 +132,11 @@ void ObjectnessBING::predictBBoxSI( Mat &img3u, ValStructVec<float, Vec4i> &valB
   for ( int ir = numSz - 1; ir >= 0; ir-- )
   {
     int r = _svmSzIdxs[ir];
-    int height = cvRound( pow( _base, r / _numT + _minT ) ), width = cvRound( pow( _base, r % _numT + _minT ) );
+    int height = cvRound( std::pow( _base, r / _numT + _minT ) ), width = cvRound( std::pow( _base, r % _numT + _minT ) );
     if( height > imgH * _base || width > imgW * _base )
       continue;
 
-    height = min( height, imgH ), width = min( width, imgW );
+    height = std::min( height, imgH ), width = std::min( width, imgW );
     Mat im3u, matchCost1f, mag1u;
     resize( img3u, im3u, Size( cvRound( _W * imgW * 1.0 / width ), cvRound( _W * imgH * 1.0 / height ) ), 0, 0, INTER_LINEAR_EXACT );
     gradientMag( im3u, mag1u );
@@ -148,14 +148,14 @@ void ObjectnessBING::predictBBoxSI( Mat &img3u, ValStructVec<float, Vec4i> &valB
 
     // Find true locations and match values
     double ratioX = width / _W, ratioY = height / _W;
-    int iMax = min( matchCost.size(), NUM_WIN_PSZ );
+    int iMax = std::min( matchCost.size(), NUM_WIN_PSZ );
     for ( int i = 0; i < iMax; i++ )
     {
       float mVal = matchCost( i );
       Point pnt = matchCost[i];
       Vec4i box( cvRound( pnt.x * ratioX ), cvRound( pnt.y * ratioY ) );
-      box[2] = cvRound( min( box[0] + width, imgW ) );
-      box[3] = cvRound( min( box[1] + height, imgH ) );
+      box[2] = cvRound( std::min( box[0] + width, imgW ) );
+      box[3] = cvRound( std::min( box[1] + height, imgH ) );
       box[0]++;
       box[1]++;
       valBoxes.pushBack( mVal, box );
@@ -368,7 +368,7 @@ void ObjectnessBING::gradientXY( Mat &x1i, Mat &y1i, Mat &mag1u )
     const int *x = x1i.ptr<int>( r ), *y = y1i.ptr<int>( r );
     BYTE* m = mag1u.ptr<BYTE>( r );
     for ( int c = 0; c < W; c++ )
-      m[c] = (BYTE) min( x[c] + y[c], 255 );   //((int)sqrt(sqr(x[c]) + sqr(y[c])), 255);
+      m[c] = (BYTE) std::min( x[c] + y[c], 255 );   //((int)sqrt(sqr(x[c]) + sqr(y[c])), 255);
   }
 }
 

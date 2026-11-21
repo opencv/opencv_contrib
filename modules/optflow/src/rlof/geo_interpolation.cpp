@@ -385,7 +385,7 @@ Mat getGraph(const Mat &image, float edge_length)
                     float p2 = static_cast<float>(image.at<Vec3b>(y, x)[0] - image.at<Vec3b>(y + dy, x + dx)[0]);
                     float p3 = static_cast<float>(image.at<Vec3b>(y, x)[1] - image.at<Vec3b>(y + dy, x + dx)[1]);
                     float p4 = static_cast<float>(image.at<Vec3b>(y, x)[2] - image.at<Vec3b>(y + dy, x + dx)[2]);
-                    gra.at<Vec8f>(y, x)[i] = sqrt(p1 + p2 * p2 + p3 * p3 + p4 * p4);
+                    gra.at<Vec8f>(y, x)[i] = std::sqrt(p1 + p2 * p2 + p3 * p3 + p4 * p4);
                 }
 
             }

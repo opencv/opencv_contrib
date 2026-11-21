@@ -148,9 +148,9 @@ bool StrongClassifierDirectSelection::update( const Mat& image, int target, floa
       alpha[curBaseClassifier] = logf( ( 1.0f - m_errors[selectedClassifier] ) / m_errors[selectedClassifier] );
 
     if( m_errorMask[selectedClassifier] )
-      importance *= (float) sqrt( ( 1.0f - m_errors[selectedClassifier] ) / m_errors[selectedClassifier] );
+      importance *= (float) std::sqrt( ( 1.0f - m_errors[selectedClassifier] ) / m_errors[selectedClassifier] );
     else
-      importance *= (float) sqrt( m_errors[selectedClassifier] / ( 1.0f - m_errors[selectedClassifier] ) );
+      importance *= (float) std::sqrt( m_errors[selectedClassifier] / ( 1.0f - m_errors[selectedClassifier] ) );
 
     //weight limitation
     //if (importance > 100) importance = 100;
@@ -292,7 +292,7 @@ void BaseClassifier::trainClassifier( const Mat& image, int target, float import
   {
     double U_k = (double) rand() / RAND_MAX;
     A *= U_k;
-    if( K > K_max || A < exp( -importance ) )
+    if( K > K_max || A < std::exp( -importance ) )
       break;
     K++;
   }
@@ -477,7 +477,7 @@ void EstimatedGaussDistribution::update( float value )
   float tmp_sigma = K * ( m_mean - value ) * ( m_mean - value ) + ( 1.0f - K ) * m_sigma * m_sigma;
   m_P_sigma = m_P_sigma * m_R_mean / ( m_P_sigma + m_R_sigma );
 
-  m_sigma = static_cast<float>( sqrt( tmp_sigma ) );
+  m_sigma = static_cast<float>( std::sqrt( tmp_sigma ) );
   if( m_sigma <= 1.0f )
     m_sigma = 1.0f;
 

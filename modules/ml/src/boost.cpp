@@ -50,7 +50,7 @@ log_ratio( double val )
     const double eps = 1e-5;
     val = std::max( val, eps );
     val = std::min( val, 1. - eps );
-    return log( val/(1. - val) );
+    return std::log( val/(1. - val) );
 }
 
 

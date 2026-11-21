@@ -59,7 +59,7 @@ namespace cv{
 #ifdef WEIGHTED
         mat.setTo(0.0);
         for(int i=0;i<_particles.rows;i++){
-            mat+=_particles.row(i)/exp(-_logweight(0,i));
+            mat+=_particles.row(i)/std::exp(-_logweight(0,i));
         }
         _real_function->correctParams((double*)mat.data);
         mat.copyTo(params);
@@ -96,7 +96,7 @@ namespace cv{
         Mat_<double> new_particles(_particlesNum,_std.cols);
         int num_particles=0;
         for(int i=0;i<_particles.rows;i++){
-            int num_replicons=cvFloor(new_particles.rows/exp(-_logweight(0,i)));
+            int num_replicons=cvFloor(new_particles.rows/std::exp(-_logweight(0,i)));
             for(int j=0;j<num_replicons;j++,num_particles++){
                 _particles.row(i).copyTo(new_particles.row(num_particles));
             }
@@ -134,7 +134,7 @@ namespace cv{
         }
 
         _logweight.create(1,_particles.rows);
-        _logweight.setTo(-log((double)_particles.rows));
+        _logweight.setTo(-std::log((double)_particles.rows));
         return 0.0;
     }
 
@@ -214,9 +214,9 @@ namespace cv{
         minMaxLoc(row, 0, &max);
         row-=max;
         for(int i=0;i<row.cols;i++){
-            logsum+=exp(row(0,i));
+            logsum+=std::exp(row(0,i));
         }
-        logsum=log(logsum);
+        logsum=std::log(logsum);
         row-=logsum;
     }
 }

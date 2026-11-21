@@ -74,7 +74,7 @@ void cv::cudacodec::detail::FrameQueue::resize(const int newSz) {
     const volatile int* const isFrameInUseOld = isFrameInUse_;
     isFrameInUse_ = new volatile int[maxSz];
     std::memset((void*)isFrameInUse_, 0, sizeof(*isFrameInUse_) * maxSz);
-    std::memcpy((void*)isFrameInUse_, (void*)isFrameInUseOld, sizeof(*isFrameInUseOld) * min(maxSz,maxSzOld));
+    std::memcpy((void*)isFrameInUse_, (void*)isFrameInUseOld, sizeof(*isFrameInUseOld) * std::min(maxSz,maxSzOld));
     delete[] isFrameInUseOld;
 }
 

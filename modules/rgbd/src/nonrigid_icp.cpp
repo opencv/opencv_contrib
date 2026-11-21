@@ -217,7 +217,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
                 float robustWeight = huberWeight(r_edge, reg_sigma);
 
                 // take sqrt since radius is stored as squared distance
-                float edgeWeight = sqrt(min(childNode->radius, currentLevelNodes[node]->radius));
+                float edgeWeight = std::sqrt(std::min(childNode->radius, currentLevelNodes[node]->radius));
 
                 Vec3f v1 = transformedChild.cross(r_edge);
 

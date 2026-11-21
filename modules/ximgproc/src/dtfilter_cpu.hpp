@@ -119,7 +119,7 @@ protected: /*Functions declarations*/
 
     inline double getIterSigmaH(int iterNum)
     {
-        return sigmaSpatial * std::pow(2.0, numIters - iterNum) / sqrt(std::pow(4.0, numIters) - 1);
+        return sigmaSpatial * std::pow(2.0, numIters - iterNum) / std::sqrt(std::pow(4.0, numIters) - 1);
     }
 
     inline IDistType getIterRadius(int iterNum)

@@ -63,7 +63,7 @@ namespace ximgproc
     if (sigmaAlpha < 0)
       sigmaAlpha = 5. * fr;
     if (sigmaAvg < 0)
-      sigmaAvg = 0.05 * sqrt(static_cast<float>(src.channels()));
+      sigmaAvg = 0.05 * std::sqrt(static_cast<float>(src.channels()));
 
     Mat I;
     src.copyTo(I);
@@ -225,8 +225,8 @@ namespace ximgproc
         {
           for (pb.x = 0; pb.x < B.cols; pb.x++)
           {
-            pt.x = min(max(pb.x + x, 0), B.cols - 1);
-            pt.y = min(max(pb.y + y, 0), B.rows - 1);
+            pt.x = std::min(std::max(pb.x + x, 0), B.cols - 1);
+            pt.y = std::min(std::max(pb.y + y, 0), B.rows - 1);
             if (alpha.at<float>(pb) > mRTV.at<float>(pt))
             {
               alpha.at<float>(pb) = mRTV.at<float>(pt);
@@ -256,7 +256,7 @@ namespace ximgproc
       float y, x;
       for (r = 0, y = (float)-fr2; r < SW.rows; r++, y += 1.0) {
         for(c = 0, x = (float)-fr2; c < SW.cols; c++, x += 1.0) {
-          SW.at<float>(r,c) = exp(-(x*x + y*y) / (2*fr2*fr2));
+          SW.at<float>(r,c) = std::exp(-(x*x + y*y) / (2*fr2*fr2));
         }
       }
     }
@@ -299,7 +299,7 @@ namespace ximgproc
       float y, x;
       for (r = 0, y = (float)-fr2; r < SW.rows; r++, y += 1.0) {
         for(c = 0, x = (float)-fr2; c < SW.cols; c++, x += 1.0) {
-          SW.at<float>(r,c) = exp(-(x*x + y*y) / (2*fr2*fr2));
+          SW.at<float>(r,c) = std::exp(-(x*x + y*y) / (2*fr2*fr2));
         }
       }
     }

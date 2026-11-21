@@ -215,7 +215,7 @@ namespace cv {
                 float* h2 = histograms.ptr<float>(r2);
 
                 for (int i = 0; i < histogram_size; i++) {
-                    r += min(h1[i], h2[i]);
+                    r += std::min(h1[i], h2[i]);
                 }
 
                 return r;
@@ -377,7 +377,7 @@ namespace cv {
                 int size_r1 = sizes.at<int>(r1);
                 int size_r2 = sizes.at<int>(r2);
 
-                return max(min(1.0f - (float)(size_r1 + size_r2) / (float)(size_image), 1.0f), 0.0f);
+                return std::clamp(1.0f - (float)(size_r1 + size_r2) / (float)(size_image), 0.0f, 1.0f);
             }
 
             void SelectiveSearchSegmentationStrategySizeImpl::merge(int /* r1 */, int /* r2 */) {
@@ -454,7 +454,7 @@ namespace cv {
                 int size_r2 = sizes.at<int>(r2);
                 int bounding_rect_size = (bounding_rects[r1] | bounding_rects[r2]).area();
 
-                return max(min(1.0f - (float)(bounding_rect_size - size_r1 - size_r2) / (float)(size_image), 1.0f), 0.0f);
+                return std::clamp(1.0f - (float)(bounding_rect_size - size_r1 - size_r2) / (float)(size_image), 0.0f, 1.0f);
             }
 
             void SelectiveSearchSegmentationStrategyFillImpl::merge(int r1, int r2) {
@@ -661,7 +661,7 @@ namespace cv {
                 float* h2 = histograms.ptr<float>(r2);
 
                 for (int i = 0; i < histogram_size; i++) {
-                    r += min(h1[i], h2[i]);
+                    r += std::min(h1[i], h2[i]);
                 }
 
                 return r;

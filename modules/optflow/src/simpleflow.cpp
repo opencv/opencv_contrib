@@ -78,7 +78,7 @@ inline static float dist(const Vec2f &p1, const Vec2f &p2) {
 
 template<class T>
 inline static T min(T t1, T t2, T t3) {
-  return (t1 <= t2 && t1 <= t3) ? t1 : min(t2, t3);
+  return (t1 <= t2 && t1 <= t3) ? t1 : std::min(t2, t3);
 }
 
 static void removeOcclusions(const Mat& flow,

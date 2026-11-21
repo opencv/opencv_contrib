@@ -277,7 +277,7 @@ bool TrackerMedianFlowImpl::medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& old
     std::vector<float> displacements;
     for(size_t i=0;i<di.size();i++){
         di[i]-=mDisplacement;
-        displacements.push_back((float)sqrt(di[i].ddot(di[i])));
+        displacements.push_back((float)std::sqrt(di[i].ddot(di[i])));
     }
     float median_displacements = tracking_internal::getMedianAndDoPartition(displacements);
     dprintf(("\tmedian of length of difference of displacements = %f\n", median_displacements));

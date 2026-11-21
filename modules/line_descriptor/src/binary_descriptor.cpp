@@ -157,7 +157,7 @@ void BinaryDescriptor::setWidthOfBand( int width )
   for ( int i = 0; i < params.widthOfBand_ * 3; i++ )
   {
     dis = i - u;
-    gaussCoefL_[i] = exp( dis * dis * invsigma2 );
+    gaussCoefL_[i] = std::exp( dis * dis * invsigma2 );
   }
 
   /* prepare a vector for global weights F_g*/
@@ -172,7 +172,7 @@ void BinaryDescriptor::setWidthOfBand( int width )
   for ( int i = 0; i < NUM_OF_BANDS * params.widthOfBand_; i++ )
   {
     dis = i - u;
-    gaussCoefG_[i] = exp( dis * dis * invsigma2 );
+    gaussCoefG_[i] = std::exp( dis * dis * invsigma2 );
   }
 }
 
@@ -239,7 +239,7 @@ BinaryDescriptor::BinaryDescriptor( const BinaryDescriptor::Params &parameters )
   for ( int i = 0; i < params.widthOfBand_ * 3; i++ )
   {
     dis = i - u;
-    gaussCoefL_[i] = exp( dis * dis * invsigma2 );
+    gaussCoefL_[i] = std::exp( dis * dis * invsigma2 );
   }
 
   /* prepare a vector for global weights F_g*/
@@ -254,7 +254,7 @@ BinaryDescriptor::BinaryDescriptor( const BinaryDescriptor::Params &parameters )
   for ( int i = 0; i < NUM_OF_BANDS * params.widthOfBand_; i++ )
   {
     dis = i - u;
-    gaussCoefG_[i] = exp( dis * dis * invsigma2 );
+    gaussCoefG_[i] = std::exp( dis * dis * invsigma2 );
   }
 }
 
@@ -492,7 +492,7 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
       kl.class_id = i;
       kl.octave = osl.octaveCount;
       kl.size = ( osl.endPointX - osl.startPointX ) * ( osl.endPointY - osl.startPointY );
-      kl.response = osl.lineLength / max( images_sizes[osl.octaveCount].width, images_sizes[osl.octaveCount].height );
+      kl.response = osl.lineLength / std::max( images_sizes[osl.octaveCount].width, images_sizes[osl.octaveCount].height );
       kl.pt = Point2f( ( osl.endPointX + osl.startPointX ) / 2, ( osl.endPointY + osl.startPointY ) / 2 );
 
       /* store KeyLine */
@@ -697,7 +697,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
   /* sigma values and reduction factor used in Gaussian pyramids */
   float preSigma2 = 0;  //orignal image is not blurred, has zero sigma;
   float curSigma2 = 1.0;  //[sqrt(2)]^0=1;
-  double factor = sqrt( 2.0 );  //the down sample factor between connective two octave images
+  double factor = std::sqrt( 2.0 );  //the down sample factor between connective two octave images
 
   /* loop over number of octaves */
   for ( int octaveCount = 0; octaveCount < params.numOfOctave_; octaveCount++ )
@@ -706,7 +706,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
     cv::Mat blur;
 
     /* apply Gaussian blur */
-    float increaseSigma = sqrt( curSigma2 - preSigma2 );
+    float increaseSigma = std::sqrt( curSigma2 - preSigma2 );
     cv::GaussianBlur( image, blur, cv::Size( params.ksize_, params.ksize_ ), increaseSigma );
     images_sizes[octaveCount] = blur.size();
 
@@ -757,7 +757,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
     /* compute absolute value of difference between Y coordinates of line's extreme points */
     dy = fabs( edLineVec_[0]->lineEndpoints_[lineCurId][1] - edLineVec_[0]->lineEndpoints_[lineCurId][3] );
     /* compute line's length */
-    octaveLines[numOfFinalLine].lineLength = sqrt( dx * dx + dy * dy );
+    octaveLines[numOfFinalLine].lineLength = std::sqrt( dx * dx + dy * dy );
 
     /* update counters */
     numOfFinalLine++;
@@ -808,7 +808,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
         /* compute scaled length of current line */
         dx = fabs( edLineVec_[octaveCount]->lineEndpoints_[lineCurId][0] - edLineVec_[octaveCount]->lineEndpoints_[lineCurId][2] );  //x1-x2
         dy = fabs( edLineVec_[octaveCount]->lineEndpoints_[lineCurId][1] - edLineVec_[octaveCount]->lineEndpoints_[lineCurId][3] );  //y1-y2
-        length = scale[octaveCount] * sqrt( dx * dx + dy * dy );
+        length = scale[octaveCount] * std::sqrt( dx * dx + dy * dy );
 
         minEndPointDis = 12;
         /* loop over the octave representations of all lines */
@@ -874,7 +874,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
            L1(0,1)<->L2(0,1) */
           dx = lp0 - np0;
           dy = lp1 - np1;
-          endPointDis = sqrt( dx * dx + dy * dy );
+          endPointDis = std::sqrt( dx * dx + dy * dy );
 
           /* set momentaneously min and max distance between lines to
            the one between left extremes */
@@ -885,7 +885,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
            L1(2,3)<->L2(2,3) */
           dx = lp2 - np2;
           dy = lp3 - np3;
-          endPointDis = sqrt( dx * dx + dy * dy );
+          endPointDis = std::sqrt( dx * dx + dy * dy );
 
           /* update (if necessary) min and max distance between lines */
           minLocalDis = ( endPointDis < minLocalDis ) ? endPointDis : minLocalDis;
@@ -896,7 +896,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
            L1(0,1)<->L2(2,3) */
           dx = lp0 - np2;
           dy = lp1 - np3;
-          endPointDis = sqrt( dx * dx + dy * dy );
+          endPointDis = std::sqrt( dx * dx + dy * dy );
 
           /* update (if necessary) min and max distance between lines */
           minLocalDis = ( endPointDis < minLocalDis ) ? endPointDis : minLocalDis;
@@ -907,7 +907,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
            L1(2,3)<->L2(0,1) */
           dx = lp2 - np0;
           dy = lp3 - np1;
-          endPointDis = sqrt( dx * dx + dy * dy );
+          endPointDis = std::sqrt( dx * dx + dy * dy );
 
           /* update (if necessary) min and max distance between lines */
           minLocalDis = ( endPointDis < minLocalDis ) ? endPointDis : minLocalDis;
@@ -1268,17 +1268,17 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines, bool useDetectionData )
         desID = bandID * 8;
         temp = pgdLBandSum[bandID] * invN;
         desVec[desID] = temp;/* mean value of pgdL; */
-        desVec[desID + 4] = sqrt( pgdL2BandSum[bandID] * invN - temp * temp );  //std value of pgdL;
+        desVec[desID + 4] = std::sqrt( pgdL2BandSum[bandID] * invN - temp * temp );  //std value of pgdL;
         temp = ngdLBandSum[bandID] * invN;
         desVec[desID + 1] = temp;  //mean value of ngdL;
-        desVec[desID + 5] = sqrt( ngdL2BandSum[bandID] * invN - temp * temp );  //std value of ngdL;
+        desVec[desID + 5] = std::sqrt( ngdL2BandSum[bandID] * invN - temp * temp );  //std value of ngdL;
 
         temp = pgdOBandSum[bandID] * invN;
         desVec[desID + 2] = temp;  //mean value of pgdO;
-        desVec[desID + 6] = sqrt( pgdO2BandSum[bandID] * invN - temp * temp );  //std value of pgdO;
+        desVec[desID + 6] = std::sqrt( pgdO2BandSum[bandID] * invN - temp * temp );  //std value of pgdO;
         temp = ngdOBandSum[bandID] * invN;
         desVec[desID + 3] = temp;  //mean value of ngdO;
-        desVec[desID + 7] = sqrt( ngdO2BandSum[bandID] * invN - temp * temp );  //std value of ngdO;
+        desVec[desID + 7] = std::sqrt( ngdO2BandSum[bandID] * invN - temp * temp );  //std value of ngdO;
       }
 
       // normalize;
@@ -1300,8 +1300,8 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines, bool useDetectionData )
         tempS += * ( desVec + i + 7 ) * * ( desVec + i + 7 );  //desVec[8*i+7] * desVec[8*i+7];
       }
 
-      tempM = 1 / sqrt( tempM );
-      tempS = 1 / sqrt( tempS );
+      tempM = 1 / std::sqrt( tempM );
+      tempS = 1 / std::sqrt( tempS );
       desVec = &pSingleLine->descriptor.front();
       base = 0;
       for ( short i = 0; i < (short) ( NUM_OF_BANDS * 8 ); ++base, i = (short) ( base * 8 ) )
@@ -1336,7 +1336,7 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines, bool useDetectionData )
         temp += desVec[i] * desVec[i];
       }
 
-      temp = 1 / sqrt( temp );
+      temp = 1 / std::sqrt( temp );
       for ( short i = 0; i < descriptor_size; i++ )
       {
         desVec[i] = desVec[i] * temp;
@@ -2317,7 +2317,7 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines 
             //adjust the line equation
             lineFitErr = LeastSquaresLineFit_( pLineXCors, pLineYCors, pLineSID[numOfLines], newOffsetS, offsetInLineArray, lineEquation );
           }
-          coef1 = 1 / sqrt( lineEquation[0] * lineEquation[0] + 1 );
+          coef1 = 1 / std::sqrt( lineEquation[0] * lineEquation[0] + 1 );
           numOfOutlier = 0;
           newOffsetS = offsetInLineArray;
           while ( offsetInEdgeArrayE > offsetInEdgeArrayS )
@@ -2403,7 +2403,7 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines 
             //adjust the line equation
             lineFitErr = LeastSquaresLineFit_( pLineXCors, pLineYCors, pLineSID[numOfLines], newOffsetS, offsetInLineArray, lineEquation );
           }
-          coef1 = 1 / sqrt( 1 + lineEquation[0] * lineEquation[0] );
+          coef1 = 1 / std::sqrt( 1 + lineEquation[0] * lineEquation[0] );
           numOfOutlier = 0;
           newOffsetS = offsetInLineArray;
           while ( offsetInEdgeArrayE > offsetInEdgeArrayS )
@@ -2528,7 +2528,7 @@ double BinaryDescriptor::EDLineDetector::LeastSquaresLineFit_( unsigned int *xCo
       offset++;
       fitError += coef * coef;
     }
-    return sqrt( fitError );
+    return std::sqrt( fitError );
   }
   /*If the first pixel in this chain is vertical,
    *then we try to find a vertical line, x=ay+b;*/
@@ -2562,7 +2562,7 @@ double BinaryDescriptor::EDLineDetector::LeastSquaresLineFit_( unsigned int *xCo
       offset++;
       fitError += coef * coef;
     }
-    return sqrt( fitError );
+    return std::sqrt( fitError );
   }
   return 0;
 }

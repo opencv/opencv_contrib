@@ -379,7 +379,7 @@ void SuperpixelSLICImpl::enforceLabelConnectivity( int min_element_size )
     const int supsz = sz / m_numlabels;
 
     int div = int(100.0f/(float)min_element_size + 0.5f);
-    int min_sp_sz = max(3, supsz / div);
+    int min_sp_sz = std::max(3, supsz / div);
 
     Mat nlabels( m_height, m_width, CV_32S, Scalar(INT_MAX) );
 
@@ -451,7 +451,7 @@ void SuperpixelSLICImpl::enforceLabelConnectivity( int min_element_size )
                         ssumch += diff * diff;
                     }
                     // L2 distance with adj
-                    diffch = sqrt( ssumch );
+                    diffch = std::sqrt( ssumch );
                     adaptk.push_back( m_adaptk[currentlabel] );
                 }
 
@@ -500,7 +500,7 @@ void SuperpixelSLICImpl::enforceLabelConnectivity( int min_element_size )
                              <= 3 * m_region_size * m_region_size )
                             )
                           {
-                              adaptk[adjlabel] = min( 2.0f, float(adaptk[adjlabel] + adaptk[(int)adaptk.size()-1]) );
+                              adaptk[adjlabel] = std::min( 2.0f, float(adaptk[adjlabel] + adaptk[(int)adaptk.size()-1]) );
                               hashtable[adjlabel] += hashtable[(int)adaptk.size()-1];
                           }
 
@@ -1161,10 +1161,10 @@ inline void SuperpixelSLICImpl::PerformSLICO( const int&  itrnum )
         distvec.setTo(FLT_MAX);
         for( int n = 0; n < m_numlabels; n++ )
         {
-            int y1 = max(0, (int) m_kseedsy[n] - m_region_size);
-            int y2 = min(m_height, (int) m_kseedsy[n] + m_region_size);
-            int x1 = max(0, (int) m_kseedsx[n] - m_region_size);
-            int x2 = min((int) m_width,(int) m_kseedsx[n] + m_region_size);
+            int y1 = std::max(0, (int) m_kseedsy[n] - m_region_size);
+            int y2 = std::min(m_height, (int) m_kseedsy[n] + m_region_size);
+            int x1 = std::max(0, (int) m_kseedsx[n] - m_region_size);
+            int x2 = std::min((int) m_width,(int) m_kseedsx[n] + m_region_size);
 
             parallel_for_( Range(y1, y2), SLICOGrowInvoker( &m_chvec, &distchans, &distxy, &distvec,
                            &m_klabels, m_kseedsx[n], m_kseedsy[n], xywt, maxchans[n], &m_kseeds,
@@ -1345,10 +1345,10 @@ inline void SuperpixelSLICImpl::PerformSLIC( const int&  itrnum )
         distvec.setTo(FLT_MAX);
         for( int n = 0; n < m_numlabels; n++ )
         {
-            int y1 = max(0, (int) m_kseedsy[n] - m_region_size);
-            int y2 = min(m_height, (int) m_kseedsy[n] + m_region_size);
-            int x1 = max(0, (int) m_kseedsx[n] - m_region_size);
-            int x2 = min((int) m_width,(int) m_kseedsx[n] + m_region_size);
+            int y1 = std::max(0, (int) m_kseedsy[n] - m_region_size);
+            int y2 = std::min(m_height, (int) m_kseedsy[n] + m_region_size);
+            int x1 = std::max(0, (int) m_kseedsx[n] - m_region_size);
+            int x2 = std::min((int) m_width,(int) m_kseedsx[n] + m_region_size);
 
             parallel_for_( Range(y1, y2), SLICGrowInvoker( &m_chvec, &distvec,
                            &m_klabels, m_kseedsx[n], m_kseedsy[n], xywt, &m_kseeds,
@@ -1406,10 +1406,10 @@ inline void SuperpixelSLICImpl::PerformMSLIC( const int&  itrnum )
             else
                 offset = int(m_region_size * m_adaptk[n]);
 
-            int y1 = max(0,        (int) m_kseedsy[n] - offset);
-            int y2 = min(m_height, (int) m_kseedsy[n] + offset);
-            int x1 = max(0,        (int) m_kseedsx[n] - offset);
-            int x2 = min(m_width,  (int) m_kseedsx[n] + offset);
+            int y1 = std::max(0,        (int) m_kseedsy[n] - offset);
+            int y2 = std::min(m_height, (int) m_kseedsy[n] + offset);
+            int x1 = std::max(0,        (int) m_kseedsx[n] - offset);
+            int x2 = std::min(m_width,  (int) m_kseedsx[n] + offset);
 
             parallel_for_( Range(y1, y2), SLICGrowInvoker( &m_chvec, &distvec,
                            &m_klabels, m_kseedsx[n], m_kseedsy[n], xywt, &m_kseeds,
@@ -1448,7 +1448,7 @@ inline void SuperpixelSLICImpl::SuperpixelSplit()
     parallel_reduce( BlockedRange(0, m_width), msc );
 
     const float invwt = 1.0f / ( (m_region_size/m_ruler)*(m_region_size/m_ruler) );
-    const float sqrt_invwt = sqrt(invwt);
+    const float sqrt_invwt = std::sqrt(invwt);
 
     if ( m_cur_iter < m_iterations - 2 )
     {
@@ -1575,7 +1575,7 @@ inline void SuperpixelSLICImpl::SuperpixelSplit()
 
                     // adjacent metric for N channels
                     avglabs[ klabels.at<int>(y,x) ]
-                              += sqrt(   (x1*x1 + y1*y1 + ch11sqsum) * (x2*x2 + y2*y2 + ch22sqsum)
+                              += std::sqrt(   (x1*x1 + y1*y1 + ch11sqsum) * (x2*x2 + y2*y2 + ch22sqsum)
                                        - (x1*x2 + y1*y2 + ch12sqsum) * (x1*x2 + y1*y2 + ch12sqsum) );
                 }
              }
@@ -1614,9 +1614,9 @@ inline void SuperpixelSLICImpl::SuperpixelSplit()
                 for( int c = 0; c < m_nr_channels; c++ )
                   m_kseeds[c][k] = msc.sigma[c][k] / msc.clustersize[k];
 
-                m_adaptk[k] = sqrt( m_ratio / avglabs[k] );
-                m_adaptk[k] = max( 0.5f, m_adaptk[k] );
-                m_adaptk[k] = min( 2.0f, m_adaptk[k] );
+                m_adaptk[k] = std::sqrt( m_ratio / avglabs[k] );
+                m_adaptk[k] = std::max( 0.5f, m_adaptk[k] );
+                m_adaptk[k] = std::min( 2.0f, m_adaptk[k] );
             }
             // if segment size is too large
             // split it and calculate four new seeds
@@ -1624,9 +1624,9 @@ inline void SuperpixelSLICImpl::SuperpixelSplit()
             {
                 xindex = (int)( msc.sigmax[k] / msc.clustersize[k] );
                 yindex = (int)( msc.sigmay[k] / msc.clustersize[k] );
-                m_adaptk[k] = max( 0.5f, m_adaptk[k] / 2 );
+                m_adaptk[k] = std::max( 0.5f, m_adaptk[k] / 2 );
 
-                const float minadaptk = min( 1.0f, m_adaptk[k] ) * m_region_size / 2;
+                const float minadaptk = std::min( 1.0f, m_adaptk[k] ) * m_region_size / 2;
 
                 int x1 = (int)( xindex - minadaptk );
                 int x2 = (int)( xindex + minadaptk );

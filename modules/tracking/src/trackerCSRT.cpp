@@ -246,7 +246,7 @@ public:
 
                 //Update variables for next iteration
                 L = L + mu * (G - H);
-                mu = min(mu_max, beta*mu);
+                mu = std::min(mu_max, beta*mu);
             }
             result_filter[i] = H;
         }
@@ -284,14 +284,14 @@ Mat TrackerCSRTImpl::get_location_prior(
         const Size2f target_size,
         const Size img_sz)
 {
-    int x1 = cvRound(max(min(roi.x-1, img_sz.width-1) , 0));
-    int y1 = cvRound(max(min(roi.y-1, img_sz.height-1) , 0));
+    int x1 = cvRound(std::max(std::min(roi.x-1, img_sz.width-1) , 0));
+    int y1 = cvRound(std::max(std::min(roi.y-1, img_sz.height-1) , 0));
 
-    int x2 = cvRound(min(max(roi.width-1, 0) , img_sz.width-1));
-    int y2 = cvRound(min(max(roi.height-1, 0) , img_sz.height-1));
+    int x2 = cvRound(std::min(std::max(roi.width-1, 0) , img_sz.width-1));
+    int y2 = cvRound(std::min(std::max(roi.height-1, 0) , img_sz.height-1));
 
     Size target_sz;
-    target_sz.width = target_sz.height = cvFloor(min(target_size.width, target_size.height));
+    target_sz.width = target_sz.height = cvFloor(std::min(target_size.width, target_size.height));
 
     double cx = x1 + (x2-x1)/2.;
     double cy = y1 + (y2-y1)/2.;
@@ -501,17 +501,17 @@ void TrackerCSRTImpl::init(InputArray image_, const Rect& boundingBox)
     current_scale_factor = 1.0;
     image_size = image.size();
     bounding_box = boundingBox;
-    cell_size = cvFloor(std::min(4.0, std::max(1.0, static_cast<double>(
-        cvCeil((bounding_box.width * bounding_box.height)/400.0)))));
+    cell_size = cvFloor(std::clamp(static_cast<double>(
+        cvCeil((bounding_box.width * bounding_box.height)/400.0)), 1.0, 4.0));
     original_target_size = Size(bounding_box.size());
 
     template_size.width = static_cast<float>(cvFloor(original_target_size.width + params.padding *
-            sqrt(original_target_size.width * original_target_size.height)));
+            std::sqrt(original_target_size.width * original_target_size.height)));
     template_size.height = static_cast<float>(cvFloor(original_target_size.height + params.padding *
-            sqrt(original_target_size.width * original_target_size.height)));
+            std::sqrt(original_target_size.width * original_target_size.height)));
     template_size.width = template_size.height =
         (template_size.width + template_size.height) / 2.0f;
-    rescale_ratio = sqrt((params.template_size * params.template_size) / (template_size.width * template_size.height));
+    rescale_ratio = std::sqrt((params.template_size * params.template_size) / (template_size.width * template_size.height));
     if(rescale_ratio > 1)  {
         rescale_ratio = 1;
     }

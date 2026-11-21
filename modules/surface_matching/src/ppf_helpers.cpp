@@ -133,7 +133,7 @@ Mat loadPLYSimple(const char* fileName, int withNormals)
     if (withNormals)
     {
       // normalize to unit norm
-      double norm = sqrt(data[3]*data[3] + data[4]*data[4] + data[5]*data[5]);
+      double norm = std::sqrt(data[3]*data[3] + data[4]*data[4] + data[5]*data[5]);
       if (norm>0.00001)
       {
         data[3]/=static_cast<float>(norm);
@@ -375,7 +375,7 @@ Mat samplePCByQuantization(Mat pc, Vec2f& xrange, Vec2f& yrange, Vec2f& zrange, 
           const double dx = point[0]-xc;
           const double dy = point[1]-yc;
           const double dz = point[2]-zc;
-          const double d = sqrt(dx*dx+dy*dy+dz*dz);
+          const double d = std::sqrt(dx*dx+dy*dy+dz*dz);
           double w = 0;
 
           if (d>EPS)
@@ -434,7 +434,7 @@ Mat samplePCByQuantization(Mat pc, Vec2f& xrange, Vec2f& yrange, Vec2f& zrange, 
       pcData[2]=(float)pz;
 
       // normalize the normals
-      double norm = sqrt(nx*nx+ny*ny+nz*nz);
+      double norm = std::sqrt(nx*nx+ny*ny+nz*nz);
 
       if (norm>EPS)
       {

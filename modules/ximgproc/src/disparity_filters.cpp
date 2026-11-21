@@ -369,7 +369,7 @@ void DisparityWLSFilterImpl::ComputeDiscontinuityAwareLRC_ParBody::operator() (c
             if( right_idx>=right_ROI.x && right_idx<right_end)
             {
                 if(abs(row_left[j] + row_right[right_idx])< thresh)
-                    row_dst[j] = min(row_left_conf[j],row_right_conf[right_idx]);
+                    row_dst[j] = std::min(row_left_conf[j],row_right_conf[right_idx]);
                 else
                     row_dst[j] = 0.0f;
             }
@@ -404,7 +404,7 @@ void DisparityWLSFilterImpl::ComputeDepthDisc_ParBody::operator() (const Range& 
         for(int j=0;j<w;j++)
         {
             variance = row_disp_squares[j] - (row_disp[j])*(row_disp[j]);
-            row_dst[j] = max(1.0f - roll_off*variance,0.0f);
+            row_dst[j] = std::max(1.0f - roll_off*variance,0.0f);
         }
     }
 }
@@ -434,13 +434,13 @@ Ptr<DisparityWLSFilter> createDisparityWLSFilter(Ptr<StereoMatcher> matcher_left
     {
         bm->setTextureThreshold(0);
         bm->setUniquenessRatio(0);
-        wls = DisparityWLSFilterImpl::create(true,max(0,min_disp+num_disp)+wsize2,max(0,-min_disp)+wsize2,wsize2,wsize2,min_disp);
+        wls = DisparityWLSFilterImpl::create(true,std::max(0,min_disp+num_disp)+wsize2,std::max(0,-min_disp)+wsize2,wsize2,wsize2,min_disp);
         wls->setDepthDiscontinuityRadius((int)ceil(0.33*wsize));
     }
     else if(Ptr<StereoSGBM> sgbm = matcher_left.dynamicCast<StereoSGBM>())
     {
         sgbm->setUniquenessRatio(0);
-        wls = DisparityWLSFilterImpl::create(true,max(0,min_disp+num_disp),max(0,-min_disp),0,0,min_disp);
+        wls = DisparityWLSFilterImpl::create(true,std::max(0,min_disp+num_disp),std::max(0,-min_disp),0,0,min_disp);
         wls->setDepthDiscontinuityRadius((int)ceil(0.5*wsize));
     }
     else

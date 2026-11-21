@@ -60,9 +60,9 @@ namespace xfeatures2d
 
 // constants
 const double g_sigma_0 = 1;
-const double g_sigma_1 = sqrt(2.0);
+const double g_sigma_1 = std::sqrt(2.0);
 const double g_sigma_step = std::pow(2,1.0/2);
-const int g_scale_st = int( (log(g_sigma_1/g_sigma_0)) / log(g_sigma_step) );
+const int g_scale_st = int( (std::log(g_sigma_1/g_sigma_0)) / std::log(g_sigma_step) );
 static int g_scale_en = 1;
 
 const double g_sigma_init = 1.6;
@@ -535,7 +535,7 @@ static void normalize_partial( float* desc, const int _grid_point_number, const 
                * desc[h*_hist_th_q_no + i];
       }
 
-      float norm = (float)sqrt( sum );
+      float norm = (float)std::sqrt( sum );
 
       if( norm != 0.0 )
       // divide with norm
@@ -562,7 +562,7 @@ static void normalize_sift_way( float* desc, const int _descriptor_size )
           sum += desc[i] * desc[i];
       }
 
-      float norm = (float)sqrt( sum );
+      float norm = (float)std::sqrt( sum );
 
       if( norm > 1e-5 )
       // divide with norm
@@ -591,7 +591,7 @@ static void normalize_full( float* desc, const int _descriptor_size )
         sum += desc[i] * desc[i];
     }
 
-    float norm = (float)sqrt( sum );
+    float norm = (float)std::sqrt( sum );
 
     if( norm != 0.0 )
     // divide with norm
@@ -810,7 +810,7 @@ static bool ni_get_descriptor_h( const double y, const double x, const int orien
 
     pt_H(H, x+_cube_sigmas.at<double>(g_selected_cubes[0]), y, rx, ry);
     double d0 = rx - hx; double d1 = ry - hy;
-    double radius = sqrt( d0*d0 + d1*d1 );
+    double radius = std::sqrt( d0*d0 + d1*d1 );
     hradius[0] = quantize_radius( (float) radius, _rad_q_no, _cube_sigmas );
 
     int ihx = (int)hx; if( hx - ihx > 0.5 ) ihx++;
@@ -835,7 +835,7 @@ static bool ni_get_descriptor_h( const double y, const double x, const int orien
          {
             pt_H(H, gx+_cube_sigmas.at<double>(g_selected_cubes[r]), gy, rx, ry);
             d0 = rx - hx; d1 = ry - hy;
-            radius = sqrt( d0*d0 + d1*d1 );
+            radius = std::sqrt( d0*d0 + d1*d1 );
             hradius[r] = quantize_radius( (float) radius, _rad_q_no, _cube_sigmas );
          }
 
@@ -873,7 +873,7 @@ static bool i_get_descriptor_h( const double y, const double x, const int orient
     int _hist_th_q_no = layers->at(0).size[0];
     pt_H( H, x+_cube_sigmas.at<double>(g_selected_cubes[0]), y, rx, ry);
     double d0 = rx - hx; double d1 = ry - hy;
-    double radius = sqrt( d0*d0 + d1*d1 );
+    double radius = std::sqrt( d0*d0 + d1*d1 );
     hradius[0] = quantize_radius( (float) radius, _rad_q_no, _cube_sigmas );
 
     double shift = _orientation_shift_table[orientation];
@@ -897,7 +897,7 @@ static bool i_get_descriptor_h( const double y, const double x, const int orient
          {
             pt_H(H, gx+_cube_sigmas.at<double>(g_selected_cubes[r]), gy, rx, ry);
             d0 = rx - hx; d1 = ry - hy;
-            radius = sqrt( d0*d0 + d1*d1 );
+            radius = std::sqrt( d0*d0 + d1*d1 );
             hradius[r] = quantize_radius( (float) radius, _rad_q_no, _cube_sigmas );
          }
 
@@ -1149,7 +1149,7 @@ inline void DAISY_Impl::initialize()
     layered_gradient( m_image, &m_smoothed_gradient_layers[0] );
 
     // assuming a 0.5 image smoothness, we pull this to 1.6 as in sift
-    smooth_layers( &m_smoothed_gradient_layers[0], (float)sqrt(g_sigma_init*g_sigma_init-0.25f) );
+    smooth_layers( &m_smoothed_gradient_layers[0], (float)std::sqrt(g_sigma_init*g_sigma_init-0.25f) );
 
 }
 
@@ -1241,7 +1241,7 @@ inline void DAISY_Impl::compute_smoothed_gradient_layers()
       if( r == 0 )
         sigma = m_cube_sigmas.at<double>(0);
       else
-        sigma = sqrt( m_cube_sigmas.at<double>(r  ) * m_cube_sigmas.at<double>(r  )
+        sigma = std::sqrt( m_cube_sigmas.at<double>(r  ) * m_cube_sigmas.at<double>(r  )
                     - m_cube_sigmas.at<double>(r-1) * m_cube_sigmas.at<double>(r-1) );
 
       int ks = filter_size( sigma, 5.0f );
@@ -1337,7 +1337,7 @@ inline void DAISY_Impl::compute_scales()
     //###############################################################################
 
     Mat sim, next_sim;
-    float sigma = (float) ( pow( g_sigma_step, g_scale_st)*g_sigma_0 );
+    float sigma = (float) ( std::pow( g_sigma_step, g_scale_st)*g_sigma_0 );
 
     int ks = filter_size( sigma, 3.0f );
     GaussianBlur( m_image, sim, Size(ks, ks), sigma, sigma, BORDER_REPLICATE );
@@ -1353,8 +1353,8 @@ inline void DAISY_Impl::compute_scales()
     sigma_prev = (float) g_sigma_0;
     for( int i=0; i<g_scale_en; i++ )
     {
-      sigma_new  = (float) ( pow( g_sigma_step, g_scale_st + i  ) * g_sigma_0 );
-      sigma_inc  = sqrt( sigma_new*sigma_new - sigma_prev*sigma_prev );
+      sigma_new  = (float) ( std::pow( g_sigma_step, g_scale_st + i  ) * g_sigma_0 );
+      sigma_inc  = std::sqrt( sigma_new*sigma_new - sigma_prev*sigma_prev );
       sigma_prev = sigma_new;
 
       ks = filter_size( sigma_inc, 3.0f );
@@ -1410,8 +1410,8 @@ inline void DAISY_Impl::compute_orientations()
     for( int scale=0; scale<g_scale_en; scale++ )
     {
 
-      sigma_new  = (float)( pow( g_sigma_step, scale  ) * m_rad / 3.0f );
-      sigma_inc  = sqrt( sigma_new*sigma_new - sigma_prev*sigma_prev );
+      sigma_new  = (float)( std::pow( g_sigma_step, scale  ) * m_rad / 3.0f );
+      sigma_inc  = std::sqrt( sigma_new*sigma_new - sigma_prev*sigma_prev );
       sigma_prev = sigma_new;
 
       smooth_layers( &rotation_layers, sigma_inc );

@@ -8,7 +8,7 @@
 #include "super_scale.hpp"
 
 
-#define CLIP(x, x1, x2) max(x1, min(x, x2))
+#define CLIP(x, x1, x2) std::max(x1, std::min(x, x2))
 namespace cv {
 namespace wechat_qrcode {
 int SuperScale::init(const std::string &onnx_path) {
@@ -34,7 +34,7 @@ Mat SuperScale::processImageScale(const Mat &src, float scale, const bool &use_s
     int height = src.rows;
     if (scale == 2.0) {  // upsample
         int SR_TH = sr_max_size;
-        if (use_sr && (int)sqrt(width * height * 1.0) < SR_TH && net_loaded_) {
+        if (use_sr && (int)std::sqrt(width * height * 1.0) < SR_TH && net_loaded_) {
             int ret = superResoutionScale(src, dst);
             if (ret == 0) return dst;
         }

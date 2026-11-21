@@ -125,7 +125,7 @@ void intraU(Mat& img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samp
         {
             nbr_ind = indm[i][j];
             int cMaj_nbr_j = findColMajorInd(orig_ind[nbr_ind], img.rows, img.cols);
-            weight = max(1 - l1norm(samples[i], samples[j]), 0.0);
+            weight = std::max(1 - l1norm(samples[i], samples[j]), 0.0);
 
             triplets.push_back(T(cMaj_i, cMaj_nbr_j, weight / 2));
             td.push_back(T(cMaj_i, cMaj_i, weight / 2));

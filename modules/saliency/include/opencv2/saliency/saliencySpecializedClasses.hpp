@@ -452,7 +452,7 @@ private:
   inline static float LoG( float x, float y, float delta )
   {
     float d = - ( x * x + y * y ) / ( 2 * delta * delta );
-    return -1.0f / ( (float) ( CV_PI ) * (delta*delta*delta*delta) ) * ( 1 + d ) * exp( d );
+    return -1.0f / ( (float) ( CV_PI ) * (delta*delta*delta*delta) ) * ( 1 + d ) * std::exp( d );
   }  // Laplacian of Gaussian
 
 // Read matrix from binary file
@@ -488,8 +488,8 @@ private:
   static inline int bgrMaxDist( const Vec3b &u, const Vec3b &v )
   {
     int b = abs( u[0] - v[0] ), g = abs( u[1] - v[1] ), r = abs( u[2] - v[2] );
-    b = max( b, g );
-    return max( b, r );
+    b = std::max( b, g );
+    return std::max( b, r );
   }
   static inline int vecDist3b( const Vec3b &u, const Vec3b &v )
   {

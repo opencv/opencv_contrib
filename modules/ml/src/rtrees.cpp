@@ -273,7 +273,7 @@ public:
                             if( !_isClassifier )
                             {
                                 val = (val - w->ord_responses[w->sidx[j]])/max_response;
-                                ncorrect_responses_permuted += exp( -val*val );
+                                ncorrect_responses_permuted += std::exp( -val*val );
                             }
                             else
                             {

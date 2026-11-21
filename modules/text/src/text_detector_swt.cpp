@@ -144,7 +144,7 @@ void SWTFirstPass(const Mat& edgeImage, const Mat& gradientX, const Mat& gradien
 
             float dx = gradientX.at<float>(row, col);
             float dy = gradientY.at<float>(row, col);
-            float mag = sqrt(dx * dx + dy * dy);
+            float mag = std::sqrt(dx * dx + dy * dy);
             dx = dx / mag;
             dy = dy / mag;
 
@@ -182,7 +182,7 @@ void SWTFirstPass(const Mat& edgeImage, const Mat& gradientX, const Mat& gradien
                         ray.q = pt;
                         float G_xt = gradientX.at<float>(curPixY,curPixX);
                         float G_yt = gradientY.at<float>(curPixY,curPixX);
-                        mag = sqrt( (G_xt * G_xt) + (G_yt * G_yt) );
+                        mag = std::sqrt( (G_xt * G_xt) + (G_yt * G_yt) );
                         G_xt = G_xt / mag;
                         G_yt = G_yt / mag;
                         if (dark_on_light){
@@ -191,7 +191,7 @@ void SWTFirstPass(const Mat& edgeImage, const Mat& gradientX, const Mat& gradien
                         }
 
                         if (acos(dx * -G_xt + dy * -G_yt) < CV_PI/2.0 ) {
-                            float length = sqrt( ((float)ray.q.x - (float)ray.p.x)*((float)ray.q.x - (float)ray.p.x) + ((float)ray.q.y - (float)ray.p.y)*((float)ray.q.y - (float)ray.p.y));
+                            float length = std::sqrt( ((float)ray.q.x - (float)ray.p.x)*((float)ray.q.x - (float)ray.p.x) + ((float)ray.q.y - (float)ray.p.y)*((float)ray.q.y - (float)ray.p.y));
                             for (std::vector<SWTPoint>::iterator pit = points.begin(); pit != points.end(); pit++) {
                                 if (SWTImage.at<float>(pit->y, pit->x) < 0) {
                                     SWTImage.at<float>(pit->y, pit->x) = length;
@@ -558,7 +558,7 @@ vector<cv::Rect> getComponentBBs (const std::vector<Component>& components)
         if (wd < 0) wd = -wd;
         if (ht < 0) ht = -ht;
 
-        bbs.push_back(Rect(min(compi.BB_pointP.x, compi.BB_pointQ.x), min(compi.BB_pointP.y, compi.BB_pointQ.y), wd, ht));
+        bbs.push_back(Rect(std::min(compi.BB_pointP.x, compi.BB_pointQ.x), std::min(compi.BB_pointP.y, compi.BB_pointQ.y), wd, ht));
     }
     return bbs;
 }
@@ -622,7 +622,7 @@ vector<cv::Rect> findValidChains(const Mat& input_image, const Mat& SWTImage, co
 
                             float dx = compi.cx - compj.cx;
                             float dy = compi.cy - compj.cy;
-                            float mod = sqrt(dx * dx + dy * dy);
+                            float mod = std::sqrt(dx * dx + dy * dy);
                             dx = dx / mod;
                             dy = dy / mod;
 
@@ -665,7 +665,7 @@ vector<cv::Rect> findValidChains(const Mat& input_image, const Mat& SWTImage, co
                             float d_y = components[chains_i.chainIndexA].cy - components[chains_i.chainIndexB].cy;
                             chains_i.chainDist = d_x * d_x + d_y * d_y;
 
-                            float mag = sqrt(d_x*d_x + d_y*d_y);
+                            float mag = std::sqrt(d_x*d_x + d_y*d_y);
                             d_x = d_x / mag;
                             d_y = d_y / mag;
                             Direction dir;
@@ -685,7 +685,7 @@ vector<cv::Rect> findValidChains(const Mat& input_image, const Mat& SWTImage, co
                             float d_y = components[chains_i.chainIndexA].cy - components[chains_i.chainIndexB].cy;
                             chains_i.chainDist = d_x * d_x + d_y * d_y;
 
-                            float mag = sqrt(d_x*d_x + d_y*d_y);
+                            float mag = std::sqrt(d_x*d_x + d_y*d_y);
                             d_x = d_x / mag;
                             d_y = d_y / mag;
                             Direction dir;
@@ -705,7 +705,7 @@ vector<cv::Rect> findValidChains(const Mat& input_image, const Mat& SWTImage, co
                             float d_y = components[chains_i.chainIndexA].cy - components[chains_i.chainIndexB].cy;
                             chains_i.chainDist = d_x * d_x + d_y * d_y;
 
-                            float mag = sqrt(d_x*d_x + d_y*d_y);
+                            float mag = std::sqrt(d_x*d_x + d_y*d_y);
                             d_x = d_x / mag;
                             d_y = d_y / mag;
                             Direction dir;
@@ -725,7 +725,7 @@ vector<cv::Rect> findValidChains(const Mat& input_image, const Mat& SWTImage, co
                             float d_y = components[chains_i.chainIndexA].cy - components[chains_i.chainIndexB].cy;
                             chains_i.chainDist = d_x * d_x + d_y * d_y;
 
-                            float mag = sqrt(d_x*d_x + d_y*d_y);
+                            float mag = std::sqrt(d_x*d_x + d_y*d_y);
                             d_x = d_x / mag;
                             d_y = d_y / mag;
                             Direction dir;
@@ -776,10 +776,10 @@ vector<cv::Rect> findValidChains(const Mat& input_image, const Mat& SWTImage, co
                 {
                     const SWTPoint& pt = acceptedComponent.points[k];
                     componentPoints.push_back(pt);
-                    xmin = min(xmin, pt.x);
-                    ymin = min(ymin, pt.y);
-                    xmax = max(xmax, pt.x);
-                    ymax = max(ymax, pt.y);
+                    xmin = std::min(xmin, pt.x);
+                    ymin = std::min(ymin, pt.y);
+                    xmax = std::max(xmax, pt.x);
+                    ymax = std::max(ymax, pt.y);
                 }
                 componentsPointsVector.push_back(componentPoints);
             }

@@ -47,7 +47,7 @@ float CosDistance::compute(const cv::Mat &descr1, const cv::Mat &descr2) {
     double xy = descr1.dot(descr2);
     double xx = descr1.dot(descr1);
     double yy = descr2.dot(descr2);
-    double norm = sqrt(xx * yy) + 1e-6;
+    double norm = std::sqrt(xx * yy) + 1e-6;
     return 0.5f * static_cast<float>(1.0 - xy / norm);
 }
 
@@ -964,7 +964,7 @@ float TrackerByMatching::ShapeAffinity(float weight, const cv::Rect &trk,
                                        const cv::Rect &det) {
     float w_dist = static_cast<float>(std::fabs(trk.width - det.width) / (trk.width + det.width));
     float h_dist = static_cast<float>(std::fabs(trk.height - det.height) / (trk.height + det.height));
-    return exp(-weight * (w_dist + h_dist));
+    return std::exp(-weight * (w_dist + h_dist));
 }
 
 float TrackerByMatching::MotionAffinity(float weight, const cv::Rect &trk,
@@ -973,12 +973,12 @@ float TrackerByMatching::MotionAffinity(float weight, const cv::Rect &trk,
         (det.width * det.width);
     float y_dist = static_cast<float>(trk.y - det.y) * (trk.y - det.y) /
         (det.height * det.height);
-    return exp(-weight * (x_dist + y_dist));
+    return std::exp(-weight * (x_dist + y_dist));
 }
 
 float TrackerByMatching::TimeAffinity(float weight, const float &trk_time,
                                       const float &det_time) {
-    return exp(-weight * std::fabs(trk_time - det_time));
+    return std::exp(-weight * std::fabs(trk_time - det_time));
 }
 
 void TrackerByMatching::ComputeFastDesciptors(

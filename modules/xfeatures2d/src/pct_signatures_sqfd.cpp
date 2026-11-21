@@ -179,7 +179,7 @@ namespace cv
                 result += computePartialSQFD(signature1, signature1);
                 result -= computePartialSQFD(signature0, signature1) * 2;
 
-                return sqrt(result);
+                return std::sqrt(result);
             }
 
             void PCTSignaturesSQFD_Impl::computeQuadraticFormDistances(

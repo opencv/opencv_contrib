@@ -736,7 +736,7 @@ public:
             {
                 double s = scale[j*2], s2 = scale[j*2+1];
                 double m = s/count, sigma2 = s2/count - m*m;
-                scale[j*2] = sigma2 < DBL_EPSILON ? 1 : 1./sqrt(sigma2);
+                scale[j*2] = sigma2 < DBL_EPSILON ? 1 : 1./std::sqrt(sigma2);
                 scale[j*2+1] = -m*scale[j*2];
             }
         }

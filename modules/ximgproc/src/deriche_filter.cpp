@@ -55,13 +55,13 @@ VerticalIIRFilter(Mat &img,Mat &dst,const Range &r,double alpha,double omega)
     double a2, a3;
     double b1, b2;
     int rows = img.rows, cols = img.cols;
-    double c = (1 - 2 * exp(-alpha)*cos(omega) + exp(-2 * alpha)) / (exp(-alpha)*sin(omega));
+    double c = (1 - 2 * std::exp(-alpha)*cos(omega) + std::exp(-2 * alpha)) / (std::exp(-alpha)*sin(omega));
 
-    double a = -c * exp(-alpha)*sin(omega);
+    double a = -c * std::exp(-alpha)*sin(omega);
     a2 = 1;// kp*exp(-alpha);
     a3 = 1;//-kp*exp(-alpha);
-    b1 = -2 * exp(-alpha)*cos(omega);
-    b2 = exp(-2 * alpha);
+    b1 = -2 * std::exp(-alpha)*cos(omega);
+    b2 = std::exp(-2 * alpha);
 
     for (int j = r.start; j<r.end; j++)
     {
@@ -107,13 +107,13 @@ HorizontalIIRFilter(Mat &img, Mat &dst, const Range &r, double alpha, double ome
     double *g1 = (double*)matG1.ptr(0), *g2 = (double*)matG2.ptr(0);
     double a,a2, a3;
     double b1, b2;
-    double c = (1 - 2 * exp(-alpha)*cos(omega) + exp(-2 * alpha)) / (exp(-alpha)*sin(omega));
+    double c = (1 - 2 * std::exp(-alpha)*cos(omega) + std::exp(-2 * alpha)) / (std::exp(-alpha)*sin(omega));
 
-    a = -c*exp(-alpha)*sin(omega);
+    a = -c*std::exp(-alpha)*sin(omega);
     a2 = 1;// kp*exp(-alpha);
     a3 = 1;//-kp*exp(-alpha);
-    b1 = -2 * exp(-alpha)*cos(omega);
-    b2 = exp(-2 * alpha);
+    b1 = -2 * std::exp(-alpha)*cos(omega);
+    b2 = std::exp(-2 * alpha);
 
     for (int i = r.start; i<r.end; i++)
     {
@@ -234,14 +234,14 @@ public:
 
 
         double a2po2 = (alpha*alpha + omega * omega);
-        double k = (1 - 2 * exp(-alpha)*cos(omega) + exp(-2 * alpha))*a2po2;
-        k = k / (2 * alpha*exp(-alpha)*sin(omega) + omega - omega * exp(-2 * alpha));
+        double k = (1 - 2 * std::exp(-alpha)*cos(omega) + std::exp(-2 * alpha))*a2po2;
+        k = k / (2 * alpha*std::exp(-alpha)*sin(omega) + omega - omega * std::exp(-2 * alpha));
         double c1 = k * alpha / a2po2;
         double c2 = k * omega / a2po2;
         double a0 = c2;
-        double a1 = (-c2 * cos(omega) + c1 * sin(omega))*exp(-alpha);
-        double b1 = -2 * exp(-alpha)*cos(omega);
-        double b2 = exp(-2 * alpha);
+        double a1 = (-c2 * cos(omega) + c1 * sin(omega))*std::exp(-alpha);
+        double b1 = -2 * std::exp(-alpha)*cos(omega);
+        double b2 = std::exp(-2 * alpha);
         double a2 = a1 - c2 * b1, a3 = -c2 * b2;
 
         for (int i = range.start; i<range.end; i++)
@@ -313,14 +313,14 @@ public:
         Mat matG1(1,tailleSequence,CV_64FC1), matG2(1,tailleSequence,CV_64FC1);
         double *g1 = (double*)matG1.ptr(0), *g2 = (double*)matG2.ptr(0);
         double a2po2 = (alpha*alpha + omega * omega);
-        double k = (1 - 2 * exp(-alpha)*cos(omega) + exp(-2 * alpha))*a2po2;
-        k = k / (2 * alpha*exp(-alpha)*sin(omega) + omega - omega * exp(-2 * alpha));
+        double k = (1 - 2 * std::exp(-alpha)*cos(omega) + std::exp(-2 * alpha))*a2po2;
+        k = k / (2 * alpha*std::exp(-alpha)*sin(omega) + omega - omega * std::exp(-2 * alpha));
         double c1 = k * alpha / a2po2;
         double c2 = k * omega / a2po2;
         double a0 = c2;
-        double a1 = (-c2 * cos(omega) + c1 * sin(omega))*exp(-alpha);
-        double b1 = -2 * exp(-alpha)*cos(omega);
-        double b2=exp(-2*alpha);
+        double a1 = (-c2 * cos(omega) + c1 * sin(omega))*std::exp(-alpha);
+        double b1 = -2 * std::exp(-alpha)*cos(omega);
+        double b2=std::exp(-2*alpha);
         double a2=a1-c2*b1, a3=-c2*b2;
 
 

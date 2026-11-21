@@ -259,7 +259,7 @@ int TrackerTLDImpl::Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examp
     std::vector<Rect2d> closest, scanGrid;
     Mat scaledImg, blurredImg;
 
-    double scale = scaleAndBlur(img_, cvRound(log(1.0 * resultBox_.width / (initSize_.width)) / log(SCALE_STEP)),
+    double scale = scaleAndBlur(img_, cvRound(std::log(1.0 * resultBox_.width / (initSize_.width)) / std::log(SCALE_STEP)),
             scaledImg, blurredImg, GaussBlurKernelSize, SCALE_STEP);
 
     TLDDetector::generateScanGrid(img_.rows, img_.cols, initSize_, scanGrid);

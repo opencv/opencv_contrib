@@ -509,7 +509,7 @@ void BasicRetinaFilter::setLPfilterParameters(const float beta, const float tau,
     }
 
     float _temp =  (1.0f + _beta) / (2.0f * _mu * _alpha);
-    float a = _filteringCoeficientsTable[tableOffset] = 1.0f + _temp - (float)sqrt( (1.0f + _temp) * (1.0f + _temp) - 1.0f);
+    float a = _filteringCoeficientsTable[tableOffset] = 1.0f + _temp - (float)std::sqrt( (1.0f + _temp) * (1.0f + _temp) - 1.0f);
     _filteringCoeficientsTable[1 + tableOffset] = (1.0f - a) * (1.0f - a) * (1.0f - a) * (1.0f - a) / (1.0f + _beta);
     _filteringCoeficientsTable[2 + tableOffset] = tau;
 }

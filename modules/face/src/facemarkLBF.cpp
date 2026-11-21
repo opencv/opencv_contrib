@@ -712,15 +712,15 @@ void FacemarkLBFImpl::LBF::calcSimilarityTransform(const Mat &shape1, const Mat 
     calcCovarMatrix(temp1, covar1, mean1, COVAR_COLS);
     calcCovarMatrix(temp2, covar2, mean2, COVAR_COLS);
 
-    double s1 = sqrt(cv::norm(covar1));
-    double s2 = sqrt(cv::norm(covar2));
+    double s1 = std::sqrt(cv::norm(covar1));
+    double s2 = std::sqrt(cv::norm(covar2));
     scale = s1 / s2;
     temp1 /= s1;
     temp2 /= s2;
 
     double num = temp1.col(1).dot(temp2.col(0)) - temp1.col(0).dot(temp2.col(1));
     double den = temp1.col(0).dot(temp2.col(0)) + temp1.col(1).dot(temp2.col(1));
-    double normed = sqrt(num*num + den*den);
+    double normed = std::sqrt(num*num + den*den);
     double sin_theta = num / normed;
     double cos_theta = den / normed;
     rotate_(0, 0) = cos_theta; rotate_(0, 1) = -sin_theta;
@@ -780,7 +780,7 @@ double FacemarkLBFImpl::LBF::calcMeanError(std::vector<Mat> &gt_shapes, std::vec
         }
         x1 /= left.size(); y1 /= left.size();
         x2 /= right.size(); y2 /= right.size();
-        double pupils_distance = sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1));
+        double pupils_distance = std::sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1));
         // every landmark
         double e_ = 0;
         for (int j = 0; j < landmark_n; j++) {
@@ -869,8 +869,8 @@ void FacemarkLBFImpl::RandomTree::splitNode(std::vector<Mat> &imgs, std::vector<
             y1 = y1*bbox.y_scale + current_shape(landmark_id, 1);
             x2 = x2*bbox.x_scale + current_shape(landmark_id, 0);
             y2 = y2*bbox.y_scale + current_shape(landmark_id, 1);
-            x1 = max(0., min(img.cols - 1., x1)); y1 = max(0., min(img.rows - 1., y1));
-            x2 = max(0., min(img.cols - 1., x2)); y2 = max(0., min(img.rows - 1., y2));
+            x1 = std::max(0., std::min(img.cols - 1., x1)); y1 = std::max(0., std::min(img.rows - 1., y1));
+            x2 = std::max(0., std::min(img.cols - 1., x2)); y2 = std::max(0., std::min(img.rows - 1., y2));
             densities(j, i) = (int)img.at<uchar>(int(y1), int(x1)) - (int)img.at<uchar>(int(y2), int(x2));
         }
     }
@@ -982,8 +982,8 @@ void FacemarkLBFImpl::RandomForest::train(std::vector<Mat> &imgs, std::vector<Ma
     TIMER_BEGIN
         std::vector<int> root;
         for (int j = 0; j < trees_n; j++) {
-            int start = max(0, int(floor(j*Q - j*Q*overlap_ratio)));
-            int end = min(int(start + Q + 1), N);
+            int start = std::max(0, int(floor(j*Q - j*Q*overlap_ratio)));
+            int end = std::min(int(start + Q + 1), N);
             int L = end - start;
             root.resize(L);
             for (int k = 0; k < L; k++) root[k] = start + k;
@@ -1022,8 +1022,8 @@ Mat FacemarkLBFImpl::RandomForest::generateLBF(Mat &img, Mat &current_shape, BBo
                 y1 = y1*bbox.y_scale + current_shape.at<double>(i, 1);
                 x2 = x2*bbox.x_scale + current_shape.at<double>(i, 0);
                 y2 = y2*bbox.y_scale + current_shape.at<double>(i, 1);
-                x1 = max(0., min(img.cols - 1., x1)); y1 = max(0., min(img.rows - 1., y1));
-                x2 = max(0., min(img.cols - 1., x2)); y2 = max(0., min(img.rows - 1., y2));
+                x1 = std::max(0., std::min(img.cols - 1., x1)); y1 = std::max(0., std::min(img.rows - 1., y1));
+                x2 = std::max(0., std::min(img.cols - 1., x2)); y2 = std::max(0., std::min(img.rows - 1., y2));
                 int density = img.at<uchar>(int(y1), int(x1)) - img.at<uchar>(int(y2), int(x2));
                 code <<= 1;
                 if (density < tree.thresholds[idx]) {
@@ -1241,7 +1241,7 @@ Mat FacemarkLBFImpl::Regressor::supportVectorRegression(
 
         for(i=0; i<active_size; i++){
             int j = i+rng.uniform(0,RAND_MAX)%(active_size-i);
-            swap(index[i], index[j]);
+            std::swap(index[i], index[j]);
         }
 
         for(s=0; s<active_size; s++){
@@ -1267,7 +1267,7 @@ Mat FacemarkLBFImpl::Regressor::supportVectorRegression(
                     violation = Gn;
                 else if(Gp>Gmax_old && Gn<-Gmax_old){
                     active_size--;
-                    swap(index[s], index[active_size]);
+                    std::swap(index[s], index[active_size]);
                     s--;
                     continue;
                 }
@@ -1276,7 +1276,7 @@ Mat FacemarkLBFImpl::Regressor::supportVectorRegression(
                     violation = Gp;
                 else if(Gp < -Gmax_old){
                     active_size--;
-                    swap(index[s], index[active_size]);
+                    std::swap(index[s], index[active_size]);
                     s--;
                     continue;
                 }
@@ -1285,7 +1285,7 @@ Mat FacemarkLBFImpl::Regressor::supportVectorRegression(
                     violation = -Gn;
                 else if(Gn > Gmax_old){
                     active_size--;
-                    swap(index[s], index[active_size]);
+                    std::swap(index[s], index[active_size]);
                     s--;
                     continue;
                 }
@@ -1294,7 +1294,7 @@ Mat FacemarkLBFImpl::Regressor::supportVectorRegression(
             else
                 violation = fabs(Gn);
 
-            Gmax_new = max(Gmax_new, violation);
+            Gmax_new = std::max(Gmax_new, violation);
             Gnorm1_new += violation;
 
             // obtain Newton direction d
@@ -1309,7 +1309,7 @@ Mat FacemarkLBFImpl::Regressor::supportVectorRegression(
                 continue;
 
             double beta_old = beta[i];
-            beta[i] = min(max(beta[i]+d, -upper_bound[GETI(i)]), upper_bound[GETI(i)]);
+            beta[i] = std::min(std::max(beta[i]+d, -upper_bound[GETI(i)]), upper_bound[GETI(i)]);
             d = beta[i]-beta_old;
 
             if(d != 0){

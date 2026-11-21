@@ -99,8 +99,8 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
         //Create window around interest point
         half_width = std::min((float) std::min(fimage.cols - px-1, px), boundingBox.width);
         half_height = std::min((float) std::min(fimage.rows - py-1, py), boundingBox.height);
-        roix = max(px - (int) boundingBox.width, 0);
-        roiy = max(py - (int) boundingBox.height, 0);
+        roix = std::max(px - (int) boundingBox.width, 0);
+        roiy = std::max(py - (int) boundingBox.height, 0);
         roi = Rect(roix, roiy, px - roix + int(half_width)+1, py - roiy + int(half_height)+1);
 
         //create ROI
@@ -333,7 +333,7 @@ float calcSecondMomentSqrt(const Mat & dx2, const Mat & dxy, const Mat & dy2, Po
     //square root of M
     Mk = Mat(V * D * Vinv);
     //return q isotropic measure
-    return min(eval1, eval2) / max(eval1, eval2);
+    return std::min(eval1, eval2) / std::max(eval1, eval2);
 }
 
 float normMaxEval(Matx22f & U, Mat & uVal, Mat & uVec)
@@ -366,7 +366,7 @@ float normMaxEval(Matx22f & U, Mat & uVal, Mat & uVec)
     //U normalized
     U = Mat(uVec * D * uVinv);
 
-    return max(std::abs(uVal.at<float> (0, 0)), std::abs(uVal.at<float> (1, 0))) / min(
+    return std::max(std::abs(uVal.at<float> (0, 0)), std::abs(uVal.at<float> (1, 0))) / std::min(
             std::abs(uVal.at<float> (0, 0)), std::abs(uVal.at<float> (1, 0))); //define the direction of warping
 }
 
@@ -431,8 +431,8 @@ float selDifferentiationScale(const Mat & img, Mat & Lxm2smooth, Mat & Lxmysmoot
         eigen(M, eval);
         double eval1 = std::abs(eval.at<float> (0, 0));
         double eval2 = std::abs(eval.at<float> (1, 0));
-        double m = max(eval1, eval2);
-        double q = (m == 0) ? -1 : min(eval1, eval2) / m;
+        double m = std::max(eval1, eval2);
+        double q = (m == 0) ? -1 : std::min(eval1, eval2) / m;
 
         if (q >= qMax)
         {
@@ -528,8 +528,8 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
         //Create window around interest point
         float half_width = std::min((float) std::min(img.cols - p.x-1, p.x), boundingBox.width);
         float half_height = std::min((float) std::min(img.rows - p.y-1, p.y), boundingBox.height);
-        int roix = max(p.x - (int) boundingBox.width, 0);
-        int roiy = max(p.y - (int) boundingBox.height, 0);
+        int roix = std::max(p.x - (int) boundingBox.width, 0);
+        int roiy = std::max(p.y - (int) boundingBox.height, 0);
         Rect roi = Rect(roix, roiy, p.x - roix + int(half_width)+1, p.y - roiy + int(half_height)+1);
 
         Mat img_roi = img(roi);

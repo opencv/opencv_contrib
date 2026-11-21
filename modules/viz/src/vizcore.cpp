@@ -270,7 +270,7 @@ void cv::viz::readTrajectory(OutputArray _traj, const String& files_format, int 
 {
     CV_Assert(_traj.kind() == _InputArray::STD_VECTOR || _traj.kind() == _InputArray::MAT);
 
-    start = max(0, std::min(start, end));
+    start = std::max(0, std::min(start, end));
     end = std::max(start, end);
 
     std::vector<Affine3d> traj;
@@ -298,7 +298,7 @@ void cv::viz::writeTrajectory(InputArray _traj, const String& files_format, int 
         std::vector<Mat>& v = *(std::vector<Mat>*)_traj.getObj();
 #endif
 
-        for(size_t i = 0, index = max(0, start); i < v.size(); ++i, ++index)
+        for(size_t i = 0, index = std::max(0, start); i < v.size(); ++i, ++index)
         {
             Affine3d affine;
             Mat pose = v[i];
@@ -316,11 +316,11 @@ void cv::viz::writeTrajectory(InputArray _traj, const String& files_format, int 
         Mat traj = _traj.getMat();
 
         if (traj.depth() == CV_32F)
-            for(size_t i = 0, index = max(0, start); i < traj.total(); ++i, ++index)
+            for(size_t i = 0, index = std::max(0, start); i < traj.total(); ++i, ++index)
                 writePose(cv::format(files_format.c_str(), index), traj.at<Affine3f>((int)i), tag);
 
         if (traj.depth() == CV_64F)
-            for(size_t i = 0, index = max(0, start); i < traj.total(); ++i, ++index)
+            for(size_t i = 0, index = std::max(0, start); i < traj.total(); ++i, ++index)
                 writePose(cv::format(files_format.c_str(), index), traj.at<Affine3d>((int)i), tag);
         return;
     }

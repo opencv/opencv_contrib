@@ -670,7 +670,7 @@ void FastGlobalSmootherFilterImpl::ComputeLUT_ParBody::operator()(const Range& r
     int start = std::min(range.start * stripe_sz, sz);
     int end   = std::min(range.end   * stripe_sz, sz);
     for(int i=start;i<end;i++)
-        LUT[i] = (WorkType)(-cv::exp(-sqrt((float)i)/fgs->sigmaColor));
+        LUT[i] = (WorkType)(-std::exp(-std::sqrt((float)i)/fgs->sigmaColor));
 }
 
 

@@ -147,9 +147,9 @@ namespace cv
             (*bboxes)[anchor_idx][1] = this->anchors_values[anchor_idx][1] +
                           this->anchors_values[anchor_idx][2] * delta_y;;
             (*bboxes)[anchor_idx][2] =
-                          this->anchors_values[anchor_idx][2] * exp(delta_h);
+                          this->anchors_values[anchor_idx][2] * std::exp(delta_h);
             (*bboxes)[anchor_idx][3] =
-                          this->anchors_values[anchor_idx][3] * exp(delta_w);
+                          this->anchors_values[anchor_idx][3] * std::exp(delta_w);
           }
         }
       }

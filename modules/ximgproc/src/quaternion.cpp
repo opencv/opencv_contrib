@@ -45,7 +45,7 @@ void qunitary(InputArray _img, OutputArray _qimg)
     Mat qimg = _qimg.getMat();
     qimg.forEach<Vec4d>([](Vec4d &p, const int * /*position*/) -> void {
         double d = p[0] * p[0] + p[1] * p[1] + p[2] * p[2] + p[3] * p[3];
-        d = 1 / sqrt(d);
+        d = 1 / std::sqrt(d);
         p *= d;
     });
 }
@@ -74,9 +74,9 @@ void qdft(InputArray _img, OutputArray _qimg, int  	flags, bool sideLeft)
     Mat c2r; // Real part of c2 =y'
     Mat c2i; // Imaginary part of c2=z'
     c1r = q[0].clone();
-    c1i = (q[1] + q[2] + q[3]) / sqrt(3);
-    c2r = (q[2] - q[3]) / sqrt(2);
-    c2i = c * (q[3] + q[2] - 2 * q[1]) / sqrt(6);
+    c1i = (q[1] + q[2] + q[3]) / std::sqrt(3);
+    c2r = (q[2] - q[3]) / std::sqrt(2);
+    c2i = c * (q[3] + q[2] - 2 * q[1]) / std::sqrt(6);
     vector<Mat> vc1 = { c1r,c1i }, vc2 = { c2r,c2i };
     Mat c1, c2, C1, C2;
     merge(vc1, c1);
@@ -95,9 +95,9 @@ void qdft(InputArray _img, OutputArray _qimg, int  	flags, bool sideLeft)
     split(C2, vc2);
     vector<Mat> qdft(4);
     qdft[0] = vc1[0].clone();
-    qdft[1] = vc1[1] / sqrt(3) - c * 2 * vc2[1] / sqrt(6);
-    qdft[2] = vc1[1] / sqrt(3) + vc2[0] / sqrt(2) + c * vc2[1] / sqrt(6);
-    qdft[3] = vc1[1] / sqrt(3) - vc2[0] / sqrt(2) + c * vc2[1] / sqrt(6);
+    qdft[1] = vc1[1] / std::sqrt(3) - c * 2 * vc2[1] / std::sqrt(6);
+    qdft[2] = vc1[1] / std::sqrt(3) + vc2[0] / std::sqrt(2) + c * vc2[1] / std::sqrt(6);
+    qdft[3] = vc1[1] / std::sqrt(3) - vc2[0] / std::sqrt(2) + c * vc2[1] / std::sqrt(6);
     Mat dst0;
     merge(qdft, dst0);
     dst0.copyTo(_qimg);
@@ -154,8 +154,8 @@ void colorMatchTemplate(InputArray _image, InputArray _templ, OutputArray _resul
     CV_Assert(image.channels() == 3);
     Mat colorTemplate = _templ.getMat(), colorTemplateF;
     CV_Assert(colorTemplate.channels() == 3);
-    int rr = max(getOptimalDFTSize(image.rows), getOptimalDFTSize(colorTemplate.rows));
-    int cc = max(getOptimalDFTSize(image.cols), getOptimalDFTSize(colorTemplate.cols));
+    int rr = std::max(getOptimalDFTSize(image.rows), getOptimalDFTSize(colorTemplate.rows));
+    int cc = std::max(getOptimalDFTSize(image.cols), getOptimalDFTSize(colorTemplate.cols));
     Mat logo(rr, cc, CV_64FC3, Scalar::all(0));
     Mat img = Mat(rr, cc, CV_64FC3, Scalar::all(0));
     colorTemplate.convertTo(colorTemplateF, CV_64F, 1 / 256.),
@@ -171,11 +171,11 @@ void colorMatchTemplate(InputArray _image, InputArray _templ, OutputArray _resul
     qdft(qimg, qimgFFT, 0, true);
     qdft(qimg, qimgIFFT, DFT_INVERSE, true);
     qdft(qlogo, qlogoFFT, 0, false);
-    double sqrtnn = sqrt(static_cast<int>(qimgFFT.rows*qimgFFT.cols));
+    double sqrtnn = std::sqrt(static_cast<int>(qimgFFT.rows*qimgFFT.cols));
     qimgFFT /= sqrtnn;
     qimgIFFT *= sqrtnn;
     qlogoFFT /= sqrtnn;
-    Mat mu(1, 1, CV_64FC4, Scalar(0, 1, 1, 1) / sqrt(3.));
+    Mat mu(1, 1, CV_64FC4, Scalar(0, 1, 1, 1) / std::sqrt(3.));
     Mat qtmp, qlogopara, qlogoortho;
     qmultiply(mu, qlogoFFT, qtmp);
     qmultiply(qtmp, mu, qtmp);

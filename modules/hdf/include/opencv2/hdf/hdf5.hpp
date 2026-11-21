@@ -42,7 +42,6 @@ namespace cv
 {
 namespace hdf
 {
-using namespace std;
 
 //! @addtogroup hdf5
 //! @{
@@ -207,7 +206,7 @@ public:
                  const String& dslabel, const int compresslevel ) const = 0;
     /** @overload */
     CV_WRAP virtual void dscreate( const int rows, const int cols, const int type,
-                 const String& dslabel, const int compresslevel, const vector<int>& dims_chunks ) const = 0;
+                 const String& dslabel, const int compresslevel, const std::vector<int>& dims_chunks ) const = 0;
     /** @brief Create and allocate storage for two dimensional single or multi channel dataset.
     @param rows declare amount of rows
     @param cols declare amount of columns
@@ -285,9 +284,9 @@ public:
     CV_WRAP virtual void dscreate( const int n_dims, const int* sizes, const int type,
                  const String& dslabel, const int compresslevel ) const = 0;
     /* @overload */
-    CV_WRAP virtual void dscreate( const vector<int>& sizes, const int type,
+    CV_WRAP virtual void dscreate( const std::vector<int>& sizes, const int type,
                  const String& dslabel, const int compresslevel = HDF5::H5_NONE,
-                 const vector<int>& dims_chunks = vector<int>() ) const = 0;
+                 const std::vector<int>& dims_chunks = std::vector<int>() ) const = 0;
     /** @brief Create and allocate storage for n-dimensional dataset, single or multichannel type.
     @param n_dims declare number of dimensions
     @param sizes array containing sizes for each dimensions
@@ -377,7 +376,7 @@ public:
     return the dimension of chunk if dataset was created with chunking options otherwise returned vector size
     will be zero.
      */
-    CV_WRAP virtual vector<int> dsgetsize( const String& dslabel, int dims_flag = HDF5::H5_GETDIMS ) const = 0;
+    CV_WRAP virtual std::vector<int> dsgetsize( const String& dslabel, int dims_flag = HDF5::H5_GETDIMS ) const = 0;
 
     /** @brief Fetch dataset type
     @param dslabel specify the hdf5 dataset label to be checked.
@@ -397,8 +396,8 @@ public:
                  const int* dims_offset ) const = 0;
     /* @overload */
     CV_WRAP virtual void dswrite( InputArray Array, const String& dslabel,
-                 const vector<int>& dims_offset,
-                 const vector<int>& dims_counts = vector<int>() ) const = 0;
+                 const std::vector<int>& dims_offset,
+                 const std::vector<int>& dims_counts = std::vector<int>() ) const = 0;
     /** @brief Write or overwrite a Mat object into specified dataset of hdf5 file.
     @param Array specify Mat data array to be written.
     @param dslabel specify the target hdf5 dataset label.
@@ -471,8 +470,8 @@ public:
                  const String& dslabel, const int* dims_offset ) const = 0;
     /* @overload */
     CV_WRAP virtual void dsinsert( InputArray Array,
-                 const String& dslabel, const vector<int>& dims_offset,
-                 const vector<int>& dims_counts = vector<int>() ) const = 0;
+                 const String& dslabel, const std::vector<int>& dims_offset,
+                 const std::vector<int>& dims_counts = std::vector<int>() ) const = 0;
     /** @brief Insert or overwrite a Mat object into specified dataset and auto expand dataset size if **unlimited** property allows.
     @param Array specify Mat data array to be written.
     @param dslabel specify the target hdf5 dataset label.
@@ -531,8 +530,8 @@ public:
                  const String& dslabel, const int* dims_offset ) const = 0;
     /* @overload */
     CV_WRAP virtual void dsread( OutputArray Array, const String& dslabel,
-                 const vector<int>& dims_offset,
-                 const vector<int>& dims_counts = vector<int>() ) const = 0;
+                 const std::vector<int>& dims_offset,
+                 const std::vector<int>& dims_counts = std::vector<int>() ) const = 0;
     /** @brief Read specific dataset from hdf5 file into Mat object.
     @param Array Mat container where data reads will be returned.
     @param dslabel specify the source hdf5 dataset label.
@@ -678,7 +677,7 @@ public:
       h5io->close();
     @endcode
      */
-    virtual void kpwrite( const vector<KeyPoint> keypoints, const String& kplabel,
+    virtual void kpwrite( const std::vector<KeyPoint> keypoints, const String& kplabel,
              const int offset = H5_NONE, const int counts = H5_NONE ) const = 0;
 
     /** @brief Insert or overwrite list of KeyPoint into specified dataset and autoexpand dataset size if **unlimited** property allows.
@@ -713,7 +712,7 @@ public:
       h5io->close();
     @endcode
      */
-    virtual void kpinsert( const vector<KeyPoint> keypoints, const String& kplabel,
+    virtual void kpinsert( const std::vector<KeyPoint> keypoints, const String& kplabel,
              const int offset = H5_NONE, const int counts = H5_NONE ) const = 0;
 
     /** @brief Read specific keypoint dataset from hdf5 file into vector<KeyPoint> object.
@@ -751,7 +750,7 @@ public:
       h5io->close();
     @endcode
      */
-    virtual void kpread( vector<KeyPoint>& keypoints, const String& kplabel,
+    virtual void kpread( std::vector<KeyPoint>& keypoints, const String& kplabel,
              const int offset = H5_NONE, const int counts = H5_NONE ) const = 0;
 
 };

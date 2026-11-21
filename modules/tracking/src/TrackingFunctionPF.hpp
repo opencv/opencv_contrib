@@ -55,13 +55,13 @@ namespace cv{
 
         for(int i=0;i<HShist.rows;i++){
             for(int j=0;j<HShist.cols;j++){
-                res-=sqrt(HShist(i,j)*hist.HShist(i,j));
+                res-=std::sqrt(HShist(i,j)*hist.HShist(i,j));
             }}
         for(int j=0;j<Vhist.cols;j++){
-            res-=sqrt(Vhist(0,j)*hist.Vhist(0,j));
+            res-=std::sqrt(Vhist(0,j)*hist.Vhist(0,j));
         }
 
-        return sqrt(res);
+        return std::sqrt(res);
     }
     double TrackingFunctionPF::calc(const double* x) const{
         Rect rect=rectFromRow(x);

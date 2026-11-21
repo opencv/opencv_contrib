@@ -110,8 +110,8 @@ unsigned long FacemarkKazemiImpl::  getNearestLandmark(Point2f pixel)
     unsigned long index =0;
     for(unsigned long i=0;i<meanshape.size();i++){
         Point2f pt = meanshape[i]-pixel;
-        if(sqrt(pt.x*pt.x+pt.y*pt.y)<dist){
-            dist=sqrt(pt.x*pt.x+pt.y*pt.y);
+        if(std::sqrt(pt.x*pt.x+pt.y*pt.y)<dist){
+            dist=std::sqrt(pt.x*pt.x+pt.y*pt.y);
             index = i;
         }
     }

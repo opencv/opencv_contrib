@@ -604,8 +604,8 @@ Mat FacemarkAAMImpl::procrustes(std::vector<Point2f> P, std::vector<Point2f> Q, 
 
     //calculate the normrnd
     Point2f sumXs0 = sumXs.at<Point2f>(0), sumYs0 = sumYs.at<Point2f>(0);
-    double normX = sqrt(sumXs0.x + sumXs0.y);
-    double normY = sqrt(sumYs0.x + sumYs0.y);
+    double normX = std::sqrt(sumXs0.x + sumXs0.y);
+    double normY = std::sqrt(sumYs0.x + sumYs0.y);
 
     //normalization
     X0 = X0/normX;

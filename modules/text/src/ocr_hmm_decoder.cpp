@@ -565,7 +565,7 @@ public:
                                           contours_rect.at(i).y+contours_rect.at(i).height/2);
                 char_center.x += words_rect[w].x;
                 char_center.y += words_rect[w].y;
-                int win_size = max(contours_rect.at(i).width,contours_rect.at(i).height);
+                int win_size = std::max(contours_rect.at(i).width,contours_rect.at(i).height);
                 win_size += (int)(win_size*0.6); // add some pixels in the border TODO: is this a parameter for the user space?
                 Rect char_rect = Rect(char_center.x-win_size/2,char_center.y-win_size/2,win_size,win_size);
                 char_rect &= Rect(0,0,image.cols,image.rows);
@@ -999,7 +999,7 @@ OCRHMMClassifierCNN::OCRHMMClassifierCNN (const string& filename)
 
     nr_feature  = weights.rows;
     nr_class    = weights.cols;
-    patch_size  = cvRound(sqrt((float)kernels.cols));
+    patch_size  = cvRound(std::sqrt((float)kernels.cols));
     // algorithm internal parameters
     window_size = 32;
     num_quads   = 25;
@@ -1089,7 +1089,7 @@ void OCRHMMClassifierCNN::eval( InputArray _src, vector<int>& out_class, vector<
         {
             for (int f=0; f<kernels.rows; f++)
             {
-                feature.row(i).at<double>(0,f) = feature.row(i).at<double>(0,f) + max(0.0,std::abs(pool.row(p).dot(kernels.row(f)))-alpha);
+                feature.row(i).at<double>(0,f) = feature.row(i).at<double>(0,f) + std::max(0.0,std::abs(pool.row(p).dot(kernels.row(f)))-alpha);
             }
         }
     }
@@ -1135,7 +1135,7 @@ void OCRHMMClassifierCNN::normalizeAndZCA(Mat& patches)
     {
         Scalar row_mean, row_std;
         meanStdDev(patches.row(i),row_mean,row_std);
-        row_std[0] = sqrt(pow(row_std[0],2)*patches.cols/(patches.cols-1)+10);
+        row_std[0] = std::sqrt(std::pow(row_std[0],2)*patches.cols/(patches.cols-1)+10);
         patches.row(i) = (patches.row(i) - row_mean[0]) / row_std[0];
     }
 
@@ -1187,7 +1187,7 @@ double OCRHMMClassifierCNN::eval_feature(Mat& feature, vector<double>& prob_esti
     }
 
     for(int i=0;i<nr_class;i++)
-        prob_estimates[i]=1/(1+exp(-prob_estimates[i]));
+        prob_estimates[i]=1/(1+std::exp(-prob_estimates[i]));
 
     double sum=0;
     for(int i=0; i<nr_class; i++)

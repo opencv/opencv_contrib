@@ -232,8 +232,8 @@ void EdgeAwareInterpolatorImpl::preprocessData(Mat& src, vector<SparseMatch>& ma
     int x,y;
     for(unsigned int i=0;i<matches.size();i++)
     {
-        x = min((int)(matches[i].reference_image_pos.x+0.5f),w-1);
-        y = min((int)(matches[i].reference_image_pos.y+0.5f),h-1);
+        x = std::min((int)(matches[i].reference_image_pos.x+0.5f),w-1);
+        y = std::min((int)(matches[i].reference_image_pos.y+0.5f),h-1);
 
         distances.at<float>(y,x) = 0.0f;
         labels.at<int>(y,x) = (int)i;
@@ -255,7 +255,7 @@ void EdgeAwareInterpolatorImpl::preprocessData(Mat& src, vector<SparseMatch>& ma
 void EdgeAwareInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_map)
 {
     float c1 = 1.0f / 2.0f;
-    float c2 = sqrt(2.0f) / 2.0f;
+    float c2 = std::sqrt(2.0f) / 2.0f;
     float d = 0.0f;
     int i, j;
     float *dist_row, *cost_row;
@@ -352,7 +352,7 @@ void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
     int *label_row_prev;
     int i,j;
     const float c1 = 1.0f/2.0f;
-    const float c2 = sqrt(2.0f)/2.0f;
+    const float c2 = std::sqrt(2.0f)/2.0f;
     float d;
     bool found;
 
@@ -365,7 +365,7 @@ void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
         {\
             if(g[prev_label][n].label==cur_label)\
             {\
-                g[prev_label][n].dist = min(g[prev_label][n].dist,d);\
+                g[prev_label][n].dist = std::min(g[prev_label][n].dist,d);\
                 found=true;\
                 break;\
             }\
@@ -423,7 +423,7 @@ void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
             {
                 if(g[neighbors[j].label][n].label==i)
                 {
-                    neighbors[j].dist = g[neighbors[j].label][n].dist = min(neighbors[j].dist,g[neighbors[j].label][n].dist);
+                    neighbors[j].dist = g[neighbors[j].label][n].dist = std::min(neighbors[j].dist,g[neighbors[j].label][n].dist);
                     found = true;
                     break;
                 }
@@ -551,7 +551,7 @@ struct nodeHeap
         if(heap_pos[n.label])
         {
             int i = heap_pos[n.label];
-            heap[i].dist = min(heap[i].dist,n.dist);
+            heap[i].dist = std::min(heap[i].dist,n.dist);
             int parent_i = i>>1;
             while(heap[i].dist<heap[parent_i].dist)
             {
@@ -805,7 +805,7 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
                 vec = (matches[KNNlabels[j]].target_image_pos - matches[KNNlabels[j]].reference_image_pos);
                 average_dist += abs(vec.x-average.x) + abs(vec.y-average.y);
             }
-            eps[i] = min(0.5f*(average_dist/inst->k),2.0f);
+            eps[i] = std::min(0.5f*(average_dist/inst->k),2.0f);
         }
 
         for(int it=0;it<inst->ransac_interpolation_num_iter;it++)
@@ -1039,8 +1039,8 @@ public:
 
         int i = m_validSize - 1;
         while (prior(m_weight[i], m_weight[(i - 1) / 2])) {
-            swap(m_weight[i], m_weight[(i - 1) / 2]);
-            swap(m_index[i], m_index[(i - 1) / 2]);
+            std::swap(m_weight[i], m_weight[(i - 1) / 2]);
+            std::swap(m_index[i], m_index[(i - 1) / 2]);
             i = (i - 1) / 2; // jump up to the parent
         }
 
@@ -1318,7 +1318,7 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
 void RICInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_map)
 {
     float c1 = 1.0f / 2.0f;
-    float c2 = sqrt(2.0f) / 2.0f;
+    float c2 = std::sqrt(2.0f) / 2.0f;
     float d = 0.0f;
     int i, j;
     float *dist_row, *cost_row;
@@ -1415,7 +1415,7 @@ void RICInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
     const int *label_row_prev;
     int i, j;
     const float c1 = 1.0f / 2.0f;
-    const float c2 = sqrt(2.0f) / 2.0f;
+    const float c2 = std::sqrt(2.0f) / 2.0f;
     float d;
     bool found;
     int h = labels.rows;
@@ -1429,7 +1429,7 @@ void RICInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
         {\
             if(g[prev_label][n].label==cur_label)\
             {\
-                g[prev_label][n].dist = min(g[prev_label][n].dist,d);\
+                g[prev_label][n].dist = std::min(g[prev_label][n].dist,d);\
                 found=true;\
                 break;\
             }\
@@ -1487,7 +1487,7 @@ void RICInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
             {
                 if (g[neighbors[j].label][n].label == i)
                 {
-                    neighbors[j].dist = g[neighbors[j].label][n].dist = min(neighbors[j].dist, g[neighbors[j].label][n].dist);
+                    neighbors[j].dist = g[neighbors[j].label][n].dist = std::min(neighbors[j].dist, g[neighbors[j].label][n].dist);
                     found = true;
                     break;
                 }
@@ -1804,7 +1804,7 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
 
 float RICInterpolatorImpl::GetWeightFromDistance(float dis)
 {
-    return exp(-dis / (alpha * 1000));
+    return std::exp(-dis / (alpha * 1000));
 }
 
 float RICInterpolatorImpl::HypothesisEvaluation(const Mat & inModel, const int * matNodes, const float * matDis, int matCnt, const vector<SparseMatch> & inputMatches, Mat & outInLier)
@@ -1832,7 +1832,7 @@ float RICInterpolatorImpl::HypothesisEvaluation(const Mat & inModel, const int *
             continue;
         }
 
-        float dis = sqrt((tu - pu)*(tu - pu) + (tv - pv)*(tv - pv));
+        float dis = std::sqrt((tu - pu)*(tu - pu) + (tv - pv)*(tv - pv));
         if (dis < errTh) {
             outInLier.at<int>(k) = 1;
             cost += wt * dis;

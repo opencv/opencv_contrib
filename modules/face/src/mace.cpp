@@ -202,7 +202,7 @@ struct MACEImpl CV_FINAL : MACE {
         shiftDFT(chn[0], re);
         double m1,M1;
         minMaxLoc(re, &m1, &M1, 0, 0);
-        double peakCorrPlaneEnergy = M1 / sqrt(sum(re)[0]);
+        double peakCorrPlaneEnergy = M1 / std::sqrt(sum(re)[0]);
         re -= m1;
 
         // circle mask for the sidelobe area

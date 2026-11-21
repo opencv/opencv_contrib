@@ -59,7 +59,7 @@ namespace cnn_3dobj
         {
             len += v[i] * v[i];
         }
-        len = sqrt(len);
+        len = std::sqrt(len);
         for (int i = 0; i < 3; ++i)
         {
             v[i] /= ((float)len);
@@ -140,7 +140,7 @@ namespace cnn_3dobj
             datatemp.x = data[i].x - (float)center.x;
             datatemp.y = data[i].y - (float)center.y;
             datatemp.z = data[i].z - (float)center.z;
-            float Radius = sqrt(pow(datatemp.x,2)+pow(datatemp.y,2)+pow(datatemp.z,2));
+            float Radius = std::sqrt(std::pow(datatemp.x,2)+std::pow(datatemp.y,2)+std::pow(datatemp.z,2));
             if(Radius > radiusCam)
             {
                 radiusCam = Radius;

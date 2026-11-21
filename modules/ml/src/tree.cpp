@@ -391,7 +391,7 @@ int DTreesImpl::addNodeAndTrySplit( int parent, const vector<int>& sidx )
     }
     else
     {
-        if( sqrt(node.node_risk) < params.getRegressionAccuracy() )
+        if( std::sqrt(node.node_risk) < params.getRegressionAccuracy() )
             can_split = false;
     }
 
@@ -1259,7 +1259,7 @@ int DTreesImpl::pruneCV( int root )
                 min_err = sum_err;
                 min_idx = ti;
                 if( use_1se )
-                    min_err_se = sqrt( sum_err*(n - sum_err) );
+                    min_err_se = std::sqrt( sum_err*(n - sum_err) );
             }
             else if( sum_err < min_err + min_err_se )
                 min_idx = ti;

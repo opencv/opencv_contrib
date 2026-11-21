@@ -86,7 +86,7 @@ class GrayworldWBImpl CV_FINAL : public GrayworldWB
         }
 
         // Find inverse of averages
-        double max_sum = max(dsumB, max(dsumR, dsumG));
+        double max_sum = std::max({dsumB, dsumR, dsumG});
         const double eps = 0.1;
         float dinvB = dsumB < eps ? 0.f : (float)(max_sum / dsumB),
               dinvG = dsumG < eps ? 0.f : (float)(max_sum / dsumG),
@@ -154,8 +154,8 @@ void calculateChannelSums(uint &sumB, uint &sumG, uint &sumR, uchar *src_data, i
     unsigned int minRGB, maxRGB;
     for (; i < src_len; i += 3)
     {
-        minRGB = min(src_data[i], min(src_data[i + 1], src_data[i + 2]));
-        maxRGB = max(src_data[i], max(src_data[i + 1], src_data[i + 2]));
+        minRGB = std::min({src_data[i], src_data[i + 1], src_data[i + 2]});
+        maxRGB = std::max({src_data[i], src_data[i + 1], src_data[i + 2]});
         if ((maxRGB - minRGB) * 255 > thresh255 * maxRGB)
             continue;
         sumB += src_data[i];
@@ -226,8 +226,8 @@ void calculateChannelSums(uint64 &sumB, uint64 &sumG, uint64 &sumR, ushort *src_
     unsigned int minRGB, maxRGB;
     for (; i < src_len; i += 3)
     {
-        minRGB = min(src_data[i], min(src_data[i + 1], src_data[i + 2]));
-        maxRGB = max(src_data[i], max(src_data[i + 1], src_data[i + 2]));
+        minRGB = std::min({src_data[i], src_data[i + 1], src_data[i + 2]});
+        maxRGB = std::max({src_data[i], src_data[i + 1], src_data[i + 2]});
         if ((maxRGB - minRGB) * 65535 > thresh65535 * maxRGB)
             continue;
         sumB += src_data[i];
@@ -249,7 +249,7 @@ void applyChannelGains(InputArray _src, OutputArray _dst, float gainB, float gai
     int i = 0;
 
     // Scale gains by their maximum (fixed point approximation works only when all gains are <=1)
-    float gain_max = max(gainB, max(gainG, gainR));
+    float gain_max = std::max({gainB, gainG, gainR});
     if (gain_max > 0)
     {
         gainB /= gain_max;

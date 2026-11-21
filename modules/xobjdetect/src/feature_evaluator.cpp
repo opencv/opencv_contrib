@@ -59,7 +59,7 @@ float calcNormFactor( const Mat& sum, const Mat& sqSum )
     int valSum = sp[p0] - sp[p1] - sp[p2] + sp[p3];
     const double *sqp = sqSum.ptr<double>();
     double valSqSum = sqp[p0] - sqp[p1] - sqp[p2] + sqp[p3];
-    return (float) sqrt( (double) (area * valSqSum - (double)valSum * valSum) );
+    return (float) std::sqrt( (double) (area * valSqSum - (double)valSum * valSum) );
 }
 
 CvParams::CvParams() : name( "params" ) {}

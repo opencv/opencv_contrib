@@ -181,7 +181,7 @@ public:
                 if (transition_p.at<double>(i,j) == 0)
                     transition_p.at<double>(i,j) = -DBL_MAX;
                 else
-                    transition_p.at<double>(i,j) = log(transition_p.at<double>(i,j));
+                    transition_p.at<double>(i,j) = std::log(transition_p.at<double>(i,j));
             }
         }
     }
@@ -288,7 +288,7 @@ public:
                 if (recognition_probabilities[i][j] == 0)
                     recognition_probabilities[i][j] = -DBL_MAX;
                 else
-                    recognition_probabilities[i][j] = log(recognition_probabilities[i][j]);
+                    recognition_probabilities[i][j] = std::log(recognition_probabilities[i][j]);
             }
         }
 
@@ -343,7 +343,7 @@ public:
         if (component_texts != NULL)
             component_texts->push_back(out_sequence);
         if (component_confidences != NULL)
-            component_confidences->push_back((float)exp(lp));
+            component_confidences->push_back((float)std::exp(lp));
 
         return;
     }
@@ -431,7 +431,7 @@ private:
         //TODO Extracting start probs from lexicon (if we have it) may boost accuracy!
         vector<double> start_p(vocabulary.size());
         for (int i=0; i<(int)vocabulary.size(); i++)
-            start_p[i] = log(1.0/vocabulary.size());
+            start_p[i] = std::log(1.0/vocabulary.size());
 
 
         Mat V = Mat::ones((int)segmentation.size(),(int)vocabulary.size(),CV_64FC1);
@@ -568,7 +568,7 @@ OCRBeamSearchClassifierCNN::OCRBeamSearchClassifierCNN (const string& filename)
 
     nr_feature = weights.rows;
     nr_class   = weights.cols;
-    patch_size  = cvRound(sqrt((float)kernels.cols));
+    patch_size  = cvRound(std::sqrt((float)kernels.cols));
     window_size = 4*patch_size;
     step_size   = 4;
     quad_size   = 12;
@@ -673,7 +673,7 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
             {
                 for (int f=0; f<kernels.rows; f++)
                 {
-                    feature.row(i).at<double>(0,f) = feature.row(i).at<double>(0,f) + max(0.0,std::abs(pool.row(p).dot(kernels.row(f)))-alpha);
+                    feature.row(i).at<double>(0,f) = feature.row(i).at<double>(0,f) + std::max(0.0,std::abs(pool.row(p).dot(kernels.row(f)))-alpha);
                 }
             }
         }
@@ -714,7 +714,7 @@ void OCRBeamSearchClassifierCNN::normalizeAndZCA(Mat& patches)
     {
         Scalar row_mean, row_std;
         meanStdDev(patches.row(i),row_mean,row_std);
-        row_std[0] = sqrt(pow(row_std[0],2)*patches.cols/(patches.cols-1)+10);
+        row_std[0] = std::sqrt(std::pow(row_std[0],2)*patches.cols/(patches.cols-1)+10);
         patches.row(i) = (patches.row(i) - row_mean[0]) / row_std[0];
     }
 
@@ -769,7 +769,7 @@ double OCRBeamSearchClassifierCNN::eval_feature(Mat& feature, double* prob_estim
     }
 
     for(int i=0;i<nr_class;i++)
-        prob_estimates[i]=1/(1+exp(-prob_estimates[i]));
+        prob_estimates[i]=1/(1+std::exp(-prob_estimates[i]));
 
     double sum=0;
     for(int i=0; i<nr_class; i++)
