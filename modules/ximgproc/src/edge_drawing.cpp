@@ -3251,6 +3251,8 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
 
         if (circle->isEllipse)
         {
+            if (noPoints % 2 != 0)
+                noPoints--;
             ComputeEllipsePoints(circle->eq.coeff, px, py, noPoints);
         }
         else
