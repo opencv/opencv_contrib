@@ -134,5 +134,23 @@ TEST(Rgbd_DepthRegistration, issue_2234)
     EXPECT_EQ(0, cvtest::norm(subM, depthMat, NORM_INF));
 }
 
+TEST(Rgbd_DepthRegistration, issue_3761)
+{
+    Matx33d intrinsicsDepth(100, 0, 500, 0, 100, 500, 0, 0, 1);
+    Matx33d intrinsicsColor(100, 0, 300, 0, 100, 300, 0, 0, 1);
+    Mat distCoeffs;
+    Matx44d extrinsics = Matx44d::eye();
+
+    Mat depth(1000, 1000, CV_64F, Scalar(1.0));
+    Mat registeredDepth(Size(300, 300), CV_64F);
+
+    EXPECT_NO_THROW(cv::rgbd::registerDepth(
+        intrinsicsDepth, intrinsicsColor, distCoeffs, extrinsics,
+        depth, Size(300, 300), registeredDepth, false));
+
+    EXPECT_EQ(Size(300, 300), registeredDepth.size());
+    EXPECT_EQ(CV_64F, registeredDepth.type());
+}
+
 
 }} // namespace
