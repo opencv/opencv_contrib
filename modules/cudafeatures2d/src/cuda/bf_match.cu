@@ -103,21 +103,21 @@ namespace cv { namespace cuda { namespace device
                 {
                     const int loadX = threadIdx.x + i * BLOCK_SIZE;
 
-                    s_train[threadIdx.x * BLOCK_SIZE + threadIdx.y] = 0;
+                    s_train[threadIdx.x * (BLOCK_SIZE + 2) + threadIdx.y] = 0;
 
                     if (loadX < train.cols)
                     {
                         T val;
 
                         ForceGlob<T>::Load(train.ptr(::min(t * BLOCK_SIZE + threadIdx.y, train.rows - 1)), loadX, val);
-                        s_train[threadIdx.x * BLOCK_SIZE + threadIdx.y] = val;
+                        s_train[threadIdx.x * (BLOCK_SIZE + 2) + threadIdx.y] = val;
                     }
 
                     __syncthreads();
 
                     #pragma unroll
                     for (int j = 0; j < BLOCK_SIZE; ++j)
-                        dist.reduceIter(s_query[threadIdx.y * MAX_DESC_LEN + i * BLOCK_SIZE + j], s_train[j * BLOCK_SIZE + threadIdx.x]);
+                        dist.reduceIter(s_query[threadIdx.y * MAX_DESC_LEN + i * BLOCK_SIZE + j], s_train[j * (BLOCK_SIZE + 2) + threadIdx.x]);
 
                     __syncthreads();
                 }
@@ -174,7 +174,7 @@ namespace cv { namespace cuda { namespace device
             const dim3 block(BLOCK_SIZE, BLOCK_SIZE);
             const dim3 grid(divUp(query.rows, BLOCK_SIZE));
 
-            const size_t smemSize = (BLOCK_SIZE * (MAX_DESC_LEN >= BLOCK_SIZE ? MAX_DESC_LEN : BLOCK_SIZE) + BLOCK_SIZE * BLOCK_SIZE) * sizeof(int);
+            const size_t smemSize = (BLOCK_SIZE * (MAX_DESC_LEN >= BLOCK_SIZE ? MAX_DESC_LEN : BLOCK_SIZE) + BLOCK_SIZE * (BLOCK_SIZE + 2)) * sizeof(int);
 
             matchUnrolledCached<BLOCK_SIZE, MAX_DESC_LEN, Dist><<<grid, block, smemSize, stream>>>(query, train, mask, trainIdx.data, distance.data);
             cudaSafeCall( cudaGetLastError() );
@@ -233,7 +233,7 @@ namespace cv { namespace cuda { namespace device
             const dim3 block(BLOCK_SIZE, BLOCK_SIZE);
             const dim3 grid(divUp(query.rows, BLOCK_SIZE));
 
-            const size_t smemSize = (BLOCK_SIZE * (MAX_DESC_LEN >= 2 * BLOCK_SIZE ? MAX_DESC_LEN : 2 * BLOCK_SIZE) + BLOCK_SIZE * BLOCK_SIZE) * sizeof(int);
+            const size_t smemSize = (BLOCK_SIZE * (MAX_DESC_LEN >= 2 * BLOCK_SIZE ? MAX_DESC_LEN : 2 * BLOCK_SIZE) + BLOCK_SIZE * (BLOCK_SIZE + 2)) * sizeof(int);
 
             matchUnrolledCached<BLOCK_SIZE, MAX_DESC_LEN, Dist><<<grid, block, smemSize, stream>>>(query, trains, n, mask, trainIdx.data, imgIdx.data, distance.data);
             cudaSafeCall( cudaGetLastError() );
@@ -260,7 +260,7 @@ namespace cv { namespace cuda { namespace device
                     const int loadX = threadIdx.x + i * BLOCK_SIZE;
 
                     s_query[threadIdx.y * BLOCK_SIZE + threadIdx.x] = 0;
-                    s_train[threadIdx.x * BLOCK_SIZE + threadIdx.y] = 0;
+                    s_train[threadIdx.x * (BLOCK_SIZE + 2) + threadIdx.y] = 0;
 
                     if (loadX < query.cols)
                     {
@@ -270,14 +270,14 @@ namespace cv { namespace cuda { namespace device
                         s_query[threadIdx.y * BLOCK_SIZE + threadIdx.x] = val;
 
                         ForceGlob<T>::Load(train.ptr(::min(t * BLOCK_SIZE + threadIdx.y, train.rows - 1)), loadX, val);
-                        s_train[threadIdx.x * BLOCK_SIZE + threadIdx.y] = val;
+                        s_train[threadIdx.x * (BLOCK_SIZE + 2) + threadIdx.y] = val;
                     }
 
                     __syncthreads();
 
                     #pragma unroll
                     for (int j = 0; j < BLOCK_SIZE; ++j)
-                        dist.reduceIter(s_query[threadIdx.y * BLOCK_SIZE + j], s_train[j * BLOCK_SIZE + threadIdx.x]);
+                        dist.reduceIter(s_query[threadIdx.y * BLOCK_SIZE + j], s_train[j * (BLOCK_SIZE + 2) + threadIdx.x]);
 
                     __syncthreads();
                 }
@@ -332,7 +332,7 @@ namespace cv { namespace cuda { namespace device
             const dim3 block(BLOCK_SIZE, BLOCK_SIZE);
             const dim3 grid(divUp(query.rows, BLOCK_SIZE));
 
-            const size_t smemSize = (2 * BLOCK_SIZE * BLOCK_SIZE) * sizeof(int);
+            const size_t smemSize = (BLOCK_SIZE * BLOCK_SIZE + BLOCK_SIZE * (BLOCK_SIZE + 2)) * sizeof(int);
 
             matchUnrolled<BLOCK_SIZE, MAX_DESC_LEN, Dist><<<grid, block, smemSize, stream>>>(query, train, mask, trainIdx.data, distance.data);
             cudaSafeCall( cudaGetLastError() );
@@ -415,7 +415,7 @@ namespace cv { namespace cuda { namespace device
                     const int loadX = threadIdx.x + i * BLOCK_SIZE;
 
                     s_query[threadIdx.y * BLOCK_SIZE + threadIdx.x] = 0;
-                    s_train[threadIdx.x * BLOCK_SIZE + threadIdx.y] = 0;
+                    s_train[threadIdx.x * (BLOCK_SIZE + 2) + threadIdx.y] = 0;
 
                     if (loadX < query.cols)
                     {
@@ -425,14 +425,14 @@ namespace cv { namespace cuda { namespace device
                         s_query[threadIdx.y * BLOCK_SIZE + threadIdx.x] = val;
 
                         ForceGlob<T>::Load(train.ptr(::min(t * BLOCK_SIZE + threadIdx.y, train.rows - 1)), loadX, val);
-                        s_train[threadIdx.x * BLOCK_SIZE + threadIdx.y] = val;
+                        s_train[threadIdx.x * (BLOCK_SIZE + 2) + threadIdx.y] = val;
                     }
 
                     __syncthreads();
 
                     #pragma unroll
                     for (int j = 0; j < BLOCK_SIZE; ++j)
-                        dist.reduceIter(s_query[threadIdx.y * BLOCK_SIZE + j], s_train[j * BLOCK_SIZE + threadIdx.x]);
+                        dist.reduceIter(s_query[threadIdx.y * BLOCK_SIZE + j], s_train[j * (BLOCK_SIZE + 2) + threadIdx.x]);
 
                     __syncthreads();
                 }
@@ -487,7 +487,7 @@ namespace cv { namespace cuda { namespace device
             const dim3 block(BLOCK_SIZE, BLOCK_SIZE);
             const dim3 grid(divUp(query.rows, BLOCK_SIZE));
 
-            const size_t smemSize = (2 * BLOCK_SIZE * BLOCK_SIZE) * sizeof(int);
+            const size_t smemSize = (BLOCK_SIZE * BLOCK_SIZE + BLOCK_SIZE * (BLOCK_SIZE + 2)) * sizeof(int);
 
             match<BLOCK_SIZE, Dist><<<grid, block, smemSize, stream>>>(query, train, mask, trainIdx.data, distance.data);
             cudaSafeCall( cudaGetLastError() );
