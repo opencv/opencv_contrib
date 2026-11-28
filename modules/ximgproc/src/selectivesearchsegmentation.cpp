@@ -49,7 +49,7 @@ namespace cv {
 
             // Helpers
 
-            // Represent a regsion
+            // Represent a region
             class Region {
                 public:
                     int id;
@@ -70,30 +70,26 @@ namespace cv {
             // Comparator to sort cv::rect (used for a std::map).
             struct rectComparator {
                 bool operator()(const cv::Rect_<int>& a, const cv::Rect_<int>& b) const {
-                    if (a.x < b.x) {
+                    if (a.x < b.x)
                         return true;
-                    }
-                    if (a.x > b.x) {
+                    else if (a.x > b.x)
                         return false;
-                    }
-                    if (a.y < b.y) {
+                  
+                    if (a.y < b.y)
                         return true;
-                    }
-                    if (a.y > b.y) {
+                    else if (a.y > b.y)
                         return false;
-                    }
-                    if (a.width < b.width) {
+                  
+                    if (a.width < b.width)
                         return true;
-                    }
-                    if (a.width > b.width) {
+                    else if (a.width > b.width)
                         return false;
-                    }
-                    if (a.height < b.height) {
+                  
+                    if (a.height < b.height)
                         return true;
-                    }
-                    if (a.height > b.height) {
+                    else if (a.height > b.height)
                         return false;
-                    }
+                  
                     return false;
                 }
             };
