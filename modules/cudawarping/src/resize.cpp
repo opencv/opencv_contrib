@@ -54,7 +54,7 @@ namespace cv { namespace cuda { namespace device
     void resize(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, cudaStream_t stream);
 }}}
 
-void cv::cuda::resize(InputArray _src, OutputArray _dst, Size dsize, double fx, double fy, int interpolation, Stream& stream)
+void cv::cuda::resize(InputArray _src, OutputArray _dst, Size dsize, double fx, double fy, int interpolation, Stream& stream, bool align_corners)
 {
     GpuMat src = _src.getGpuMat();
 
@@ -102,7 +102,22 @@ void cv::cuda::resize(InputArray _src, OutputArray _dst, Size dsize, double fx, 
     src.locateROI(wholeSize, ofs);
     PtrStepSzb wholeSrc(wholeSize.height, wholeSize.width, src.datastart, src.step);
 
-    func(src, wholeSrc, ofs.y, ofs.x, dst, static_cast<float>(1.0 / fy), static_cast<float>(1.0 / fx), interpolation, StreamAccessor::getStream(stream));
+    // The resize kernels sample at src = dst * inv_scale. The default mapping is
+    // inv_scale = srcSize/dstSize. For align_corners (INTER_LINEAR) the corner
+    // pixels are matched exactly: inv_scale = (srcSize-1)/(dstSize-1), and we
+    // route to the truncating-linear kernel (round-toward-zero) so the result is
+    // bit-exact with reference integer bilinear (Qwen-VL / PyTorch align_corners).
+    float inv_fx = static_cast<float>(1.0 / fx);
+    float inv_fy = static_cast<float>(1.0 / fy);
+    int interp = interpolation;
+    if (align_corners && interpolation == INTER_LINEAR)
+    {
+        inv_fx = (dst.cols > 1) ? static_cast<float>(src.cols - 1) / (dst.cols - 1) : 0.0f;
+        inv_fy = (dst.rows > 1) ? static_cast<float>(src.rows - 1) / (dst.rows - 1) : 0.0f;
+        interp = 100; // device::INTER_LINEAR_ALIGN_CORNERS_TRUNC sentinel
+    }
+
+    func(src, wholeSrc, ofs.y, ofs.x, dst, inv_fy, inv_fx, interp, StreamAccessor::getStream(stream));
 }
 
 #endif // HAVE_CUDA
