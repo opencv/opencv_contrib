@@ -73,9 +73,12 @@ public:
     void loadModel(String fs) CV_OVERRIDE;
     bool setFaceDetector(FN_FaceDetector f, void* userdata) CV_OVERRIDE;
     bool getFaces(InputArray image, OutputArray faces) CV_OVERRIDE;
+    bool defaultFaceDetector(const Mat& image, std::vector<Rect>& faces);
+    bool getData(void * items) CV_OVERRIDE;
     bool fit(InputArray image, InputArray faces, OutputArrayOfArrays landmarks ) CV_OVERRIDE;
-    void training(String imageList, String groundTruth);
-    bool training(vector<Mat>& images, vector< vector<Point2f> >& landmarks,string filename,Size scale,string modelFilename) CV_OVERRIDE;
+    bool addTrainingSample(InputArray image, std::vector<Point2f> & landmarks) CV_OVERRIDE;
+    bool setParams(const String& face_cascade_name,const String& facemark_model_name, const String& config_file_path, InputArray scale) CV_OVERRIDE;
+    void training() CV_OVERRIDE;
     // Destructor for the class.
     virtual ~FacemarkKazemiImpl() CV_OVERRIDE;
 
@@ -89,10 +92,14 @@ protected:
     float minmeany;
     float maxmeany;
     bool isModelLoaded;
+    /* training data */
+    std::vector<Mat> training_images;
+    std::vector<std::vector<Point2f> > training_facePoints;
     /* meanshape This is a vector which stores the mean shape of all the images used in training*/
     std::vector<Point2f> meanshape;
     std::vector< std::vector<regtree> > loaded_forests;
     std::vector< std::vector<Point2f> > loaded_pixel_coordinates;
+    CascadeClassifier face_cascade;
     FN_FaceDetector faceDetector;
     void* faceDetectorData;
     bool findNearestLandmarks(std::vector< std::vector<int> >& nearest);

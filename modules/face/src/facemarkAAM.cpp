@@ -36,6 +36,7 @@ Mentor: Delia Passalacqua
 
 #include "precomp.hpp"
 #include "opencv2/face.hpp"
+#include <fstream>
 namespace cv {
 namespace face {
 
@@ -44,6 +45,7 @@ namespace face {
 */
 FacemarkAAM::Params::Params(){
     model_filename = "";
+    cascade_filename = "";
     m = 200;
     n = 10;
     n_iter = 50;
@@ -66,7 +68,7 @@ void FacemarkAAM::Params::read( const cv::FileNode& fn ){
     *this = FacemarkAAM::Params();
 
     if (!fn["model_filename"].empty()) fn["model_filename"] >> model_filename;
-
+    if (!fn["cascade_filename"].empty()) fn["cascade_filename"] >> cascade_filename;
     if (!fn["m"].empty()) fn["m"] >> m;
     if (!fn["n"].empty()) fn["n"] >> m;
     if (!fn["n_iter"].empty()) fn["n_iter"] >> m;
@@ -79,6 +81,7 @@ void FacemarkAAM::Params::read( const cv::FileNode& fn ){
 
 void FacemarkAAM::Params::write( cv::FileStorage& fs ) const{
     fs << "model_filename" << model_filename;
+    fs << "cascade_filename" << cascade_filename;
     fs << "m" << m;
     fs << "n" << n;
     fs << "n_iter" << n_iter;
@@ -110,8 +113,9 @@ protected:
     bool fit( InputArray image, InputArray faces, OutputArrayOfArrays landmarks ) CV_OVERRIDE;
     bool fitImpl( const Mat image, std::vector<Point2f>& landmarks,const  Mat R,const  Point2f T,const  float scale, const int sclIdx=0 );
 
-    bool addTrainingSample(InputArray image, InputArray landmarks) CV_OVERRIDE;
-    void training(void* parameters) CV_OVERRIDE;
+    bool addTrainingSample(InputArray image, std::vector<Point2f> & landmarks) CV_OVERRIDE;
+    bool setParams(const String& face_cascade_name,const String& facemark_model_name, const String& config_file_path, InputArray scale) CV_OVERRIDE;
+    void training() CV_OVERRIDE;
 
     Mat procrustes(std::vector<Point2f> , std::vector<Point2f> , Mat & , Scalar & , float & );
     void calcMeanShape(std::vector<std::vector<Point2f> > ,std::vector<Point2f> & );
@@ -141,6 +145,9 @@ protected:
     std::vector<std::vector<Point2f> > facePoints;
     FacemarkAAM::Params params;
     FacemarkAAM::Model AAM;
+
+    bool defaultFaceDetector(const Mat& image, std::vector<Rect>& faces);
+    CascadeClassifier face_cascade;
     FN_FaceDetector faceDetector;
     void* faceDetectorData;
 
@@ -188,8 +195,44 @@ bool FacemarkAAMImpl::setFaceDetector(bool(*f)(InputArray , OutputArray, void *)
 bool FacemarkAAMImpl::getFaces(InputArray image, OutputArray faces)
 {
     if (!faceDetector)
-        return false;
+    {
+        std::vector<Rect> faces_;
+        defaultFaceDetector(image.getMat(), faces_);
+        Mat(faces_).copyTo(faces);
+        return true;
+    }
     return faceDetector(image, faces, faceDetectorData);
+}
+
+bool FacemarkAAMImpl::defaultFaceDetector(const Mat& image, std::vector<Rect>& faces){
+    Mat gray;
+
+    faces.clear();
+
+    if (image.channels() > 1)
+    {
+        cvtColor(image, gray, COLOR_BGR2GRAY);
+    }
+    else
+    {
+        gray = image;
+    }
+
+    equalizeHist(gray, gray);
+
+    if (face_cascade.empty())
+    {
+        { /* check the cascade classifier file */
+            std::ifstream infile;
+            infile.open(params.cascade_filename.c_str(), std::ios::in);
+            if (!infile)
+                CV_Error_(Error::StsBadArg, ("The cascade classifier model is not found: %s", params.cascade_filename.c_str()));
+        }
+        face_cascade.load(params.cascade_filename.c_str());
+        CV_Assert(!face_cascade.empty());
+    }
+    face_cascade.detectMultiScale(gray, faces, 1.4, 2, CASCADE_SCALE_IMAGE, Size(30, 30));
+    return true;
 }
 
 bool FacemarkAAMImpl::getData(void * items){
@@ -200,9 +243,8 @@ bool FacemarkAAMImpl::getData(void * items){
     return true;
 }
 
-bool FacemarkAAMImpl::addTrainingSample(InputArray image, InputArray landmarks){
-    // FIXIT
-    std::vector<Point2f> & _landmarks = *(std::vector<Point2f>*)landmarks.getObj();
+bool FacemarkAAMImpl::addTrainingSample(InputArray image, std::vector<Point2f> & landmarks){
+    std::vector<Point2f> & _landmarks = landmarks;
 
     images.push_back(image.getMat());
     facePoints.push_back(_landmarks);
@@ -210,8 +252,24 @@ bool FacemarkAAMImpl::addTrainingSample(InputArray image, InputArray landmarks){
     return true;
 }
 
-void FacemarkAAMImpl::training(void* parameters){
-    if(parameters!=0){/*do nothing*/}
+bool FacemarkAAMImpl::setParams(const String& face_cascade_name,const String& facemark_model_name, const String& config_file_path, InputArray scale){
+  if(face_cascade_name.empty() && facemark_model_name.empty() && scale.empty())
+  {
+    CV_Error_(Error::StsBadArg, ("face cascade name, facemark model name and scale all are empty"));
+  }
+  if(!face_cascade_name.empty())
+      params.cascade_filename = face_cascade_name;
+  if(!facemark_model_name.empty())
+      params.model_filename = facemark_model_name;
+  Mat scale_mat = scale.getMat();
+  std::vector<float> _scale = scale_mat.reshape(1, scale_mat.rows);
+  for(size_t i = 0; i < _scale.size(); i++)
+      params.scales.push_back(_scale[i]);
+  CV_UNUSED(config_file_path);
+  return true;
+}
+
+void FacemarkAAMImpl::training(){
     if (images.size()<1) {
         CV_Error(Error::StsBadArg, "Training data is not provided. Consider to add using addTrainingSample() function!");
     }
