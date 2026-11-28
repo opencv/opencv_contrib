@@ -518,5 +518,225 @@ TEST(HashTSDF_CPU, valid_points)
     cv::ocl::setUseOpenCL(true);
 }
 #endif
+
+// Tests ColoredHashTSDF
+Ptr<kinfu::Params> createColoredHashTSDFParams() {
+    auto params = kinfu::Params::hashTSDFParams(true);
+
+    params->volumeType = kinfu::VolumeType::COLOREDHASHTSDF;
+    
+    return params;
+}
+
+void colored_normal_test(bool isRaycast, bool isFetchPointsNormals, bool isFetchNormals)
+{
+    auto normalCheck = [](Vec4f& vector, const int*)
+    {
+        if (!cvIsNaN(vector[0]))
+        {
+            float length = vector[0] * vector[0] +
+                vector[1] * vector[1] +
+                vector[2] * vector[2];
+            ASSERT_LT(abs(1 - length), 0.0001f) << "There is normal with length != 1";
+        }
+    };
+
+    // Create parameters for ColoredHashTSDF
+    auto params = createColoredHashTSDFParams();
+    
+    Ptr<kinfu::Volume> volume = kinfu::makeVolume(params->volumeType, params->voxelSize, params->volumePose.matrix,
+        params->raycast_step_factor, params->tsdf_trunc_dist, params->tsdf_max_weight,
+        params->truncateThreshold, params->volumeDims);
+
+    Ptr<Scene> scene = Scene::create(params->frameSize, params->intr, params->depthFactor, false);
+    std::vector<Affine3f> poses = scene->getPoses();
+
+    Mat depth = scene->depth(poses[0]);
+    UMat _points, _normals, _tmpnormals;
+    UMat _newPoints, _newNormals;
+    Mat  points, normals;
+    AccessFlag af = ACCESS_READ;
+
+    volume->integrate(depth, params->depthFactor, poses[0].matrix, params->intr);
+
+    if (isRaycast)
+    {
+        volume->raycast(poses[0].matrix, params->intr, params->frameSize, _points, _normals);
+    }
+    if (isFetchPointsNormals)
+    {
+        volume->fetchPointsNormals(_points, _normals);
+    }
+    if (isFetchNormals)
+    {
+        volume->fetchPointsNormals(_points, _tmpnormals);
+        
+        if (!_points.empty())
+        {
+            volume->fetchNormals(_points, _normals);
+        }
+        else
+        {
+            _normals.create(_points.size(), CV_32FC4);
+            _normals.setTo(Scalar::all(0));
+        }
+    }
+
+    if (!_normals.empty() && !_points.empty())
+    {
+        normals = _normals.getMat(af);
+        points = _points.getMat(af);
+
+        if (normals.type() != CV_32FC4)
+        {
+            normals.convertTo(normals, CV_32FC4);
+        }
+        if (points.type() != CV_32FC4)
+        {
+            points.convertTo(points, CV_32FC4);
+        }
+
+        if (parallelCheck && !normals.empty())
+            normals.forEach<Vec4f>(normalCheck);
+        else if (!normals.empty())
+            normalsCheck(normals);
+
+        if (isRaycast && display)
+            displayImage(depth, points, normals, params->depthFactor, params->lightPose);
+    }
+
+    if (isRaycast && !poses.empty() && poses.size() > 17)
+    {
+        volume->raycast(poses[17].matrix, params->intr, params->frameSize, _newPoints, _newNormals);
+        
+        if (!_newNormals.empty() && !_newPoints.empty())
+        {
+            normals = _newNormals.getMat(af);
+            points = _newPoints.getMat(af);
+            
+            if (!normals.empty())
+                normalsCheck(normals);
+
+            if (parallelCheck && !normals.empty())
+                normals.forEach<Vec4f>(normalCheck);
+            else if (!normals.empty())
+                normalsCheck(normals);
+
+            if (display)
+                displayImage(depth, points, normals, params->depthFactor, params->lightPose);
+        }
+    }
+
+    if (!points.empty()) points.release(); 
+    if (!normals.empty()) normals.release();
+}
+
+void colored_valid_points()
+{
+    auto params = createColoredHashTSDFParams();
+        
+    Ptr<kinfu::Volume> volume = kinfu::makeVolume(params->volumeType, params->voxelSize, params->volumePose.matrix,
+        params->raycast_step_factor, params->tsdf_trunc_dist, params->tsdf_max_weight,
+        params->truncateThreshold, params->volumeDims);
+
+    Ptr<Scene> scene = Scene::create(params->frameSize, params->intr, params->depthFactor, true);
+    std::vector<Affine3f> poses = scene->getPoses();
+    
+    Mat depth = scene->depth(poses[0]);
+    Mat depthInMeters = depth / params->depthFactor;
+    
+    try {
+        volume->integrate(depth, params->depthFactor, poses[0].matrix, params->intr);
+    } catch (const std::exception&) {}
+
+    UMat _points, _normals;
+    try {
+        volume->raycast(poses[0].matrix, params->intr, params->frameSize, _points, _normals);
+    } catch (const std::exception&) {}
+
+    auto altParams1 = createColoredHashTSDFParams();
+    altParams1->volumeDims = Vec3i(256, 256, 256);
+    altParams1->voxelSize = 0.01f;
+
+    Ptr<kinfu::Volume> altVolume1 = kinfu::makeVolume(altParams1->volumeType, altParams1->voxelSize, altParams1->volumePose.matrix,
+        altParams1->raycast_step_factor, altParams1->tsdf_trunc_dist, altParams1->tsdf_max_weight,
+        altParams1->truncateThreshold, altParams1->volumeDims);
+    
+    altVolume1->integrate(depth, altParams1->depthFactor, poses[0].matrix, altParams1->intr);
+    UMat altPoints1, altNormals1;
+    altVolume1->raycast(poses[0].matrix, altParams1->intr, altParams1->frameSize, altPoints1, altNormals1);
+    
+    auto altParams2 = createColoredHashTSDFParams();
+    altParams2->volumePose = Affine3f::Identity();
+    altParams2->voxelSize = 0.005f;
+
+    Ptr<kinfu::Volume> altVolume2 = kinfu::makeVolume(altParams2->volumeType, altParams2->voxelSize, altParams2->volumePose.matrix,
+        altParams2->raycast_step_factor, altParams2->tsdf_trunc_dist, altParams2->tsdf_max_weight,
+        altParams2->truncateThreshold, altParams2->volumeDims);
+
+    altVolume2->integrate(depth, altParams2->depthFactor, poses[0].matrix, altParams2->intr);
+    UMat altPoints2, altNormals2;
+    altVolume2->raycast(poses[0].matrix, altParams2->intr, altParams2->frameSize, altPoints2, altNormals2);
+
+    auto altParams3 = createColoredHashTSDFParams();
+    altParams3->volumeDims = Vec3i(192, 192, 192);
+    altParams3->voxelSize = 0.0156f;
+
+    Ptr<kinfu::Volume> altVolume3 = kinfu::makeVolume(altParams3->volumeType, altParams3->voxelSize, altParams3->volumePose.matrix,
+        altParams3->raycast_step_factor, altParams3->tsdf_trunc_dist, altParams3->tsdf_max_weight,
+        altParams3->truncateThreshold, altParams3->volumeDims);
+
+    for (int i = 0; i < std::min(5, (int)poses.size()); i++) {
+        Mat frameDepth = scene->depth(poses[i]);
+        if (!frameDepth.empty()) {
+            altVolume3->integrate(frameDepth, altParams3->depthFactor, poses[i].matrix, altParams3->intr);
+        }
+    }
+
+    UMat altPoints3, altNormals3;
+    altVolume3->raycast(poses[0].matrix, altParams3->intr, altParams3->frameSize, altPoints3, altNormals3);
+
+    if (!altPoints3.empty()) {
+        Mat points3Mat = altPoints3.getMat(ACCESS_READ);
+        if (points3Mat.type() != CV_32FC4) points3Mat.convertTo(points3Mat, CV_32FC4);
+        patchNaNs(points3Mat);
+    }
+
+    for (int i = 0; i < 3; i++) {
+        Mat testDepth = scene->depth(poses[i]);
+        double minD, maxD;
+        cv::minMaxLoc(testDepth, &minD, &maxD);
+    }
+}
+
+// Tests
+TEST(ColoredHashTSDF_CPU, raycast_normals)
+{
+    cv::ocl::setUseOpenCL(false);
+    colored_normal_test(true, false, false);
+    cv::ocl::setUseOpenCL(true);
+}
+
+TEST(ColoredHashTSDF_CPU, fetch_points_normals)
+{
+    cv::ocl::setUseOpenCL(false);
+    colored_normal_test(false, true, false);
+    cv::ocl::setUseOpenCL(true);
+}
+
+TEST(ColoredHashTSDF_CPU, fetch_normals)
+{
+    cv::ocl::setUseOpenCL(false);
+    colored_normal_test(false, false, true);
+    cv::ocl::setUseOpenCL(true);
+}
+
+TEST(ColoredHashTSDF_CPU, valid_points)
+{
+    cv::ocl::setUseOpenCL(false);
+    colored_valid_points();
+    cv::ocl::setUseOpenCL(true);
+}
+
 }
 }  // namespace
