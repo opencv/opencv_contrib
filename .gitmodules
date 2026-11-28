@@ -1,0 +1,12 @@
+[submodule "modules/v4d/third/imgui"]
+	path = modules/v4d/third/imgui
+	url = https://github.com/kallaballa/imgui.git
+[submodule "modules/v4d/third/doxygen-bootstrapped"]
+	path = modules/v4d/third/doxygen-bootstrapped
+	url = https://github.com/kallaballa/doxygen-bootstrapped.git
+[submodule "modules/v4d/third/nanovg"]
+	path = modules/v4d/third/nanovg
+	url = https://github.com/kallaballa/nanovg
+[submodule "bgfx.cmake"]
+	path = modules/v4d/third/bgfx.cmake
+	url = https://github.com/bkaradzic/bgfx.cmake.git
