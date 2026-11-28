@@ -168,6 +168,8 @@ void printHelp()
             "      Set output file path explicitly. The default is stabilized.avi.\n"
             "  --fps=(<float_number>|auto)\n"
             "      Set output video FPS explicitly. By default the source FPS is used (auto).\n"
+            "  --vo=, --vis-output=(no|<file_path>)\n"
+            "      Set visualization output file path. The default is no.\n"
             "  -q, --quiet\n"
             "      Don't show output video frames.\n\n"
             "  -h, --help\n"
@@ -338,6 +340,7 @@ int main(int argc, const char **argv)
                 "{ gpu                      | no | }"
                 "{ o  output                | stabilized.avi | }"
                 "{ fps                      | auto | }"
+                "{ vo  vis-output           | no | }"
                 "{ q quiet                  |  | }"
                 "{ h help                   |  | }";
         CommandLineParser cmd(argc, argv, keys);
@@ -479,6 +482,27 @@ int main(int argc, const char **argv)
 
         // cast stabilizer to simple frame source interface to read stabilized frames
         stabilizedFrames.reset(dynamic_cast<IFrameSource*>(stabilizer));
+
+        // visWriter and visOutputPath must not be defined inside the if statement
+        VideoWriter visWriter;
+        string visOutputPath;
+        if (arg("vis-output") != "no")
+        {
+            visOutputPath = arg("vis-output");
+            std::function<void(Mat)> featureVisualizationCallback = [&visWriter, &visOutputPath](Mat featureVisualization){
+                // init visWriter (once) and save visualization frame
+                if (!featureVisualization.empty())
+                {
+                    if (!visWriter.isOpened())
+                        visWriter.open(visOutputPath, VideoWriter::fourcc('X','V','I','D'),
+                                    outputFps, featureVisualization.size());
+                    visWriter << featureVisualization;
+                }
+            };
+            // must be called before
+            // "stabilizer->setMotionEstimator(makePtr<ToFileMotionWriter>(arg("save-motions"), stabilizer->motionEstimator()));"
+            stabilizer->motionEstimator()->setFeatureVisualizationCallback(featureVisualizationCallback);
+        }
 
         MotionModel model = stabilizer->motionEstimator()->motionModel();
         if (arg("load-motions") != "no")
