@@ -762,20 +762,45 @@ int FreeType2Impl::coFn( const FT_Vector *cnt,
 
     PathUserData *p = (PathUserData *)user;
 
-    // Bezier to Line
-    for(int i = 0;i <= p->mCtoL; i++){
-        // Split Bezier to lines ( in FreeType coordinates ).
-        double u = (double)i * 1.0 / (p->mCtoL) ;
-        double nu = 1.0 - u;
-        double p0 =                  nu * nu;
-        double p1 = 2.0 * u *        nu;
-        double p2 =       u * u;
+    // Calicurate upper limit of CtoL.
+    // It is same as total length of polylines{ mOldP, cnt, to }.
 
-        double X = (p->mOldP.x) * p0 + cnt->x * p1 + to->x * p2;
-        double Y = (p->mOldP.y) * p0 + cnt->y * p1 + to->y * p2;
+    const double dx1 = p->mOldP.x  -  cnt->x;
+    const double dy1 = p->mOldP.y  -  cnt->y;
+    const double dx2 = cnt->x      -  to->x;
+    const double dy2 = cnt->y      -  to->y;
+
+    const int maxL = static_cast<int>(
+        std::sqrt( dx1 * dx1 + dy1 * dy1 ) +
+        std::sqrt( dx2 * dx2 + dy2 * dy2 )
+    );
+
+    // iCtoL should be less than INT_MAX to avoid overflowing for int i.
+    // iCtoL should not be 0 to avoid dividing 0 for double u.
+    const int iCtoL = std::max( 1, std::min( { maxL, p->mCtoL, INT_MAX - 1 } ) );
+
+    // Avoid to push_back() same as previous points.
+    Point prevPt(INT_MIN, INT_MIN);
+
+    // Bezier to Line
+    for(int i = 0;i <= iCtoL; i++){
+        // Split Bezier to lines ( in FreeType coordinates ).
+        const double u = static_cast<double>(i) / iCtoL;
+        const double nu = 1.0 - u;
+        const double p0 =                  nu * nu;
+        const double p1 = 2.0 * u *        nu;
+        const double p2 =       u * u;
+
+        const double X = (p->mOldP.x) * p0 + cnt->x * p1 + to->x * p2;
+        const double Y = (p->mOldP.y) * p0 + cnt->y * p1 + to->y * p2;
 
         // Store points to draw( in OpenCV coordinates ).
-        p->mPts.push_back( Point ( ftd(X), ftd(Y) ) );
+        const Point pt( ftd(X), ftd(Y) );
+        if ( pt != prevPt )
+        {
+            p->mPts.push_back( pt );
+            prevPt = pt;
+        }
     }
     p->mOldP = *to;
     return 0;
@@ -793,23 +818,51 @@ int FreeType2Impl::cuFn( const FT_Vector *cnt1,
 
     PathUserData *p = (PathUserData *)user;
 
-    // Bezier to Line
-    for(int i = 0; i <= p->mCtoL ;i++){
-        // Split Bezier to lines ( in FreeType coordinates ).
-        double u = (double)i * 1.0 / (p->mCtoL) ;
-        double nu = 1.0 - u;
-        double p0 =                  nu * nu * nu;
-        double p1 = 3.0 * u *        nu * nu;
-        double p2 = 3.0 * u * u *    nu;
-        double p3 =       u * u * u;
+    // Calicurate upper limit of CtoL.
+    // It is same as total length of polylines{ mOldP, cnt1, cnt2, to }.
 
-        double X = (p->mOldP.x) * p0 + (cnt1->x)    * p1 +
-                   (cnt2->x   ) * p2 + (to->x  )    * p3;
-        double Y = (p->mOldP.y) * p0 + (cnt1->y)    * p1 +
-                   (cnt2->y   ) * p2 + (to->y  )    * p3;
+    const double dx1 = p->mOldP.x  -  cnt1->x;
+    const double dy1 = p->mOldP.y  -  cnt1->y;
+    const double dx2 = cnt1->x     -  cnt2->x;
+    const double dy2 = cnt1->y     -  cnt2->y;
+    const double dx3 = cnt2->x     -  to->x;
+    const double dy3 = cnt2->y     -  to->y;
+
+    const int maxL = static_cast<int>(
+        std::sqrt( dx1 * dx1 + dy1 * dy1 ) +
+        std::sqrt( dx2 * dx2 + dy2 * dy2 ) +
+        std::sqrt( dx3 * dx3 + dy3 * dy3 )
+    );
+
+    // iCtoL should be less than INT_MAX to avoid overflowing for int i.
+    // iCtoL should not be 0 to avoid dividing 0 for double u.
+    const int iCtoL = std::max( 1, std::min( { maxL, p->mCtoL, INT_MAX - 1 } ) );
+
+    // Avoid to push_back() same as previous points.
+    Point prevPt(INT_MIN, INT_MIN);
+
+    // Bezier to Line
+    for(int i = 0; i <= iCtoL ;i++){
+        // Split Bezier to lines ( in FreeType coordinates ).
+        const double u = static_cast<double>(i) / iCtoL;
+        const double nu = 1.0 - u;
+        const double p0 =                  nu * nu * nu;
+        const double p1 = 3.0 * u *        nu * nu;
+        const double p2 = 3.0 * u * u *    nu;
+        const double p3 =       u * u * u;
+
+        const double X = (p->mOldP.x) * p0 + (cnt1->x) * p1 +
+                         (cnt2->x   ) * p2 + (to->x  ) * p3;
+        const double Y = (p->mOldP.y) * p0 + (cnt1->y) * p1 +
+                         (cnt2->y   ) * p2 + (to->y  ) * p3;
 
         // Store points to draw( in OpenCV coordinates ).
-        p->mPts.push_back( Point ( ftd(X), ftd(Y) ) );
+        const Point pt( ftd(X), ftd(Y) );
+        if ( pt != prevPt )
+        {
+            p->mPts.push_back( pt );
+            prevPt = pt;
+        }
     }
     p->mOldP = *to;
     return 0;
