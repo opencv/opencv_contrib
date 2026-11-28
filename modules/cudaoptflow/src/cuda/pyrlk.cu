@@ -706,17 +706,44 @@ namespace pyrlk
     };
 
 
-    template <bool calcErr, class Ptr2D>
+    // The dense kernel keeps three patches of patchWidth x patchHeight ints in shared memory. A warp holds two rows
+    // of the 16 x 16 block, and all of its threads read the same offset of their windows. Stored row by row, the
+    // two rows meet on the same banks unless patchWidth is 16 modulo 32. Stored column by column at a pitch of
+    // 2 modulo 4 words, the 16 columns of a warp fall on the 16 even banks and its two rows take the even and the
+    // odd banks, which leaves every access of the patches free of bank conflicts.
+    __host__ __device__ inline int densePatchPitch(int patchHeight)
+    {
+        return patchHeight + (2 - patchHeight % 4 + 4) % 4;
+    }
+
+    // The column layout takes up to two more words per column. A window whose patches would then pass the 48 KB
+    // of shared memory that a launch may use without an opt-in keeps the row layout. So does a window with an even
+    // side: its loops read one element past the patches, and the place of that element depends on the layout.
+    inline bool densePatchesByColumns(int2 winSize, int patchWidth, int patchHeight)
+    {
+        const bool oddWindow = winSize.x % 2 == 1 && winSize.y % 2 == 1;
+        return oddWindow && 3 * patchWidth * densePatchPitch(patchHeight) * (int) sizeof(int) <= 48 * 1024;
+    }
+
+    template <bool byColumns>
+    __device__ __forceinline__ int densePatchIndex(int row, int col, int pitch)
+    {
+        return byColumns ? col * pitch + row : row * pitch + col;
+    }
+
+    template <bool calcErr, bool byColumns, class Ptr2D>
     __global__ void denseKernel(const Ptr2D texI, const Ptr2D texJ, PtrStepf u, PtrStepf v, const PtrStepf prevU, const PtrStepf prevV, PtrStepf err, const int rows, const int cols)
     {
         extern __shared__ int smem[];
 
         const int patchWidth  = blockDim.x + 2 * c_halfWin_x;
         const int patchHeight = blockDim.y + 2 * c_halfWin_y;
+        const int patchPitch  = byColumns ? densePatchPitch(patchHeight) : patchWidth;
+        const int patchSize   = byColumns ? patchWidth * patchPitch : patchPitch * patchHeight;
 
         int* I_patch = smem;
-        int* dIdx_patch = I_patch + patchWidth * patchHeight;
-        int* dIdy_patch = dIdx_patch + patchWidth * patchHeight;
+        int* dIdx_patch = I_patch + patchSize;
+        int* dIdy_patch = dIdx_patch + patchSize;
 
         const int xBase = blockIdx.x * blockDim.x;
         const int yBase = blockIdx.y * blockDim.y;
@@ -728,14 +755,14 @@ namespace pyrlk
                 float x = xBase - c_halfWin_x + j + 0.5f;
                 float y = yBase - c_halfWin_y + i + 0.5f;
 
-                I_patch[i * patchWidth + j] = texI(y, x);
+                I_patch[densePatchIndex<byColumns>(i, j, patchPitch)] = texI(y, x);
 
                 // Scharr Deriv
 
-                dIdx_patch[i * patchWidth + j] = 3 * texI(y - 1, x + 1) + 10 * texI(y, x + 1) + 3 * texI(y + 1, x + 1) -
+                dIdx_patch[densePatchIndex<byColumns>(i, j, patchPitch)] = 3 * texI(y - 1, x + 1) + 10 * texI(y, x + 1) + 3 * texI(y + 1, x + 1) -
                     (3 * texI(y - 1, x - 1) + 10 * texI(y, x - 1) + 3 * texI(y + 1, x - 1));
 
-                dIdy_patch[i * patchWidth + j] = 3 * texI(y + 1, x - 1) + 10 * texI(y + 1,x) + 3 * texI(y+ 1, x + 1) -
+                dIdy_patch[densePatchIndex<byColumns>(i, j, patchPitch)] = 3 * texI(y + 1, x - 1) + 10 * texI(y + 1,x) + 3 * texI(y+ 1, x + 1) -
                     (3 * texI(y - 1, x - 1) + 10 * texI(y - 1,x) + 3 * texI(y - 1, x + 1));
             }
         }
@@ -749,16 +776,22 @@ namespace pyrlk
             return;
 
 
+        // The inner loop over a window walks along the stored direction of the patches, one word per step.
+        const int outerSize = byColumns ? c_winSize_x : c_winSize_y;
+        const int innerSize = byColumns ? c_winSize_y : c_winSize_x;
+
         int A11i = 0;
         int A12i = 0;
         int A22i = 0;
 
-        for (int i = 0; i < c_winSize_y; ++i)
+        for (int outer = 0; outer < outerSize; ++outer)
         {
-            for (int j = 0; j < c_winSize_x; ++j)
+            for (int inner = 0; inner < innerSize; ++inner)
             {
-                int dIdx = dIdx_patch[(threadIdx.y + i) * patchWidth + (threadIdx.x + j)];
-                int dIdy = dIdy_patch[(threadIdx.y + i) * patchWidth + (threadIdx.x + j)];
+                const int i = byColumns ? inner : outer;
+                const int j = byColumns ? outer : inner;
+                int dIdx = dIdx_patch[densePatchIndex<byColumns>(threadIdx.y + i, threadIdx.x + j, patchPitch)];
+                int dIdy = dIdy_patch[densePatchIndex<byColumns>(threadIdx.y + i, threadIdx.x + j, patchPitch)];
 
                 A11i += dIdx * dIdx;
                 A12i += dIdx * dIdy;
@@ -802,17 +835,19 @@ namespace pyrlk
             int b1 = 0;
             int b2 = 0;
 
-            for (int i = 0; i < c_winSize_y; ++i)
+            for (int outer = 0; outer < outerSize; ++outer)
             {
-                for (int j = 0; j < c_winSize_x; ++j)
+                for (int inner = 0; inner < innerSize; ++inner)
                 {
-                    int I = I_patch[(threadIdx.y + i) * patchWidth + threadIdx.x + j];
+                    const int i = byColumns ? inner : outer;
+                    const int j = byColumns ? outer : inner;
+                    int I = I_patch[densePatchIndex<byColumns>(threadIdx.y + i, threadIdx.x + j, patchPitch)];
                     int J = texJ(nextPt.y - c_halfWin_y + i + 0.5f, nextPt.x - c_halfWin_x + j + 0.5f);
 
                     int diff = (J - I) * 32;
 
-                    int dIdx = dIdx_patch[(threadIdx.y + i) * patchWidth + (threadIdx.x + j)];
-                    int dIdy = dIdy_patch[(threadIdx.y + i) * patchWidth + (threadIdx.x + j)];
+                    int dIdx = dIdx_patch[densePatchIndex<byColumns>(threadIdx.y + i, threadIdx.x + j, patchPitch)];
+                    int dIdy = dIdy_patch[densePatchIndex<byColumns>(threadIdx.y + i, threadIdx.x + j, patchPitch)];
 
                     b1 += diff * dIdx;
                     b2 += diff * dIdy;
@@ -838,11 +873,13 @@ namespace pyrlk
         {
             int errval = 0;
 
-            for (int i = 0; i < c_winSize_y; ++i)
+            for (int outer = 0; outer < outerSize; ++outer)
             {
-                for (int j = 0; j < c_winSize_x; ++j)
+                for (int inner = 0; inner < innerSize; ++inner)
                 {
-                    int I = I_patch[(threadIdx.y + i) * patchWidth + threadIdx.x + j];
+                    const int i = byColumns ? inner : outer;
+                    const int j = byColumns ? outer : inner;
+                    int I = I_patch[densePatchIndex<byColumns>(threadIdx.y + i, threadIdx.x + j, patchPitch)];
 
                     int J = texJ(nextPt.y - c_halfWin_y + i + 0.5f, nextPt.x - c_halfWin_x + j + 0.5f);
 
@@ -925,16 +962,23 @@ namespace pyrlk
             int2 halfWin = make_int2((winSize.x - 1) / 2, (winSize.y - 1) / 2);
             const int patchWidth = block.x + 2 * halfWin.x;
             const int patchHeight = block.y + 2 * halfWin.y;
-            size_t smem_size = 3 * patchWidth * patchHeight * sizeof(int);
+            const bool byColumns = densePatchesByColumns(winSize, patchWidth, patchHeight);
+            size_t smem_size = 3 * patchWidth * (byColumns ? densePatchPitch(patchHeight) : patchHeight) * sizeof(int);
 
             if (err.data)
             {
-                denseKernel<true, cv::cudev::TexturePtr<T,float>><<<grid, block, smem_size, stream>>>(texI, texJ, u, v, prevU, prevV, err, I.rows, I.cols);
+                if (byColumns)
+                    denseKernel<true, true, cv::cudev::TexturePtr<T,float>><<<grid, block, smem_size, stream>>>(texI, texJ, u, v, prevU, prevV, err, I.rows, I.cols);
+                else
+                    denseKernel<true, false, cv::cudev::TexturePtr<T,float>><<<grid, block, smem_size, stream>>>(texI, texJ, u, v, prevU, prevV, err, I.rows, I.cols);
                 cudaSafeCall(cudaGetLastError());
             }
             else
             {
-                denseKernel<false, cv::cudev::TexturePtr<T, float>><<<grid, block, smem_size, stream>>>(texI, texJ, u, v, prevU, prevV, PtrStepf(), I.rows, I.cols);
+                if (byColumns)
+                    denseKernel<false, true, cv::cudev::TexturePtr<T, float>><<<grid, block, smem_size, stream>>>(texI, texJ, u, v, prevU, prevV, PtrStepf(), I.rows, I.cols);
+                else
+                    denseKernel<false, false, cv::cudev::TexturePtr<T, float>><<<grid, block, smem_size, stream>>>(texI, texJ, u, v, prevU, prevV, PtrStepf(), I.rows, I.cols);
                 cudaSafeCall(cudaGetLastError());
             }
 
