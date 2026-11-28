@@ -35,6 +35,7 @@
 #ifndef __OPENCV_HDF5_HPP__
 #define __OPENCV_HDF5_HPP__
 
+#include "opencv2/core/cvdef.h"
 #include <vector>
 #include <opencv2/core.hpp>
 
@@ -47,6 +48,10 @@ using namespace std;
 //! @addtogroup hdf5
 //! @{
 
+
+/** @brief Returns true if HDF5 float16 support is available.
+*/
+CV_EXPORTS_W bool HDF5_has_f16_support();
 
 /** @brief Hierarchical Data Format version 5 interface.
 
@@ -67,6 +72,11 @@ public:
     };
 
     virtual ~HDF5() {}
+
+    /**
+     * @brief Returns true if HDF5 float16 support is available.
+     */
+    CV_WRAP virtual bool has_f16_support() const = 0;
 
     /** @brief Close and release hdf5 object.
      */
