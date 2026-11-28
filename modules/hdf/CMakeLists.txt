@@ -25,11 +25,23 @@ if(NOT HDF5_FOUND)
     ocv_module_disable(hdf) # no return
 endif()
 
-set(HAVE_HDF5 1)
+# See https://github.com/opencv/opencv_contrib/issues/3858
+# If HDF5_PREFER_PARALLEL is enabled, find_package(HDF5) sets HDF5_IS_PARALLEL=ON.
+if(HDF5_IS_PARALLEL)
+  find_package(MPI)
+  if(NOT MPI_FOUND)
+    message(STATUS "Module opencv_hdf disabled because the following dependency is not found: MPI")
+    ocv_module_disable(hdf) # no return
+  endif()
+else()
+  unset(MPI_CXX_LIBRARIES)
+  unset(MPI_CXX_INCLUDE_DIRS)
+endif()
 
+set(HAVE_HDF5 1)
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Winvalid-offsetof)
 
 set(the_description "Hierarchical Data Format I/O")
 ocv_define_module(hdf opencv_core WRAP python)
-ocv_target_link_libraries(${the_module} ${HDF5_LIBRARIES})
-ocv_include_directories(${HDF5_INCLUDE_DIRS})
+ocv_target_link_libraries(${the_module} ${HDF5_LIBRARIES} ${MPI_CXX_LIBRARIES})
+ocv_include_directories(${HDF5_INCLUDE_DIRS} ${MPI_CXX_INCLUDE_DIRS})
