@@ -536,9 +536,9 @@ void cv::omnidir::initUndistortRectifyMap(InputArray K, InputArray D, InputArray
 /// cv::omnidir::undistortImage
 
 void cv::omnidir::undistortImage(InputArray distorted, OutputArray undistorted,
-    InputArray K, InputArray D, InputArray xi, int flags, InputArray Knew, const Size& new_size, InputArray R)
+    InputArray K, InputArray D, InputArray xi, int flags, InputArray Knew, const Size& newSize, InputArray R)
 {
-    Size size = new_size.empty() ? distorted.size() : new_size;
+    Size size = newSize.empty() ? distorted.size() : newSize;
 
     cv::Mat map1, map2;
     omnidir::initUndistortRectifyMap(K, D, xi, R, Knew, size, CV_16SC2, map1, map2, flags);
@@ -1062,6 +1062,141 @@ void cv::omnidir::internal::compose_motion(InputArray _om1, InputArray _T1, Inpu
     dT3dT2 = Mat::eye(3, 3, CV_64FC1);
     dT3dom2 = dT3tdom2;
     dT3dom1 = Mat::zeros(3, 3, CV_64FC1);
+}
+
+void cv::omnidir::estimateNewCameraMatrixForUndistortRectify(InputArray K, InputArray D, InputArray xi, const Size &imageSize,
+        InputArray R, OutputArray P, int rectificationType, double scale0, double scale1, const Size& newSize) {
+    CV_Assert(K.size() == Size(3, 3) && (K.depth() == CV_32F || K.depth() == CV_64F));
+    CV_Assert(D.empty() || ((D.total() == 4) && (D.depth() == CV_32F || D.depth() == CV_64F)));
+    CV_Assert(xi.total() == 1 && (xi.depth() == CV_64F || xi.depth() == CV_32F));
+
+    int w = imageSize.width, h = imageSize.height;
+
+    if (rectificationType == cv::omnidir::RECTIFY_PERSPECTIVE) {
+        double balance = std::min(std::max(scale0, 0.0), 1.0);
+        cv::Mat points(1, 4, CV_64FC2);
+        Vec2d* pptr = points.ptr<Vec2d>();
+        pptr[0] = Vec2d(w / 2, 0);
+        pptr[1] = Vec2d(w, h / 2);
+        pptr[2] = Vec2d(w / 2, h);
+        pptr[3] = Vec2d(0, h / 2);
+
+        cv::omnidir::undistortPoints(points, points, K, D, xi, R);
+        cv::Scalar center_mass = mean(points);
+        cv::Vec2d cn(center_mass.val);
+        double aspect_ratio = (K.depth() == CV_32F) ? K.getMat().at<float>(0, 0) / K.getMat().at<float>(1, 1)
+            : K.getMat().at<double>(0, 0) / K.getMat().at<double>(1, 1);
+
+        // convert to identity ratio
+        cn[1] *= aspect_ratio;
+
+        for (size_t i = 0; i < points.total(); ++i)
+            pptr[i][1] *= aspect_ratio;
+
+        double minx = DBL_MAX, miny = DBL_MAX, maxx = -DBL_MAX, maxy = -DBL_MAX;
+        for (size_t i = 0; i < points.total(); ++i) {
+            miny = std::min(miny, pptr[i][1]);
+            maxy = std::max(maxy, pptr[i][1]);
+            minx = std::min(minx, pptr[i][0]);
+            maxx = std::max(maxx, pptr[i][0]);
+        }
+
+        double f1 = w * 0.5 / (cn[0] - minx);
+        double f2 = w * 0.5 / (maxx - cn[0]);
+        double f3 = h * 0.5 * aspect_ratio / (cn[1] - miny);
+        double f4 = h * 0.5 * aspect_ratio / (maxy - cn[1]);
+
+        double fmin = std::min(f1, std::min(f2, std::min(f3, f4)));
+        double fmax = std::max(f1, std::max(f2, std::max(f3, f4)));
+
+        double f = balance * fmin + (1.0 - balance) * fmax;
+        f *= scale1 > 0 ? 1.0 / scale1 : 1.0;
+
+        cv::Vec2d new_f(f, f), new_c = -cn * f + Vec2d(w, h * aspect_ratio) * 0.5;
+
+        // restore aspect ratio
+        new_f[1] /= aspect_ratio;
+        new_c[1] /= aspect_ratio;
+
+        if (!newSize.empty()) {
+            double rx = newSize.width / (double)imageSize.width;
+            double ry = newSize.height / (double)imageSize.height;
+
+            new_f[0] *= rx;
+            new_f[1] *= ry;
+            new_c[0] *= rx;
+            new_c[1] *= ry;
+        }
+
+        Mat(Matx33d(new_f[0], 0, new_c[0], 0, new_f[1], new_c[1], 0, 0, 1))
+            .convertTo(P, P.empty() ? K.type() : P.type());
+    } else {
+        cv::Mat points(1, 4, CV_64FC2);
+        Vec2d* pptr = points.ptr<Vec2d>();
+        pptr[0] = Vec2d(0, h / 2);
+        pptr[1] = Vec2d(w, h / 2);
+        pptr[2] = Vec2d(w / 2, 0);
+        pptr[3] = Vec2d(w / 2, h);
+
+        cv::omnidir::undistortPoints(points, points, K, D, xi, R);
+
+        double aspect_ratio = (K.depth() == CV_32F) ? K.getMat().at<float>(0, 0) / K.getMat().at<float>(1, 1)
+            : K.getMat().at<double>(0, 0) / K.getMat().at<double>(1, 1);
+
+        // convert to identity ratio
+        for (size_t i = 0; i < points.total(); ++i)
+            pptr[i][1] *= aspect_ratio;
+
+        double minx = DBL_MAX, miny = DBL_MAX, maxx = -DBL_MAX, maxy = -DBL_MAX;
+        for (size_t i = 0; i < points.total(); ++i) {
+            miny = std::min(miny, pptr[i][1]);
+            maxy = std::max(maxy, pptr[i][1]);
+            minx = std::min(minx, pptr[i][0]);
+            maxx = std::max(maxx, pptr[i][0]);
+        }
+
+        // assume y is 0.0
+        double r = sqrt(minx * minx + 1.0);
+        Vec3d pt_unit_x_min = {minx/r, 0.0, 1.0/r};
+        r = sqrt(maxx * maxx + 1.0);
+        Vec3d pt_unit_x_max = {maxx/r, 0.0, 1.0/r};
+        // assume x is 0.0
+        r = sqrt(miny * miny + 1.0);
+        Vec3d pt_unit_y_min = {0.0, miny/r, 1.0/r};
+        r = sqrt(maxy * maxy + 1.0);
+        Vec3d pt_unit_y_max = {0.0, maxy/r, 1.0/r};
+
+        // Set image center to x=0, y=0.
+        Vec3d cn_unit_x(0.0, 0.0, 1.0);
+        Vec3d cn_unit_y = cn_unit_x;
+
+        cv::Vec2d fov;
+        // length of vectors are all 1.0 (unit circle) -> no normalization necessary
+        fov[0] = acos(pt_unit_x_min.dot(pt_unit_x_max));
+        fov[1] = acos(pt_unit_y_min.dot(pt_unit_y_max));
+
+        cv::Vec2d cn_fov;
+        // length of vectors are all 1.0 (unit circle) -> no normalization necessary
+        cn_fov[0] = acos(cn_unit_x.dot(pt_unit_x_min));
+        cn_fov[1] = acos(cn_unit_y.dot(pt_unit_y_min));
+
+        Vec2d fov_scale(scale0 > 0.0 ? scale0 : 1.0, scale1 > 0.0 ? scale1 : 1.0);
+        fov = fov.mul(fov_scale);
+        cn_fov = cn_fov.mul(fov_scale);
+
+        if (!newSize.empty()) {
+            w = newSize.width;
+            h = newSize.height;
+        }
+
+        cv::Vec2d pix_per_rad = {w/fov[0], h/fov[1]};
+
+        cv::Vec2d offset = (cv::Vec2d::all(CV_PI * 0.5) - cn_fov).mul(pix_per_rad);
+
+        Mat(Matx33d(pix_per_rad[0], 0, -offset[0], 0, pix_per_rad[1], -offset[1], 0, 0, 1))
+            .convertTo(P, P.empty() ? K.type() : P.type());
+    }
+
 }
 
 double cv::omnidir::calibrate(InputArrayOfArrays patternPoints, InputArrayOfArrays imagePoints, Size size,
