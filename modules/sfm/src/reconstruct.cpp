@@ -56,7 +56,7 @@ namespace sfm
 
   template<class T>
   void
-  reconstruct_(const T &input, OutputArray Rs, OutputArray Ts, InputOutputArray K, OutputArray points3d, const bool refinement=true)
+  reconstruct_(const T &input, OutputArrayOfArrays Rs, OutputArrayOfArrays Ts, InputOutputArray K, OutputArrayOfArrays points3d, const bool refinement=true)
   {
     // Initial reconstruction
     const int keyframe1 = 1, keyframe2 = 2;
@@ -84,7 +84,7 @@ namespace sfm
 
     //-- Instantiate reconstruction pipeline
     Ptr<BaseSFM> reconstruction =
-      SFMLibmvEuclideanReconstruction::create(camera_instrinsic_options, reconstruction_options);
+      SFMLibmvEuclideanRecons::create(camera_instrinsic_options, reconstruction_options);
 
     //-- Run reconstruction pipeline
     reconstruction->run(input, K, Rs, Ts, points3d);
@@ -94,7 +94,7 @@ namespace sfm
 
   //  Reconstruction function for API
   void
-  reconstruct(InputArrayOfArrays points2d, OutputArray Ps, OutputArray points3d, InputOutputArray K,
+  reconstruct(InputArrayOfArrays points2d, OutputArrayOfArrays Ps, OutputArrayOfArrays points3d, InputOutputArray K,
               bool is_projective)
   {
     const int nviews = points2d.total();
@@ -161,8 +161,8 @@ namespace sfm
 
 
   void
-  reconstruct(InputArrayOfArrays points2d, OutputArray Rs, OutputArray Ts, InputOutputArray K,
-              OutputArray points3d, bool is_projective)
+  reconstruct(InputArrayOfArrays points2d, OutputArrayOfArrays Rs, OutputArrayOfArrays Ts, InputOutputArray K,
+              OutputArrayOfArrays points3d, bool is_projective)
   {
     const int nviews = points2d.total();
     CV_Assert( nviews >= 2 );
@@ -190,7 +190,7 @@ namespace sfm
 
 
   void
-  reconstruct(const std::vector<cv::String> images, OutputArray Ps, OutputArray points3d,
+  reconstruct(const std::vector<cv::String> images, OutputArrayOfArrays Ps, OutputArrayOfArrays points3d,
               InputOutputArray K, bool is_projective)
   {
     const int nviews = static_cast<int>(images.size());
@@ -234,8 +234,8 @@ namespace sfm
 
 
   void
-  reconstruct(const std::vector<cv::String> images, OutputArray Rs, OutputArray Ts,
-              InputOutputArray K, OutputArray points3d, bool is_projective)
+  reconstruct(const std::vector<cv::String> images, OutputArrayOfArrays Rs, OutputArrayOfArrays Ts,
+              InputOutputArray K, OutputArrayOfArrays points3d, bool is_projective)
   {
     const int nviews = static_cast<int>(images.size());
     CV_Assert( nviews >= 2 );
